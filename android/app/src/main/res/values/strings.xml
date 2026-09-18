@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">prio</string>
+    <string name="title_activity_main">prio</string>
+    <string name="package_name">de.krischi.prio</string>
+    <string name="custom_url_scheme">de.krischi.prio</string>
+</resources>

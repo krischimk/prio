@@ -49,7 +49,7 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
 10. [Wie die Synchronisation funktioniert](#wie-die-synchronisation-funktioniert)
 11. [Bewusste Entscheidungen und Grenzen von 0.1](#bewusste-entscheidungen-und-grenzen-von-01)
 12. [Deployment (Cloudflare Pages)](#deployment-cloudflare-pages)
-13. [Vorbereitung für Android (Capacitor)](#vorbereitung-für-android-capacitor)
+13. [Android-App (Capacitor)](#android-app-capacitor)
 14. [Git-Workflow, Commits und Releases](#git-workflow-commits-und-releases)
 15. [Definition of Done – Stand](#definition-of-done--stand)
 
@@ -291,6 +291,8 @@ HTTP-Aufrufe – aber ohne Cloud.
 | `npm run test:e2e` | E2E-Tests |
 | `npm run icons` | PWA-Icons neu erzeugen |
 | `npm run db:sql` | Die drei Migrationen zu `supabase/all-migrations.sql` zusammenfügen (für den SQL-Editor) |
+| `npm run android:sync` | Web-Bundle bauen und ins Android-Projekt kopieren |
+| `npm run android:apk` | Debug-APK für Android bauen |
 | `npm run ci` | Typecheck, Lint, Tests und Build in einem Durchlauf |
 
 ---
@@ -474,30 +476,92 @@ registriert.
 
 ---
 
-## Vorbereitung für Android (Capacitor)
+## Android-App (Capacitor)
 
-Capacitor ist in 0.1 **absichtlich noch nicht eingerichtet** – es würde
-zusätzliche Komplexität erzeugen, ohne die Architektur zu beweisen. Die
-Voraussetzungen dafür sind aber geschaffen:
+Capacitor ist eingerichtet; die Web-App wird als `dist/` in eine Android-App
+verpackt und im WebView geladen.
 
-* **Keine browser-spezifischen APIs**, die im WebView Probleme machen. Verwendet
-  werden IndexedDB (Dexie), `localStorage` für die Sitzung, `navigator.onLine`
-  und `crypto.randomUUID` (mit Fallback für ältere WebViews).
-* **Service Worker** wird nur unter `http(s)` registriert und ist in Capacitor
-  damit automatisch inaktiv.
-* **Netzwerkzustand** ist hinter `NetworkMonitor` gekapselt – für Android lässt
-  sich `@capacitor/network` an genau einer Stelle einhängen.
-* **Fälligkeitsdatum mit Uhrzeit** ist bereits im Datenmodell, damit später
-  `@capacitor/local-notifications` ohne Schemaänderung ergänzt werden kann.
-* **Datenbank pro Benutzer** statt fester Name – auch unter Android sauber.
+### Voraussetzungen auf dem Rechner
 
-Nächste Schritte für eine spätere Version:
+| | Anforderung | Warum |
+| --- | --- | --- |
+| JDK | **17 – 21** | Das Android Gradle Plugin 8.13 unterstützt kein JDK 22+. Ein zu neues System-JDK führt zu „Unsupported class file major version". |
+| Android SDK | Platform **36**, Build-Tools **36.0.0**, Platform-Tools | `android/variables.gradle` legt `compileSdk = 36` fest. |
+| Gradle | wird vom Wrapper selbst geladen (8.14.3) | – |
+
+Damit Gradle ohne Umgebungsvariablen das richtige JDK nimmt, genügt ein Eintrag
+in der **benutzereigenen** Gradle-Konfiguration (nicht im Repository):
+
+```properties
+# ~/.gradle/gradle.properties
+org.gradle.java.home=/usr/lib/jvm/java-21-openjdk
+```
+
+Das SDK wird über `android/local.properties` gefunden (auch nicht versioniert):
+
+```properties
+sdk.dir=/home/<benutzer>/Android/Sdk
+```
+
+### Bauen
 
 ```bash
-npm install @capacitor/core @capacitor/cli @capacitor/android
-npx cap init prio de.example.prio --web-dir=dist
-npm run build && npx cap add android && npx cap sync
+npm run android:apk
 ```
+
+Das baut das Web-Bundle, kopiert es in das Android-Projekt und ruft Gradle auf.
+Ergebnis:
+
+```
+android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Einzelne Schritte, falls du sie getrennt brauchst:
+
+```bash
+npm run build          # Web-Bundle nach dist/
+npx cap sync android   # dist/ + Plugins ins Android-Projekt kopieren
+cd android && ./gradlew assembleDebug
+```
+
+### Aufs Handy bringen
+
+**Per USB** (USB-Debugging aktivieren, Handy anschließen):
+
+```bash
+adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+**Ohne Kabel:** die APK aufs Handy kopieren, antippen und „Installation aus
+unbekannten Quellen" für die Datei-App erlauben.
+
+Es ist eine **Debug-APK** – für den eigenen Gebrauch völlig ausreichend. Eine
+signierte Release-APK bräuchte einen Keystore und wäre erst für Google Play
+relevant.
+
+### Was für Capacitor angepasst wurde
+
+* **Service Worker wird in der App nicht registriert.** Capacitor liefert die
+  Dateien unter `https://localhost` aus; ein Service Worker würde dort nach
+  einem App-Update veraltete Dateien aus dem Cache weiterreichen.
+* **`androidScheme: 'https'`** – Supabase erlaubt genau diese Herkunft per CORS
+  (geprüft), und ein sicherer Kontext ist Voraussetzung für
+  `crypto.randomUUID` und `navigator.onLine`.
+* **`detectSessionInUrl: false`** war bereits gesetzt, deshalb braucht die App
+  keine Deep-Link-Behandlung für Magic-Links.
+* **Die Sitzung liegt in `localStorage`** und übersteht damit App-Neustarts.
+
+### Bewusst noch nicht umgesetzt
+
+* **Native Benachrichtigungen** für Fälligkeiten. Das Datenmodell
+  (`due_at` mit Uhrzeit) ist darauf vorbereitet; es fehlt nur
+  `@capacitor/local-notifications`.
+* **`@capacitor/network`.** Die App nutzt weiterhin `navigator.onLine`. Das ist
+  im WebView ausreichend, weil die Sync-Engine jeden fehlgeschlagenen
+  Netzwerkzugriff zusätzlich als offline behandelt. Der Austausch betrifft nur
+  `src/sync/network.ts`.
+* **Hardware-Zurück-Taste.** Ohne `@capacitor/app` schließt sie die App, statt
+  ein offenes Bearbeitungsformular zu schließen.
 
 ---
 
