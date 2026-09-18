@@ -19,7 +19,14 @@
 -- Funktionen aufrufen.
 --
 -- Wiederholbar: Die Datei kann gefahrlos mehrfach ausgeführt werden.
+--
+-- ATOMAR: Die Datei läuft in einer Transaktion. Das ist hier wichtig, weil
+-- zwischendurch Policies gelöscht und neu angelegt werden – bricht das Skript
+-- mittendrin ab, bliebe die Datenbank sonst ohne Regeln zurück. Mit der
+-- Transaktion gilt entweder alles oder nichts.
 -- =============================================================================
+
+begin;
 
 -- -----------------------------------------------------------------------------
 -- 1. Privates Schema
@@ -269,3 +276,5 @@ begin
   end if;
 end
 $$;
+
+commit;
