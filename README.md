@@ -576,6 +576,26 @@ kommen danach aus der Cloud zurück). Den Ordner also sichern. Der Keystore ist
 `versionName` entspricht dem Tag ohne führendes `v`, `versionCode` kommt aus der
 Workflow-Laufnummer und ist damit bei jedem Release höher.
 
+> **Debug-APK und Release-APK sind unterschiedlich signiert.** Wer zuerst die
+> lokal gebaute Debug-APK installiert hat, muss sie einmal deinstallieren, bevor
+> sich die Release-APK aus GitHub installieren lässt. Danach funktionieren alle
+> weiteren Releases als normales Update.
+
+**Voraussetzung im Repository.** Vite schreibt die Supabase-Konfiguration zur
+Build-Zeit in das Bundle. Im CI gibt es keine `.env`, deshalb müssen beide Werte
+als **Repository-Variablen** hinterlegt sein (*Settings → Secrets and variables
+→ Actions → Variables*). Beide sind öffentlich und stecken ohnehin in jeder
+ausgelieferten App:
+
+| Variable | Wert |
+| --- | --- |
+| `VITE_SUPABASE_URL` | `https://<projekt-id>.supabase.co` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_…` |
+
+Der Workflow bricht mit einer klaren Meldung ab, wenn ein Wert fehlt oder nicht
+im Bundle landet – lieber kein Release als eine App, die nicht synchronisieren
+kann.
+
 ### Was für Capacitor angepasst wurde
 
 * **Service Worker wird in der App nicht registriert.** Capacitor liefert die
