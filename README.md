@@ -1,6 +1,6 @@
 # prio
 
-**Offline-first To-do-App – Version 0.1.0 (technischer Prototyp).**
+**Offline-first To-do-App – Version 0.2.0 (technischer Prototyp).**
 
 Ziel dieser Version ist ausdrücklich **kein fertiges Produkt**, sondern eine
 schlanke Grundlage, mit der die Kernarchitektur zuverlässig getestet werden
@@ -293,6 +293,7 @@ HTTP-Aufrufe – aber ohne Cloud.
 | `npm run db:sql` | Die drei Migrationen zu `supabase/all-migrations.sql` zusammenfügen (für den SQL-Editor) |
 | `npm run android:sync` | Web-Bundle bauen und ins Android-Projekt kopieren |
 | `npm run android:apk` | Debug-APK für Android bauen |
+| `npm run android:release` | Signierte Release-APK bauen (braucht den Keystore) |
 | `npm run ci` | Typecheck, Lint, Tests und Build in einem Durchlauf |
 
 ---
@@ -535,9 +536,45 @@ adb install -r android/app/build/outputs/apk/debug/app-debug.apk
 **Ohne Kabel:** die APK aufs Handy kopieren, antippen und „Installation aus
 unbekannten Quellen" für die Datei-App erlauben.
 
-Es ist eine **Debug-APK** – für den eigenen Gebrauch völlig ausreichend. Eine
-signierte Release-APK bräuchte einen Keystore und wäre erst für Google Play
-relevant.
+Es ist eine **Debug-APK** – für den eigenen Gebrauch völlig ausreichend. Der
+bequemere Weg ist aber der Download über die GitHub-Releases (siehe unten); dort
+gibt es eine signierte Release-APK.
+
+### APK-Releases über GitHub
+
+Jede neue Version entsteht durch einen Tag. GitHub baut und veröffentlicht die
+APK dann automatisch:
+
+```bash
+git tag -a v0.2.0 -m "prio 0.2.0"
+git push origin v0.2.0
+```
+
+Nach etwa zwei Minuten liegt `prio-0.2.0.apk` unter **Releases** im Repository
+und lässt sich direkt am Handy herunterladen. Der Workflow
+(`.github/workflows/release.yml`) prüft zuerst Typecheck, Linting und Tests,
+baut dann das Web-Bundle, signiert die APK und erstellt das Release. Ein
+fehlschlagender Test verhindert die Veröffentlichung. Über
+*Actions → Release → Run workflow* lässt sich die APK auch ohne Tag probeweise
+bauen; sie landet dann nur als Artefakt und nicht als Release.
+
+**Signatur – wichtig zu wissen.** Android lässt ein Update nur zu, wenn die
+Signatur zur bereits installierten App passt. Deshalb wird nicht mit der
+flüchtigen Debug-Signatur gearbeitet, sondern mit einem festen Schlüssel:
+
+| | |
+| --- | --- |
+| Keystore | `~/.prio-android/prio-release.keystore` |
+| Zugangsdaten | `~/.prio-android/ZUGANGSDATEN.txt` |
+| GitHub-Secrets | `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` |
+
+Geht der Keystore verloren, lässt sich keine neue Version mehr über die
+installierte App legen – sie müsste zuerst deinstalliert werden (die Daten
+kommen danach aus der Cloud zurück). Den Ordner also sichern. Der Keystore ist
+über `.gitignore` ausgeschlossen und darf nie ins Repository.
+
+`versionName` entspricht dem Tag ohne führendes `v`, `versionCode` kommt aus der
+Workflow-Laufnummer und ist damit bei jedem Release höher.
 
 ### Was für Capacitor angepasst wurde
 

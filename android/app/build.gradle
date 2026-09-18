@@ -1,5 +1,21 @@
 apply plugin: 'com.android.application'
 
+/*
+ * Signatur und Versionierung
+ * --------------------------
+ * Android verweigert ein Update, wenn die Signatur nicht zur installierten
+ * App passt. Eine im CI frisch erzeugte Debug-Signatur wäre bei jedem Lauf
+ * eine andere – deshalb wird hier mit einem festen Schlüssel signiert, der
+ * über GitHub-Secrets bereitgestellt wird.
+ *
+ * Fehlen die Variablen (z. B. beim lokalen Bauen), bleibt der Release-Build
+ * unsigniert; `assembleDebug` funktioniert davon unabhängig weiter.
+ */
+def keystoreFile = System.getenv("PRIO_KEYSTORE_FILE")
+def hasSigningKey = keystoreFile != null && file(keystoreFile).exists()
+def versionNameFromEnv = System.getenv("PRIO_VERSION_NAME")
+def versionCodeFromEnv = System.getenv("PRIO_VERSION_CODE")
+
 android {
     namespace = "de.krischi.prio"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +23,9 @@ android {
         applicationId "de.krischi.prio"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "0.1.0"
+        // Version kommt aus der Umgebung, damit sie zum Git-Tag passt.
+        versionCode = versionCodeFromEnv != null ? versionCodeFromEnv.toInteger() : 1
+        versionName = versionNameFromEnv != null ? versionNameFromEnv : "0.1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +33,21 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (hasSigningKey) {
+                storeFile file(keystoreFile)
+                storePassword System.getenv("PRIO_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("PRIO_KEY_ALIAS")
+                keyPassword System.getenv("PRIO_KEY_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         release {
+            if (hasSigningKey) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

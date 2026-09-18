@@ -34,6 +34,10 @@ playwright-report
 blob-report
 playwright/.cache
 
+# Signaturschlüssel für Android – NIEMALS committen
+*.keystore
+*.jks
+
 # Supabase CLI (lokaler Zustand)
 supabase/.branches
 supabase/.temp
