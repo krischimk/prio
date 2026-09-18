@@ -77,6 +77,13 @@ jobs:
 
       - name: Web-Bundle bauen und APK signieren
         env:
+          # Die App bekommt die Supabase-Konfiguration zur BUILD-Zeit einkompiliert.
+          # Ohne diese beiden Werte entsteht eine App, die beim Start nur
+          # "Supabase ist nicht konfiguriert" anzeigt – deshalb stammen sie aus
+          # Repository-Variablen (beide Werte sind öffentlich, sie stecken
+          # ohnehin in jeder ausgelieferten App) und werden unten geprüft.
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
           PRIO_KEYSTORE_FILE: ${{ runner.temp }}/prio-release.keystore
           PRIO_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           PRIO_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -86,7 +93,16 @@ jobs:
           # einen höheren versionCode als in der installierten App.
           PRIO_VERSION_CODE: ${{ github.run_number }}
         run: |
+          test -n "$VITE_SUPABASE_URL" || { echo "::error::Repository-Variable VITE_SUPABASE_URL fehlt."; exit 1; }
+          test -n "$VITE_SUPABASE_PUBLISHABLE_KEY" || { echo "::error::Repository-Variable VITE_SUPABASE_PUBLISHABLE_KEY fehlt."; exit 1; }
+
           npm run build
+
+          # Sicherheitsnetz: Lieber kein Release als eine App, die nicht
+          # synchronisieren kann.
+          grep -q "$VITE_SUPABASE_URL" dist/assets/*.js \
+            || { echo "::error::Die Supabase-URL steckt nicht im Web-Bundle."; exit 1; }
+
           npx cap sync android
           cd android
           ./gradlew assembleRelease
