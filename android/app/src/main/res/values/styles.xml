@@ -1,11 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <!--
+      Alle drei Themes setzen `windowActionBar` und `windowNoTitle` ausdrücklich
+      – auch das Start-Theme.
+
+      Grund: Capacitor setzt das Theme erst in `BridgeActivity.onCreate` auf
+      `AppTheme.NoActionBar` um. Zu diesem Zeitpunkt hat AppCompat die
+      ActionBar anhand des Manifest-Themes bereits erzeugt, und ein späterer
+      Theme-Wechsel entfernt sie nicht wieder. Sie erscheint dann als dunkler
+      Balken mit dem App-Namen über der eigentlichen Oberfläche.
+
+      Die Activity trägt im Manifest `AppTheme.NoActionBarLaunch`; deshalb
+      müssen die beiden Werte dort genauso stehen wie im laufenden Theme.
+    -->
+
     <!-- Base application theme. Die App ist durchgehend dunkel. -->
     <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowBackground">@color/prioBackground</item>
     </style>
 
     <!--
@@ -14,13 +33,14 @@
       `android:windowBackground` ist hier entscheidend: Capacitor legt bei
       WebViews vor Version 140 Padding um die DecorView, damit der Inhalt nicht
       unter den Systemleisten liegt. Der dadurch freie Streifen zeigt den
-      Fensterhintergrund – ohne diese Zeile wäre er hell (Vorgabe von
-      AppCompat/Light bzw. DayNight) und läge als heller Balken über der
-      App-Leiste.
+      Fensterhintergrund – ohne diese Zeile wäre er hell und läge als heller
+      Balken über der App-Leiste.
     -->
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
         <item name="android:background">@null</item>
         <item name="android:windowBackground">@color/prioBackground</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
@@ -28,16 +48,20 @@
     </style>
 
     <!--
-      Start-Theme.
+      Start-Theme (das Theme der Activity laut Manifest).
 
-      `windowSplashScreenBackground` fehlte bisher. Ohne diesen Wert zieht
-      androidx den Hintergrund aus dem übergeordneten Theme – und der war hell.
-      `postSplashScreenTheme` sagt androidx, in welches Theme nach dem
-      Startbild gewechselt wird.
+      `windowSplashScreenBackground` setzt den Hintergrund des Startbilds;
+      `postSplashScreenTheme` sagt androidx, in welches Theme danach gewechselt
+      wird. Die ActionBar wird hier ebenfalls abgeschaltet – siehe den Hinweis
+      ganz oben.
     -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:windowBackground">@color/prioBackground</item>
         <item name="windowSplashScreenBackground">@color/prioBackground</item>
         <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
     </style>
 </resources>
