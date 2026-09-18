@@ -46,7 +46,14 @@ Zwei Details, die leicht zu übersehen sind:
    „infinite recursion detected in policy“. `is_list_owner`, `is_list_member`
    und `can_access_list` umgehen die RLS intern und brechen den Zyklus.
 
-2. **Die eigene Mitgliedschaftszeile bleibt lesbar, auch wenn sie gelöscht ist.**
+2. **Tabellenrechte werden ausdrücklich vergeben.** RLS allein genügt nicht:
+   Ohne `GRANT` kommt man gar nicht bis zur Policy und PostgREST antwortet mit
+   „permission denied for table …“. In einem Standardprojekt sind diese Rechte
+   über die Default-Privileges vorhanden; `0002_rls.sql` vergibt sie trotzdem
+   explizit an `authenticated` (und bewusst **nicht** an `anon`), damit die
+   Einrichtung nicht von den Projekteinstellungen abhängt.
+
+3. **Die eigene Mitgliedschaftszeile bleibt lesbar, auch wenn sie gelöscht ist.**
    Nur so erfährt ein entferntes Mitglied, dass es keinen Zugriff mehr hat. Die
    Zugriffsprüfung für Listen und Aufgaben verlangt dagegen eine nicht
    gelöschte Mitgliedschaft.

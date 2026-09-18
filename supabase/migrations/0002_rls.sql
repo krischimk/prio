@@ -176,3 +176,28 @@ drop policy if exists tasks_delete_member on public.tasks;
 create policy tasks_delete_member on public.tasks
   for delete to authenticated
   using (public.can_access_list(list_id));
+
+-- -----------------------------------------------------------------------------
+-- Tabellenrechte (GRANTs)
+-- -----------------------------------------------------------------------------
+-- RLS allein genügt nicht: Ohne Tabellenrecht kommt man gar nicht bis zur
+-- Policy – PostgREST antwortet dann mit "permission denied for table ...".
+--
+-- In einem Standard-Supabase-Projekt sind diese Rechte über die
+-- Default-Privileges bereits gesetzt. Sie werden hier trotzdem ausdrücklich
+-- vergeben, damit die Einrichtung nicht davon abhängt:
+--   * falls jemand die Voreinstellungen des Projekts geändert hat oder
+--   * falls die Tabellen unter einer anderen Rolle angelegt wurden.
+--
+-- Wichtig: Die Rechte werden `authenticated` gegeben, NICHT `anon`. Nicht
+-- angemeldete Anfragen (nur anon key) sollen gar nicht erst an die Tabellen
+-- kommen. Welche ZEILEN sichtbar sind, entscheiden weiterhin ausschließlich
+-- die Policies oben.
+-- -----------------------------------------------------------------------------
+grant usage on schema public to authenticated;
+
+grant select, insert, update, delete on public.lists to authenticated;
+grant select, insert, update, delete on public.list_members to authenticated;
+grant select, insert, update, delete on public.tasks to authenticated;
+grant select on public.profiles to authenticated;
+
