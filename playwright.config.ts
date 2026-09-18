@@ -46,7 +46,7 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
       env: {
         VITE_SUPABASE_URL: MOCK_URL,
-        VITE_SUPABASE_ANON_KEY: 'e2e-anon-key',
+        VITE_SUPABASE_PUBLISHABLE_KEY: 'e2e-publishable-key',
       },
       stdout: 'pipe',
     },

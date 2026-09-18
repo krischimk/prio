@@ -57,7 +57,10 @@ function MissingConfiguration() {
           <code className="rounded bg-neutral-900 px-1 py-0.5 text-neutral-200">.env.example</code> an:
         </p>
         <pre className="overflow-x-auto rounded-md border border-neutral-800 bg-neutral-900 p-3 text-xs text-neutral-300">
-          {['VITE_SUPABASE_URL=https://<projekt>.supabase.co', 'VITE_SUPABASE_ANON_KEY=<anon-key>'].join('\n')}
+          {[
+            'VITE_SUPABASE_URL=https://<projekt>.supabase.co',
+            'VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...',
+          ].join('\n')}
         </pre>
         <p className="text-sm text-neutral-400">
           Danach den Dev-Server neu starten. Die Oberfläche arbeitet anschließend offline weiter, wenn

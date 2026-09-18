@@ -15,7 +15,16 @@ import { AuthError, type AuthPort, type AuthUser, type SignUpResult } from './au
 
 export interface SupabaseConfig {
   url: string
-  anonKey: string
+  /**
+   * Öffentlicher Schlüssel für den Client.
+   *
+   * Aktuell ist das der **Publishable Key** (`sb_publishable_…`). Supabase
+   * schafft die alten `anon`-Keys bis Ende 2026 ab; der Publishable Key ist
+   * der direkte Ersatz mit identischen Rechten. Zur Sicherheit wird der alte
+   * Variantenname weiterhin akzeptiert, damit bestehende Installationen nicht
+   * brechen.
+   */
+  publishableKey: string
 }
 
 /**
@@ -24,13 +33,15 @@ export interface SupabaseConfig {
  */
 export function readSupabaseConfig(env: ImportMetaEnv = import.meta.env): SupabaseConfig | null {
   const url = env.VITE_SUPABASE_URL?.trim()
-  const anonKey = env.VITE_SUPABASE_ANON_KEY?.trim()
-  if (!url || !anonKey) return null
-  return { url, anonKey }
+  const publishableKey = (
+    env.VITE_SUPABASE_PUBLISHABLE_KEY ?? env.VITE_SUPABASE_ANON_KEY
+  )?.trim()
+  if (!url || !publishableKey) return null
+  return { url, publishableKey }
 }
 
 export function createSupabaseClient(config: SupabaseConfig): SupabaseClient {
-  return createClient(config.url, config.anonKey, {
+  return createClient(config.url, config.publishableKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,

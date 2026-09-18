@@ -148,7 +148,7 @@ npm install
 # 3. .env aus der Vorlage erstellen und ausfüllen
 cp .env.example .env
 #    VITE_SUPABASE_URL=...
-#    VITE_SUPABASE_ANON_KEY=...
+#    VITE_SUPABASE_PUBLISHABLE_KEY=...
 
 # 4. Datenbankmigrationen anwenden (siehe nächster Abschnitt)
 
@@ -164,12 +164,21 @@ Supabase noch nicht konfiguriert ist.
 ## Supabase konfigurieren
 
 1. **Projekt anlegen** auf <https://supabase.com/dashboard>.
-2. **Zugangsdaten kopieren:** *Project Settings → API*
+2. **Zugangsdaten kopieren:** *Project Settings → API Keys* → Tab
+   **„Publishable and secret API keys"**
    * `Project URL` → `VITE_SUPABASE_URL`
-   * `anon public` Key → `VITE_SUPABASE_ANON_KEY`
+   * **Publishable key** (`sb_publishable_…`) → `VITE_SUPABASE_PUBLISHABLE_KEY`
 
-   > Der `service_role` Key darf **niemals** in `.env` oder ins Repository.
-   > Er umgeht jede Sicherheitsregel.
+   > **Nicht** den Tab „Legacy anon, service_role API keys" verwenden. Supabase
+   > schafft `anon` und `service_role` bis Ende 2026 ab; der Publishable Key ist
+   > der direkte Ersatz für `anon` mit identischen Rechten.
+   >
+   > Der **Secret key** (`sb_secret_…`, früher `service_role`) darf
+   > **niemals** in `.env` oder ins Repository. Er umgeht jede
+   > Sicherheitsregel und wird von dieser App nicht benötigt.
+   >
+   > Der alte Variablenname `VITE_SUPABASE_ANON_KEY` wird weiterhin
+   > akzeptiert, falls du noch einen Legacy-Key im Einsatz hast.
 
 3. **Migrationen anwenden.** Zwei Wege:
 
@@ -453,11 +462,11 @@ Geplantes Hosting ist Cloudflare Pages:
 | Build command | `npm run build` |
 | Build output directory | `dist` |
 | Node-Version | ≥ 22.12 (z. B. `NODE_VERSION=24`) |
-| Umgebungsvariablen | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` |
+| Umgebungsvariablen | `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` |
 
 Die Variablen müssen **zur Build-Zeit** gesetzt sein – Vite schreibt sie in das
-Bundle. Der `anon` Key ist dafür vorgesehen und öffentlich; der Schutz kommt aus
-den RLS-Policies.
+Bundle. Der Publishable Key ist dafür vorgesehen und öffentlich; der Schutz
+kommt aus den RLS-Policies.
 
 Für eine Single-Page-App ohne eigene Routen ist kein SPA-Fallback nötig; die App
 läuft unter `/`. Der Service Worker wird nur bei einem Produktionsbuild
