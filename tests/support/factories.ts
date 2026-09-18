@@ -15,6 +15,7 @@ export function localTask(overrides: Partial<LocalTask> = {}): LocalTask {
     description: null,
     due_at: null,
     completed: false,
+    position: 0,
     created_at: T0,
     updated_at: T0,
     deleted_at: null,

@@ -1,18 +1,25 @@
+import { Capacitor } from '@capacitor/core'
+
 /**
  * Erkennt, ob die App in einer Capacitor-Hülle läuft (Android/iOS) oder im
  * Browser.
  *
- * Bewusst ohne Import aus `@capacitor/core`: Der Aufruf läuft auch im Browser
- * und soll dort nicht zusätzliche Logik aus dem Plugin laden. Capacitor setzt
- * `window.Capacitor` selbst.
+ * Bewusst über die offizielle API und nicht über ein eigenes Nachschauen an
+ * `window.Capacitor`: Capacitor setzt dieses globale Objekt beim Import selbst
+ * und behält dabei die von der nativen Brücke injizierte Plattform bei. Ein
+ * eigener Zugriff hinge dagegen davon ab, wann und in welcher Schreibweise das
+ * Objekt vorhanden ist.
+ *
+ * Wird unter anderem gebraucht für:
+ *  - die Zurück-Taste (nur in der App sinnvoll),
+ *  - die Registrierung des Service Workers (in der App unerwünscht),
+ *  - die Wahl der Oberfläche (ein Telefon im Querformat ist breiter als 768 px).
  */
-
-interface CapacitorGlobal {
-  isNativePlatform?: () => boolean
-}
-
 export function isNativeApp(): boolean {
-  if (typeof window === 'undefined') return false
-  const capacitor = (window as unknown as { Capacitor?: CapacitorGlobal }).Capacitor
-  return typeof capacitor?.isNativePlatform === 'function' && capacitor.isNativePlatform() === true
+  try {
+    return Capacitor.isNativePlatform()
+  } catch {
+    // Ohne lauffähige Capacitor-Umgebung gilt die Web-Ansicht.
+    return false
+  }
 }

@@ -1,25 +1,36 @@
+import { Fragment, useRef } from 'react'
 import { useWorkspace } from '../../app/useWorkspace'
 import type { LocalTask } from '../../domain/types'
 import { formatDateTime, isOverdue } from '../datetime'
-import { useLongPress } from './useLongPress'
+import { useReorderDrag, type ReorderDrag } from './useReorderDrag'
 
 /**
  * Aufgabenliste der mobilen Ansicht.
  *
- * Bewusst ohne Bearbeiten- und Löschen-Knöpfe: Die Zeile selbst ist der Knopf.
- * Antippen öffnet die Detailansicht, Gedrückthalten öffnet die Auswahl zum
- * Verschieben. Die Checkbox steht links und ist ein eigenes Bedienelement,
- * damit sie nicht das Öffnen auslöst.
+ * Bewusst ohne Bearbeiten- und Löschen-Knöpfe: Die Zeile selbst ist der Knopf
+ * und öffnet die Detailansicht. Dort gibt es auch das Verschieben in eine
+ * andere Liste.
+ *
+ * Umsortieren: Die Zeile gedrückt halten (rund 0,4 s), dann ziehen. Während des
+ * Ziehens zeigt eine Linie, wo die Aufgabe landen würde. Kurzes Wischen scrollt
+ * weiterhin die Liste.
  */
 export function MobileTaskList({
   tasks,
   onOpenTask,
-  onMoveTask,
+  onReorder,
 }: {
   tasks: LocalTask[]
   onOpenTask: (task: LocalTask) => void
-  onMoveTask: (task: LocalTask) => void
+  onReorder: (orderedTaskIds: string[]) => void
 }) {
+  const listRef = useRef<HTMLUListElement>(null)
+  const drag = useReorderDrag({
+    itemIds: tasks.map((task) => task.id),
+    onReorder,
+    containerRef: listRef,
+  })
+
   if (tasks.length === 0) {
     return (
       <p className="px-4 py-10 text-center text-sm text-neutral-500" data-testid="empty-tasks">
@@ -29,29 +40,53 @@ export function MobileTaskList({
   }
 
   return (
-    <ul data-testid="task-list">
-      {tasks.map((task) => (
-        <MobileTaskRow key={task.id} task={task} onOpen={onOpenTask} onMove={onMoveTask} />
+    <ul ref={listRef} data-testid="task-list">
+      {tasks.map((task, index) => (
+        <Fragment key={task.id}>
+          {drag.draggingId !== null && drag.dropIndex === index ? <DropIndicator /> : null}
+          <MobileTaskRow
+            task={task}
+            index={index}
+            drag={drag}
+            onOpen={onOpenTask}
+            isDragging={drag.draggingId === task.id}
+          />
+        </Fragment>
       ))}
+      {drag.draggingId !== null && drag.dropIndex === tasks.length ? <DropIndicator /> : null}
     </ul>
   )
 }
 
+function DropIndicator() {
+  return <li aria-hidden="true" data-testid="drop-indicator" className="h-0.5 bg-indigo-500" />
+}
+
 function MobileTaskRow({
   task,
+  index,
+  drag,
   onOpen,
-  onMove,
+  isDragging,
 }: {
   task: LocalTask
+  index: number
+  drag: ReorderDrag
   onOpen: (task: LocalTask) => void
-  onMove: (task: LocalTask) => void
+  isDragging: boolean
 }) {
   const { repositories } = useWorkspace()
-  const longPress = useLongPress(() => onMove(task))
   const overdue = task.due_at !== null && !task.completed && isOverdue(task.due_at)
+  const handlers = drag.getRowHandlers(task.id, index)
 
   return (
-    <li className="flex items-start gap-3 border-b border-neutral-900 px-4 py-3">
+    <li
+      data-task-row
+      className={`flex items-start gap-3 border-b border-neutral-900 bg-neutral-950 px-4 py-3 ${
+        isDragging ? 'relative z-10 shadow-lg shadow-black/50' : ''
+      }`}
+      style={isDragging ? { transform: `translateY(${drag.offsetY}px)` } : undefined}
+    >
       <input
         type="checkbox"
         className="mt-0.5 h-5 w-5 shrink-0 accent-indigo-500"
@@ -64,14 +99,14 @@ function MobileTaskRow({
 
       <button
         type="button"
-        {...longPress.handlers}
+        {...handlers}
         onClick={() => {
-          // Nach einem Langdruck folgt trotzdem ein Klick – der darf die
+          // Nach einem Ziehen folgt trotzdem ein Klick – der darf die
           // Detailansicht nicht zusätzlich öffnen.
-          if (longPress.wasLongPress()) return
+          if (drag.wasDragging()) return
           onOpen(task)
         }}
-        className="min-w-0 flex-1 select-none text-left"
+        className="min-w-0 flex-1 touch-manipulation text-left select-none"
         data-testid="task-row"
       >
         <span

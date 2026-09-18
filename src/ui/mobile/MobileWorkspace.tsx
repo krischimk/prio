@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../../auth/useAuth'
+import { useWorkspace } from '../../app/useWorkspace'
 import { useLists, useSelectedListId, useTasks } from '../../app/hooks'
 import type { LocalTask } from '../../domain/types'
 import { MobileAppBar } from './MobileAppBar'
@@ -18,11 +19,13 @@ import { PlusIcon } from './icons'
  *   - runder "+"-Knopf unten mittig
  *   - Listen, Konto und Einstellungen im ausklappbaren Menü
  *
- * Tippen auf eine Aufgabe öffnet die Detailansicht, Gedrückthalten die
- * Auswahl zum Verschieben.
+ * Tippen auf eine Aufgabe öffnet die Detailansicht – dort sind Bearbeiten,
+ * Verschieben und Löschen gebündelt. In der Liste selbst gibt es dafür keine
+ * Bedienelemente und keine Gesten.
  */
 export function MobileWorkspace() {
   const { state } = useAuth()
+  const { repositories } = useWorkspace()
   const lists = useLists()
   const [selectedListId, selectList] = useSelectedListId(lists)
 
@@ -54,7 +57,9 @@ export function MobileWorkspace() {
             <MobileTaskList
               tasks={tasks}
               onOpenTask={(task) => setDetail({ task })}
-              onMoveTask={(task) => setMovingTask(task)}
+              onReorder={(orderedTaskIds) => {
+                void repositories.reorderTasks(selected.id, orderedTaskIds)
+              }}
             />
           </>
         )}

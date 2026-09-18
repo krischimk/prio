@@ -45,18 +45,29 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator {
  * Inhalt liegt unter Status- und Navigationsleiste. Capacitor setzt dafür bei
  * `insetsHandling: 'css'` die CSS-Variablen `--safe-area-inset-*`.
  *
- * Beide Wege werden bedient: die Capacitor-Variable zuerst, dann der
- * Web-Standard `env(safe-area-inset-*)`. In Android-WebViews vor Version 140
- * liefert `env()` falsche Werte (Chromium-Bug 40699457) – dort greift die
- * Variable. Im Browser ist der Rückfall 0px, weil es dort keine Systemleisten
- * gibt, die überdecken.
+ * Oben wird zusätzlich der Web-Standard `env(safe-area-inset-top)` abgefragt –
+ * für den Browser und als Rückfall, falls Capacitor nichts injiziert hat.
  */
 .safe-top {
   padding-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
 }
 
+/*
+ * Unten bewusst OHNE `env()`-Rückfall.
+ *
+ * Grund: In Android-WebViews ist `env(safe-area-inset-bottom)` falsch, sobald
+ * die Tastatur sichtbar ist (Chromium-Bug 457682720, auf den Capacitor im
+ * Quelltext selbst verweist). Statt der Navigationsleiste kommt dann die
+ * Tastaturhöhe heraus – der Inhalt bekommt einen riesigen unteren Abstand und
+ * über der Tastatur bleibt ein leerer Bereich. Genau das wurde gemeldet, und
+ * es wurde mit jedem Fokus größer.
+ *
+ * Capacitor setzt die Variable bei sichtbarer Tastatur korrekt auf 0. Fehlt
+ * sie ganz (Browser), ist 0 der richtige Wert: Dort gibt es keine
+ * Systemleiste, die über den Inhalt ragt.
+ */
 .safe-bottom {
-  padding-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  padding-bottom: var(--safe-area-inset-bottom, 0px);
 }
 
 /*

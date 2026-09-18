@@ -55,6 +55,28 @@ function taskRow(page: Page, title: string) {
   return page.getByTestId('task-row').filter({ hasText: title })
 }
 
+/** Titel aller Aufgaben in der angezeigten Reihenfolge. */
+async function taskTitles(page: Page): Promise<string[]> {
+  return page.getByTestId('task-row').allInnerTexts()
+}
+
+/** Hält eine Zeile gedrückt und zieht sie ein Stück nach unten. */
+async function dragRowDown(page: Page, title: string, distancePx: number): Promise<void> {
+  const box = await taskRow(page, title).boundingBox()
+  if (!box) throw new Error(`Zeile "${title}" nicht gefunden`)
+
+  const x = box.x + box.width / 2
+  const y = box.y + box.height / 2
+
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.waitForTimeout(600) // Langdruck – ab hier ist die Zeile aufgenommen
+  await page.mouse.move(x, y + distancePx, { steps: 10 })
+  await page.waitForTimeout(100)
+  await page.mouse.up()
+  await page.waitForTimeout(300)
+}
+
 test('legt über das Menü eine Liste und über den Plus-Knopf eine Aufgabe an', async ({ page }) => {
   await register(page, uniqueEmail('m1'))
 
@@ -115,25 +137,23 @@ test('löscht eine Aufgabe in der Detailansicht', async ({ page }) => {
   await expect(page.getByText('Noch keine Aufgaben in dieser Liste.')).toBeVisible()
 })
 
-test('verschiebt eine Aufgabe per Langdruck in eine andere Liste', async ({ page }) => {
+test('verschiebt eine Aufgabe über die Detailansicht in eine andere Liste', async ({ page }) => {
   await register(page, uniqueEmail('m5'))
   await createList(page, 'Haushalt')
   await createTask(page, 'Wandert weiter')
   await createList(page, 'Arbeit')
 
-  // Das Anlegen einer Liste wechselt dorthin – für den Langdruck zurück.
+  // Das Anlegen einer Liste wechselt dorthin – für den Test zurück.
   await openMenu(page)
   await page.getByRole('button', { name: 'Haushalt', exact: true }).click()
   await expect(page.getByTestId('app-bar-title')).toHaveText('Haushalt')
 
-  // Langdruck: drücken, kurz halten, loslassen.
-  const row = taskRow(page, 'Wandert weiter')
-  const box = await row.boundingBox()
-  expect(box).not.toBeNull()
-  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)
-  await page.mouse.down()
-  await page.waitForTimeout(700)
-  await page.mouse.up()
+  // In der Liste gibt es dafür keine Geste und keinen Knopf – nur die Zeile.
+  await expect(page.getByRole('button', { name: 'In andere Liste verschieben' })).toHaveCount(0)
+
+  await taskRow(page, 'Wandert weiter').click()
+  await expect(page.getByRole('dialog', { name: 'Aufgabe' })).toBeVisible()
+  await page.getByRole('button', { name: 'In andere Liste verschieben' }).click()
 
   const sheet = page.getByRole('dialog', { name: 'Aufgabe verschieben' })
   await expect(sheet).toBeVisible()
@@ -142,7 +162,8 @@ test('verschiebt eine Aufgabe per Langdruck in eine andere Liste', async ({ page
   await sheet.getByRole('button', { name: 'Arbeit' }).click()
   await expect(sheet).toBeHidden()
 
-  // In der Quellliste ist sie weg.
+  // Die Detailansicht bleibt offen; schließen zeigt die leere Quellliste.
+  await page.getByRole('button', { name: 'Schließen' }).click()
   await expect(page.getByText('Noch keine Aufgaben in dieser Liste.')).toBeVisible()
 
   // Im Menü auf die andere Liste wechseln – dort liegt sie jetzt.
@@ -150,12 +171,6 @@ test('verschiebt eine Aufgabe per Langdruck in eine andere Liste', async ({ page
   await page.getByRole('button', { name: 'Arbeit', exact: true }).click()
   await expect(page.getByTestId('app-bar-title')).toHaveText('Arbeit')
   await expect(taskRow(page, 'Wandert weiter')).toBeVisible()
-
-  // Zurück in der Ausgangsliste ebenfalls prüfbar.
-  await openMenu(page)
-  await page.getByRole('button', { name: 'Haushalt', exact: true }).click()
-  await expect(page.getByTestId('app-bar-title')).toHaveText('Haushalt')
-  await expect(page.getByText('Noch keine Aufgaben in dieser Liste.')).toBeVisible()
 })
 
 test('schließt das Menü mit Escape', async ({ page }) => {
@@ -165,4 +180,43 @@ test('schließt das Menü mit Escape', async ({ page }) => {
   await openMenu(page)
   await page.keyboard.press('Escape')
   await expect(page.getByRole('dialog', { name: 'Menü' })).toBeHidden()
+})
+
+test('sortiert eine Aufgabe per Langdruck und Ziehen um', async ({ page }) => {
+  await register(page, uniqueEmail('m7'))
+  await createList(page, 'Reihenfolge')
+  await createTask(page, 'Erste')
+  await createTask(page, 'Zweite')
+  await createTask(page, 'Dritte')
+
+  expect(await taskTitles(page)).toEqual(['Erste', 'Zweite', 'Dritte'])
+
+  // Erste Zeile aufnehmen und unter die dritte ziehen.
+  await dragRowDown(page, 'Erste', 150)
+
+  expect(await taskTitles(page)).toEqual(['Zweite', 'Dritte', 'Erste'])
+
+  // Die Reihenfolge ist gespeichert, nicht nur Anzeige.
+  await page.reload()
+  await expect(page.getByTestId('app-bar-title')).toHaveText('Reihenfolge')
+  expect(await taskTitles(page)).toEqual(['Zweite', 'Dritte', 'Erste'])
+})
+
+test('sortiert bei kurzem Wischen nicht um', async ({ page }) => {
+  await register(page, uniqueEmail('m8'))
+  await createList(page, 'Reihenfolge')
+  await createTask(page, 'Erste')
+  await createTask(page, 'Zweite')
+
+  // Zu kurz für den Langdruck – das ist ein Scrollversuch.
+  const box = await taskRow(page, 'Erste').boundingBox()
+  if (box) {
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 120, { steps: 8 })
+    await page.mouse.up()
+    await page.waitForTimeout(200)
+  }
+
+  expect(await taskTitles(page)).toEqual(['Erste', 'Zweite'])
 })

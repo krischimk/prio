@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Die App ist durchgehend dunkel. Diese Farbe wird als Fensterhintergrund
+      gesetzt und ist damit auch im Splashscreen und in den Streifen sichtbar,
+      die das System für Status- und Navigationsleiste freihält.
+    -->
+    <color name="prioBackground">#FF0A0A0A</color>
+</resources>

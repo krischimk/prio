@@ -44,6 +44,12 @@ export interface Repositories {
   setTaskCompleted(taskId: string, completed: boolean): Promise<LocalTask>
   /** Verschiebt eine Aufgabe in eine andere Liste (beide müssen zugänglich sein). */
   moveTask(taskId: string, targetListId: string): Promise<LocalTask>
+  /**
+   * Setzt die Reihenfolge innerhalb einer Liste neu.
+   * `orderedTaskIds` enthält alle Aufgaben der Liste in der gewünschten
+   * Reihenfolge von oben nach unten.
+   */
+  reorderTasks(listId: string, orderedTaskIds: string[]): Promise<void>
   deleteTask(taskId: string): Promise<void>
   getTask(taskId: string): Promise<LocalTask | undefined>
   listTasks(listId: string): Promise<LocalTask[]>
@@ -54,8 +60,19 @@ export interface Repositories {
   removeMember(listId: string, userId: string): Promise<void>
 }
 
-/** Sortierung der Aufgabenliste: offene zuerst, dann nach Fälligkeit. */
+/**
+ * Sortierung der Aufgabenliste.
+ *
+ * Zuerst die vom Benutzer bestimmte Reihenfolge (`position`). Nur bei
+ * Gleichstand – also bei Datensätzen aus der Zeit vor dieser Funktion –
+ * greifen die früheren Regeln.
+ *
+ * Bewusste Entscheidung: Eine erledigte Aufgabe bleibt an ihrem Platz, statt
+ * ans Ende zu rutschen. Sonst springt die Zeile beim Abhaken unter dem Finger
+ * weg.
+ */
 export function compareTasks(a: LocalTask, b: LocalTask): number {
+  if (a.position !== b.position) return a.position - b.position
   if (a.completed !== b.completed) return a.completed ? 1 : -1
   const dueA = a.due_at === null ? Number.POSITIVE_INFINITY : Date.parse(a.due_at)
   const dueB = b.due_at === null ? Number.POSITIVE_INFINITY : Date.parse(b.due_at)
@@ -150,6 +167,12 @@ export function createRepositories(db: LocalDatabase, clock: Clock = systemClock
     async createTask(input) {
       await requireList(input.listId)
       const now = clock.now()
+      // Neue Aufgaben landen unten: Position = höchste vorhandene + 1.
+      const vorhandene = await db.tasks.where('list_id').equals(input.listId).toArray()
+      const hoechste = vorhandene.reduce(
+        (max, task) => (task.deleted_at === null ? Math.max(max, task.position) : max),
+        0,
+      )
       const task: LocalTask = {
         id: newId(),
         list_id: input.listId,
@@ -157,6 +180,7 @@ export function createRepositories(db: LocalDatabase, clock: Clock = systemClock
         description: optionalText(input.description),
         due_at: optionalText(input.dueAt),
         completed: false,
+        position: hoechste + 1,
         created_at: now,
         updated_at: now,
         deleted_at: null,
@@ -199,6 +223,34 @@ export function createRepositories(db: LocalDatabase, clock: Clock = systemClock
       const updated: LocalTask = { ...task, list_id: targetListId, ...stamp() }
       await db.tasks.put(updated)
       return updated
+    },
+
+    /**
+     * Reihenfolge neu setzen.
+     *
+     * Es werden nur die Aufgaben geschrieben, deren Position sich tatsächlich
+     * ändert – die übrigen bleiben unberührt und werden folglich auch nicht
+     * erneut hochgeladen. Die Positionen laufen danach lückenlos von 1 bis n;
+     * damit kann keine Genauigkeit verloren gehen.
+     */
+    async reorderTasks(listId, orderedTaskIds) {
+      await requireList(listId)
+      const tasks = await db.tasks.where('list_id').equals(listId).toArray()
+      const byId = new Map(tasks.filter((task) => task.deleted_at === null).map((task) => [task.id, task]))
+
+      const { updated_at } = stamp()
+      const geaendert: LocalTask[] = []
+      orderedTaskIds.forEach((taskId, index) => {
+        const task = byId.get(taskId)
+        if (!task) return
+        const position = index + 1
+        if (task.position === position) return
+        geaendert.push({ ...task, position, updated_at, dirty: 1 })
+      })
+
+      if (geaendert.length > 0) {
+        await db.tasks.bulkPut(geaendert)
+      }
     },
 
     async deleteTask(taskId) {

@@ -45,6 +45,15 @@ export interface LocalTask extends SyncableRow, LocalOnly {
   description: string | null
   due_at: IsoDateTime | null
   completed: boolean
+  /**
+   * Vom Benutzer bestimmte Reihenfolge innerhalb der Liste (kleiner = weiter
+   * oben). Neue Aufgaben bekommen die höchste Position und landen damit unten.
+   *
+   * Datensätze aus der Zeit vor dieser Funktion haben die Position 0. Bei
+   * Gleichstand greifen die früheren Regeln (Erledigt-Status, Fälligkeit,
+   * Erstellzeit) – so bleibt eine bestehende Liste nach dem Update stabil.
+   */
+  position: number
   created_at: IsoDateTime
 }
 

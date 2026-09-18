@@ -1,6 +1,6 @@
 # prio
 
-**Offline-first To-do-App – Version 0.4.0 (technischer Prototyp).**
+**Offline-first To-do-App – Version 0.4.1 (technischer Prototyp).**
 
 Ziel dieser Version ist ausdrücklich **kein fertiges Produkt**, sondern eine
 schlanke Grundlage, mit der die Kernarchitektur zuverlässig getestet werden
@@ -188,11 +188,9 @@ Supabase noch nicht konfiguriert ist.
 
 3. **Migrationen anwenden.** Zwei Wege:
 
-   **a) SQL-Editor** (ohne CLI): die drei Dateien in dieser Reihenfolge
-   vollständig einfügen und ausführen:
-   1. `supabase/migrations/0001_schema.sql`
-   2. `supabase/migrations/0002_rls.sql`
-   3. `supabase/migrations/0003_share_list.sql`
+   **a) SQL-Editor** (ohne CLI): die Dateien in `supabase/migrations/` in
+   Reihenfolge des Dateinamens vollständig einfügen und ausführen (aktuell
+   `0001` bis `0005`). Am einfachsten die Sammeldatei (siehe unten).
 
    Einfacher geht es mit der Sammeldatei – ein einziger Einfüge-Vorgang:
 
@@ -474,16 +472,39 @@ gebaute Ansicht. Ab 768 px bleibt die breite Ansicht mit Seitenleiste.
 
 | Geste | Wirkung |
 | --- | --- |
-| Tippen auf eine Aufgabe | Detailansicht: Titel, Beschreibung, Fälligkeit, erledigt, verschieben, löschen |
-| Langdruck auf eine Aufgabe | Auswahl der Ziel-Liste zum Verschieben |
+| Tippen auf eine Aufgabe | Detailansicht: bearbeiten, erledigt, verschieben, löschen |
+| **Gedrückt halten und ziehen** | Aufgabe innerhalb der Liste umsortieren |
 | Tippen auf die Checkbox | erledigt / wieder offen – ohne die Detailansicht zu öffnen |
 | ☰ oben links | Menü mit Listen, Konto, Sync-Zustand und Erinnerungen |
 | Punkt oben rechts | Sync-Zustand; Antippen synchronisiert sofort |
 | Zurück-Taste | schließt zuerst Detailansicht oder Menü, sonst Hintergrund |
 
-In der Liste selbst stehen bewusst **keine** Bearbeiten- oder Löschen-Knöpfe –
-die Zeile ist der Knopf. Das Verschieben ist zusätzlich in der Detailansicht
-erreichbar, damit es nicht allein an einer Geste hängt.
+In der Liste selbst gibt es **keine** Bedienelemente und **keine** Gesten außer
+dem Antippen: keine Bearbeiten- oder Löschen-Knöpfe, kein Kontextmenü. Die
+Zeile ist der Knopf. Alles Weitere – auch das Verschieben in eine andere Liste –
+liegt gebündelt in der Detailansicht.
+
+### Reihenfolge
+
+Die Reihenfolge steckt im Feld `position` der Aufgabe und wird mitsynchronisiert –
+sonst wäre sie nach dem nächsten Abgleich wieder weg. Neue Aufgaben bekommen die
+höchste Position und landen unten.
+
+**Umsortieren:** Zeile gedrückt halten (rund 0,4 s), dann ziehen. Eine blaue
+Linie zeigt, wo die Aufgabe landen würde. Bewegt sich der Finger vorher um mehr
+als zehn Pixel, war es ein Wischversuch und die Liste scrollt wie gewohnt.
+
+Beim Umsortieren werden die Positionen der betroffenen Liste auf 1 … n
+neu vergeben (`reorderTasks`). Geschrieben werden nur Aufgaben, deren Position
+sich tatsächlich ändert – der Rest bleibt unangetastet und wird auch nicht
+erneut hochgeladen.
+
+**Erledigte Aufgaben bleiben an ihrem Platz**, statt ans Ende zu rutschen. Sonst
+springt die Zeile beim Abhaken unter dem Finger weg.
+
+Datensätze aus der Zeit vor dieser Funktion haben die Position 0. Bei
+Gleichstand greifen die früheren Regeln (Erledigt-Status, Fälligkeit,
+Erstellzeit), damit eine bestehende Liste nach dem Update stabil bleibt.
 
 **Systemleisten (Edge-to-Edge).** Android 15+ erzwingt Edge-to-Edge für Apps ab
 `targetSdk 35`. Die App aktiviert deshalb in `MainActivity.onCreate`
@@ -496,6 +517,29 @@ vor Version 140 falsche Werte liefert ([Chromium-Bug 40699457](https://issues.ch
 > **Nicht kombinieren:** `.safe-*` steht ungelayert im CSS und überschreibt
 > Tailwinds `py-*`/`px-*`. Beide auf demselben Element heißt: der Abstand fällt
 > auf 0. Deshalb nie `className="safe-bottom py-4"` schreiben.
+
+**Tastatur.** Zwei Fallen, beide behoben:
+
+1. `interactive-widget=overlays-content` im Viewport-Meta (`index.html`).
+   Capacitor verkleinert die Ansicht bereits selbst um die Tastaturhöhe
+   (`SystemBars` setzt Padding auf die DecorView). Die Android-WebView tut das
+   standardmäßig zusätzlich – der Inhalt würde zweimal verkleinert.
+2. `.safe-bottom` verwendet **kein** `env(safe-area-inset-bottom)` als Rückfall.
+   Dieser Wert ist bei sichtbarer Tastatur falsch und liefert statt der
+   Navigationsleiste die Tastaturhöhe
+   ([Chromium-Bug 457682720](https://issues.chromium.org/issues/457682720)).
+   Capacitor setzt die Variable bei sichtbarer Tastatur korrekt auf 0.
+
+**Fensterhintergrund muss dunkel sein.** Capacitor legt bei WebViews vor
+Version 140 selbst Padding um die Ansicht, damit der Inhalt nicht unter den
+Systemleisten liegt. Der freie Streifen zeigt den Fensterhintergrund. Erbt das
+Theme dabei von `Theme.AppCompat.Light` oder `DayNight`, ist dieser Streifen
+**weiß** und liegt als heller Balken über der App-Leiste. Deshalb setzen
+`AppTheme.NoActionBar` und `AppTheme.NoActionBarLaunch` in
+`android/app/src/main/res/values/styles.xml` explizit
+`android:windowBackground` und `windowSplashScreenBackground` auf
+`@color/prioBackground`. Das Start-Theme erbt bewusst **nicht** mehr von
+`Light.DarkActionBar`.
 
 ## Bewusste Entscheidungen und Grenzen von 0.1
 

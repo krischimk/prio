@@ -1,22 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
-        <!-- Customize your theme here. -->
+    <!-- Base application theme. Die App ist durchgehend dunkel. -->
+    <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
-    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <!--
+      Theme der laufenden App.
+
+      `android:windowBackground` ist hier entscheidend: Capacitor legt bei
+      WebViews vor Version 140 Padding um die DecorView, damit der Inhalt nicht
+      unter den Systemleisten liegt. Der dadurch freie Streifen zeigt den
+      Fensterhintergrund – ohne diese Zeile wäre er hell (Vorgabe von
+      AppCompat/Light bzw. DayNight) und läge als heller Balken über der
+      App-Leiste.
+    -->
+    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <item name="android:windowBackground">@color/prioBackground</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
+    <!--
+      Start-Theme.
 
+      `windowSplashScreenBackground` fehlte bisher. Ohne diesen Wert zieht
+      androidx den Hintergrund aus dem übergeordneten Theme – und der war hell.
+      `postSplashScreenTheme` sagt androidx, in welches Theme nach dem
+      Startbild gewechselt wird.
+    -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="android:background">@drawable/splash</item>
+        <item name="android:windowBackground">@color/prioBackground</item>
+        <item name="windowSplashScreenBackground">@color/prioBackground</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
 </resources>

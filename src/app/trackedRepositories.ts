@@ -29,6 +29,7 @@ export function withChangeTracking(repositories: Repositories, onChange: () => v
     updateTask: track(repositories.updateTask.bind(repositories)),
     setTaskCompleted: track(repositories.setTaskCompleted.bind(repositories)),
     moveTask: track(repositories.moveTask.bind(repositories)),
+    reorderTasks: track(repositories.reorderTasks.bind(repositories)),
     deleteTask: track(repositories.deleteTask.bind(repositories)),
     markListShared: track(repositories.markListShared.bind(repositories)),
     removeMember: track(repositories.removeMember.bind(repositories)),

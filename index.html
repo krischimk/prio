@@ -2,7 +2,23 @@
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!--
+      Tastatur: `interactive-widget=overlays-content` ist hier entscheidend.
+
+      In der Android-App verkleinert Capacitor die Ansicht bereits selbst um die
+      Tastaturhöhe (SystemBars setzt Padding auf die DecorView). Die
+      Android-WebView tut das standardmäßig zusätzlich – der Inhalt würde also
+      zweimal verkleinert und über der Tastatur bliebe ein großer leerer
+      Bereich. Mit `overlays-content` überlässt die WebView die Anpassung dem
+      nativen Teil.
+
+      Ältere WebViews kennen das Attribut nicht und ignorieren es; dort bleibt
+      es beim bisherigen Verhalten.
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=overlays-content"
+    />
     <meta name="description" content="Offline-first To-do-App mit gemeinsamen Listen und Cloud-Synchronisation." />
     <meta name="theme-color" content="#0a0a0a" />
     <meta name="color-scheme" content="dark" />

@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ValidationError } from '../../src/db/validation'
-import { createFakeServer } from '../support/fakeGateway'
+import { createFakeServer, type FakeServer } from '../support/fakeGateway'
 import { createDevice, createTestUserId, type DeviceHarness } from '../support/harness'
+import { collectDirty, countDirty } from '../../src/sync/syncStore'
 
 /**
  * Geschäftslogik der lokalen Datenbank (unit).
@@ -11,10 +12,12 @@ import { createDevice, createTestUserId, type DeviceHarness } from '../support/h
  */
 describe('Repositories (lokale Geschäftslogik)', () => {
   let device: DeviceHarness
+  let server: FakeServer
   const userId = createTestUserId('repo')
 
   beforeEach(async () => {
-    device = await createDevice({ userId, gateway: createFakeServer().gatewayFor(userId) })
+    server = createFakeServer()
+    device = await createDevice({ userId, gateway: server.gatewayFor(userId) })
   })
 
   afterEach(async () => {
@@ -172,7 +175,35 @@ describe('Repositories (lokale Geschäftslogik)', () => {
       expect(await device.repositories.getTask(task.id)).toBeUndefined()
     })
 
-    it('sortiert offene Aufgaben vor erledigten und dann nach Fälligkeit', async () => {
+    it('hängt neue Aufgaben unten an', async () => {
+      const listId = await newList()
+      const erste = await device.repositories.createTask({ listId, title: 'Erste' })
+      const zweite = await device.repositories.createTask({ listId, title: 'Zweite' })
+      const dritte = await device.repositories.createTask({ listId, title: 'Dritte' })
+
+      expect([erste.position, zweite.position, dritte.position]).toEqual([1, 2, 3])
+      expect((await device.repositories.listTasks(listId)).map((task) => task.title)).toEqual([
+        'Erste',
+        'Zweite',
+        'Dritte',
+      ])
+    })
+
+    it('lässt erledigte Aufgaben an ihrem Platz', async () => {
+      const listId = await newList()
+      const erste = await device.repositories.createTask({ listId, title: 'Erste' })
+      await device.repositories.createTask({ listId, title: 'Zweite' })
+
+      await device.repositories.setTaskCompleted(erste.id, true)
+
+      // Kein Springen ans Ende – die Zeile bleibt, wo sie war.
+      expect((await device.repositories.listTasks(listId)).map((task) => task.title)).toEqual([
+        'Erste',
+        'Zweite',
+      ])
+    })
+
+    it('greift bei gleicher Position auf die früheren Regeln zurück', async () => {
       const listId = await newList()
       const später = await device.repositories.createTask({
         listId,
@@ -185,12 +216,93 @@ describe('Repositories (lokale Geschäftslogik)', () => {
         dueAt: '2026-02-01T10:00:00.000Z',
       })
       const ohneDatum = await device.repositories.createTask({ listId, title: 'Ohne Datum' })
-      await device.repositories.setTaskCompleted(ohneDatum.id, true)
 
-      const tasks = await device.repositories.listTasks(listId)
-      expect(tasks.map((task) => task.title)).toEqual(['Früher', 'Später', 'Ohne Datum'])
-      expect(tasks[2]?.id).toBe(ohneDatum.id)
-      expect(früher.id).not.toBe(später.id)
+      // Zustand vor der Reihenfolge-Funktion nachstellen.
+      for (const task of [später, früher, ohneDatum]) {
+        await device.db.tasks.update(task.id, { position: 0 })
+      }
+      await device.db.tasks.update(ohneDatum.id, { completed: true })
+
+      expect((await device.repositories.listTasks(listId)).map((task) => task.title)).toEqual([
+        'Früher',
+        'Später',
+        'Ohne Datum',
+      ])
+    })
+
+    it('setzt eine neue Reihenfolge', async () => {
+      const listId = await newList()
+      const a = await device.repositories.createTask({ listId, title: 'A' })
+      const b = await device.repositories.createTask({ listId, title: 'B' })
+      const c = await device.repositories.createTask({ listId, title: 'C' })
+
+      device.clock.advance(1000)
+      await device.repositories.reorderTasks(listId, [c.id, a.id, b.id])
+
+      expect((await device.repositories.listTasks(listId)).map((task) => task.title)).toEqual([
+        'C',
+        'A',
+        'B',
+      ])
+      expect((await device.repositories.getTask(c.id))?.position).toBe(1)
+      expect((await device.repositories.getTask(a.id))?.position).toBe(2)
+      expect((await device.repositories.getTask(b.id))?.position).toBe(3)
+    })
+
+    it('schreibt beim Umsortieren nur die tatsächlich betroffenen Aufgaben', async () => {
+      const listId = await newList()
+      const a = await device.repositories.createTask({ listId, title: 'A' })
+      const b = await device.repositories.createTask({ listId, title: 'B' })
+      const c = await device.repositories.createTask({ listId, title: 'C' })
+      await device.engine.sync()
+      expect(await countDirty(device.db)).toBe(0)
+
+      // A und B tauschen – C behält Position 3 und darf nicht angefasst werden.
+      device.clock.advance(1000)
+      await device.repositories.reorderTasks(listId, [b.id, a.id, c.id])
+
+      const dirty = await collectDirty(device.db)
+      expect(dirty.tasks.map((task) => task.title).sort()).toEqual(['A', 'B'])
+      expect((await device.repositories.getTask(c.id))?.dirty).toBe(0)
+    })
+
+    it('vergibt nach dem Umsortieren lückenlose Positionen', async () => {
+      const listId = await newList()
+      const a = await device.repositories.createTask({ listId, title: 'A' })
+      const b = await device.repositories.createTask({ listId, title: 'B' })
+      const c = await device.repositories.createTask({ listId, title: 'C' })
+
+      await device.repositories.reorderTasks(listId, [b.id, c.id, a.id])
+
+      const positionen = (await device.repositories.listTasks(listId)).map((task) => task.position)
+      expect(positionen).toEqual([1, 2, 3])
+    })
+
+    it('ignoriert beim Umsortieren unbekannte IDs', async () => {
+      const listId = await newList()
+      const a = await device.repositories.createTask({ listId, title: 'A' })
+      const b = await device.repositories.createTask({ listId, title: 'B' })
+
+      await device.repositories.reorderTasks(listId, ['gibt-es-nicht', b.id, a.id])
+
+      expect((await device.repositories.listTasks(listId)).map((task) => task.title)).toEqual([
+        'B',
+        'A',
+      ])
+    })
+
+    it('überträgt die Reihenfolge beim nächsten Sync', async () => {
+      const listId = await newList()
+      const a = await device.repositories.createTask({ listId, title: 'A' })
+      const b = await device.repositories.createTask({ listId, title: 'B' })
+      await device.engine.sync()
+
+      device.clock.advance(1000)
+      await device.repositories.reorderTasks(listId, [b.id, a.id])
+      await device.engine.sync()
+
+      expect(server.taskById(b.id)?.position).toBe(1)
+      expect(server.taskById(a.id)?.position).toBe(2)
     })
 
     it('vergibt für jede Aufgabe eine eigene ID', async () => {
