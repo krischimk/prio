@@ -37,3 +37,58 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator {
   filter: invert(1);
   opacity: 0.6;
 }
+
+/*
+ * Abstände zu den Systemleisten (Android Edge-to-Edge).
+ *
+ * Android 15+ zwingt Apps mit targetSdk 35+ in den Edge-to-Edge-Modus: Der
+ * Inhalt liegt unter Status- und Navigationsleiste. Capacitor setzt dafür bei
+ * `insetsHandling: 'css'` die CSS-Variablen `--safe-area-inset-*`.
+ *
+ * Beide Wege werden bedient: die Capacitor-Variable zuerst, dann der
+ * Web-Standard `env(safe-area-inset-*)`. In Android-WebViews vor Version 140
+ * liefert `env()` falsche Werte (Chromium-Bug 40699457) – dort greift die
+ * Variable. Im Browser ist der Rückfall 0px, weil es dort keine Systemleisten
+ * gibt, die überdecken.
+ */
+.safe-top {
+  padding-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+}
+
+.safe-bottom {
+  padding-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+}
+
+/*
+ * Bewusst NUR vertikal: Die horizontalen Insets (linker/rechter Rand in der
+ * Querformat-Ansicht bei Geräten mit Aussparung) sind hier nicht umgesetzt.
+ *
+ * Grund: `safe-*` steht ungelayert im CSS und überschreibt damit Tailwinds
+ * `px-*`/`py-*`-Klassen. Kombiniert man beide auf demselben Element, gewinnt
+ * die Safe-Area-Klasse – und der Abstand fällt auf 0. Statt das mit
+ * `calc()`-Sonderklassen zu umgehen, bleibt die App im Hochformat, wo
+ * horizontale Insets keine Rolle spielen.
+ *
+ * Wichtig: `safe-top`/`safe-bottom` deshalb NIE mit `py-*` auf demselben
+ * Element verwenden.
+ */
+
+/* Feste Höhe der App-Leiste plus Systemleiste – für den Abstand des Inhalts. */
+.app-bar-offset {
+  padding-top: calc(3.5rem + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));
+}
+
+/*
+ * Feinschliff für die App: kein grauer Aufblitz beim Antippen, kein
+ * Gummiband-Effekt beim Scrollen über den Rand.
+ */
+body {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+.scroll-area {
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+

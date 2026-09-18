@@ -42,6 +42,8 @@ export interface Repositories {
   createTask(input: CreateTaskInput): Promise<LocalTask>
   updateTask(taskId: string, patch: UpdateTaskInput): Promise<LocalTask>
   setTaskCompleted(taskId: string, completed: boolean): Promise<LocalTask>
+  /** Verschiebt eine Aufgabe in eine andere Liste (beide müssen zugänglich sein). */
+  moveTask(taskId: string, targetListId: string): Promise<LocalTask>
   deleteTask(taskId: string): Promise<void>
   getTask(taskId: string): Promise<LocalTask | undefined>
   listTasks(listId: string): Promise<LocalTask[]>
@@ -181,6 +183,20 @@ export function createRepositories(db: LocalDatabase, clock: Clock = systemClock
     async setTaskCompleted(taskId, completed) {
       const task = await requireTask(taskId)
       const updated: LocalTask = { ...task, completed, ...stamp() }
+      await db.tasks.put(updated)
+      return updated
+    },
+
+    /**
+     * Verschieben ist ein normales Update: `list_id` gehört zur Zeile und wird
+     * damit beim nächsten Sync mit übertragen. Der Server prüft über die
+     * RLS-Policies, dass die Ziel-Liste überhaupt zugänglich ist.
+     */
+    async moveTask(taskId, targetListId) {
+      const task = await requireTask(taskId)
+      if (task.list_id === targetListId) return task
+      await requireList(targetListId)
+      const updated: LocalTask = { ...task, list_id: targetListId, ...stamp() }
       await db.tasks.put(updated)
       return updated
     },

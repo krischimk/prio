@@ -1,6 +1,6 @@
 # prio
 
-**Offline-first To-do-App – Version 0.3.0 (technischer Prototyp).**
+**Offline-first To-do-App – Version 0.4.0 (technischer Prototyp).**
 
 Ziel dieser Version ist ausdrücklich **kein fertiges Produkt**, sondern eine
 schlanke Grundlage, mit der die Kernarchitektur zuverlässig getestet werden
@@ -48,7 +48,8 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
 9. [Datenmodell](#datenmodell)
 10. [Wie die Synchronisation funktioniert](#wie-die-synchronisation-funktioniert)
 11. [Erinnerungen](#erinnerungen)
-12. [Bewusste Entscheidungen und Grenzen von 0.1](#bewusste-entscheidungen-und-grenzen-von-01)
+12. [Mobile Oberfläche](#mobile-oberfläche)
+13. [Bewusste Entscheidungen und Grenzen von 0.1](#bewusste-entscheidungen-und-grenzen-von-01)
 12. [Deployment (Cloudflare Pages)](#deployment-cloudflare-pages)
 13. [Android-App (Capacitor)](#android-app-capacitor)
 14. [Git-Workflow, Commits und Releases](#git-workflow-commits-und-releases)
@@ -79,7 +80,8 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
 
 * Felder: `id`, `list_id`, `title`, optionale `description`, optionales
   `due_at` (mit Uhrzeit), `completed`, `created_at`, `updated_at`, `deleted_at`
-* Erstellen, bearbeiten, erledigen/wieder öffnen, löschen
+* Erstellen, bearbeiten, erledigen/wieder öffnen, in eine andere Liste
+  verschieben, löschen
 * Erinnerungen: Hat eine Aufgabe ein Fälligkeitsdatum in der Zukunft, plant
   die Android-App eine Benachrichtigung. Details unter
   [Erinnerungen](#erinnerungen)
@@ -322,6 +324,7 @@ prio/
 │   ├── pwa/                        Registrierung des Service Workers
 │   ├── sync/                       Sync-Engine, Gateways, Queue-Helfer, Status
 │   ├── ui/                         React-Komponenten (Dark Mode)
+│   │   └── mobile/                 eigene Ansicht für Telefone
 │   ├── App.tsx                     Wurzelkomponente
 │   └── main.tsx                    Einstiegspunkt, setzt die Services zusammen
 ├── supabase/migrations/            SQL-Migrationen inkl. RLS
@@ -447,6 +450,52 @@ derselben Nummer neu geplant.
   plant die Erinnerungen für seine eigenen Aufgaben.
 * **Nach einem Geräteneustart** stellt Android die Termine selbst wieder her
   (`LocalNotificationRestoreReceiver`).
+
+## Mobile Oberfläche
+
+Auf Bildschirmen unter 768 px zeigt die App eine eigene, für das Telefon
+gebaute Ansicht. Ab 768 px bleibt die breite Ansicht mit Seitenleiste.
+
+```
+┌──────────────────────────────┐
+│ ☰        Haushalt          ● │  ← App-Leiste: Menü, Liste, Sync-Zustand
+├──────────────────────────────┤
+│ 2 offene Aufgaben   3 gesamt │
+│ ☐  Rechnung Strom bezahlen   │
+│    Abschlag Q2               │  ← Titel, darunter Beschreibung,
+│    15.02.2027, 18:30         │    darunter Fälligkeit
+│ ☑  Wohnung saugen            │
+├──────────────────────────────┤
+│             (+)              │  ← neuer Eintrag
+└──────────────────────────────┘
+```
+
+**Bedienung**
+
+| Geste | Wirkung |
+| --- | --- |
+| Tippen auf eine Aufgabe | Detailansicht: Titel, Beschreibung, Fälligkeit, erledigt, verschieben, löschen |
+| Langdruck auf eine Aufgabe | Auswahl der Ziel-Liste zum Verschieben |
+| Tippen auf die Checkbox | erledigt / wieder offen – ohne die Detailansicht zu öffnen |
+| ☰ oben links | Menü mit Listen, Konto, Sync-Zustand und Erinnerungen |
+| Punkt oben rechts | Sync-Zustand; Antippen synchronisiert sofort |
+| Zurück-Taste | schließt zuerst Detailansicht oder Menü, sonst Hintergrund |
+
+In der Liste selbst stehen bewusst **keine** Bearbeiten- oder Löschen-Knöpfe –
+die Zeile ist der Knopf. Das Verschieben ist zusätzlich in der Detailansicht
+erreichbar, damit es nicht allein an einer Geste hängt.
+
+**Systemleisten (Edge-to-Edge).** Android 15+ erzwingt Edge-to-Edge für Apps ab
+`targetSdk 35`. Die App aktiviert deshalb in `MainActivity.onCreate`
+`EdgeToEdge.enable(this)` und hält über die CSS-Klassen `.safe-top`/`.safe-bottom`
+Abstand zu Status- und Navigationsleiste. Capacitor setzt dafür bei
+`insetsHandling: 'css'` die Variablen `--safe-area-inset-*`; der Web-Standard
+`env(safe-area-inset-*)` wird zusätzlich abgefragt, weil er in Android-WebViews
+vor Version 140 falsche Werte liefert ([Chromium-Bug 40699457](https://issues.chromium.org/issues/40699457)).
+
+> **Nicht kombinieren:** `.safe-*` steht ungelayert im CSS und überschreibt
+> Tailwinds `py-*`/`px-*`. Beide auf demselben Element heißt: der Abstand fällt
+> auf 0. Deshalb nie `className="safe-bottom py-4"` schreiben.
 
 ## Bewusste Entscheidungen und Grenzen von 0.1
 
@@ -657,6 +706,9 @@ kann.
 * **`detectSessionInUrl: false`** war bereits gesetzt, deshalb braucht die App
   keine Deep-Link-Behandlung für Magic-Links.
 * **Die Sitzung liegt in `localStorage`** und übersteht damit App-Neustarts.
+* **Systemleisten** werden über `SystemBars` (`insetsHandling: 'css'`) und
+  `EdgeToEdge.enable()` in `MainActivity` berücksichtigt – siehe
+  [Mobile Oberfläche](#mobile-oberfläche).
 
 ### Zurück-Taste
 
@@ -674,6 +726,10 @@ Browser-Zurück-Knopf gehört dem Browser.
 
 ### Bewusst noch nicht umgesetzt
 
+* **Horizontale Safe-Area-Insets.** Linker und rechter Rand werden nicht
+  berücksichtigt. Sie sind nur im Querformat auf Geräten mit Aussparung
+  relevant; die App ist auf Hochformat ausgelegt. Ein sauberer Ausbau bräuchte
+  `calc()`-Abstände statt der aktuellen Klassen.
 * **`@capacitor/network`.** Die App nutzt weiterhin `navigator.onLine`. Das ist
   im WebView ausreichend, weil die Sync-Engine jeden fehlgeschlagenen
   Netzwerkzugriff zusätzlich als offline behandelt. Der Austausch betrifft nur

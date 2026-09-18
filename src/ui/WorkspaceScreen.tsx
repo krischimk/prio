@@ -1,13 +1,27 @@
 import { useAuth } from '../auth/useAuth'
 import { useLists, useSelectedListId } from '../app/hooks'
+import { useIsDesktop } from '../app/useIsDesktop'
+import { MobileWorkspace } from './mobile/MobileWorkspace'
 import { ReminderIndicator } from './ReminderIndicator'
 import { Sidebar } from './Sidebar'
 import { SyncIndicator } from './SyncIndicator'
 import { TaskPanel } from './TaskPanel'
 import { ghostButton } from './styles'
 
-/** Hauptansicht nach dem Anmelden: Listen links, Aufgaben rechts. */
+/**
+ * Wählt zwischen den beiden Oberflächen.
+ *
+ * Die Umschaltung passiert in JavaScript statt über CSS-Klassen: Sonst wären
+ * beide Ansichten gleichzeitig im DOM, mit doppelten Bedienelementen und
+ * doppelt angemeldeten Ebenen im Back-Stack der Zurück-Taste.
+ */
 export function WorkspaceScreen() {
+  const isDesktop = useIsDesktop()
+  return isDesktop ? <DesktopWorkspace /> : <MobileWorkspace />
+}
+
+/** Breite Ansicht: Listen links, Aufgaben rechts. */
+function DesktopWorkspace() {
   const { state, signOut } = useAuth()
   const lists = useLists()
   const [selectedListId, selectList] = useSelectedListId(lists)

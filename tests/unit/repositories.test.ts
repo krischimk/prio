@@ -105,6 +105,57 @@ describe('Repositories (lokale Geschäftslogik)', () => {
       expect(reopened.completed).toBe(false)
     })
 
+    it('verschiebt eine Aufgabe in eine andere Liste', async () => {
+      const quelle = await newList()
+      const ziel = await device.repositories.createList('Ziel', userId)
+      const task = await device.repositories.createTask({ listId: quelle, title: 'Wandert' })
+
+      device.clock.advance(1000)
+      const moved = await device.repositories.moveTask(task.id, ziel.id)
+
+      expect(moved.list_id).toBe(ziel.id)
+      expect(moved.dirty).toBe(1)
+      expect(moved.updated_at > task.updated_at).toBe(true)
+
+      // Aus der Quellliste verschwunden, in der Zielliste angekommen.
+      expect(await device.repositories.listTasks(quelle)).toHaveLength(0)
+      expect((await device.repositories.listTasks(ziel.id)).map((row) => row.title)).toEqual(['Wandert'])
+    })
+
+    it('ändert beim Verschieben in dieselbe Liste nichts', async () => {
+      const listId = await newList()
+      const task = await device.repositories.createTask({ listId, title: 'Bleibt' })
+      await device.engine.sync()
+
+      device.clock.advance(60_000)
+      const same = await device.repositories.moveTask(task.id, listId)
+
+      expect(same.updated_at).toBe(task.updated_at)
+      expect(same.dirty).toBe(0)
+    })
+
+    it('lehnt das Verschieben in eine unbekannte Liste ab', async () => {
+      const listId = await newList()
+      const task = await device.repositories.createTask({ listId, title: 'Test' })
+      await expect(device.repositories.moveTask(task.id, 'gibt-es-nicht')).rejects.toBeInstanceOf(
+        ValidationError,
+      )
+    })
+
+    it('überträgt das Verschieben beim nächsten Sync', async () => {
+      const quelle = await newList()
+      const ziel = await device.repositories.createList('Ziel', userId)
+      const task = await device.repositories.createTask({ listId: quelle, title: 'Wandert' })
+      await device.engine.sync()
+
+      device.clock.advance(60_000)
+      await device.repositories.moveTask(task.id, ziel.id)
+      await device.engine.sync()
+
+      const list = await device.repositories.getTask(task.id)
+      expect(list?.list_id).toBe(ziel.id)
+    })
+
     it('löscht eine Aufgabe als Soft Delete', async () => {
       const listId = await newList()
       const task = await device.repositories.createTask({ listId, title: 'Test' })

@@ -1,7 +1,7 @@
 {
   "name": "prio",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "description": "Offline-first To-do-App (Prototyp 0.1): React + TypeScript + Vite, Dexie/IndexedDB lokal, Supabase für Auth und Cloud-Sync.",
   "engines": {
