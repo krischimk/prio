@@ -19,7 +19,8 @@
     "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
     "icons": "node scripts/generate-icons.mjs",
-    "ci": "npm run typecheck && npm run lint && npm run test && npm run build"
+    "ci": "npm run typecheck && npm run lint && npm run test && npm run build",
+    "db:sql": "node scripts/bundle-migrations.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

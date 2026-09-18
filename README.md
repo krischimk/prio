@@ -179,6 +179,15 @@ Supabase noch nicht konfiguriert ist.
    2. `supabase/migrations/0002_rls.sql`
    3. `supabase/migrations/0003_share_list.sql`
 
+   Einfacher geht es mit der Sammeldatei – ein einziger Einfüge-Vorgang:
+
+   ```bash
+   npm run db:sql   # erzeugt supabase/all-migrations.sql
+   ```
+
+   Dann den kompletten Inhalt von `supabase/all-migrations.sql` in den
+   SQL-Editor einfügen und einmal ausführen.
+
    **b) Supabase CLI:**
 
    ```bash
@@ -272,6 +281,7 @@ HTTP-Aufrufe – aber ohne Cloud.
 | `npm test` | Unit- und Integrationstests |
 | `npm run test:e2e` | E2E-Tests |
 | `npm run icons` | PWA-Icons neu erzeugen |
+| `npm run db:sql` | Die drei Migrationen zu `supabase/all-migrations.sql` zusammenfügen (für den SQL-Editor) |
 | `npm run ci` | Typecheck, Lint, Tests und Build in einem Durchlauf |
 
 ---

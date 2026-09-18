@@ -38,6 +38,9 @@ playwright/.cache
 supabase/.branches
 supabase/.temp
 
+# Erzeugte Sammeldatei der Migrationen (npm run db:sql) – Quelle bleibt supabase/migrations/
+supabase/all-migrations.sql
+
 # Editor und Betriebssystem
 .vscode/*
 !.vscode/extensions.json
