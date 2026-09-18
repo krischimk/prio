@@ -64,6 +64,24 @@ export function WorkspaceProvider({
   const [pendingCount, setPendingCount] = useState(0)
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null)
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  /**
+   * `false`, sobald die Komponente abgebaut ist.
+   *
+   * Nötig, weil Sync und Datenbankzugriffe asynchron sind: Sie können noch
+   * laufen, wenn die Komponente schon verschwunden ist (Abmelden, Testende,
+   * Seitenwechsel). Ein anschließendes `setState` liefe dann ins Leere – in
+   * React 19 führt das zu „window is not defined", wenn die Umgebung bereits
+   * abgeräumt ist.
+   */
+  const mountedRef = useRef(true)
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+      if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    }
+  }, [])
 
   // Lokale Datenbank öffnen und Sync-Engine aufbauen.
   useEffect(() => {
@@ -87,18 +105,29 @@ export function WorkspaceProvider({
     }
   }, [userId, gateway, network])
 
+  /** Wird nach jeder schreibenden Operation aufgerufen und stößt das Neuladen an. */
+  const notifyLocalChange = useCallback(() => {
+    if (!mountedRef.current) return
+    setDataVersion((value) => value + 1)
+    setLocalRevision((value) => value + 1)
+  }, [])
+
   const repositories = useMemo(() => {
     if (!ready) return null
-    return withChangeTracking(createRepositories(ready.database), () => {
-      setDataVersion((value) => value + 1)
-      setLocalRevision((value) => value + 1)
-    })
-  }, [ready])
+    // `withChangeTracking` speichert den Callback nur und ruft ihn ausschließlich
+    // bei schreibenden Operationen auf – niemals während des Renderns. Der Lint
+    // kann das nicht sehen und meldet deshalb pauschal "refs during render".
+    // oxlint-disable-next-line react/refs
+    return withChangeTracking(createRepositories(ready.database), notifyLocalChange)
+  }, [ready, notifyLocalChange])
 
   const refreshDerivedState = useCallback(async () => {
     if (!ready) return
-    setPendingCount(await countDirty(ready.database))
-    setLastSyncedAt(await readMeta(ready.database, META_LAST_SYNC_AT))
+    const pending = await countDirty(ready.database)
+    const lastSynced = await readMeta(ready.database, META_LAST_SYNC_AT)
+    if (!mountedRef.current) return
+    setPendingCount(pending)
+    setLastSyncedAt(lastSynced)
   }, [ready])
 
   const runSync = useCallback(async () => {
@@ -106,12 +135,13 @@ export function WorkspaceProvider({
     setSyncing(true)
     try {
       const result = await ready.engine.sync()
+      if (!mountedRef.current) return
       setSyncStatus(result)
       // Nach einem Pull kann sich lokal etwas geändert haben – die Anzeige
       // muss neu lesen, aber ohne einen weiteren Sync auszulösen.
       if (result.pulled > 0) setDataVersion((value) => value + 1)
     } finally {
-      setSyncing(false)
+      if (mountedRef.current) setSyncing(false)
       await refreshDerivedState()
     }
   }, [ready, refreshDerivedState])
