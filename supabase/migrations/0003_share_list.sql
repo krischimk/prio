@@ -13,6 +13,23 @@
 --
 -- Die Funktion ist SECURITY DEFINER und umgeht damit die RLS der Tabellen –
 -- die Berechtigungsprüfung erfolgt deshalb explizit im Funktionskörper.
+--
+-- Zu den Fehlercodes (wichtig, damit niemand sie "aufräumt"):
+--
+--   PostgREST übersetzt PostgreSQL-Fehlercodes in HTTP-Status. Aus der
+--   offiziellen Zuordnungstabelle:
+--
+--     P0001        -> 400  (Standardcode für RAISE)
+--     P0*          -> 500  (PL/pgSQL-Fehler)  <- gilt auch für P0002!
+--     42501        -> 403 bei angemeldeten, sonst 401
+--     28*          -> 403
+--     PTxyz        -> xyz  (frei wählbarer Status)
+--     alles andere -> 400
+--
+--   Deshalb wird für fachliche Ablehnungen konsequent P0001 verwendet.
+--   Mit P0002 (wie früher hier) hätte der Server bei einer unbekannten
+--   E-Mail-Adresse HTTP 500 geantwortet – ein Serverfehler für einen
+--   ganz normalen Anwendungsfall.
 -- =============================================================================
 
 create or replace function public.share_list_by_email(p_list_id uuid, p_email text)
@@ -42,8 +59,9 @@ begin
   where lower(p.email) = v_email;
 
   if v_user_id is null then
+    -- P0001 -> HTTP 400. P0002 würde als PL/pgSQL-Fehler zu HTTP 500 führen.
     raise exception 'Es gibt keinen registrierten Nutzer mit dieser E-Mail-Adresse.'
-      using errcode = 'P0002';
+      using errcode = 'P0001';
   end if;
 
   if v_user_id = auth.uid() then
