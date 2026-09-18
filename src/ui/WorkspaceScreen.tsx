@@ -1,0 +1,58 @@
+import { useAuth } from '../auth/useAuth'
+import { useLists, useSelectedListId } from '../app/hooks'
+import { Sidebar } from './Sidebar'
+import { SyncIndicator } from './SyncIndicator'
+import { TaskPanel } from './TaskPanel'
+import { ghostButton } from './styles'
+
+/** Hauptansicht nach dem Anmelden: Listen links, Aufgaben rechts. */
+export function WorkspaceScreen() {
+  const { state, signOut } = useAuth()
+  const lists = useLists()
+  const [selectedListId, selectList] = useSelectedListId(lists)
+
+  const user = state.status === 'authenticated' ? state.user : null
+  const selected = lists.find((list) => list.id === selectedListId) ?? null
+
+  return (
+    <div className="flex min-h-screen flex-col bg-neutral-950 text-neutral-100 md:h-screen md:flex-row">
+      <Sidebar
+        lists={lists}
+        selectedListId={selectedListId}
+        onSelect={selectList}
+        currentUserId={user?.id ?? ''}
+      />
+
+      <div className="flex min-h-0 flex-1 flex-col">
+        <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-neutral-800 px-4 py-3">
+          <div className="flex items-baseline gap-2">
+            <span className="font-semibold tracking-tight">prio</span>
+            <span className="text-xs text-neutral-500" data-testid="current-user">
+              {user?.email}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <SyncIndicator />
+            <button
+              type="button"
+              className={`${ghostButton} px-2 py-1 text-xs`}
+              onClick={() => {
+                void signOut()
+              }}
+            >
+              Abmelden
+            </button>
+          </div>
+        </header>
+
+        {selected ? (
+          <TaskPanel list={selected} currentUserId={user?.id ?? ''} />
+        ) : (
+          <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-neutral-500">
+            Lege links eine Liste an, um Aufgaben zu erfassen.
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
