@@ -11,7 +11,7 @@
  *
  * Aufruf: npm run db:sql
  */
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -19,7 +19,11 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const MIGRATIONS_DIR = join(ROOT, 'supabase', 'migrations')
 const OUTPUT = join(ROOT, 'supabase', 'all-migrations.sql')
 
-const FILES = ['0001_schema.sql', '0002_rls.sql', '0003_share_list.sql']
+// Alle Migrationen in Reihenfolge des Dateinamens – so muss beim Ergänzen
+// einer neuen Datei nichts nachgetragen werden.
+const FILES = readdirSync(MIGRATIONS_DIR)
+  .filter((name) => name.endsWith('.sql'))
+  .sort()
 
 const rule = (char = '=') => `-- ${char.repeat(75)}`
 
@@ -28,11 +32,12 @@ const parts = [
   '-- prio – komplette Datenbank-Einrichtung in EINER Datei',
   rule(),
   '-- ERLÄUTERUNG',
-  '--   Diese Datei ist eine zusammengefügte Kopie der drei Migrationsdateien',
-  '--   aus supabase/migrations/ – in der richtigen Reihenfolge:',
+  '--   Diese Datei ist eine zusammengefügte Kopie aller Migrationsdateien aus',
+  '--   supabase/migrations/ – in der richtigen Reihenfolge:',
   '--     1. Schema (Tabellen, Indizes, Trigger)',
   '--     2. Row Level Security (Zugriffsregeln, Tabellenrechte)',
   '--     3. Teilen einer Liste per E-Mail-Adresse',
+  '--     4. Hilfsfunktionen in ein privates Schema (Security Advisor)',
   '--',
   '-- VERWENDUNG',
   '--   Im Supabase-Dashboard: SQL Editor → New query → diesen kompletten',

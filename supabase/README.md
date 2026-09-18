@@ -9,6 +9,7 @@ App. Sie sind so geschrieben, dass sie sich gefahrlos erneut ausführen lassen
 | `0001_schema.sql` | Tabellen `profiles`, `lists`, `list_members`, `tasks`, Indizes und der Trigger, der bei einer Registrierung ein Profil anlegt |
 | `0002_rls.sql` | Row Level Security: Hilfsfunktionen und alle Policies |
 | `0003_share_list.sql` | Funktion `share_list_by_email` zum Teilen über eine E-Mail-Adresse |
+| `0004_harden_functions.sql` | Hilfsfunktionen ins private Schema, Trigger-Funktionen aus der API nehmen |
 
 ## Anwenden
 
@@ -27,6 +28,22 @@ App. Sie sind so geschrieben, dass sie sich gefahrlos erneut ausführen lassen
 supabase link --project-ref <projekt-id>
 supabase db push
 ```
+
+## Security Advisor
+
+Der Security Advisor von Supabase meldet `SECURITY DEFINER`-Funktionen, die über
+`/rest/v1/rpc/...` aufrufbar sind. Für prio gilt:
+
+| Funktion | Status | Begründung |
+| --- | --- | --- |
+| `private.is_list_owner` / `is_list_member` / `can_access_list` | **erledigt** (0004) | Liegen im Schema `private`, das nicht als API-Schema exponiert ist. Die Policies brauchen sie, die API nicht. |
+| `handle_new_user` | **erledigt** (0004) | Trigger-Funktion; `EXECUTE` ist entzogen. Trigger laufen mit den Rechten ihres Eigentümers. |
+| `rls_auto_enable` | **erledigt** (0004) | Von Supabase angelegt (Option „Enable automatic RLS", Vorlage aus der [Dokumentation](https://supabase.com/docs/guides/database/postgres/event-triggers)). `EXECUTE` ist entzogen. |
+| `share_list_by_email` | **bleibt absichtlich** | Das ist der RPC der App. Er prüft selbst, dass nur der Besitzer teilen darf und dass die Adresse zu einem registrierten Nutzer gehört. |
+
+Zusätzlich meldet der Advisor **„Leaked Password Protection Disabled"**. Das
+ist keine Datenbankeinstellung, sondern ein Schalter im Dashboard:
+*Authentication → Settings → Password Security → Check against HaveIBeenPwned*.
 
 ## Sicherheitsmodell
 

@@ -216,7 +216,8 @@ Supabase noch nicht konfiguriert ist.
 5. **Row Level Security ist Pflicht.** Die Migrationen aktivieren sie und legen
    alle Policies an. Ohne sie könnte jeder angemeldete Nutzer alle Daten lesen.
 
-Details zu den Policies: [`supabase/README.md`](supabase/README.md).
+Details zu den Policies und zu den Hinweisen des Supabase Security Advisors:
+[`supabase/README.md`](supabase/README.md).
 
 ---
 
