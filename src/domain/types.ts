@@ -70,6 +70,23 @@ export interface LocalMeta {
   value: string
 }
 
+/**
+ * Lokal vorgemerkte Erinnerung für eine Aufgabe.
+ *
+ * Die Erinnerung selbst liegt beim Betriebssystem (Android AlarmManager); hier
+ * steht nur, welche Aufgabe mit welcher Nummer wann geplant wurde. Nur so lässt
+ * sich der Zustand später zuverlässig abgleichen und wieder aufräumen.
+ *
+ * `notificationId` ist eine kleine, fortlaufende Zahl: Android verlangt für
+ * Benachrichtigungen eine 32-Bit-Ganzzahl, keine UUID.
+ */
+export interface LocalReminder {
+  taskId: string
+  notificationId: number
+  /** Zeitpunkt, für den die Erinnerung geplant ist (ISO, UTC). */
+  at: IsoDateTime
+}
+
 /** Zeile ohne `dirty` – die Form, die in Supabase liegt. */
 export type RemoteList = Omit<LocalList, 'dirty'>
 export type RemoteTask = Omit<LocalTask, 'dirty'>

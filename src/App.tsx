@@ -1,5 +1,6 @@
 import { AuthProvider } from './auth/AuthProvider'
 import { useAuth } from './auth/useAuth'
+import { BackLayerProvider } from './app/BackLayerProvider'
 import { WorkspaceProvider } from './app/WorkspaceProvider'
 import type { AppServices } from './app/services'
 import { AuthScreen } from './ui/AuthScreen'
@@ -33,7 +34,9 @@ function AuthenticatedArea({ services }: { services: AppServices }) {
 
   return (
     <WorkspaceProvider userId={state.user.id} gateway={services.gateway} network={services.network}>
-      <WorkspaceScreen />
+      <BackLayerProvider>
+        <WorkspaceScreen />
+      </BackLayerProvider>
     </WorkspaceProvider>
   )
 }

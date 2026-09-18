@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie'
-import type { LocalList, LocalListMember, LocalMeta, LocalTask } from '../domain/types'
+import type { LocalList, LocalListMember, LocalMeta, LocalReminder, LocalTask } from '../domain/types'
 
 /**
  * Lokale Datenbank (IndexedDB via Dexie).
@@ -28,6 +28,7 @@ export class LocalDatabase extends Dexie {
   list_members!: Table<LocalListMember, [string, string]>
   tasks!: Table<LocalTask, string>
   meta!: Table<LocalMeta, string>
+  reminders!: Table<LocalReminder, string>
 
   constructor(name: string) {
     super(name)
@@ -36,6 +37,16 @@ export class LocalDatabase extends Dexie {
       list_members: '[list_id+user_id], list_id, user_id, updated_at, dirty',
       tasks: 'id, list_id, updated_at, dirty',
       meta: 'key',
+    })
+
+    // Version 2 ergänzt die vorgemerkten Erinnerungen. Bestehende Datenbanken
+    // bekommen die Tabelle beim Öffnen automatisch dazu.
+    this.version(2).stores({
+      lists: 'id, owner_id, updated_at, dirty',
+      list_members: '[list_id+user_id], list_id, user_id, updated_at, dirty',
+      tasks: 'id, list_id, updated_at, dirty',
+      meta: 'key',
+      reminders: 'taskId, notificationId, at',
     })
   }
 }

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
+import { useBackLayer } from '../app/useBackLayer'
 import type { LocalTask } from '../domain/types'
 import { formatDateTime, fromDateTimeLocalValue, isOverdue, toDateTimeLocalValue } from './datetime'
 import { dangerButton, ghostButton, input, primaryButton, secondaryButton } from './styles'
@@ -14,6 +15,8 @@ import { dangerButton, ghostButton, input, primaryButton, secondaryButton } from
 export function TaskItem({ task }: { task: LocalTask }) {
   const { repositories } = useWorkspace()
   const [editing, setEditing] = useState(false)
+  // Die Zurück-Taste schließt zuerst das Bearbeitungsformular.
+  useBackLayer(editing, () => setEditing(false))
   const [title, setTitle] = useState(task.title)
   const [description, setDescription] = useState(task.description ?? '')
   const [dueAt, setDueAt] = useState('')

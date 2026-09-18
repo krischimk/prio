@@ -1,6 +1,6 @@
 # prio
 
-**Offline-first To-do-App – Version 0.2.0 (technischer Prototyp).**
+**Offline-first To-do-App – Version 0.3.0 (technischer Prototyp).**
 
 Ziel dieser Version ist ausdrücklich **kein fertiges Produkt**, sondern eine
 schlanke Grundlage, mit der die Kernarchitektur zuverlässig getestet werden
@@ -47,7 +47,8 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
 8. [Projektstruktur](#projektstruktur)
 9. [Datenmodell](#datenmodell)
 10. [Wie die Synchronisation funktioniert](#wie-die-synchronisation-funktioniert)
-11. [Bewusste Entscheidungen und Grenzen von 0.1](#bewusste-entscheidungen-und-grenzen-von-01)
+11. [Erinnerungen](#erinnerungen)
+12. [Bewusste Entscheidungen und Grenzen von 0.1](#bewusste-entscheidungen-und-grenzen-von-01)
 12. [Deployment (Cloudflare Pages)](#deployment-cloudflare-pages)
 13. [Android-App (Capacitor)](#android-app-capacitor)
 14. [Git-Workflow, Commits und Releases](#git-workflow-commits-und-releases)
@@ -79,6 +80,9 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
 * Felder: `id`, `list_id`, `title`, optionale `description`, optionales
   `due_at` (mit Uhrzeit), `completed`, `created_at`, `updated_at`, `deleted_at`
 * Erstellen, bearbeiten, erledigen/wieder öffnen, löschen
+* Erinnerungen: Hat eine Aufgabe ein Fälligkeitsdatum in der Zukunft, plant
+  die Android-App eine Benachrichtigung. Details unter
+  [Erinnerungen](#erinnerungen)
 * Bewusst nicht enthalten: Prioritäten, Tags, Unteraufgaben, Wiederholungen,
   Anhänge, Kommentare
 
@@ -398,6 +402,51 @@ Sync frisch vom Server zurück.
 
 ---
 
+## Erinnerungen
+
+Hat eine Aufgabe ein Fälligkeitsdatum mit Uhrzeit in der Zukunft, plant die
+Android-App eine Benachrichtigung. Sie kommt auch an, wenn die App geschlossen
+ist – die Termine liegen beim Betriebssystem (Android: AlarmManager), nicht in
+einem Timer der Web-Oberfläche.
+
+### Wie es funktioniert
+
+| Datei | Aufgabe |
+| --- | --- |
+| `src/reminders/reminderPlan.ts` | Reine Funktion: Welche Aufgaben sollen erinnern? |
+| `src/reminders/reminderReconciler.ts` | Reine Funktion: Was muss geplant, verschoben, abgebrochen werden? |
+| `src/reminders/localNotificationsPort.ts` | Schnittstelle zu den Benachrichtigungen des Systems |
+| `src/reminders/capacitorNotifications.ts` | Umsetzung mit `@capacitor/local-notifications` |
+| `src/reminders/reminderService.ts` | Ablauf: Berechtigung, lesen, abgleichen, schreiben |
+
+Der Abgleich läuft nach jedem Sync, nach jeder lokalen Änderung und beim Start.
+Er ist **idempotent**: Unveränderte Termine werden nicht angefasst, ein zweiter
+Lauf berührt das Betriebssystem gar nicht.
+
+Geplant wird, wenn eine Aufgabe
+
+* nicht gelöscht und nicht erledigt ist,
+* ein Fälligkeitsdatum hat und
+* dieses in der Zukunft liegt.
+
+Wird eine Aufgabe erledigt, gelöscht oder ihr Datum entfernt, wird die
+Erinnerung abgebrochen. Wird ein Datum verschoben, wird der Termin unter
+derselben Nummer neu geplant.
+
+### Grenzen
+
+* **Zustellung kann sich verzögern.** Die App fordert bewusst keine Berechtigung
+  für *exakte* Alarme an (`SCHEDULE_EXACT_ALARM` verlangt auf Android 12+ einen
+  Umweg über die Systemeinstellungen). Im Energiesparmodus kann eine Erinnerung
+  deshalb um einige Minuten später kommen. Für Aufgaben ist das vertretbar.
+* **Vergangene Termine lösen nichts aus.** Eine Aufgabe, die während einer
+  Offline-Phase fällig geworden ist, erzeugt beim nächsten Start keine
+  Benachrichtigung – das wäre Lärm statt Nutzung.
+* **Erinnerungen sind lokal.** Sie werden nicht synchronisiert. Jedes Gerät
+  plant die Erinnerungen für seine eigenen Aufgaben.
+* **Nach einem Geräteneustart** stellt Android die Termine selbst wieder her
+  (`LocalNotificationRestoreReceiver`).
+
 ## Bewusste Entscheidungen und Grenzen von 0.1
 
 Diese Punkte sind Absicht, nicht Versehen. Sie sind auch im Code an der
@@ -608,17 +657,30 @@ kann.
   keine Deep-Link-Behandlung für Magic-Links.
 * **Die Sitzung liegt in `localStorage`** und übersteht damit App-Neustarts.
 
+### Zurück-Taste
+
+Die Android-Zurück-Taste schließt zuerst, was offen ist (Bearbeitungsformular,
+Teilen-Panel, Löschbestätigung). Ist nichts offen, wird die App in den
+Hintergrund geschickt statt hart beendet.
+
+Umgesetzt über einen kleinen Back-Stack (`src/app/backStack.ts`): Die
+Oberfläche meldet schließbare Ebenen über `useBackLayer(aktiv, onBack)` an, die
+zuletzt geöffnete zuerst. Der Stack ist React-frei und einzeln getestet
+(`tests/unit/backStack.test.ts`).
+
+Im Browser passiert nichts – dort gibt es keine Hardware-Taste, und der
+Browser-Zurück-Knopf gehört dem Browser.
+
 ### Bewusst noch nicht umgesetzt
 
-* **Native Benachrichtigungen** für Fälligkeiten. Das Datenmodell
-  (`due_at` mit Uhrzeit) ist darauf vorbereitet; es fehlt nur
-  `@capacitor/local-notifications`.
 * **`@capacitor/network`.** Die App nutzt weiterhin `navigator.onLine`. Das ist
   im WebView ausreichend, weil die Sync-Engine jeden fehlgeschlagenen
   Netzwerkzugriff zusätzlich als offline behandelt. Der Austausch betrifft nur
   `src/sync/network.ts`.
-* **Hardware-Zurück-Taste.** Ohne `@capacitor/app` schließt sie die App, statt
-  ein offenes Bearbeitungsformular zu schließen.
+* **Wiederkehrende Erinnerungen** (z. B. „täglich"). Es gibt genau eine
+  Erinnerung pro Aufgabe, zum Fälligkeitszeitpunkt.
+* **Erinnerungen im Browser.** Dort gibt es keine geplanten Benachrichtigungen;
+  die Anzeige entfällt und der Dienst meldet `unsupported`.
 
 ---
 

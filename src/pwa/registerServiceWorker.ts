@@ -12,16 +12,7 @@
  * App-Update überdecken.
  */
 
-interface CapacitorGlobal {
-  isNativePlatform?: () => boolean
-}
-
-/** Erkennt, ob die Seite in einer Capacitor-App läuft (ohne harte Abhängigkeit). */
-function isNativeApp(): boolean {
-  if (typeof window === 'undefined') return false
-  const capacitor = (window as unknown as { Capacitor?: CapacitorGlobal }).Capacitor
-  return typeof capacitor?.isNativePlatform === 'function' && capacitor.isNativePlatform() === true
-}
+import { isNativeApp } from '../app/platform'
 
 export function registerServiceWorker(): void {
   if (!import.meta.env.PROD) return

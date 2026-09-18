@@ -3,6 +3,8 @@ import { createRepositories } from '../db/repositories'
 import { openLocalDatabase, type LocalDatabase } from '../db/localDb'
 import { createSyncEngine, type SyncEngine, type SyncResult } from '../sync/syncEngine'
 import { createShareListAction } from '../sync/shareList'
+import { createCapacitorNotificationsPort } from '../reminders/capacitorNotifications'
+import { createReminderService, type ReminderService, type ReminderStatus } from '../reminders/reminderService'
 import { countDirty, META_LAST_SYNC_AT, readMeta } from '../sync/syncStore'
 import type { NetworkMonitor } from '../sync/network'
 import type { RemoteGateway } from '../sync/remoteGateway'
@@ -32,6 +34,7 @@ const PERIODIC_SYNC_MS = 30_000
 interface ReadyWorkspace {
   database: LocalDatabase
   engine: SyncEngine
+  reminders: ReminderService
 }
 
 export function WorkspaceProvider({
@@ -63,6 +66,7 @@ export function WorkspaceProvider({
   const [syncing, setSyncing] = useState(false)
   const [pendingCount, setPendingCount] = useState(0)
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null)
+  const [reminderStatus, setReminderStatus] = useState<ReminderStatus | null>(null)
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   /**
    * `false`, sobald die Komponente abgebaut ist.
@@ -95,7 +99,14 @@ export function WorkspaceProvider({
           currentUserId: userId,
           isOnline: () => network.isOnline(),
         })
-        setReady({ database, engine })
+        setReady({
+          database,
+          engine,
+          reminders: createReminderService({
+            db: database,
+            port: createCapacitorNotificationsPort(),
+          }),
+        })
       })
       .catch(() => {
         if (active) setReady(null)
@@ -130,11 +141,20 @@ export function WorkspaceProvider({
     setLastSyncedAt(lastSynced)
   }, [ready])
 
+  /** Gleicht die geplanten Erinnerungen mit den Aufgaben ab. */
+  const refreshReminders = useCallback(async () => {
+    if (!ready || !mountedRef.current) return
+    const status = await ready.reminders.sync()
+    if (mountedRef.current) setReminderStatus(status)
+  }, [ready])
+
   const runSync = useCallback(async () => {
     if (!ready) return
     setSyncing(true)
+    let pulled = 0
     try {
       const result = await ready.engine.sync()
+      pulled = result.pulled
       if (!mountedRef.current) return
       setSyncStatus(result)
       // Nach einem Pull kann sich lokal etwas geändert haben – die Anzeige
@@ -143,8 +163,16 @@ export function WorkspaceProvider({
     } finally {
       if (mountedRef.current) setSyncing(false)
       await refreshDerivedState()
+      // Nur wenn wirklich neue Daten angekommen sind: Erinnerungen nachziehen.
+      if (pulled > 0) await refreshReminders()
     }
-  }, [ready, refreshDerivedState])
+  }, [ready, refreshDerivedState, refreshReminders])
+
+  const enableReminders = useCallback(async () => {
+    if (!ready) return
+    const status = await ready.reminders.enable()
+    if (mountedRef.current) setReminderStatus(status)
+  }, [ready])
 
   // Nach jeder lokalen Änderung: offene Änderungen zählen und Sync anstoßen.
   useEffect(() => {
@@ -153,16 +181,21 @@ export function WorkspaceProvider({
     if (debounceTimer.current) clearTimeout(debounceTimer.current)
     debounceTimer.current = setTimeout(() => {
       void runSync()
+      // Lokale Änderungen wirken sofort auf die Erinnerungen – auch offline.
+      void refreshReminders()
     }, LOCAL_CHANGE_DEBOUNCE_MS)
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current)
     }
-  }, [localRevision, ready, refreshDerivedState, runSync])
+  }, [localRevision, ready, refreshDerivedState, runSync, refreshReminders])
 
   // Erster Sync nach dem Anmelden, danach regelmäßig und bei "wieder online".
   useEffect(() => {
     if (!ready) return
     void runSync()
+    // Erinnerungen einmalig aufbauen – unabhängig davon, ob der Sync etwas
+    // bewegt hat (z. B. beim Start mit bereits vorhandenen Aufgaben).
+    void refreshReminders()
     const interval = setInterval(() => {
       if (network.isOnline()) void runSync()
     }, PERIODIC_SYNC_MS)
@@ -173,7 +206,7 @@ export function WorkspaceProvider({
       clearInterval(interval)
       unsubscribe()
     }
-  }, [ready, runSync, network])
+  }, [ready, runSync, refreshReminders, network])
 
   const shareListByEmail = useMemo(() => {
     if (!repositories) return null
@@ -189,14 +222,32 @@ export function WorkspaceProvider({
       pendingCount,
       syncing,
       lastSyncedAt,
+      reminderStatus,
       runSync,
+      enableReminders,
       shareListByEmail,
     }
-  }, [repositories, dataVersion, syncStatus, pendingCount, syncing, lastSyncedAt, runSync, shareListByEmail])
+  }, [
+    repositories,
+    dataVersion,
+    syncStatus,
+    pendingCount,
+    syncing,
+    lastSyncedAt,
+    reminderStatus,
+    runSync,
+    enableReminders,
+    shareListByEmail,
+  ])
 
   // Die Oberfläche erscheint, sobald die lokale Datenbank offen ist. Der erste
   // Sync läuft bewusst im Hintergrund weiter – die App darf nie auf eine
   // Serverantwort warten.
+  //
+  // Der Lint verfolgt den `mountedRef`-Zugriff aus `runSync`/`refreshReminders`
+  // bis zu dieser Zeile und meldet "refs during render". Tatsächlich werden
+  // diese Funktionen ausschließlich asynchron aufgerufen, niemals beim Rendern.
+  // oxlint-disable-next-line react/refs
   if (!value) {
     return <WorkspaceLoading />
   }

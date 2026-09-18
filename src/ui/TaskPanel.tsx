@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
 import { useTasks } from '../app/hooks'
+import { useBackLayer } from '../app/useBackLayer'
 import type { LocalList } from '../domain/types'
 import { SharePanel } from './SharePanel'
 import { TaskComposer } from './TaskComposer'
@@ -20,6 +21,11 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
   const [name, setName] = useState(list.name)
   const [shareOpen, setShareOpen] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+
+  // Die Zurück-Taste schließt zuerst das, was zuletzt geöffnet wurde.
+  useBackLayer(renaming, () => setRenaming(false))
+  useBackLayer(shareOpen, () => setShareOpen(false))
+  useBackLayer(confirmingDelete, () => setConfirmingDelete(false))
 
   const openTasks = tasks.filter((task) => !task.completed).length
 

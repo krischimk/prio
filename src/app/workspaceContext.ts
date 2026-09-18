@@ -1,5 +1,6 @@
 import { createContext } from 'react'
 import type { Repositories } from '../db/repositories'
+import type { ReminderStatus } from '../reminders/reminderService'
 import type { SyncResult } from '../sync/syncEngine'
 
 /**
@@ -23,7 +24,11 @@ export interface WorkspaceValue {
   syncing: boolean
   /** Zeitpunkt des letzten erfolgreichen Syncs (aus der lokalen Meta-Tabelle). */
   lastSyncedAt: string | null
+  /** Zustand der Erinnerungen (Berechtigung und Anzahl). */
+  reminderStatus: ReminderStatus | null
   runSync(): Promise<void>
+  /** Fragt die Benachrichtigungs-Berechtigung an und plant danach. */
+  enableReminders(): Promise<void>
   /** Teilt eine Liste per E-Mail-Adresse (benötigt Serververbindung). */
   shareListByEmail(listId: string, email: string): Promise<{ userId: string }>
 }

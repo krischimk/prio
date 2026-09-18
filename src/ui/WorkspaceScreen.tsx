@@ -1,5 +1,6 @@
 import { useAuth } from '../auth/useAuth'
 import { useLists, useSelectedListId } from '../app/hooks'
+import { ReminderIndicator } from './ReminderIndicator'
 import { Sidebar } from './Sidebar'
 import { SyncIndicator } from './SyncIndicator'
 import { TaskPanel } from './TaskPanel'
@@ -31,7 +32,8 @@ export function WorkspaceScreen() {
               {user?.email}
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <ReminderIndicator />
             <SyncIndicator />
             <button
               type="button"
