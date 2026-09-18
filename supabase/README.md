@@ -42,8 +42,16 @@ Der Security Advisor von Supabase meldet `SECURITY DEFINER`-Funktionen, die übe
 | `share_list_by_email` | **bleibt absichtlich** | Das ist der RPC der App. Er prüft selbst, dass nur der Besitzer teilen darf und dass die Adresse zu einem registrierten Nutzer gehört. |
 
 Zusätzlich meldet der Advisor **„Leaked Password Protection Disabled"**. Das
-ist keine Datenbankeinstellung, sondern ein Schalter im Dashboard:
-*Authentication → Settings → Password Security → Check against HaveIBeenPwned*.
+ist keine Datenbankeinstellung, sondern ein Schalter unter *Authentication →
+Settings → Password Security*. **Dieser Schalter ist an den Pro-Tarif
+gebunden** ([Doku](https://supabase.com/docs/guides/auth/password-security)) und
+im kostenlosen Tarif nicht verfügbar – die Warnung bleibt dort also bestehen.
+
+Als Ersatz im Free-Tarif lohnt es sich, an derselben Stelle die
+**Mindest-Passwortlänge** auf 8 und die geforderten Zeichenklassen zu erhöhen.
+Die App prüft clientseitig `minLength={6}` in `src/ui/AuthScreen.tsx`; das ist
+nur eine Bequemlichkeitsprüfung, verbindlich ist die Einstellung im Dashboard.
+Wer die Mindestlänge dort ändert, sollte sie hier angleichen.
 
 ## Sicherheitsmodell
 
