@@ -23,7 +23,11 @@
     "db:sql": "node scripts/bundle-migrations.mjs",
     "android:sync": "npm run build && cap sync android",
     "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug",
-    "android:release": "npm run build && cap sync android && cd android && ./gradlew assembleRelease"
+    "android:release": "npm run build && cap sync android && cd android && ./gradlew assembleRelease",
+    "android:emu": "bash scripts/android-emulator.sh start",
+    "android:emu:install": "bash scripts/android-emulator.sh install",
+    "android:emu:shot": "bash scripts/android-emulator.sh shot",
+    "android:emu:stop": "bash scripts/android-emulator.sh stop"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",

@@ -69,6 +69,30 @@ rendern und die Screenshots **anschauen** (siehe Tests).
 * Änderungen am Erscheinungsbild immer in Telefongröße gegenprüfen; das
   Querformat gehört dazu.
 
+### Prüfen im Emulator (Standardweg)
+
+Neue Versionen werden **im Emulator** geprüft, nicht zuerst auf dem Telefon.
+Der Emulator läuft auf demselben Rechner, sein Fenster erscheint auf dem
+Desktop und lässt sich wie ein Handy bedienen.
+
+```bash
+npm run android:emu          # Emulator mit Fenster starten
+npm run android:emu:install  # Debug-APK bauen, installieren, öffnen
+npm run android:emu:shot     # Screenshot auf den Desktop legen
+npm run android:emu:stop
+```
+
+* **Vorher selbst hinsehen.** Erst `android:emu:shot` und den Screenshot
+  ansehen, dann den Nutzer fragen. Das hat schon Fehler gefunden, die keine
+  Zusicherung erwischt hätte.
+* **Bedienen und beurteilen** tut der Nutzer – dafür ist das Fenster da.
+* Der Emulator spricht mit dem echten Supabase-Projekt. Wer dort nichts
+  anlegen will, meldet sich mit dem eigenen Konto an.
+* **Was der Emulator nicht kann:** echte Benachrichtigungszustellung, die
+  Tastatur des Geräts, dessen Systemleisten und Hersteller-Eigenheiten. Dafür
+  bleibt das echte Telefon nötig – aber nur dafür.
+* Nach dem Test `android:emu:stop`, der Emulator belegt sonst CPU und RAM.
+
 ## Oberfläche: eine Sprache, zwei Bedienmodelle
 
 Es gibt zwei Ansichten – breit (Web/Tablet, Seitenleiste) und mobil (Telefon,

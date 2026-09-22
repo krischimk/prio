@@ -694,6 +694,29 @@ npx cap sync android   # dist/ + Plugins ins Android-Projekt kopieren
 cd android && ./gradlew assembleDebug
 ```
 
+### Im Emulator prüfen
+
+Zum Ausprobieren muss die App nicht aufs Telefon. Der Emulator läuft auf
+demselben Rechner, sein Fenster lässt sich wie ein Handy bedienen:
+
+```bash
+npm run android:emu          # startet den Emulator (AVD „prio-test“)
+npm run android:emu:install  # baut die Debug-APK, installiert und öffnet sie
+npm run android:emu:shot     # legt einen Screenshot auf den Desktop
+npm run android:emu:stop
+```
+
+Einmalig nötig sind das SDK-Paket `emulator` und ein Systemabbild:
+
+```bash
+sdkmanager "emulator" "system-images;android-35;google_apis;x86_64"
+avdmanager create avd -n prio-test -k "system-images;android-35;google_apis;x86_64" -d pixel_6
+```
+
+Der Emulator kann viel, aber nicht alles ersetzen: **echte
+Benachrichtigungen**, die Tastatur des Geräts und dessen Systemleisten lassen
+sich nur auf dem Telefon beurteilen.
+
 ### Aufs Handy bringen
 
 **Per USB** (USB-Debugging aktivieren, Handy anschließen):
