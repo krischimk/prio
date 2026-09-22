@@ -442,6 +442,32 @@ describe('Repositories (lokale Geschäftslogik)', () => {
       expect(stored?.dirty).toBe(1)
     })
 
+    it('vergibt eine gültige Position, auch wenn ältere Aufgaben keine haben', async () => {
+      // Der gemeldete Fehler: `Math.max(0, undefined)` ergibt `NaN`, und `NaN`
+      // wird beim Senden zu `null`. Der Server lehnt das ab.
+      const listId = await newList()
+      await device.db.tasks.put({
+        id: 'alt',
+        list_id: listId,
+        title: 'Aus alter Zeit',
+        description: null,
+        due_at: null,
+        completed: false,
+        completed_at: null,
+        // Ohne `position` – so sah die Zeile vor Version 0.4.1 aus.
+        position: undefined as unknown as number,
+        created_at: device.clock.now(),
+        updated_at: device.clock.now(),
+        deleted_at: null,
+        dirty: 0,
+      })
+
+      const neu = await device.repositories.createTask({ listId, title: 'Neu' })
+
+      expect(Number.isFinite(neu.position)).toBe(true)
+      expect(neu.position).toBe(1)
+    })
+
     it('setzt und entfernt das Symbol einer Liste', async () => {
       const list = await device.repositories.createList('Haushalt', userId)
       expect(list.icon).toBeNull()

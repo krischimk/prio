@@ -104,7 +104,9 @@ export interface Repositories {
  * weg.
  */
 export function compareTasks(a: LocalTask, b: LocalTask): number {
-  if (a.position !== b.position) return a.position - b.position
+  const positionA = Number.isFinite(a.position) ? a.position : 0
+  const positionB = Number.isFinite(b.position) ? b.position : 0
+  if (positionA !== positionB) return positionA - positionB
   if (a.completed !== b.completed) return a.completed ? 1 : -1
   const dueA = a.due_at === null ? Number.POSITIVE_INFINITY : Date.parse(a.due_at)
   const dueB = b.due_at === null ? Number.POSITIVE_INFINITY : Date.parse(b.due_at)
@@ -209,8 +211,15 @@ export function createRepositories(db: LocalDatabase, clock: Clock = systemClock
       const now = clock.now()
       // Neue Aufgaben landen unten: Position = höchste vorhandene + 1.
       const vorhandene = await db.tasks.where('list_id').equals(input.listId).toArray()
+      // `Number.isFinite` ist hier entscheidend: Aufgaben aus der Zeit vor der
+      // Reihenfolge-Funktion haben kein `position`. `Math.max(0, undefined)`
+      // ergäbe `NaN`, und `NaN` wird beim Senden zu `null` – die Spalte ist
+      // aber `not null`. Genau daran scheiterte der Sync.
       const hoechste = vorhandene.reduce(
-        (max, task) => (task.deleted_at === null ? Math.max(max, task.position) : max),
+        (max, task) =>
+          task.deleted_at === null && Number.isFinite(task.position)
+            ? Math.max(max, task.position)
+            : max,
         0,
       )
       const task: LocalTask = {

@@ -48,6 +48,39 @@ export class LocalDatabase extends Dexie {
       meta: 'key',
       reminders: 'taskId, notificationId, at',
     })
+
+    /*
+     * Version 3 repariert Aufgaben aus der Zeit vor der Reihenfolge-Funktion.
+     *
+     * Ihnen fehlt `position`. Das fiel lange nicht auf, weil der Wert nur beim
+     * Anlegen einer neuen Aufgabe gelesen wird – dort entstand dann `NaN`, und
+     * das wird beim Senden zu `null`. Der Server lehnt das ab, und der Sync
+     * scheiterte dauerhaft.
+     *
+     * Die 0 ist der richtige Ersatz: Bei gleicher Position greifen die
+     * früheren Regeln (Fälligkeit, Erstellzeit). Die Reihenfolge bleibt damit
+     * so, wie sie vorher angezeigt wurde.
+     */
+    this.version(3)
+      .stores({
+        lists: 'id, owner_id, updated_at, dirty',
+        list_members: '[list_id+user_id], list_id, user_id, updated_at, dirty',
+        tasks: 'id, list_id, updated_at, dirty',
+        meta: 'key',
+        reminders: 'taskId, notificationId, at',
+      })
+      .upgrade((tx) =>
+        tx
+          .table('tasks')
+          .toCollection()
+          .modify((task: LocalTask) => {
+            if (!Number.isFinite(task.position)) {
+              task.position = 0
+              // Als geändert markieren, damit die Reparatur auch ankommt.
+              task.dirty = 1
+            }
+          }),
+      )
   }
 }
 

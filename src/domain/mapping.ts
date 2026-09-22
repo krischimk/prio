@@ -56,7 +56,10 @@ export function toRemoteTask(local: LocalTask): RemoteTask {
     due_at: normalizeIso(local.due_at),
     completed: local.completed,
     completed_at: normalizeIso(local.completed_at),
-    position: local.position,
+    // Letzte Absicherung an der Grenze: `NaN` würde beim Senden zu `null`, und
+    // die Spalte ist `not null`. Ein ungültiger Wert darf das Hochladen nicht
+    // für die gesamte Charge scheitern lassen.
+    position: Number.isFinite(local.position) ? local.position : 0,
     created_at: normalizeIso(local.created_at),
     updated_at: normalizeIso(local.updated_at),
     deleted_at: normalizeIso(local.deleted_at),
