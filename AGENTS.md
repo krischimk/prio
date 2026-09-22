@@ -69,6 +69,40 @@ rendern und die Screenshots **anschauen** (siehe Tests).
 * Änderungen am Erscheinungsbild immer in Telefongröße gegenprüfen; das
   Querformat gehört dazu.
 
+## Oberfläche: eine Sprache, zwei Bedienmodelle
+
+Es gibt zwei Ansichten – breit (Web/Tablet, Seitenleiste) und mobil (Telefon,
+App-Leiste mit Menü). Sie dürfen sich im **Bedienmodell** unterscheiden, nicht
+im **Aussehen**.
+
+**Regel:** Gleiche Information wird gleich dargestellt und gleich formatiert –
+unabhängig davon, in welcher Ansicht sie erscheint.
+
+Konkret:
+
+* **Farben und Flächen kommen aus `src/ui/styles.ts`.** In Komponenten keine
+  rohen Farbklassen (`text-neutral-500`) und keine Hex-Werte. Das gilt besonders
+  für Zustandsfarben: `SyncTone → Farbe` gibt es genau einmal.
+* **Textformate stehen in einer gemeinsamen Funktion.** Fälligkeit, Zähler,
+  Statusmeldungen – wenn zwei Ansichten dieselbe Information zeigen, stammt der
+  Text aus derselben Quelle (z. B. `formatDueLabel` in `src/ui/datetime.ts`).
+* **Vor jeder UI-Änderung fragen:** Braucht die andere Ansicht das auch? Wenn ja
+  → gemeinsam umsetzen. Wenn nein → bewusst dagegen entscheiden.
+* **Nichts verdoppeln, was nur zufällig gleich aussieht.** Zwei fast gleiche
+  Markups werden zu einer Konstante; zwei Komponenten mit unterschiedlichem
+  Verhalten bleiben getrennt – auch wenn sie ähnlich aussehen.
+
+Ausdrücklich **erlaubte** Unterschiede, die nicht angeglichen werden müssen:
+
+* Bedienmodell: Knöpfe auf dem Desktop, Tippen → Detailansicht auf dem Telefon.
+* Dichte: Karten auf dem Desktop, flache Zeilen auf dem Telefon.
+* `hover:` auf dem Desktop, `active:` auf dem Telefon.
+* Safe-Area-Klassen – nur in der App sinnvoll.
+
+> **Eine Regel ohne Prüfung ist ein Wunsch.** Diese Regeln sind erst belastbar,
+> wenn ein Test sie durchsetzt. Solange es den nicht gibt, gilt: für neuen Code
+> sofort, bestehende Dateien beim nächsten Anfassen umstellen.
+
 ## Tests
 
 * **Geschäftslogik** (Sync, Konflikte, Erinnerungen, Verschieben, Reihenfolge):
