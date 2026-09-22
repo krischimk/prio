@@ -1,8 +1,7 @@
 import { createContext } from 'react'
-import type { UpdateCheckResult } from '../updates/updateCheck'
+import type { UpdateState } from '../updates/updateStatus'
 
-/** Ergebnis der letzten Prüfung auf eine neue Fassung. */
-export type UpdateState = { status: 'idle' } | { status: 'checking' } | UpdateCheckResult
+export type { UpdateState }
 
 export interface UpdateContextValue {
   state: UpdateState

@@ -103,6 +103,10 @@ npm run android:emu:eval 'JSON.stringify(Object.keys(window.Capacitor.Plugins))'
   Tastatur des Geräts, dessen Systemleisten und Hersteller-Eigenheiten. Dafür
   bleibt das echte Telefon nötig – aber nur dafür.
 * Nach dem Test `android:emu:stop`, der Emulator belegt sonst CPU und RAM.
+* **Anmeldung und Daten müssen erhalten bleiben.** Debug-Builds werden mit dem
+  Release-Schlüssel signiert (`~/.prio-android/emulator.env`), und der
+  Emulator benutzt einen dauerhaften Datenträger. Ein `adb uninstall` ist damit
+  nie nötig – es würde die Anmeldung des Nutzers löschen.
 
 ## Oberfläche: eine Sprache, zwei Bedienmodelle
 

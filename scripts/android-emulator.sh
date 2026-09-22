@@ -22,6 +22,14 @@ export ANDROID_HOME
 export ANDROID_SDK_ROOT="$ANDROID_HOME"
 PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
 
+# Signatur: Ohne Schlüssel bleibt der Debug-Build debug-signiert, und ein
+# Wechsel zwischen Debug und Release verlangt eine Neuinstallation – die
+# Anmeldung im Emulator ginge dabei verloren.
+if [ -f "$HOME/.prio-android/emulator.env" ]; then
+  # shellcheck disable=SC1091
+  . "$HOME/.prio-android/emulator.env"
+fi
+
 AVD_NAME="${AVD_NAME:-prio-test}"
 APP_ID="de.krischi.prio"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -52,8 +60,25 @@ wait_for_boot() {
   return 1
 }
 
+# Der Emulator kann auf einen temporären Datenträger eingestellt sein. Dann
+# sind App, Anmeldung und Testdaten nach jedem Beenden weg – das ist bei einer
+# AVD-Vorlage mit `firstboot`-Schnappschuss die Voreinstellung.
+sorge_fuer_dauerhaften_speicher() {
+  local avd_dir="$HOME/.android/avd/$AVD_NAME.avd"
+  local config="$avd_dir/config.ini"
+  [ -f "$config" ] || return 0
+  grep -qE "^disk\.dataPartition\.path *= *<temp>" "$config" || return 0
+
+  local ziel="$avd_dir/userdata-qemu.img"
+  warn "Der Emulator war auf einen temporären Datenträger eingestellt."
+  warn "Anmeldung und Daten wären bei jedem Beenden verloren gegangen."
+  sed -i "s|^disk\.dataPartition\.path *=.*|disk.dataPartition.path = $ziel|" "$config"
+  info "Datenträger jetzt dauerhaft: $ziel"
+}
+
 start() {
   require emulator
+  sorge_fuer_dauerhaften_speicher
   if device_online; then
     info "Emulator läuft bereits."
     return 0
@@ -75,7 +100,9 @@ install_app() {
   # Debug- und Release-APK sind verschieden signiert – ein Wechsel scheitert
   # sonst mit INSTALL_FAILED_UPDATE_INCOMPATIBLE.
   adb install -r "$APK_DEBUG" >/dev/null 2>&1 || {
-    info "Vorhandene Installation hat eine andere Signatur – wird ersetzt."
+    warn "Die installierte Fassung hat eine andere Signatur und muss ersetzt werden."
+    warn "ACHTUNG: Dabei gehen die lokalen Daten verloren – die Anmeldung muss neu erfolgen."
+    warn "Vermeidbar, wenn ~/.prio-android/emulator.env mit dem Release-Schlüssel vorliegt."
     adb uninstall "$APP_ID" >/dev/null 2>&1 || true
     adb install "$APK_DEBUG" >/dev/null
   }

@@ -3,7 +3,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { currentVersion } from '../updates/currentVersion'
 import { checkForUpdate } from '../updates/updateCheck'
 import { createUpdateInstaller } from '../updates/updateInstaller'
-import { UpdateContext, type UpdateContextValue, type UpdateState } from './updateContext'
+import type { UpdateState } from '../updates/updateStatus'
+import { UpdateContext, type UpdateContextValue } from './updateContext'
 
 /**
  * Sucht nach einer neuen Fassung und stößt das Installieren an.

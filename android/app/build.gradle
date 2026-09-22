@@ -16,6 +16,16 @@ def hasSigningKey = keystoreFile != null && file(keystoreFile).exists()
 def versionNameFromEnv = System.getenv("PRIO_VERSION_NAME")
 def versionCodeFromEnv = System.getenv("PRIO_VERSION_CODE")
 
+/*
+ * Lokal gebaute Fassungen melden dieselbe Version wie das Release.
+ *
+ * Vorher stand hier "0.1.0": Eine im Emulator installierte Debug-Fassung hielt
+ * sich damit für uralt und bot bei jedem Start ein Update an.
+ */
+def pkgVersion = new groovy.json.JsonSlurper().parse(file("${rootDir}/../package.json")).version
+def pkgTeile = pkgVersion.tokenize('.').collect { it.isInteger() ? it.toInteger() : 0 }
+def pkgVersionCode = (pkgTeile[0] ?: 0) * 10000 + (pkgTeile[1] ?: 0) * 100 + (pkgTeile[2] ?: 0)
+
 android {
     namespace = "de.krischi.prio"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -24,8 +34,8 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Version kommt aus der Umgebung, damit sie zum Git-Tag passt.
-        versionCode = versionCodeFromEnv != null ? versionCodeFromEnv.toInteger() : 1
-        versionName = versionNameFromEnv != null ? versionNameFromEnv : "0.1.0"
+        versionCode = versionCodeFromEnv != null ? versionCodeFromEnv.toInteger() : pkgVersionCode
+        versionName = versionNameFromEnv != null ? versionNameFromEnv : pkgVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -44,6 +54,20 @@ android {
         }
     }
     buildTypes {
+        debug {
+            /*
+             * Im Emulator soll die Anmeldung erhalten bleiben.
+             *
+             * Debug- und Release-APK sind sonst verschieden signiert; Android
+             * verlangt beim Wechsel eine Neuinstallation, und die löscht alle
+             * Daten. Liegt der Release-Schlüssel vor, wird deshalb auch der
+             * Debug-Build damit signiert – die Fassungen sind dann
+             * austauschbar, und ein Update im Emulator verliert nichts.
+             */
+            if (hasSigningKey) {
+                signingConfig signingConfigs.release
+            }
+        }
         release {
             if (hasSigningKey) {
                 signingConfig signingConfigs.release

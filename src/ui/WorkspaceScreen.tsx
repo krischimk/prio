@@ -4,7 +4,7 @@ import { useLists, useSelectedListId } from '../app/hooks'
 import { useIsDesktop } from '../app/useIsDesktop'
 import { MobileWorkspace } from './mobile/MobileWorkspace'
 import { RestoreTasksPanel } from './RestoreTasksPanel'
-import { UpdatePanel } from './UpdatePanel'
+import { describeUpdateState } from '../updates/updateStatus'
 import { useUpdate } from './useUpdate'
 import { ReminderIndicator } from './ReminderIndicator'
 import { Sidebar } from './Sidebar'
@@ -30,8 +30,9 @@ function DesktopWorkspace() {
   const lists = useLists()
   const [selectedListId, selectList] = useSelectedListId(lists)
   const [restoreOpen, setRestoreOpen] = useState(false)
-  const [updateOpen, setUpdateOpen] = useState(false)
-  const { state: update } = useUpdate()
+  const { state: update, check, install, installing } = useUpdate()
+  const updateBeschreibung = describeUpdateState(update)
+  const updateVerfuegbar = update.status === 'available'
 
   const user = state.status === 'authenticated' ? state.user : null
   const selected = lists.find((list) => list.id === selectedListId) ?? null
@@ -63,16 +64,28 @@ function DesktopWorkspace() {
             >
               Wiederherstellen
             </button>
+            {/*
+              Ein Knopf statt eines eigenen Fensters: Ist eine Fassung
+              verfügbar, wird sie von hier aus gleich installiert. Der Zustand
+              steht als Titel bereit (Vorleseprogramme, Mauszeiger).
+            */}
             <button
               type="button"
+              data-testid="update-button"
+              title={updateBeschreibung.text}
               className={`${ghostButton} px-2 py-1 text-xs ${
-                update.status === 'available' ? attentionText : ''
+                updateVerfuegbar ? attentionText : ''
               }`}
-              onClick={() => setUpdateOpen(true)}
+              disabled={installing || update.status === 'checking'}
+              onClick={() => {
+                void (updateVerfuegbar ? install() : check())
+              }}
             >
-              {update.status === 'available'
-                ? `Update ${update.release.version}`
-                : 'Nach Updates suchen'}
+              {updateVerfuegbar
+                ? `Update ${update.release.version} installieren`
+                : update.status === 'checking'
+                  ? 'Suche …'
+                  : 'Nach Updates suchen'}
             </button>
             <button
               type="button"
@@ -96,7 +109,6 @@ function DesktopWorkspace() {
       </div>
 
       <RestoreTasksPanel open={restoreOpen} onClose={() => setRestoreOpen(false)} />
-      <UpdatePanel open={updateOpen} onClose={() => setUpdateOpen(false)} />
     </div>
   )
 }

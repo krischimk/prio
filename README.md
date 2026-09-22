@@ -1,6 +1,6 @@
 # prio
 
-**Offline-first To-do-App – Version 0.6.1 (technischer Prototyp).**
+**Offline-first To-do-App – Version 0.6.2 (technischer Prototyp).**
 
 Ziel dieser Version ist ausdrücklich **kein fertiges Produkt**, sondern eine
 schlanke Grundlage, mit der die Kernarchitektur zuverlässig getestet werden
@@ -705,6 +705,11 @@ hielte sich eine ältere Fassung für aktuell).
 * **Automatisch** wird nur in der App gesucht, und zwar beim Start. Ein kleines
   gelbes Zeichen am Menü-Knopf zeigt an, dass etwas vorliegt; im Menü unter
   *Updates* steht die Version, und dort lässt sie sich auch installieren.
+* **Kein eigenes Fenster:** Die Suche läuft an Ort und Stelle, das Ergebnis
+  erscheint direkt unter der Überschrift. Eine Abfrage, die eine Sekunde
+  dauert, braucht keinen Dialog. Ist eine Fassung verfügbar, tritt an die Stelle
+  des Knopfes „Installieren“, und die Anmerkungen zur Veröffentlichung stehen
+  eingeklappt unter „Was ist neu?“.
 * **Herunterladen und installieren:** In der App lädt der System-Downloader die
   APK (Fortschritt in der Benachrichtigungsleiste, überlebt den Hintergrund) und
   öffnet danach den Installationsdialog. Im Browser bleibt nur der Download.
@@ -742,6 +747,17 @@ npm run android:emu:install  # baut die Debug-APK, installiert und öffnet sie
 npm run android:emu:shot     # legt einen Screenshot auf den Desktop
 npm run android:emu:stop
 ```
+
+**Anmeldung und Testdaten bleiben erhalten** – über App-Aktualisierungen und
+über Neustarts hinweg. Zwei Dinge sorgen dafür:
+
+* Debug- und Release-APK werden mit **demselben Schlüssel** signiert
+  (`~/.prio-android/emulator.env`), sonst verlangt Android beim Wechsel eine
+  Neuinstallation – und die löscht alle Daten.
+* Der Emulator benutzt einen **dauerhaften** Datenträger. Die AVD-Vorlage
+  `pixel_6` mit Schnappschuss-Firstboot stellt `disk.dataPartition.path` auf
+  `<temp>`; dann ist nach jedem Beenden alles weg. Das Skript erkennt das und
+  stellt es um.
 
 Einmalig nötig sind das SDK-Paket `emulator` und ein Systemabbild:
 
