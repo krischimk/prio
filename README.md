@@ -1,6 +1,6 @@
 # prio
 
-**Offline-first To-do-App – Version 0.6.0 (technischer Prototyp).**
+**Offline-first To-do-App – Version 0.6.1 (technischer Prototyp).**
 
 Ziel dieser Version ist ausdrücklich **kein fertiges Produkt**, sondern eine
 schlanke Grundlage, mit der die Kernarchitektur zuverlässig getestet werden
@@ -708,8 +708,20 @@ hielte sich eine ältere Fassung für aktuell).
 * **Herunterladen und installieren:** In der App lädt der System-Downloader die
   APK (Fortschritt in der Benachrichtigungsleiste, überlebt den Hintergrund) und
   öffnet danach den Installationsdialog. Im Browser bleibt nur der Download.
+* **Fehlschläge werden gemeldet.** Das Plugin reicht das Ergebnis des Downloads
+  als Ereignis an die Oberfläche weiter – inklusive der Begründung, etwa „Der
+  Server hat mit 404 geantwortet." Ohne das bliebe ein Fehlschlag unbemerkt,
+  weil das Anstoßen des Downloads sofort bestätigt wird.
 * Ab Android 8 muss prio einmal erlaubt werden, Apps zu installieren. Fehlt die
   Erlaubnis, öffnet die App die passende Einstellungsseite.
+
+> **Voraussetzung: Das Repository ist öffentlich.** GitHub beantwortet anonyme
+> Anfragen auf private Repositories mit `404` – auch die Release-Dateien. Eine
+> App kann sich nur selbst aktualisieren, wenn sie die neue Fassung ohne
+> Anmeldung erreicht. Ein Zugangsschlüssel in der App wäre keine Lösung, er
+> ließe sich aus der APK herauslesen. Der Quelltext enthält keine Geheimnisse
+> (`.env` ist ignoriert, der Publishable Key darf öffentlich sein); der Schutz
+> liegt in den Supabase-Richtlinien.
 
 > **Bewusst keine System-Benachrichtigung.** Ohne Hintergrunddienst kann die App
 > nicht prüfen, während sie geschlossen ist. Ein Hinweis beim Öffnen ist

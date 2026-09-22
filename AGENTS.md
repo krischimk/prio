@@ -8,8 +8,9 @@ nur die Regeln, die man beim Arbeiten kennen muss.
 
 * Eigenes Git-Repository in `prio/`, **nicht** Teil des gemeinsamen
   Codex-Repos im übergeordneten Ordner.
-* Remote: <https://github.com/krischimk/prio> (privat). `main` ist der stabile
-  Branch, für Größeres `feature/…` bzw. `fix/…`.
+* Remote: <https://github.com/krischimk/prio> (**öffentlich** – Voraussetzung
+  für die Update-Prüfung in der App). `main` ist der stabile Branch, für
+  Größeres `feature/…` bzw. `fix/…`.
 * Commit-Nachrichten nach Conventional Commits, kleine thematische Commits.
 * Version in `package.json` und das Release gehören zusammen: Version erhöhen,
   committen, Tag `v*` setzen und pushen. Der Release-Workflow baut und
@@ -69,6 +70,10 @@ rendern und die Screenshots **anschauen** (siehe Tests).
 * **Tag und Version müssen zusammenpassen.** Die Update-Prüfung vergleicht den
   Git-Tag der Veröffentlichung mit der installierten Version (`App.getInfo()`).
   Ein Release ohne passenden Tag im Namen macht die Prüfung falsch.
+* **Das Repository muss öffentlich bleiben.** Die Update-Prüfung holt die
+  Veröffentlichung anonym von GitHub; bei einem privaten Repository antwortet
+  GitHub mit `404`. Wird die Sichtbarkeit zurückgestellt, bricht das Feature
+  still.
 * Änderungen am Erscheinungsbild immer in Telefongröße gegenprüfen; das
   Querformat gehört dazu.
 

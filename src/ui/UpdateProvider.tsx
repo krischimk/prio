@@ -38,6 +38,17 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     if (Capacitor.isNativePlatform()) void check()
   }, [check])
 
+  // Der System-Downloader meldet das Ergebnis später – ein Fehlschlag darf
+  // nicht unbemerkt bleiben.
+  useEffect(
+    () =>
+      installer.onDownloadFailed((message) => {
+        setInstalling(false)
+        setInstallError(message)
+      }),
+    [installer],
+  )
+
   const install = useCallback(async () => {
     if (state.status !== 'available') return
     setInstalling(true)

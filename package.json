@@ -1,7 +1,7 @@
 {
   "name": "prio",
   "private": true,
-  "version": "0.6.0",
+  "version": "0.6.1",
   "type": "module",
   "description": "Offline-first To-do-App (Prototyp 0.1): React + TypeScript + Vite, Dexie/IndexedDB lokal, Supabase für Auth und Cloud-Sync.",
   "engines": {
@@ -27,7 +27,8 @@
     "android:emu": "bash scripts/android-emulator.sh start",
     "android:emu:install": "bash scripts/android-emulator.sh install",
     "android:emu:shot": "bash scripts/android-emulator.sh shot",
-    "android:emu:stop": "bash scripts/android-emulator.sh stop"
+    "android:emu:stop": "bash scripts/android-emulator.sh stop",
+    "android:emu:eval": "node scripts/webview-eval.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
