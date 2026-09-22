@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
 import type { LocalList } from '../domain/types'
-import { input, primaryButton } from './styles'
+import { errorMessage, input, primaryButton } from './styles'
 
 /**
  * Seitenleiste mit allen sichtbaren Listen.
@@ -94,7 +94,7 @@ export function Sidebar({
           Liste anlegen
         </button>
         {error ? (
-          <p role="alert" className="text-xs text-red-400">
+          <p role="alert" className={errorMessage}>
             {error}
           </p>
         ) : null}

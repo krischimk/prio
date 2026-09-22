@@ -1,6 +1,6 @@
 import { useWorkspace } from '../app/useWorkspace'
 import { describeReminderState } from '../reminders/reminderStatus'
-import { primaryButton } from './styles'
+import { mutedText, primaryButton, statusTone } from './styles'
 
 /**
  * Zeigt an, ob und wie viele Erinnerungen geplant sind, und bietet das
@@ -32,7 +32,7 @@ export function ReminderIndicator() {
   return (
     <span
       data-testid="reminder-status"
-      className={`text-xs ${tone === 'error' ? 'text-red-400' : 'text-neutral-500'}`}
+      className={`text-xs ${tone === 'error' ? statusTone.error.text : mutedText}`}
     >
       {text}
     </span>

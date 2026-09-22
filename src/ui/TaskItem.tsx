@@ -2,8 +2,8 @@ import { useState, type FormEvent } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
 import { useBackLayer } from '../app/useBackLayer'
 import type { LocalTask } from '../domain/types'
-import { formatDateTime, fromDateTimeLocalValue, isOverdue, toDateTimeLocalValue } from './datetime'
-import { dangerButton, ghostButton, input, primaryButton, secondaryButton } from './styles'
+import { formatDueLabel, fromDateTimeLocalValue, toDateTimeLocalValue } from './datetime'
+import { dangerButton, dangerText, ghostButton, input, primaryButton, secondaryButton } from './styles'
 
 /**
  * Eine Aufgabe in der Liste.
@@ -91,7 +91,7 @@ export function TaskItem({ task }: { task: LocalTask }) {
     )
   }
 
-  const overdue = task.due_at !== null && !task.completed && isOverdue(task.due_at)
+  const due = task.due_at === null ? null : formatDueLabel(task.due_at, task.completed)
 
   return (
     <li className="flex items-start gap-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-3">
@@ -111,11 +111,8 @@ export function TaskItem({ task }: { task: LocalTask }) {
         {task.description ? (
           <p className="mt-1 whitespace-pre-wrap break-words text-xs text-neutral-400">{task.description}</p>
         ) : null}
-        {task.due_at ? (
-          <p className={`mt-1 text-xs ${overdue ? 'text-red-400' : 'text-neutral-500'}`}>
-            Fällig: {formatDateTime(task.due_at)}
-            {overdue ? ' (überfällig)' : ''}
-          </p>
+        {due ? (
+          <p className={`mt-1 text-xs ${due.overdue ? dangerText : 'text-neutral-500'}`}>{due.text}</p>
         ) : null}
       </div>
       <div className="flex shrink-0 gap-1">

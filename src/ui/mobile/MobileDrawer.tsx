@@ -5,7 +5,7 @@ import { useWorkspace } from '../../app/useWorkspace'
 import { describeReminderState } from '../../reminders/reminderStatus'
 import { describeSyncState } from '../../sync/syncStatus'
 import type { LocalList } from '../../domain/types'
-import { input, primaryButton, secondaryButton } from '../styles'
+import { errorMessage, input, primaryButton, secondaryButton } from '../styles'
 import { CloseIcon } from './icons'
 
 /**
@@ -151,7 +151,7 @@ export function MobileDrawer({
               Liste anlegen
             </button>
             {error ? (
-              <p role="alert" className="text-xs text-red-400">
+              <p role="alert" className={errorMessage}>
                 {error}
               </p>
             ) : null}

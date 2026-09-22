@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useBackLayer } from '../../app/useBackLayer'
 import { useWorkspace } from '../../app/useWorkspace'
 import type { LocalList, LocalTask } from '../../domain/types'
-import { ghostButton } from '../styles'
+import { errorMessage, ghostButton } from '../styles'
 import { CloseIcon } from './icons'
 
 /**
@@ -86,7 +86,7 @@ export function MoveTaskSheet({
         </ul>
 
         {error ? (
-          <p role="alert" className="px-4 pb-4 text-xs text-red-400">
+          <p role="alert" className={`px-4 pb-4 ${errorMessage}`}>
             {error}
           </p>
         ) : null}

@@ -41,3 +41,26 @@ export function isOverdue(iso: string): boolean {
   const date = new Date(iso)
   return !Number.isNaN(date.getTime()) && date.getTime() < Date.now()
 }
+
+export interface DueLabel {
+  /** Fertiger Text, z. B. „Fällig: 15.02.2027, 18:30 · überfällig". */
+  text: string
+  /** `true`, wenn hervorgehoben werden soll. */
+  overdue: boolean
+}
+
+/**
+ * Aufbereitung der Fälligkeit – die einzige Stelle, an der dieser Text entsteht.
+ *
+ * Breite und mobile Ansicht zeigen dieselbe Information; vorher hat jede ihre
+ * eigene Schreibweise benutzt (`Fällig: … (überfällig)` bzw. `… · überfällig`).
+ * Erledigte Aufgaben gelten nicht als überfällig.
+ */
+export function formatDueLabel(dueAt: string, completed: boolean): DueLabel {
+  const zeitpunkt = formatDateTime(dueAt)
+  const overdue = !completed && isOverdue(dueAt)
+  return {
+    text: overdue ? `Fällig: ${zeitpunkt} · überfällig` : `Fällig: ${zeitpunkt}`,
+    overdue,
+  }
+}

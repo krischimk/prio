@@ -1,18 +1,7 @@
 import { useWorkspace } from '../../app/useWorkspace'
-import { describeSyncState, type SyncTone } from '../../sync/syncStatus'
+import { describeSyncState } from '../../sync/syncStatus'
+import { statusTone } from '../styles'
 import { MenuIcon } from './icons'
-
-const dotClasses: Record<SyncTone, string> = {
-  ok: 'bg-emerald-400',
-  pending: 'bg-amber-400',
-  error: 'bg-red-400',
-}
-
-const dotLabels: Record<SyncTone, string> = {
-  ok: 'Alles synchronisiert',
-  pending: 'Synchronisation ausstehend',
-  error: 'Synchronisation fehlgeschlagen',
-}
 
 /**
  * Obere Leiste der mobilen Ansicht.
@@ -25,6 +14,7 @@ const dotLabels: Record<SyncTone, string> = {
 export function MobileAppBar({ listName, onOpenMenu }: { listName: string | null; onOpenMenu: () => void }) {
   const { syncStatus, pendingCount, syncing, runSync } = useWorkspace()
   const { tone, text } = describeSyncState(syncStatus, pendingCount, syncing)
+  const farben = statusTone[tone]
 
   return (
     <header className="safe-top fixed inset-x-0 top-0 z-30 border-b border-neutral-800 bg-neutral-950">
@@ -47,11 +37,11 @@ export function MobileAppBar({ listName, onOpenMenu }: { listName: string | null
           onClick={() => {
             void runSync()
           }}
-          aria-label={`${dotLabels[tone]} – jetzt synchronisieren`}
+          aria-label={`${farben.label} – jetzt synchronisieren`}
           title={text}
           className="rounded-md p-3 active:bg-neutral-800"
         >
-          <span className={`block h-2.5 w-2.5 rounded-full ${dotClasses[tone]}`} />
+          <span className={`block h-2.5 w-2.5 rounded-full ${farben.dot}`} />
         </button>
       </div>
     </header>

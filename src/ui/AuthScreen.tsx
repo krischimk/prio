@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useAuth } from '../auth/useAuth'
-import { input, link, primaryButton } from './styles'
+import { errorBox, input, link, primaryButton, successBox } from './styles'
 
 /**
  * Anmeldung und Registrierung.
@@ -75,12 +75,12 @@ export function AuthScreen() {
           </div>
 
           {error ? (
-            <p role="alert" className="rounded-md border border-red-900/60 bg-red-950/40 px-3 py-2 text-sm text-red-300">
+            <p role="alert" className={errorBox}>
               {error}
             </p>
           ) : null}
           {notice ? (
-            <p role="status" className="rounded-md border border-emerald-900/60 bg-emerald-950/40 px-3 py-2 text-sm text-emerald-300">
+            <p role="status" className={successBox}>
               {notice}
             </p>
           ) : null}

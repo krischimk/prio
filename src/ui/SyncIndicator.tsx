@@ -1,18 +1,6 @@
 import { useWorkspace } from '../app/useWorkspace'
-import { describeSyncState, type SyncTone } from '../sync/syncStatus'
-import { ghostButton } from './styles'
-
-const toneClasses: Record<SyncTone, string> = {
-  ok: 'text-emerald-400',
-  pending: 'text-amber-400',
-  error: 'text-red-400',
-}
-
-const dotClasses: Record<SyncTone, string> = {
-  ok: 'bg-emerald-400',
-  pending: 'bg-amber-400',
-  error: 'bg-red-400',
-}
+import { describeSyncState } from '../sync/syncStatus'
+import { ghostButton, statusTone } from './styles'
 
 /**
  * Statusanzeige der Synchronisation.
@@ -23,12 +11,13 @@ const dotClasses: Record<SyncTone, string> = {
 export function SyncIndicator() {
   const { syncStatus, pendingCount, syncing, runSync } = useWorkspace()
   const { text, tone } = describeSyncState(syncStatus, pendingCount, syncing)
+  const farben = statusTone[tone]
 
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
       <span className="flex items-center gap-2">
-        <span className={`h-2 w-2 shrink-0 rounded-full ${dotClasses[tone]}`} aria-hidden="true" />
-        <span data-testid="sync-status" className={toneClasses[tone]}>
+        <span className={`h-2 w-2 shrink-0 rounded-full ${farben.dot}`} aria-hidden="true" />
+        <span data-testid="sync-status" className={farben.text}>
           {text}
         </span>
       </span>

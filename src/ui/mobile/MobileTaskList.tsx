@@ -1,7 +1,8 @@
 import { Fragment, useRef } from 'react'
 import { useWorkspace } from '../../app/useWorkspace'
 import type { LocalTask } from '../../domain/types'
-import { formatDateTime, isOverdue } from '../datetime'
+import { formatDueLabel } from '../datetime'
+import { dangerText } from '../styles'
 import { useReorderDrag, type ReorderDrag } from './useReorderDrag'
 
 /**
@@ -76,7 +77,7 @@ function MobileTaskRow({
   isDragging: boolean
 }) {
   const { repositories } = useWorkspace()
-  const overdue = task.due_at !== null && !task.completed && isOverdue(task.due_at)
+  const due = task.due_at === null ? null : formatDueLabel(task.due_at, task.completed)
   const handlers = drag.getRowHandlers(task.id, index)
 
   return (
@@ -119,10 +120,9 @@ function MobileTaskRow({
         {task.description ? (
           <span className="mt-0.5 block truncate text-xs text-neutral-500">{task.description}</span>
         ) : null}
-        {task.due_at ? (
-          <span className={`mt-0.5 block text-xs ${overdue ? 'text-red-400' : 'text-neutral-500'}`}>
-            {formatDateTime(task.due_at)}
-            {overdue ? ' · überfällig' : ''}
+        {due ? (
+          <span className={`mt-0.5 block text-xs ${due.overdue ? dangerText : 'text-neutral-500'}`}>
+            {due.text}
           </span>
         ) : null}
       </button>

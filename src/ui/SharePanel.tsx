@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
 import { useMembers } from '../app/hooks'
 import type { LocalList } from '../domain/types'
-import { dangerButton, input, primaryButton } from './styles'
+import { dangerButton, errorMessage, input, primaryButton, successMessage } from './styles'
 
 /**
  * Teilen einer Liste über die E-Mail-Adresse eines registrierten Nutzers.
@@ -69,12 +69,12 @@ export function SharePanel({ list, currentUserId }: { list: LocalList; currentUs
       </form>
 
       {error ? (
-        <p role="alert" className="text-xs text-red-400">
+        <p role="alert" className={errorMessage}>
           {error}
         </p>
       ) : null}
       {notice ? (
-        <p role="status" className="text-xs text-emerald-400">
+        <p role="status" className={successMessage}>
           {notice}
         </p>
       ) : null}
