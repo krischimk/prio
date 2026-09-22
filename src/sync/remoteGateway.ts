@@ -51,8 +51,7 @@ export function classifyRemoteError(error: unknown): RemoteError {
   if (error instanceof RemoteError) return error
 
   const name = typeof error === 'object' && error !== null && 'name' in error ? String(error.name) : ''
-  const message =
-    error instanceof Error ? error.message : typeof error === 'string' ? error : JSON.stringify(error)
+  const message = messageOf(error)
   const lower = message.toLowerCase()
   const status = statusOf(error)
   const code = codeOf(error)
@@ -67,6 +66,23 @@ export function classifyRemoteError(error: unknown): RemoteError {
     return new RemoteError('offline', message, { cause: error })
   }
   return new RemoteError('server', message, { cause: error })
+}
+
+/**
+ * Holt die eigentliche Meldung aus einem Fehler.
+ *
+ * Wichtig: Supabase liefert bei PostgREST-Fehlern ein **einfaches Objekt**, kein
+ * `Error`. Ohne diesen Zweig landete das komplette JSON in der Oberfläche –
+ * unlesbar und wegen der langen Zeichenkette auch nicht umbrechbar.
+ */
+function messageOf(error: unknown): string {
+  if (error instanceof Error) return error.message
+  if (typeof error === 'string') return error
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    const inner = (error as { message?: unknown }).message
+    if (typeof inner === 'string' && inner.trim() !== '') return inner
+  }
+  return JSON.stringify(error)
 }
 
 function isNetworkFailure(lowerMessage: string): boolean {
