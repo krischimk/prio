@@ -96,16 +96,47 @@ test('legt über das Menü eine Liste und über den Plus-Knopf eine Aufgabe an',
   await expect(page.getByRole('button', { name: 'Löschen' })).toHaveCount(0)
 })
 
-test('hakt eine Aufgabe direkt in der Liste ab', async ({ page }) => {
+test('hakt eine Aufgabe ab, die dadurch aus der Liste verschwindet', async ({ page }) => {
   await register(page, uniqueEmail('m2'))
   await createList(page, 'Haushalt')
   await createTask(page, 'Wohnung saugen')
 
-  const checkbox = page.getByLabel('Aufgabe erledigen: Wohnung saugen')
-  await checkbox.click()
+  await page.getByLabel('Aufgabe erledigen: Wohnung saugen').click()
 
-  await expect(checkbox).toBeChecked()
-  await expect(page.getByText('0 offene Aufgaben')).toBeVisible()
+  // Die Aufgabe verschwindet sofort aus der Liste …
+  await expect(page.getByText('Noch keine Aufgaben in dieser Liste.')).toBeVisible()
+
+  // … und die Leiste bietet den Rückweg an.
+  const leiste = page.getByTestId('undo-bar')
+  await expect(leiste).toBeVisible()
+  await expect(leiste).toContainText('Wohnung saugen')
+
+  await leiste.getByRole('button', { name: 'Rückgängig' }).click()
+  await expect(taskRow(page, 'Wohnung saugen')).toBeVisible()
+  await expect(page.getByText('1 offene Aufgabe')).toBeVisible()
+})
+
+test('stellt eine abgehakte Aufgabe über die Einstellungen wieder her', async ({ page }) => {
+  await register(page, uniqueEmail('m9'))
+  await createList(page, 'Haushalt')
+  await createTask(page, 'Zurückholen')
+
+  await page.getByLabel('Aufgabe erledigen: Zurückholen').click()
+  await expect(page.getByText('Noch keine Aufgaben in dieser Liste.')).toBeVisible()
+
+  await openMenu(page)
+  await page.getByRole('button', { name: 'Aufgaben wiederherstellen' }).click()
+
+  const panel = page.getByRole('dialog', { name: 'Aufgaben wiederherstellen' })
+  await expect(panel).toBeVisible()
+  await expect(page.getByTestId('restore-list')).toContainText('Zurückholen')
+  await expect(page.getByTestId('restore-list')).toContainText('Haushalt')
+
+  await panel.getByRole('button', { name: 'Wiederherstellen' }).click()
+  await expect(page.getByTestId('restore-empty')).toBeVisible()
+
+  await panel.getByRole('button', { name: 'Schließen' }).click()
+  await expect(taskRow(page, 'Zurückholen')).toBeVisible()
 })
 
 test('öffnet per Antippen die Detailansicht und ändert den Titel', async ({ page }) => {

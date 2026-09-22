@@ -189,17 +189,20 @@ describe('Repositories (lokale Geschäftslogik)', () => {
       ])
     })
 
-    it('lässt erledigte Aufgaben an ihrem Platz', async () => {
+    it('blendet erledigte Aufgaben aus der Liste aus', async () => {
       const listId = await newList()
       const erste = await device.repositories.createTask({ listId, title: 'Erste' })
       await device.repositories.createTask({ listId, title: 'Zweite' })
 
       await device.repositories.setTaskCompleted(erste.id, true)
 
-      // Kein Springen ans Ende – die Zeile bleibt, wo sie war.
+      // Abgehakt heißt: verschwindet. Auffindbar bleibt sie unter
+      // „Aufgaben wiederherstellen“.
       expect((await device.repositories.listTasks(listId)).map((task) => task.title)).toEqual([
-        'Erste',
         'Zweite',
+      ])
+      expect((await device.repositories.listRestorableTasks()).map((task) => task.title)).toEqual([
+        'Erste',
       ])
     })
 
@@ -221,11 +224,21 @@ describe('Repositories (lokale Geschäftslogik)', () => {
       for (const task of [später, früher, ohneDatum]) {
         await device.db.tasks.update(task.id, { position: 0 })
       }
-      await device.db.tasks.update(ohneDatum.id, { completed: true })
 
+      // Alle offen: ohne Fälligkeit steht hinten.
       expect((await device.repositories.listTasks(listId)).map((task) => task.title)).toEqual([
         'Früher',
         'Später',
+        'Ohne Datum',
+      ])
+
+      // Und erledigt fällt heraus, egal an welcher Position.
+      await device.db.tasks.update(später.id, {
+        completed: true,
+        completed_at: device.clock.now(),
+      })
+      expect((await device.repositories.listTasks(listId)).map((task) => task.title)).toEqual([
+        'Früher',
         'Ohne Datum',
       ])
     })
@@ -310,6 +323,82 @@ describe('Repositories (lokale Geschäftslogik)', () => {
       const a = await device.repositories.createTask({ listId, title: 'A' })
       const b = await device.repositories.createTask({ listId, title: 'B' })
       expect(a.id).not.toBe(b.id)
+    })
+  })
+
+  describe('Erledigen und Wiederherstellen', () => {
+    const TAG = 24 * 60 * 60 * 1000
+
+    it('setzt den Zeitpunkt beim Abhaken und leert ihn beim Wiederöffnen', async () => {
+      const listId = await newList()
+      const task = await device.repositories.createTask({ listId, title: 'Test' })
+      expect(task.completed_at).toBeNull()
+
+      device.clock.advance(1000)
+      const erledigt = await device.repositories.setTaskCompleted(task.id, true)
+      expect(erledigt.completed_at).toBe(device.clock.now())
+
+      device.clock.advance(1000)
+      const offen = await device.repositories.setTaskCompleted(task.id, false)
+      expect(offen.completed_at).toBeNull()
+    })
+
+    it('listet nur, was innerhalb des Fensters abgehakt wurde', async () => {
+      const listId = await newList()
+      const alt = await device.repositories.createTask({ listId, title: 'Zu alt' })
+      await device.repositories.setTaskCompleted(alt.id, true)
+
+      // Achteinhalb Tage später – das Fenster beträgt sieben.
+      device.clock.advance(9 * TAG)
+      const frisch = await device.repositories.createTask({ listId, title: 'Frisch' })
+      await device.repositories.setTaskCompleted(frisch.id, true)
+
+      expect((await device.repositories.listRestorableTasks()).map((task) => task.title)).toEqual([
+        'Frisch',
+      ])
+    })
+
+    it('sortiert die zuletzt abgehakte Aufgabe nach oben', async () => {
+      const listId = await newList()
+      const a = await device.repositories.createTask({ listId, title: 'Zuerst' })
+      const b = await device.repositories.createTask({ listId, title: 'Danach' })
+
+      await device.repositories.setTaskCompleted(a.id, true)
+      device.clock.advance(60_000)
+      await device.repositories.setTaskCompleted(b.id, true)
+
+      expect((await device.repositories.listRestorableTasks()).map((task) => task.title)).toEqual([
+        'Danach',
+        'Zuerst',
+      ])
+    })
+
+    it('ignoriert offene und gelöschte Aufgaben', async () => {
+      const listId = await newList()
+      const offen = await device.repositories.createTask({ listId, title: 'Offen' })
+      const geloescht = await device.repositories.createTask({ listId, title: 'Gelöscht' })
+      await device.repositories.setTaskCompleted(geloescht.id, true)
+      await device.repositories.deleteTask(geloescht.id)
+
+      const wiederherstellbar = await device.repositories.listRestorableTasks()
+      expect(wiederherstellbar.map((task) => task.title)).toEqual([])
+      expect(await device.repositories.getTask(offen.id)).toBeDefined()
+    })
+
+    it('stellt eine abgehakte Aufgabe wieder her', async () => {
+      const listId = await newList()
+      const task = await device.repositories.createTask({ listId, title: 'Zurück' })
+      await device.repositories.setTaskCompleted(task.id, true)
+      expect(await device.repositories.listTasks(listId)).toHaveLength(0)
+
+      device.clock.advance(1000)
+      const wieder = await device.repositories.setTaskCompleted(task.id, false)
+
+      expect(wieder.completed).toBe(false)
+      expect(wieder.completed_at).toBeNull()
+      expect(wieder.dirty).toBe(1)
+      expect((await device.repositories.listTasks(listId)).map((row) => row.title)).toEqual(['Zurück'])
+      expect(await device.repositories.listRestorableTasks()).toHaveLength(0)
     })
   })
 

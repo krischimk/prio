@@ -7,6 +7,7 @@ import { MobileAppBar } from './MobileAppBar'
 import { MobileDrawer } from './MobileDrawer'
 import { MobileTaskList } from './MobileTaskList'
 import { MoveTaskSheet } from './MoveTaskSheet'
+import { RestoreTasksPanel } from '../RestoreTasksPanel'
 import { TaskDetailSheet } from './TaskDetailSheet'
 import { PlusIcon } from './icons'
 
@@ -30,6 +31,7 @@ export function MobileWorkspace() {
   const [selectedListId, selectList] = useSelectedListId(lists)
 
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [restoreOpen, setRestoreOpen] = useState(false)
   /** `null` = geschlossen, sonst die Aufgabe (`task: null` legt eine neue an). */
   const [detail, setDetail] = useState<{ task: LocalTask | null } | null>(null)
   const [movingTask, setMovingTask] = useState<LocalTask | null>(null)
@@ -85,7 +87,13 @@ export function MobileWorkspace() {
         selectedListId={selectedListId}
         onSelectList={selectList}
         currentUserId={userId}
+        onOpenRestore={() => {
+          setDrawerOpen(false)
+          setRestoreOpen(true)
+        }}
       />
+
+      <RestoreTasksPanel open={restoreOpen} onClose={() => setRestoreOpen(false)} />
 
       {detail !== null && selected !== null ? (
         <TaskDetailSheet

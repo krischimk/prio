@@ -69,11 +69,16 @@ test('E2E 2: Benutzer bearbeitet und erledigt eine Aufgabe', async ({ page }) =>
   await expect(taskItem(page, 'Neuer Titel').getByText('Mit Notiz')).toBeVisible()
 
   // Erledigen. Bewusst `click` statt `check`: Die Anzeige folgt der lokalen
-  // Datenbank und wird erst nach dem Schreiben neu gerendert.
-  const checkbox = taskItem(page, 'Neuer Titel').getByRole('checkbox')
-  await checkbox.click()
-  await expect(checkbox).toBeChecked()
-  await expect(page.getByText('0 offene Aufgaben')).toBeVisible()
+  // Datenbank und wird erst nach dem Schreiben neu gerendert – und die Aufgabe
+  // verschwindet dabei ganz aus der Liste.
+  await taskItem(page, 'Neuer Titel').getByRole('checkbox').click()
+  await expect(page.getByText('Noch keine Aufgaben in dieser Liste.')).toBeVisible()
+
+  // Die Leiste bietet den Rückweg an.
+  const leiste = page.getByTestId('undo-bar')
+  await expect(leiste).toContainText('Neuer Titel')
+  await leiste.getByRole('button', { name: 'Rückgängig' }).click()
+  await expect(taskItem(page, 'Neuer Titel')).toBeVisible()
 
   // Löschen
   await taskItem(page, 'Neuer Titel').getByRole('button', { name: /Aufgabe löschen/ }).click()

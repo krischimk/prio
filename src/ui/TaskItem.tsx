@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
 import { useBackLayer } from '../app/useBackLayer'
+import { useUndo } from './useUndo'
 import type { LocalTask } from '../domain/types'
 import { formatDueLabel, fromDateTimeLocalValue, toDateTimeLocalValue } from './datetime'
 import { dangerButton, dangerText, ghostButton, input, primaryButton, secondaryButton } from './styles'
@@ -14,6 +15,7 @@ import { dangerButton, dangerText, ghostButton, input, primaryButton, secondaryB
  */
 export function TaskItem({ task }: { task: LocalTask }) {
   const { repositories } = useWorkspace()
+  const { offerUndo } = useUndo()
   const [editing, setEditing] = useState(false)
   // Die Zurück-Taste schließt zuerst das Bearbeitungsformular.
   useBackLayer(editing, () => setEditing(false))
@@ -102,6 +104,8 @@ export function TaskItem({ task }: { task: LocalTask }) {
         aria-label={`Aufgabe erledigen: ${task.title}`}
         onChange={(event) => {
           void repositories.setTaskCompleted(task.id, event.target.checked)
+          // Die Aufgabe verschwindet sofort – die Leiste bietet den Rückweg an.
+          if (event.target.checked) offerUndo(task)
         }}
       />
       <div className="min-w-0 flex-1">

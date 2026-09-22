@@ -1,6 +1,6 @@
 # prio
 
-**Offline-first To-do-App – Version 0.4.1 (technischer Prototyp).**
+**Offline-first To-do-App – Version 0.5.0 (technischer Prototyp).**
 
 Ziel dieser Version ist ausdrücklich **kein fertiges Produkt**, sondern eine
 schlanke Grundlage, mit der die Kernarchitektur zuverlässig getestet werden
@@ -80,8 +80,10 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
 
 * Felder: `id`, `list_id`, `title`, optionale `description`, optionales
   `due_at` (mit Uhrzeit), `completed`, `created_at`, `updated_at`, `deleted_at`
-* Erstellen, bearbeiten, erledigen/wieder öffnen, in eine andere Liste
-  verschieben, löschen
+* Erstellen, bearbeiten, erledigen, in eine andere Liste verschieben, löschen
+* Abgehakte Aufgaben verschwinden aus der Liste und sind sieben Tage lang unter
+  *Einstellungen → Aufgaben wiederherstellen* auffindbar
+* Nach dem Abhaken erscheint unten kurz eine Leiste mit „Rückgängig“
 * Erinnerungen: Hat eine Aufgabe ein Fälligkeitsdatum in der Zukunft, plant
   die Android-App eine Benachrichtigung. Details unter
   [Erinnerungen](#erinnerungen)
@@ -484,6 +486,33 @@ dem Antippen: keine Bearbeiten- oder Löschen-Knöpfe, kein Kontextmenü. Die
 Zeile ist der Knopf. Alles Weitere – auch das Verschieben in eine andere Liste –
 liegt gebündelt in der Detailansicht.
 
+### Erledigen und Wiederherstellen
+
+Abhaken lässt die Aufgabe sofort aus der Liste verschwinden – in beiden
+Ansichten. Damit ein versehentliches Abhaken nicht ärgerlich wird, gibt es zwei
+Wege zurück:
+
+* **Die Leiste unten** erscheint direkt nach dem Abhaken für fünf Sekunden mit
+  einem „Rückgängig“-Knopf. Hakst du mehrere Aufgaben kurz hintereinander ab,
+  zeigt sie die zuletzt abgehakte.
+* **Einstellungen → Aufgaben wiederherstellen** zeigt alles, was in den letzten
+  **sieben Tagen** abgehakt wurde, zuletzt abgehaktes zuerst, mit der Liste und
+  dem Zeitpunkt. Auf dem Telefon über das Menü, in der breiten Ansicht über
+  „Wiederherstellen“ im Kopfbereich.
+
+Grundlage ist das Feld `completed_at`: Es wird beim Abhaken gesetzt und beim
+Wiederöffnen wieder geleert (`setTaskCompleted` in `src/db/repositories.ts`).
+Das Fenster ist `RESTORE_WINDOW_DAYS` an derselben Stelle.
+
+Nach den sieben Tagen ist eine Aufgabe **nicht gelöscht**, nur nicht mehr über
+die Oberfläche erreichbar. Sie bleibt in der Datenbank und wird weiterhin
+synchronisiert.
+
+> **Wiederkehrende Aufgaben** gibt es noch nicht. Sobald sie dazukommen, gilt
+> zusätzlich: Eine wiederkehrende Aufgabe bleibt nur so lange im
+> Wiederherstellen-Fenster, bis ihr Nachfolger existiert. Das ist dann eine
+> Ergänzung im Filter von `listRestorableTasks`.
+
 ### Reihenfolge
 
 Die Reihenfolge steckt im Feld `position` der Aufgabe und wird mitsynchronisiert –
@@ -498,9 +527,6 @@ Beim Umsortieren werden die Positionen der betroffenen Liste auf 1 … n
 neu vergeben (`reorderTasks`). Geschrieben werden nur Aufgaben, deren Position
 sich tatsächlich ändert – der Rest bleibt unangetastet und wird auch nicht
 erneut hochgeladen.
-
-**Erledigte Aufgaben bleiben an ihrem Platz**, statt ans Ende zu rutschen. Sonst
-springt die Zeile beim Abhaken unter dem Finger weg.
 
 Datensätze aus der Zeit vor dieser Funktion haben die Position 0. Bei
 Gleichstand greifen die früheren Regeln (Erledigt-Status, Fälligkeit,

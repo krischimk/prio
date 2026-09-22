@@ -11,6 +11,7 @@ App. Sie sind so geschrieben, dass sie sich gefahrlos erneut ausführen lassen
 | `0003_share_list.sql` | Funktion `share_list_by_email` zum Teilen über eine E-Mail-Adresse |
 | `0004_harden_functions.sql` | Hilfsfunktionen ins private Schema, Trigger-Funktionen aus der API nehmen |
 | `0005_task_position.sql` | Spalte `position` für die vom Benutzer bestimmte Reihenfolge |
+| `0006_task_completed_at.sql` | Spalte `completed_at` für „Aufgaben wiederherstellen“ |
 
 ## Anwenden
 

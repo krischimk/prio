@@ -39,6 +39,7 @@ export function withChangeTracking(repositories: Repositories, onChange: () => v
     listLists: repositories.listLists.bind(repositories),
     getTask: repositories.getTask.bind(repositories),
     listTasks: repositories.listTasks.bind(repositories),
+    listRestorableTasks: repositories.listRestorableTasks.bind(repositories),
     listMembers: repositories.listMembers.bind(repositories),
   }
 }

@@ -1,4 +1,4 @@
-import { systemClock, type Clock } from '../domain/clock'
+import { systemClock, timeOf, type Clock } from '../domain/clock'
 import { newId } from '../domain/ids'
 import type { LocalList, LocalListMember, LocalTask } from '../domain/types'
 import type { LocalDatabase } from './localDb'
@@ -16,6 +16,15 @@ import { optionalText, requireText, ValidationError } from './validation'
  * synchronisiert werden kann. Es wird nie eine Zeile lokal entfernt, solange
  * sie noch nicht auf dem Server angekommen ist.
  */
+
+/**
+ * Wie lange eine abgehakte Aufgabe unter „Aufgaben wiederherstellen“ auftaucht.
+ *
+ * Bewusste Entscheidung: Die Aufgabe verschwindet nach dem Abhaken sofort aus
+ * der Liste, bleibt aber eine Woche lang auffindbar. Danach ist sie nur noch
+ * über die Synchronisation erreichbar (sie ist nicht gelöscht, nur verborgen).
+ */
+export const RESTORE_WINDOW_DAYS = 7
 
 export interface CreateTaskInput {
   listId: string
@@ -52,7 +61,13 @@ export interface Repositories {
   reorderTasks(listId: string, orderedTaskIds: string[]): Promise<void>
   deleteTask(taskId: string): Promise<void>
   getTask(taskId: string): Promise<LocalTask | undefined>
+  /** Offene Aufgaben einer Liste, in der vom Benutzer bestimmten Reihenfolge. */
   listTasks(listId: string): Promise<LocalTask[]>
+  /**
+   * Abgehakte Aufgaben aller Listen, die noch wiederhergestellt werden können –
+   * zuletzt abgehakte zuerst.
+   */
+  listRestorableTasks(): Promise<LocalTask[]>
 
   // Mitgliedschaften
   listMembers(listId: string): Promise<LocalListMember[]>
@@ -180,6 +195,7 @@ export function createRepositories(db: LocalDatabase, clock: Clock = systemClock
         description: optionalText(input.description),
         due_at: optionalText(input.dueAt),
         completed: false,
+        completed_at: null,
         position: hoechste + 1,
         created_at: now,
         updated_at: now,
@@ -204,9 +220,18 @@ export function createRepositories(db: LocalDatabase, clock: Clock = systemClock
       return updated
     },
 
+    /**
+     * Abhaken setzt den Zeitpunkt, Wiederöffnen löscht ihn wieder. Nur so weiß
+     * die Wiederherstellen-Liste, wie lange eine Aufgabe noch dorthin gehört.
+     */
     async setTaskCompleted(taskId, completed) {
       const task = await requireTask(taskId)
-      const updated: LocalTask = { ...task, completed, ...stamp() }
+      const updated: LocalTask = {
+        ...task,
+        completed,
+        completed_at: completed ? clock.now() : null,
+        ...stamp(),
+      }
       await db.tasks.put(updated)
       return updated
     },
@@ -266,7 +291,30 @@ export function createRepositories(db: LocalDatabase, clock: Clock = systemClock
 
     async listTasks(listId) {
       const tasks = await db.tasks.where('list_id').equals(listId).toArray()
-      return tasks.filter((task) => task.deleted_at === null).sort(compareTasks)
+      // Abgehakte Aufgaben verschwinden aus der Liste; sie sind über die
+      // Einstellungen noch eine Weile zu finden.
+      return tasks
+        .filter((task) => task.deleted_at === null && !task.completed)
+        .sort(compareTasks)
+    },
+
+    async listRestorableTasks() {
+      const grenze = new Date(
+        timeOf(clock.now()) - RESTORE_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+      ).toISOString()
+
+      const tasks = await db.tasks.toArray()
+      return tasks
+        .filter(
+          (task) =>
+            task.deleted_at === null &&
+            task.completed &&
+            task.completed_at !== null &&
+            task.completed_at >= grenze,
+        )
+        // Zuletzt abgehakt zuerst. Die Zeitstempel liegen alle im selben
+        // ISO-Format vor, der Vergleich ist deshalb stabil.
+        .sort((a, b) => (b.completed_at ?? '').localeCompare(a.completed_at ?? ''))
     },
 
     async listMembers(listId) {

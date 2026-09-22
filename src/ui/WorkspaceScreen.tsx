@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { useAuth } from '../auth/useAuth'
 import { useLists, useSelectedListId } from '../app/hooks'
 import { useIsDesktop } from '../app/useIsDesktop'
 import { MobileWorkspace } from './mobile/MobileWorkspace'
+import { RestoreTasksPanel } from './RestoreTasksPanel'
 import { ReminderIndicator } from './ReminderIndicator'
 import { Sidebar } from './Sidebar'
 import { SyncIndicator } from './SyncIndicator'
@@ -25,6 +27,7 @@ function DesktopWorkspace() {
   const { state, signOut } = useAuth()
   const lists = useLists()
   const [selectedListId, selectList] = useSelectedListId(lists)
+  const [restoreOpen, setRestoreOpen] = useState(false)
 
   const user = state.status === 'authenticated' ? state.user : null
   const selected = lists.find((list) => list.id === selectedListId) ?? null
@@ -52,6 +55,13 @@ function DesktopWorkspace() {
             <button
               type="button"
               className={`${ghostButton} px-2 py-1 text-xs`}
+              onClick={() => setRestoreOpen(true)}
+            >
+              Wiederherstellen
+            </button>
+            <button
+              type="button"
+              className={`${ghostButton} px-2 py-1 text-xs`}
               onClick={() => {
                 void signOut()
               }}
@@ -69,6 +79,8 @@ function DesktopWorkspace() {
           </div>
         )}
       </div>
+
+      <RestoreTasksPanel open={restoreOpen} onClose={() => setRestoreOpen(false)} />
     </div>
   )
 }

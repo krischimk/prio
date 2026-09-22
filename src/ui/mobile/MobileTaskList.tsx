@@ -1,5 +1,6 @@
 import { Fragment, useRef } from 'react'
 import { useWorkspace } from '../../app/useWorkspace'
+import { useUndo } from '../useUndo'
 import type { LocalTask } from '../../domain/types'
 import { formatDueLabel } from '../datetime'
 import { dangerText } from '../styles'
@@ -77,6 +78,7 @@ function MobileTaskRow({
   isDragging: boolean
 }) {
   const { repositories } = useWorkspace()
+  const { offerUndo } = useUndo()
   const due = task.due_at === null ? null : formatDueLabel(task.due_at, task.completed)
   const handlers = drag.getRowHandlers(task.id, index)
 
@@ -95,6 +97,7 @@ function MobileTaskRow({
         aria-label={`Aufgabe erledigen: ${task.title}`}
         onChange={(event) => {
           void repositories.setTaskCompleted(task.id, event.target.checked)
+          if (event.target.checked) offerUndo(task)
         }}
       />
 

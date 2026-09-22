@@ -56,6 +56,16 @@ export interface DueLabel {
  * eigene Schreibweise benutzt (`Fällig: … (überfällig)` bzw. `… · überfällig`).
  * Erledigte Aufgaben gelten nicht als überfällig.
  */
+/**
+ * Wann eine Aufgabe abgehakt wurde – für die Wiederherstellen-Liste.
+ *
+ * Steht hier und nicht in der Komponente, weil jede Datumsdarstellung an einer
+ * Stelle liegen soll (siehe `uiConventions.test.ts`).
+ */
+export function formatCompletedLabel(completedAt: string): string {
+  return `abgehakt am ${formatDateTime(completedAt)}`
+}
+
 export function formatDueLabel(dueAt: string, completed: boolean): DueLabel {
   const zeitpunkt = formatDateTime(dueAt)
   const overdue = !completed && isOverdue(dueAt)

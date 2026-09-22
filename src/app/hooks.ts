@@ -44,6 +44,20 @@ export function useTasks(listId: string | null): LocalTask[] {
   return tasks
 }
 
+/**
+ * Abgehakte Aufgaben, die noch wiederhergestellt werden können – zuletzt
+ * abgehakte zuerst.
+ */
+export function useRestorableTasks(): LocalTask[] {
+  const { repositories, dataVersion } = useWorkspace()
+  const [tasks, setTasks] = useState<LocalTask[]>([])
+  useEffect(
+    () => subscribe(() => repositories.listRestorableTasks(), setTasks),
+    [repositories, dataVersion],
+  )
+  return tasks
+}
+
 export function useMembers(listId: string | null): LocalListMember[] {
   const { repositories, dataVersion } = useWorkspace()
   const [members, setMembers] = useState<LocalListMember[]>([])

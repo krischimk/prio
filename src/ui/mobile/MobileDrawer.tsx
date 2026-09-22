@@ -22,6 +22,7 @@ export function MobileDrawer({
   selectedListId,
   onSelectList,
   currentUserId,
+  onOpenRestore,
 }: {
   open: boolean
   onClose: () => void
@@ -29,6 +30,7 @@ export function MobileDrawer({
   selectedListId: string | null
   onSelectList: (listId: string) => void
   currentUserId: string
+  onOpenRestore: () => void
 }) {
   const { state, signOut } = useAuth()
   const { repositories, syncStatus, pendingCount, syncing, runSync, reminderStatus, enableReminders } =
@@ -196,6 +198,14 @@ export function MobileDrawer({
           {!reminders.text && !reminders.canEnable ? (
             <p className="text-xs text-neutral-500">Erinnerungen sind auf diesem Gerät nicht verfügbar.</p>
           ) : null}
+
+          <button
+            type="button"
+            className={`${secondaryButton} mt-3 w-full`}
+            onClick={onOpenRestore}
+          >
+            Aufgaben wiederherstellen
+          </button>
         </section>
 
         <div className="mt-auto border-t border-neutral-800 px-4 py-4">

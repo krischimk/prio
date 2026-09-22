@@ -52,6 +52,7 @@ export function toRemoteTask(local: LocalTask): RemoteTask {
     description: local.description,
     due_at: normalizeIso(local.due_at),
     completed: local.completed,
+    completed_at: normalizeIso(local.completed_at),
     position: local.position,
     created_at: normalizeIso(local.created_at),
     updated_at: normalizeIso(local.updated_at),
@@ -67,6 +68,8 @@ export function fromRemoteTask(remote: RemoteTask): LocalTask {
     description: remote.description,
     due_at: normalizeIso(remote.due_at),
     completed: remote.completed,
+    // Ältere Zeilen kennen das Feld noch nicht – null ist der richtige Rückfall.
+    completed_at: normalizeIso(remote.completed_at ?? null),
     position: remote.position ?? 0,
     created_at: normalizeIso(remote.created_at),
     updated_at: normalizeIso(remote.updated_at),

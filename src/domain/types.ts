@@ -46,6 +46,11 @@ export interface LocalTask extends SyncableRow, LocalOnly {
   due_at: IsoDateTime | null
   completed: boolean
   /**
+   * Zeitpunkt, zu dem die Aufgabe abgehakt wurde – `null`, solange sie offen
+   * ist. Grundlage für „Aufgaben wiederherstellen“ in den Einstellungen.
+   */
+  completed_at: IsoDateTime | null
+  /**
    * Vom Benutzer bestimmte Reihenfolge innerhalb der Liste (kleiner = weiter
    * oben). Neue Aufgaben bekommen die höchste Position und landen damit unten.
    *
