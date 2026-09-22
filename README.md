@@ -475,16 +475,37 @@ gebaute Ansicht. Ab 768 px bleibt die breite Ansicht mit Seitenleiste.
 | Geste | Wirkung |
 | --- | --- |
 | Tippen auf eine Aufgabe | Detailansicht: bearbeiten, erledigt, verschieben, löschen |
+| **Tippen auf den Listennamen** | Liste verwalten: umbenennen, teilen, löschen – oder verlassen |
 | **Gedrückt halten und ziehen** | Aufgabe innerhalb der Liste umsortieren |
 | Tippen auf die Checkbox | erledigt / wieder offen – ohne die Detailansicht zu öffnen |
 | ☰ oben links | Menü mit Listen, Konto, Sync-Zustand und Erinnerungen |
 | Punkt oben rechts | Sync-Zustand; Antippen synchronisiert sofort |
-| Zurück-Taste | schließt zuerst Detailansicht oder Menü, sonst Hintergrund |
+| Zurück-Taste | schließt zuerst Detailansicht, Liste oder Menü, sonst Hintergrund |
 
 In der Liste selbst gibt es **keine** Bedienelemente und **keine** Gesten außer
 dem Antippen: keine Bearbeiten- oder Löschen-Knöpfe, kein Kontextmenü. Die
 Zeile ist der Knopf. Alles Weitere – auch das Verschieben in eine andere Liste –
 liegt gebündelt in der Detailansicht.
+
+### Listen verwalten
+
+Eine Liste lässt sich **umbenennen**, **teilen**, **löschen** und – wenn sie
+jemand anderem gehört – **verlassen**.
+
+In der breiten Ansicht stehen die Knöpfe neben dem Listentitel, auf dem Telefon
+öffnet ein Tippen auf den Listennamen in der App-Leiste eine eigene Ansicht.
+Das ist dasselbe Muster wie bei Aufgaben: antippen öffnet die Details, und dort
+wird auch gelöscht.
+
+Was jemand darf, hängt an der Rolle. Nur der Besitzer kann umbenennen, teilen
+und löschen; Mitglieder sehen stattdessen „Liste verlassen". Serverseitig
+setzen zwei Richtlinien das durch:
+
+* `lists_delete_owner` – löschen darf nur der Besitzer
+* `list_members_leave_self` – verlassen darf sich jeder selbst
+
+Verlassen ist ein Soft Delete der eigenen Mitgliedschaft. Der nächste Abgleich
+räumt die fremde Liste samt Aufgaben lokal weg (`applyRemoteMembers`).
 
 ### Erledigen und Wiederherstellen
 

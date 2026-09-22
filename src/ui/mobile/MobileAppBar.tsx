@@ -12,7 +12,16 @@ import { MenuIcon } from './icons'
  * "jetzt synchronisieren" – auf dem Telefon ist das die einzige Stelle, an der
  * man den Zustand sehen muss.
  */
-export function MobileAppBar({ listName, onOpenMenu }: { listName: string | null; onOpenMenu: () => void }) {
+export function MobileAppBar({
+  listName,
+  onOpenMenu,
+  onOpenList,
+}: {
+  listName: string | null
+  onOpenMenu: () => void
+  /** Öffnet die Verwaltung der aktuellen Liste. Nur sinnvoll mit Auswahl. */
+  onOpenList: () => void
+}) {
   const { syncStatus, pendingCount, syncing, runSync } = useWorkspace()
   const { tone, text } = describeSyncState(syncStatus, pendingCount, syncing)
   const farben = statusTone[tone]
@@ -39,9 +48,28 @@ export function MobileAppBar({ listName, onOpenMenu }: { listName: string | null
           ) : null}
         </button>
 
-        <h1 className="min-w-0 flex-1 truncate text-center text-base font-medium text-neutral-100" data-testid="app-bar-title">
-          {listName ?? 'prio'}
-        </h1>
+        {listName === null ? (
+          <span
+            className="min-w-0 flex-1 truncate text-center text-base font-medium text-neutral-100"
+            data-testid="app-bar-title"
+          >
+            prio
+          </span>
+        ) : (
+          /*
+            Der Listenname ist der Zugang zur Listenverwaltung – wie beim Tippen
+            auf eine Aufgabe die Detailansicht aufgeht.
+          */
+          <button
+            type="button"
+            onClick={onOpenList}
+            aria-label={`Liste „${listName}“ verwalten`}
+            className="min-w-0 flex-1 truncate rounded-md px-2 py-1 text-center text-base font-medium text-neutral-100 active:bg-neutral-800"
+            data-testid="app-bar-title"
+          >
+            {listName}
+          </button>
+        )}
 
         <button
           type="button"

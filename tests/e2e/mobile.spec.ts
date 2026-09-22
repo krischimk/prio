@@ -251,3 +251,31 @@ test('sortiert bei kurzem Wischen nicht um', async ({ page }) => {
 
   expect(await taskTitles(page)).toEqual(['Erste', 'Zweite'])
 })
+
+test('benennt eine Liste über die App-Leiste um', async ({ page }) => {
+  await register(page, uniqueEmail('m10'))
+  await createList(page, 'Erster Name')
+
+  await page.getByTestId('app-bar-title').click()
+  await expect(page.getByRole('dialog', { name: 'Liste verwalten' })).toBeVisible()
+  await page.getByRole('button', { name: 'Umbenennen' }).click()
+
+  await page.getByLabel('Neuer Name').fill('Zweiter Name')
+  await page.getByRole('button', { name: 'Speichern', exact: true }).click()
+
+  await expect(page.getByRole('dialog', { name: 'Liste verwalten' })).toBeHidden()
+  await expect(page.getByTestId('app-bar-title')).toHaveText('Zweiter Name')
+})
+
+test('löscht eine Liste über die App-Leiste', async ({ page }) => {
+  await register(page, uniqueEmail('m11'))
+  await createList(page, 'Wegwerfliste')
+
+  await page.getByTestId('app-bar-title').click()
+  await page.getByRole('button', { name: 'Liste löschen' }).click()
+  // Erst nach der Rückfrage wird wirklich gelöscht.
+  await page.getByRole('button', { name: 'Wirklich löschen' }).click()
+
+  await expect(page.getByRole('dialog', { name: 'Liste verwalten' })).toBeHidden()
+  await expect(page.getByText('Öffne oben links das Menü und lege eine Liste an.')).toBeVisible()
+})

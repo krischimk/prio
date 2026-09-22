@@ -7,6 +7,7 @@ import { MobileAppBar } from './MobileAppBar'
 import { MobileDrawer } from './MobileDrawer'
 import { MobileTaskList } from './MobileTaskList'
 import { MoveTaskSheet } from './MoveTaskSheet'
+import { ListSettingsSheet } from './ListSettingsSheet'
 import { RestoreTasksPanel } from '../RestoreTasksPanel'
 import { TaskDetailSheet } from './TaskDetailSheet'
 import { PlusIcon } from './icons'
@@ -32,6 +33,7 @@ export function MobileWorkspace() {
 
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [restoreOpen, setRestoreOpen] = useState(false)
+  const [listSettingsOpen, setListSettingsOpen] = useState(false)
   /** `null` = geschlossen, sonst die Aufgabe (`task: null` legt eine neue an). */
   const [detail, setDetail] = useState<{ task: LocalTask | null } | null>(null)
   const [movingTask, setMovingTask] = useState<LocalTask | null>(null)
@@ -43,7 +45,11 @@ export function MobileWorkspace() {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100">
-      <MobileAppBar listName={selected?.name ?? null} onOpenMenu={() => setDrawerOpen(true)} />
+      <MobileAppBar
+        listName={selected?.name ?? null}
+        onOpenMenu={() => setDrawerOpen(true)}
+        onOpenList={() => setListSettingsOpen(true)}
+      />
 
       <main className="app-bar-offset pb-28">
         {selected === null ? (
@@ -94,6 +100,14 @@ export function MobileWorkspace() {
       />
 
       <RestoreTasksPanel open={restoreOpen} onClose={() => setRestoreOpen(false)} />
+
+      {listSettingsOpen && selected ? (
+        <ListSettingsSheet
+          list={selected}
+          currentUserId={userId}
+          onClose={() => setListSettingsOpen(false)}
+        />
+      ) : null}
 
       {detail !== null && selected !== null ? (
         <TaskDetailSheet

@@ -33,6 +33,7 @@ export function withChangeTracking(repositories: Repositories, onChange: () => v
     deleteTask: track(repositories.deleteTask.bind(repositories)),
     markListShared: track(repositories.markListShared.bind(repositories)),
     removeMember: track(repositories.removeMember.bind(repositories)),
+    leaveList: track(repositories.leaveList.bind(repositories)),
 
     // Reine Lesezugriffe – hier darf nichts gezählt werden.
     getList: repositories.getList.bind(repositories),

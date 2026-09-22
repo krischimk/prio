@@ -474,5 +474,55 @@ describe('Repositories (lokale Geschäftslogik)', () => {
         ValidationError,
       )
     })
+
+    it('lässt ein Mitglied die Liste selbst verlassen', async () => {
+      const list = await device.repositories.createList('Geteilt', userId)
+      await device.db.list_members.put({
+        list_id: list.id,
+        user_id: 'user-b',
+        created_at: device.clock.now(),
+        updated_at: device.clock.now(),
+        deleted_at: null,
+        dirty: 0,
+      })
+
+      device.clock.advance(1000)
+      await device.repositories.leaveList(list.id, 'user-b')
+
+      const stored = await device.db.list_members.get([list.id, 'user-b'])
+      expect(stored?.deleted_at).toBe(device.clock.now())
+      expect(stored?.dirty).toBe(1)
+      // Die Mitgliedschaft ist damit für die Liste nicht mehr sichtbar.
+      expect(await device.repositories.listMembers(list.id)).toHaveLength(0)
+    })
+
+    it('verlässt eine Liste nur einmal', async () => {
+      const list = await device.repositories.createList('Geteilt', userId)
+      await device.db.list_members.put({
+        list_id: list.id,
+        user_id: 'user-b',
+        created_at: device.clock.now(),
+        updated_at: device.clock.now(),
+        deleted_at: null,
+        dirty: 0,
+      })
+
+      await device.repositories.leaveList(list.id, 'user-b')
+      const nachErstem = await device.db.list_members.get([list.id, 'user-b'])
+
+      // Ein zweiter Aufruf darf den Zeitpunkt nicht verändern.
+      device.clock.advance(5000)
+      await device.repositories.leaveList(list.id, 'user-b')
+
+      const nachZweitem = await device.db.list_members.get([list.id, 'user-b'])
+      expect(nachZweitem?.deleted_at).toBe(nachErstem?.deleted_at)
+    })
+
+    it('meldet eine unbekannte Mitgliedschaft beim Verlassen als Fehler', async () => {
+      const list = await device.repositories.createList('Geteilt', userId)
+      await expect(device.repositories.leaveList(list.id, 'unbekannt')).rejects.toBeInstanceOf(
+        ValidationError,
+      )
+    })
   })
 })

@@ -73,6 +73,16 @@ export interface Repositories {
   listMembers(listId: string): Promise<LocalListMember[]>
   markListShared(listId: string): Promise<void>
   removeMember(listId: string, userId: string): Promise<void>
+  /**
+   * Eine geteilte Liste selbst verlassen.
+   *
+   * Setzt – wie das Entfernen durch den Besitzer – `deleted_at` auf die eigene
+   * Mitgliedschaft. Der nächste Abgleich räumt die fremde Liste samt Aufgaben
+   * lokal weg (siehe `applyRemoteMembers`).
+   *
+   * Server-seitig erlaubt das die Richtlinie `list_members_leave_self`.
+   */
+  leaveList(listId: string, userId: string): Promise<void>
 }
 
 /**
@@ -337,6 +347,23 @@ export function createRepositories(db: LocalDatabase, clock: Clock = systemClock
      * bereits heruntergeladen hat. Der Server lehnt die Änderung ab, wenn der
      * Aufrufer nicht Besitzer der Liste ist (RLS).
      */
+    async leaveList(listId, userId) {
+      const existing = await db.list_members.get([listId, userId])
+      if (!existing) {
+        throw new ValidationError('Diese Mitgliedschaft ist lokal nicht bekannt.')
+      }
+      if (existing.deleted_at !== null) return
+
+      const { updated_at } = stamp()
+      const updated: LocalListMember = {
+        ...existing,
+        deleted_at: updated_at,
+        updated_at,
+        dirty: 1,
+      }
+      await db.list_members.put(updated)
+    },
+
     async removeMember(listId, userId) {
       const existing = await db.list_members.get([listId, userId])
       if (!existing) {
