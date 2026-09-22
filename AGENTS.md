@@ -88,6 +88,9 @@ npm run android:emu          # Emulator mit Fenster starten
 npm run android:emu:install  # Debug-APK bauen, installieren, öffnen
 npm run android:emu:shot     # Screenshot auf den Desktop legen
 npm run android:emu:stop
+
+# Einen Ausdruck im laufenden WebView ausführen (prüfen ohne Neubau):
+npm run android:emu:eval 'JSON.stringify(Object.keys(window.Capacitor.Plugins))'
 ```
 
 * **Vorher selbst hinsehen.** Erst `android:emu:shot` und den Screenshot
