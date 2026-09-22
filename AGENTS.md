@@ -66,6 +66,9 @@ rendern und die Screenshots **anschauen** (siehe Tests).
 * `.safe-bottom` bewusst ohne `env()`-Rückfall – bei sichtbarer Tastatur liefert
   `env(safe-area-inset-bottom)` falsche Werte.
 * Der Service Worker wird in der App **nicht** registriert.
+* **Tag und Version müssen zusammenpassen.** Die Update-Prüfung vergleicht den
+  Git-Tag der Veröffentlichung mit der installierten Version (`App.getInfo()`).
+  Ein Release ohne passenden Tag im Namen macht die Prüfung falsch.
 * Änderungen am Erscheinungsbild immer in Telefongröße gegenprüfen; das
   Querformat gehört dazu.
 

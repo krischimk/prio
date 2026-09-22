@@ -66,6 +66,15 @@ export const statusTone: Record<SyncTone, SyncToneStyle> = {
 /** Hervorhebung für überfällige Aufgaben. */
 export const dangerText = 'text-red-400'
 
+/**
+ * Hinweis, der Aufmerksamkeit braucht – etwa eine verfügbare neue Fassung.
+ *
+ * Bewusst getrennt von den Sync-Zuständen: „ausstehend“ und „hier gibt es
+ * etwas zu tun“ sind verschiedene Aussagen.
+ */
+export const attentionText = 'text-amber-400'
+export const attentionDot = 'bg-amber-400'
+
 /** Inline-Meldung unter einem Formular – Fehler und Erfolg. */
 export const errorMessage = 'text-xs text-red-400'
 export const successMessage = 'text-xs text-emerald-400'

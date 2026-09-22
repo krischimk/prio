@@ -1,6 +1,6 @@
 # prio
 
-**Offline-first To-do-App – Version 0.5.0 (technischer Prototyp).**
+**Offline-first To-do-App – Version 0.6.0 (technischer Prototyp).**
 
 Ziel dieser Version ist ausdrücklich **kein fertiges Produkt**, sondern eine
 schlanke Grundlage, mit der die Kernarchitektur zuverlässig getestet werden
@@ -693,6 +693,31 @@ npm run build          # Web-Bundle nach dist/
 npx cap sync android   # dist/ + Plugins ins Android-Projekt kopieren
 cd android && ./gradlew assembleDebug
 ```
+
+### Updates
+
+Die App kann selbst nach einer neuen Fassung suchen. Gefragt wird die neueste
+Veröffentlichung des eigenen Repositories
+(`https://api.github.com/repos/krischimk/prio/releases/latest`), verglichen wird
+mit der **installierten** Version (`App.getInfo()`, nicht der eingebauten – sonst
+hielte sich eine ältere Fassung für aktuell).
+
+* **Automatisch** wird nur in der App gesucht, und zwar beim Start. Ein kleines
+  gelbes Zeichen am Menü-Knopf zeigt an, dass etwas vorliegt; im Menü unter
+  *Updates* steht die Version, und dort lässt sie sich auch installieren.
+* **Herunterladen und installieren:** In der App lädt der System-Downloader die
+  APK (Fortschritt in der Benachrichtigungsleiste, überlebt den Hintergrund) und
+  öffnet danach den Installationsdialog. Im Browser bleibt nur der Download.
+* Ab Android 8 muss prio einmal erlaubt werden, Apps zu installieren. Fehlt die
+  Erlaubnis, öffnet die App die passende Einstellungsseite.
+
+> **Bewusst keine System-Benachrichtigung.** Ohne Hintergrunddienst kann die App
+> nicht prüfen, während sie geschlossen ist. Ein Hinweis beim Öffnen ist
+> ehrlicher als eine Meldung, die nie kommen kann.
+
+> **Für ein Release gilt deshalb:** Der Git-Tag (`v0.6.0`) und die Version in
+> `package.json` müssen zusammenpassen. Die Update-Prüfung vergleicht genau
+> diese beiden.
 
 ### Im Emulator prüfen
 

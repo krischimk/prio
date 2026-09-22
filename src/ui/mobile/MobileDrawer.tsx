@@ -5,7 +5,8 @@ import { useWorkspace } from '../../app/useWorkspace'
 import { describeReminderState } from '../../reminders/reminderStatus'
 import { describeSyncState } from '../../sync/syncStatus'
 import type { LocalList } from '../../domain/types'
-import { errorMessage, input, primaryButton, secondaryButton } from '../styles'
+import { attentionText, errorMessage, input, primaryButton, secondaryButton } from '../styles'
+import { useUpdate } from '../useUpdate'
 import { CloseIcon } from './icons'
 
 /**
@@ -23,6 +24,7 @@ export function MobileDrawer({
   onSelectList,
   currentUserId,
   onOpenRestore,
+  onOpenUpdate,
 }: {
   open: boolean
   onClose: () => void
@@ -31,10 +33,23 @@ export function MobileDrawer({
   onSelectList: (listId: string) => void
   currentUserId: string
   onOpenRestore: () => void
+  onOpenUpdate: () => void
 }) {
   const { state, signOut } = useAuth()
   const { repositories, syncStatus, pendingCount, syncing, runSync, reminderStatus, enableReminders } =
     useWorkspace()
+  const { state: update } = useUpdate()
+
+  const updateText =
+    update.status === 'available'
+      ? `Version ${update.release.version} ist verfügbar.`
+      : update.status === 'checking'
+        ? 'Suche nach Updates …'
+        : update.status === 'failed'
+          ? 'Die Prüfung ist fehlgeschlagen.'
+          : update.status === 'up-to-date'
+            ? `prio ${update.latest} ist aktuell.`
+            : 'Noch nicht geprüft.'
 
   const [name, setName] = useState('')
   const [creating, setCreating] = useState(false)
@@ -205,6 +220,16 @@ export function MobileDrawer({
             onClick={onOpenRestore}
           >
             Aufgaben wiederherstellen
+          </button>
+        </section>
+
+        <section className="border-t border-neutral-800 px-4 py-4" aria-label="Updates">
+          <h3 className="text-xs font-medium uppercase tracking-wide text-neutral-500">Updates</h3>
+          <p className={`mt-2 text-xs ${updateText ? attentionText : 'text-neutral-400'}`}>
+            {updateText}
+          </p>
+          <button type="button" className={`${secondaryButton} mt-3 w-full`} onClick={onOpenUpdate}>
+            Nach Updates suchen
           </button>
         </section>
 

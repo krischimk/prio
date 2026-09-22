@@ -2,9 +2,15 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 
+import pkg from './package.json' with { type: 'json' }
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Die eigene Version wird eingebettet, damit die Oberfläche sie kennt, ohne
+  // package.json mitzuschleppen. In der App wird sie zur Laufzeit durch die
+  // tatsächlich installierte Version ersetzt (siehe `currentVersion`).
+  define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   test: {
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],

@@ -22,5 +22,7 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["tests", "e2e"]
+  // `src/env.d.ts` liefert die eingebettete Version. Ohne diesen Eintrag
+  // fehlt die Deklaration, sobald ein Test eine Datei aus `src` importiert.
+  "include": ["tests", "e2e", "src/env.d.ts"]
 }

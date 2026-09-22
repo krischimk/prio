@@ -1,6 +1,7 @@
 import { useWorkspace } from '../../app/useWorkspace'
 import { describeSyncState } from '../../sync/syncStatus'
-import { statusTone } from '../styles'
+import { attentionDot, statusTone } from '../styles'
+import { useUpdate } from '../useUpdate'
 import { MenuIcon } from './icons'
 
 /**
@@ -15,6 +16,8 @@ export function MobileAppBar({ listName, onOpenMenu }: { listName: string | null
   const { syncStatus, pendingCount, syncing, runSync } = useWorkspace()
   const { tone, text } = describeSyncState(syncStatus, pendingCount, syncing)
   const farben = statusTone[tone]
+  const { state: update } = useUpdate()
+  const updateVerfuegbar = update.status === 'available'
 
   return (
     <header className="safe-top fixed inset-x-0 top-0 z-30 border-b border-neutral-800 bg-neutral-950">
@@ -22,10 +25,18 @@ export function MobileAppBar({ listName, onOpenMenu }: { listName: string | null
         <button
           type="button"
           onClick={onOpenMenu}
-          aria-label="Menü öffnen"
-          className="rounded-md p-2 text-neutral-300 active:bg-neutral-800"
+          aria-label={updateVerfuegbar ? 'Menü öffnen – neue Version verfügbar' : 'Menü öffnen'}
+          className="relative rounded-md p-2 text-neutral-300 active:bg-neutral-800"
         >
           <MenuIcon />
+          {/* Kleiner Hinweis, damit eine neue Fassung auffällt, ohne das Menü zu öffnen. */}
+          {updateVerfuegbar ? (
+            <span
+              data-testid="update-badge"
+              className={`absolute right-1 top-1 h-2 w-2 rounded-full ${attentionDot}`}
+              aria-hidden="true"
+            />
+          ) : null}
         </button>
 
         <h1 className="min-w-0 flex-1 truncate text-center text-base font-medium text-neutral-100" data-testid="app-bar-title">

@@ -20,6 +20,10 @@ public class MainActivity extends BridgeActivity {
      */
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // Muss vor super.onCreate() stehen: Capacitor sammelt die Plugins beim
+        // Aufbau der Brücke ein.
+        registerPlugin(UpdaterPlugin.class);
+
         EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
     }

@@ -38,4 +38,11 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
+      Für das Einspielen einer neuen Fassung aus der App heraus. Ab Android 8
+      muss der Nutzer das zusätzlich in den Einstellungen erlauben; das Plugin
+      öffnet dann die passende Seite.
+    -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 </manifest>

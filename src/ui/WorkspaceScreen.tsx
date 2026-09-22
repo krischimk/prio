@@ -4,11 +4,13 @@ import { useLists, useSelectedListId } from '../app/hooks'
 import { useIsDesktop } from '../app/useIsDesktop'
 import { MobileWorkspace } from './mobile/MobileWorkspace'
 import { RestoreTasksPanel } from './RestoreTasksPanel'
+import { UpdatePanel } from './UpdatePanel'
+import { useUpdate } from './useUpdate'
 import { ReminderIndicator } from './ReminderIndicator'
 import { Sidebar } from './Sidebar'
 import { SyncIndicator } from './SyncIndicator'
 import { TaskPanel } from './TaskPanel'
-import { ghostButton } from './styles'
+import { attentionText, ghostButton } from './styles'
 
 /**
  * Wählt zwischen den beiden Oberflächen.
@@ -28,6 +30,8 @@ function DesktopWorkspace() {
   const lists = useLists()
   const [selectedListId, selectList] = useSelectedListId(lists)
   const [restoreOpen, setRestoreOpen] = useState(false)
+  const [updateOpen, setUpdateOpen] = useState(false)
+  const { state: update } = useUpdate()
 
   const user = state.status === 'authenticated' ? state.user : null
   const selected = lists.find((list) => list.id === selectedListId) ?? null
@@ -61,6 +65,17 @@ function DesktopWorkspace() {
             </button>
             <button
               type="button"
+              className={`${ghostButton} px-2 py-1 text-xs ${
+                update.status === 'available' ? attentionText : ''
+              }`}
+              onClick={() => setUpdateOpen(true)}
+            >
+              {update.status === 'available'
+                ? `Update ${update.release.version}`
+                : 'Nach Updates suchen'}
+            </button>
+            <button
+              type="button"
               className={`${ghostButton} px-2 py-1 text-xs`}
               onClick={() => {
                 void signOut()
@@ -81,6 +96,7 @@ function DesktopWorkspace() {
       </div>
 
       <RestoreTasksPanel open={restoreOpen} onClose={() => setRestoreOpen(false)} />
+      <UpdatePanel open={updateOpen} onClose={() => setUpdateOpen(false)} />
     </div>
   )
 }
