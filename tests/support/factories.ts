@@ -36,6 +36,7 @@ export function localList(overrides: Partial<LocalList> = {}): LocalList {
     name: 'Liste',
     owner_id: 'user-1',
     is_shared: false,
+    icon: null,
     created_at: T0,
     updated_at: T0,
     deleted_at: null,

@@ -2,6 +2,8 @@ import { useState, type FormEvent } from 'react'
 import { useBackLayer } from '../../app/useBackLayer'
 import { useWorkspace } from '../../app/useWorkspace'
 import type { LocalList } from '../../domain/types'
+import { ListIcon } from '../ListIcon'
+import { LIST_ICONS } from '../listIcons'
 import { SharePanel } from '../SharePanel'
 import { dangerButton, errorMessage, input, primaryButton, secondaryButton } from '../styles'
 import { CloseIcon } from './icons'
@@ -18,7 +20,7 @@ import { CloseIcon } from './icons'
  * teilen und löschen. Wer nur Mitglied ist, kann die Liste verlassen.
  */
 
-type Modus = 'menue' | 'umbenennen' | 'teilen' | 'loeschen' | 'verlassen'
+type Modus = 'menue' | 'umbenennen' | 'symbol' | 'teilen' | 'loeschen' | 'verlassen'
 
 export function ListSettingsSheet({
   list,
@@ -73,13 +75,16 @@ export function ListSettingsSheet({
 
       <div className="safe-bottom relative flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-2xl border-t border-neutral-800 bg-neutral-900 md:max-w-lg md:rounded-2xl md:border">
         <header className="flex items-start justify-between gap-2 border-b border-neutral-800 px-4 py-3">
-          <div className="min-w-0">
-            <h2 className="break-words text-sm font-medium text-neutral-100" data-testid="list-sheet-title">
-              {list.name}
-            </h2>
-            <p className="text-xs text-neutral-500">
-              {istBesitzer ? 'Deine Liste' : 'Von jemand anderem geteilt'}
-            </p>
+          <div className="flex min-w-0 items-center gap-2">
+            <ListIcon icon={list.icon} className="h-5 w-5 shrink-0 text-neutral-300" />
+            <div className="min-w-0">
+              <h2 className="break-words text-sm font-medium text-neutral-100" data-testid="list-sheet-title">
+                {list.name}
+              </h2>
+              <p className="text-xs text-neutral-500">
+                {istBesitzer ? 'Deine Liste' : 'Von jemand anderem geteilt'}
+              </p>
+            </div>
           </div>
           <button
             type="button"
@@ -102,6 +107,13 @@ export function ListSettingsSheet({
                     onClick={() => setModus('umbenennen')}
                   >
                     Umbenennen
+                  </button>
+                  <button
+                    type="button"
+                    className={`${secondaryButton} w-full`}
+                    onClick={() => setModus('symbol')}
+                  >
+                    Symbol ändern
                   </button>
                   <button
                     type="button"
@@ -155,6 +167,50 @@ export function ListSettingsSheet({
                 </button>
               </div>
             </form>
+          ) : null}
+
+          {modus === 'symbol' ? (
+            <div className="space-y-3">
+              <p className="text-xs text-neutral-400">
+                Ein Symbol hilft, die Liste schneller wiederzufinden.
+              </p>
+              {/*
+                Sechzehn Symbole in vier Reihen zu vier – deshalb liegt
+                „Kein Symbol" außerhalb des Rasters. Als siebzehnte Kachel
+                bliebe eine einzelne Zeile übrig, und das sähe nach Versehen
+                aus.
+              */}
+              <div className="grid grid-cols-4 gap-2" data-testid="icon-picker">
+                {LIST_ICONS.map((eintrag) => (
+                  <button
+                    key={eintrag.id}
+                    type="button"
+                    aria-label={eintrag.label}
+                    aria-pressed={list.icon === eintrag.id}
+                    disabled={busy}
+                    onClick={() => void ausfuehren(() => repositories.setListIcon(list.id, eintrag.id))}
+                    className={`flex aspect-square items-center justify-center rounded-md border ${
+                      list.icon === eintrag.id
+                        ? 'border-indigo-500 bg-indigo-950/60 text-indigo-100'
+                        : 'border-neutral-700 bg-neutral-900 text-neutral-300'
+                    }`}
+                  >
+                    <ListIcon icon={eintrag.id} className="h-6 w-6" />
+                  </button>
+                ))}
+              </div>
+
+              {list.icon !== null ? (
+                <button
+                  type="button"
+                  className={`${secondaryButton} w-full`}
+                  disabled={busy}
+                  onClick={() => void ausfuehren(() => repositories.setListIcon(list.id, null))}
+                >
+                  Symbol entfernen
+                </button>
+              ) : null}
+            </div>
           ) : null}
 
           {modus === 'teilen' ? <SharePanel list={list} currentUserId={currentUserId} /> : null}

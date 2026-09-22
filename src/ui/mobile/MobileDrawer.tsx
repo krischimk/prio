@@ -6,6 +6,7 @@ import { describeReminderState } from '../../reminders/reminderStatus'
 import { describeSyncState } from '../../sync/syncStatus'
 import type { LocalList } from '../../domain/types'
 import { errorMessage, input, primaryButton, secondaryButton } from '../styles'
+import { ListIcon } from '../ListIcon'
 import { UpdateEntry } from '../UpdateEntry'
 import { CloseIcon } from './icons'
 
@@ -124,7 +125,10 @@ export function MobileDrawer({
                       selected ? 'bg-indigo-950/60 text-indigo-100' : 'text-neutral-300 active:bg-neutral-900'
                     }`}
                   >
-                    <span className="truncate">{list.name}</span>
+                    <span className="flex min-w-0 items-center gap-2">
+                      <ListIcon icon={list.icon} className="h-4 w-4 shrink-0" />
+                      <span className="truncate">{list.name}</span>
+                    </span>
                     {list.is_shared ? <span className="shrink-0 text-xs text-indigo-400">geteilt</span> : null}
                   </button>
                 </li>

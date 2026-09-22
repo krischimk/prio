@@ -158,6 +158,7 @@ describe('Sync-Szenarien', () => {
       owner_id: userId,
       name: 'Vom Server',
       is_shared: false,
+      icon: null,
       created_at: T2,
       updated_at: T2,
       deleted_at: null,

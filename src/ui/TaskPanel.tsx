@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
+import { ListIcon } from './ListIcon'
 import { useTasks } from '../app/hooks'
 import { useBackLayer } from '../app/useBackLayer'
 import type { LocalList } from '../domain/types'
@@ -65,6 +66,7 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
         ) : (
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2">
+              <ListIcon icon={list.icon} className="h-6 w-6 shrink-0 text-neutral-300" />
               <h1 className="truncate text-xl font-semibold text-neutral-50" data-testid="list-title">
                 {list.name}
               </h1>

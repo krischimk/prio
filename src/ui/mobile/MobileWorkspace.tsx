@@ -47,6 +47,7 @@ export function MobileWorkspace() {
     <div className="min-h-screen bg-neutral-950 text-neutral-100">
       <MobileAppBar
         listName={selected?.name ?? null}
+        listIcon={selected?.icon ?? null}
         onOpenMenu={() => setDrawerOpen(true)}
         onOpenList={() => setListSettingsOpen(true)}
       />

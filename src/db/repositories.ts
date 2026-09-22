@@ -43,6 +43,13 @@ export interface Repositories {
   // Listen
   createList(name: string, ownerId: string): Promise<LocalList>
   renameList(listId: string, name: string): Promise<LocalList>
+  /**
+   * Setzt das Symbol der Liste.
+   *
+   * `null` entfernt es. Die Kennung wird nicht geprüft – eine unbekannte
+   * Kennung zeigt die Oberfläche einfach als „kein Symbol“ an.
+   */
+  setListIcon(listId: string, icon: string | null): Promise<LocalList>
   deleteList(listId: string): Promise<void>
   getList(listId: string): Promise<LocalList | undefined>
   listLists(): Promise<LocalList[]>
@@ -138,6 +145,7 @@ export function createRepositories(db: LocalDatabase, clock: Clock = systemClock
         name: requireText(name, 'Der Listenname'),
         owner_id: ownerId,
         is_shared: false,
+        icon: null,
         created_at: now,
         updated_at: now,
         deleted_at: null,
@@ -145,6 +153,13 @@ export function createRepositories(db: LocalDatabase, clock: Clock = systemClock
       }
       await db.lists.add(list)
       return list
+    },
+
+    async setListIcon(listId, icon) {
+      const list = await requireList(listId)
+      const updated: LocalList = { ...list, icon, ...stamp() }
+      await db.lists.put(updated)
+      return updated
     },
 
     async renameList(listId, name) {

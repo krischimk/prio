@@ -279,3 +279,50 @@ test('löscht eine Liste über die App-Leiste', async ({ page }) => {
   await expect(page.getByRole('dialog', { name: 'Liste verwalten' })).toBeHidden()
   await expect(page.getByText('Öffne oben links das Menü und lege eine Liste an.')).toBeVisible()
 })
+
+test('gibt einer Liste ein Symbol und zeigt es an', async ({ page }) => {
+  await register(page, uniqueEmail('m12'))
+  await createList(page, 'Haushalt')
+
+  await page.getByTestId('app-bar-title').click()
+  await page.getByRole('button', { name: 'Symbol ändern' }).click()
+
+  const auswahl = page.getByTestId('icon-picker')
+  await expect(auswahl).toBeVisible()
+  await auswahl.getByRole('button', { name: 'Haushalt' }).click()
+
+  // Die Ansicht schließt sich und das Symbol steht in der Leiste. Bewusst eng
+  // gefasst: Die Auswahl selbst besteht aus lauter Symbolen.
+  await expect(page.getByRole('dialog', { name: 'Liste verwalten' })).toBeHidden()
+  await expect(page.getByTestId('app-bar-title').getByTestId('list-icon')).toHaveAttribute(
+    'data-icon',
+    'std:home',
+  )
+
+  // … und ebenso im Menü neben dem Listennamen.
+  await openMenu(page)
+  await expect(
+    page.getByRole('dialog', { name: 'Menü' }).getByTestId('list-icon'),
+  ).toHaveAttribute('data-icon', 'std:home')
+})
+
+test('entfernt das Symbol einer Liste wieder', async ({ page }) => {
+  await register(page, uniqueEmail('m13'))
+  await createList(page, 'Haushalt')
+
+  await page.getByTestId('app-bar-title').click()
+  await page.getByRole('button', { name: 'Symbol ändern' }).click()
+  await page.getByTestId('icon-picker').getByRole('button', { name: 'Sport' }).click()
+  await expect(page.getByRole('dialog', { name: 'Liste verwalten' })).toBeHidden()
+  await expect(page.getByTestId('app-bar-title').getByTestId('list-icon')).toHaveAttribute(
+    'data-icon',
+    'std:sport',
+  )
+
+  await page.getByTestId('app-bar-title').click()
+  await page.getByRole('button', { name: 'Symbol ändern' }).click()
+  await page.getByRole('button', { name: 'Symbol entfernen' }).click()
+  await expect(page.getByRole('dialog', { name: 'Liste verwalten' })).toBeHidden()
+
+  await expect(page.getByTestId('app-bar-title').getByTestId('list-icon')).toHaveCount(0)
+})

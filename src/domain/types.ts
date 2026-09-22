@@ -35,6 +35,13 @@ export interface LocalList extends SyncableRow, LocalOnly {
   owner_id: string
   /** Wird `true`, sobald die Liste mindestens ein Mitglied hat. */
   is_shared: boolean
+  /**
+   * Kennung des Listensymbols, z. B. `std:haushalt` – `null` für kein Symbol.
+   *
+   * Gespeichert wird nur die Kennung, nicht das Bild: Die Darstellung bleibt
+   * Sache der App und lässt sich ändern, ohne Daten umzuschreiben.
+   */
+  icon: string | null
   created_at: IsoDateTime
 }
 

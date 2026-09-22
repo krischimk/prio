@@ -3,6 +3,7 @@ import { describeSyncState } from '../../sync/syncStatus'
 import { attentionDot, statusTone } from '../styles'
 import { useUpdate } from '../useUpdate'
 import { MenuIcon } from './icons'
+import { ListIcon } from '../ListIcon'
 
 /**
  * Obere Leiste der mobilen Ansicht.
@@ -14,10 +15,12 @@ import { MenuIcon } from './icons'
  */
 export function MobileAppBar({
   listName,
+  listIcon,
   onOpenMenu,
   onOpenList,
 }: {
   listName: string | null
+  listIcon: string | null
   onOpenMenu: () => void
   /** Öffnet die Verwaltung der aktuellen Liste. Nur sinnvoll mit Auswahl. */
   onOpenList: () => void
@@ -64,10 +67,11 @@ export function MobileAppBar({
             type="button"
             onClick={onOpenList}
             aria-label={`Liste „${listName}“ verwalten`}
-            className="min-w-0 flex-1 truncate rounded-md px-2 py-1 text-center text-base font-medium text-neutral-100 active:bg-neutral-800"
+            className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-base font-medium text-neutral-100 active:bg-neutral-800"
             data-testid="app-bar-title"
           >
-            {listName}
+            <ListIcon icon={listIcon} className="h-4 w-4 shrink-0" />
+            <span className="truncate">{listName}</span>
           </button>
         )}
 

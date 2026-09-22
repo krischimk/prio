@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
 import type { LocalList } from '../domain/types'
+import { ListIcon } from './ListIcon'
 import { errorMessage, input, primaryButton } from './styles'
 
 /**
@@ -64,7 +65,10 @@ export function Sidebar({
                     : 'text-neutral-300 hover:bg-neutral-900 hover:text-neutral-100'
                 }`}
               >
+                <span className="flex min-w-0 items-center gap-2">
+                <ListIcon icon={list.icon} className="h-4 w-4 shrink-0" />
                 <span className="truncate">{list.name}</span>
+              </span>
                 {list.is_shared ? (
                   <span className="shrink-0 text-xs text-indigo-400" title="Gemeinsame Liste">
                     geteilt

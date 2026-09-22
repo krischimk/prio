@@ -13,6 +13,7 @@ App. Sie sind so geschrieben, dass sie sich gefahrlos erneut ausführen lassen
 | `0005_task_position.sql` | Spalte `position` für die vom Benutzer bestimmte Reihenfolge |
 | `0006_task_completed_at.sql` | Spalte `completed_at` für „Aufgaben wiederherstellen“ |
 | `0007_list_leave.sql` | Richtlinie, damit Mitglieder eine geteilte Liste verlassen können |
+| `0008_list_icon.sql` | Spalte `icon` für das Listensymbol |
 
 ## Anwenden
 

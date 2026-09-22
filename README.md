@@ -475,7 +475,7 @@ gebaute Ansicht. Ab 768 px bleibt die breite Ansicht mit Seitenleiste.
 | Geste | Wirkung |
 | --- | --- |
 | Tippen auf eine Aufgabe | Detailansicht: bearbeiten, erledigt, verschieben, löschen |
-| **Tippen auf den Listennamen** | Liste verwalten: umbenennen, teilen, löschen – oder verlassen |
+| **Tippen auf den Listennamen** | Liste verwalten: umbenennen, Symbol, teilen, löschen – oder verlassen |
 | **Gedrückt halten und ziehen** | Aufgabe innerhalb der Liste umsortieren |
 | Tippen auf die Checkbox | erledigt / wieder offen – ohne die Detailansicht zu öffnen |
 | ☰ oben links | Menü mit Listen, Konto, Sync-Zustand und Erinnerungen |
@@ -496,6 +496,21 @@ In der breiten Ansicht stehen die Knöpfe neben dem Listentitel, auf dem Telefon
 öffnet ein Tippen auf den Listennamen in der App-Leiste eine eigene Ansicht.
 Das ist dasselbe Muster wie bei Aufgaben: antippen öffnet die Details, und dort
 wird auch gelöscht.
+
+**Ein Symbol pro Liste.** Sechzehn eingebaute Symbole stehen zur Auswahl –
+Haushalt, Arbeit, Einkauf, Lernen, Sport, Reise, Musik, Essen, Ideen, Termine,
+Personen und so weiter. Sie liegen als Inline-SVG im Code: keine zusätzliche
+Datei, kein Netzzugriff, keine Lizenzfrage, kein Byte Zuwachs im Bundle.
+
+Gespeichert wird nur die **Kennung** (`std:haushalt`), nicht das Bild. Die
+Darstellung bleibt damit Sache der App – eine weitere Symbolreihe lässt sich
+später ergänzen, ohne Daten umzuschreiben und ohne Datenbankänderung. Kennungen,
+die eine Fassung nicht kennt, werden einfach als „kein Symbol" angezeigt.
+
+Warum nur sechzehn und nicht zwölftausend: Ein Symbol soll helfen, eine Liste
+schneller wiederzufinden. Mehr Auswahl macht genau das langsamer – aus sechzehn
+zu wählen geht schneller als aus tausenden. Wenn dir etwas fehlt, ist ein
+einzelnes Symbol in einer Minute ergänzt.
 
 Was jemand darf, hängt an der Rolle. Nur der Besitzer kann umbenennen, teilen
 und löschen; Mitglieder sehen stattdessen „Liste verlassen". Serverseitig

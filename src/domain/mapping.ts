@@ -25,6 +25,7 @@ export function toRemoteList(local: LocalList): RemoteList {
     name: local.name,
     owner_id: local.owner_id,
     is_shared: local.is_shared,
+    icon: local.icon,
     created_at: normalizeIso(local.created_at),
     updated_at: normalizeIso(local.updated_at),
     deleted_at: normalizeIso(local.deleted_at),
@@ -37,6 +38,8 @@ export function fromRemoteList(remote: RemoteList): LocalList {
     name: remote.name,
     owner_id: remote.owner_id,
     is_shared: remote.is_shared,
+    // Ältere Zeilen kennen das Feld noch nicht.
+    icon: remote.icon ?? null,
     created_at: normalizeIso(remote.created_at),
     updated_at: normalizeIso(remote.updated_at),
     deleted_at: normalizeIso(remote.deleted_at),

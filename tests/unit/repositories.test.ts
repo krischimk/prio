@@ -442,6 +442,29 @@ describe('Repositories (lokale Geschäftslogik)', () => {
       expect(stored?.dirty).toBe(1)
     })
 
+    it('setzt und entfernt das Symbol einer Liste', async () => {
+      const list = await device.repositories.createList('Haushalt', userId)
+      expect(list.icon).toBeNull()
+
+      device.clock.advance(1000)
+      const mitSymbol = await device.repositories.setListIcon(list.id, 'std:home')
+
+      expect(mitSymbol.icon).toBe('std:home')
+      expect(mitSymbol.dirty).toBe(1)
+      expect(mitSymbol.updated_at).toBe(device.clock.now())
+
+      const ohne = await device.repositories.setListIcon(list.id, null)
+      expect(ohne.icon).toBeNull()
+    })
+
+    it('nimmt eine unbekannte Kennung an, ohne sie zu prüfen', async () => {
+      // Eine spätere Symbolreihe soll keine Datenbankänderung brauchen; die
+      // Oberfläche zeigt Unbekanntes einfach als „kein Symbol“.
+      const list = await device.repositories.createList('Test', userId)
+      const gesetzt = await device.repositories.setListIcon(list.id, 'std:gibtsnicht')
+      expect(gesetzt.icon).toBe('std:gibtsnicht')
+    })
+
     it('verweigert das Anlegen einer Liste ohne Namen', async () => {
       await expect(device.repositories.createList('  ', userId)).rejects.toBeInstanceOf(ValidationError)
     })

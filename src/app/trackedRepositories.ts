@@ -24,6 +24,7 @@ export function withChangeTracking(repositories: Repositories, onChange: () => v
   return {
     createList: track(repositories.createList.bind(repositories)),
     renameList: track(repositories.renameList.bind(repositories)),
+    setListIcon: track(repositories.setListIcon.bind(repositories)),
     deleteList: track(repositories.deleteList.bind(repositories)),
     createTask: track(repositories.createTask.bind(repositories)),
     updateTask: track(repositories.updateTask.bind(repositories)),
