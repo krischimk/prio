@@ -1,10 +1,10 @@
 /**
  * Eingebaute Listensymbole.
  *
- * Bewusst wenige, handverlesene Symbole statt einer großen Sammlung: Aus
- * sechzehn auszuwählen geht schneller als aus tausenden, und jedes einzelne ist
- * im Alltag brauchbar. Der Nutzen eines Symbols liegt darin, eine Liste
- * schneller wiederzufinden – mehr Auswahl macht genau das langsamer.
+ * Bewusst eine überschaubare Auswahl statt einer Sammlung mit tausenden
+ * Symbolen: Ein Symbol soll helfen, eine Liste schneller wiederzufinden – eine
+ * lange Liste durchzusuchen tut genau das Gegenteil. Die Motive sind deshalb
+ * nach Alltagstauglichkeit ausgewählt und nicht nach Vollständigkeit.
  *
  * Gespeichert wird nur die Kennung (`std:haushalt`). Die Darstellung bleibt
  * damit Sache der App: Eine weitere Reihe lässt sich später ergänzen, ohne
@@ -12,7 +12,14 @@
  *
  * Gezeichnet wird als Inline-SVG im 24×24-Raster mit `currentColor`, also ohne
  * zusätzliche Datei und ohne Netzzugriff (siehe `ListIcon.tsx`).
+ *
+ * Die meisten Symbole sind von Hand gezeichnet. Für Motive, die sich so nicht
+ * sauber darstellen lassen – Bagger, Schachfigur, Violine und ähnliche – kommen
+ * Symbole aus Material Design Icons dazu (`listIconsMdi.ts`, Apache-2.0,
+ * siehe THIRD-PARTY.md).
  */
+
+import { LIST_ICONS_MDI } from './listIconsMdi'
 
 export interface ListIconDefinition {
   /** Kennung, wie sie in der Datenbank steht. */
@@ -21,9 +28,19 @@ export interface ListIconDefinition {
   label: string
   /** Pfade im 24×24-Raster. */
   paths: string[]
+  /**
+   * `true` zeichnet die Pfade als Fläche statt als Strich.
+   *
+   * Die handgezeichneten Symbole sind Striche, die von Material Design Icons
+   * sind Flächen. Ohne diesen Unterschied sähen die einen wie Gerüste und die
+   * anderen wie Kleckse aus.
+   */
+  filled?: boolean
+  /** Herkunft bei fremden Symbolen – nur für die Nachvollziehbarkeit. */
+  source?: string
 }
 
-export const LIST_ICONS: ListIconDefinition[] = [
+const LIST_ICONS_HAND_DRAWN: ListIconDefinition[] = [
   { id: 'std:check', label: 'Erledigt', paths: ['M5 12.5l4.5 4.5L19 7'] },
   {
     id: 'std:star',
@@ -117,9 +134,71 @@ export const LIST_ICONS: ListIconDefinition[] = [
     paths: ['M3.5 7.5a2 2 0 0 1 2-2h3.6l2 2.5h7.4a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z'],
   },
   { id: 'std:flag', label: 'Merken', paths: ['M5.5 20.5V4M5.5 5h12l-2.2 4 2.2 4h-12'] },
+
+  /*
+   * Die folgenden fünf gibt es bei Material Design Icons nicht. Sie sind
+   * deshalb von Hand gezeichnet – bewusst einfacher gehalten, damit sie auf
+   * 24 Pixeln noch erkennbar sind.
+   */
+  {
+    id: 'std:dragon',
+    label: 'Drache',
+    paths: [
+      'M4 15.5c0-4.4 3.6-8 8-8 1.6 0 3.1.5 4.4 1.3L20 6l-.5 4.3c1 1.1 1.5 2.6 1.5 4.2 0 .9-.2 1.7-.5 2.5h-6.3L12 21l-2.1-4H7z',
+      'M9.5 12h.01M8.5 17l1.1-1.7M11.8 17l1-1.7',
+    ],
+  },
+  {
+    id: 'std:japan',
+    label: 'Japan',
+    paths: [
+      'M3.5 6h17',
+      'M5.5 9.5h13',
+      'M7.5 9.5v11M16.5 9.5v11',
+      'M6 6l1.5 3.5M18 6l-1.5 3.5',
+    ],
+  },
+  {
+    id: 'std:climb',
+    label: 'Klettern',
+    paths: [
+      'M18.5 3.5v17',
+      'M10 8.2v4.4',
+      'M10 9.4l4.5-3M10 11.4l4 1.6',
+      'M10 12.6l-2.2 3.6M10 12.6l2.4 3.6',
+      'M11.6 5.6a1.6 1.6 0 1 0-3.2 0 1.6 1.6 0 0 0 3.2 0z',
+    ],
+  },
+  {
+    id: 'std:sculpt',
+    label: 'Bildhauern',
+    paths: [
+      'M3.5 6.5h6.5V10H3.5z',
+      'M6.75 10v6.5',
+      'M13.5 8.5l5 5-2 2-5-5z',
+      'M11.5 10.5l-6 6',
+    ],
+  },
+  {
+    id: 'std:rock',
+    label: 'Fels',
+    paths: [
+      'M3.5 18.5l1.7-6.2 3.1-3.1 3.6-2.7 4 2.4 2.6 4.2-1.1 5.4z',
+      'M8.3 9.2l3.6 3.4 3.8-2.2',
+      'M11.9 12.6l-.8 5.9',
+    ],
+  },
 ]
 
-/** Symbol anhand seiner Kennung. Unbekannte Kennungen ergeben kein Symbol. */
+/**
+ * Alle Listensymbole.
+ *
+ * Zuerst die handgezeichneten, darunter die aus Material Design Icons. Die
+ * Reihenfolge bestimmt die Anzeige in der Auswahl – die vertrauten Motive
+ * stehen deshalb vorn.
+ */
+export const LIST_ICONS: ListIconDefinition[] = [...LIST_ICONS_HAND_DRAWN, ...LIST_ICONS_MDI]
+
 export function findListIcon(id: string | null): ListIconDefinition | null {
   if (!id) return null
   return LIST_ICONS.find((entry) => entry.id === id) ?? null

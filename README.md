@@ -497,20 +497,32 @@ In der breiten Ansicht stehen die Knöpfe neben dem Listentitel, auf dem Telefon
 Das ist dasselbe Muster wie bei Aufgaben: antippen öffnet die Details, und dort
 wird auch gelöscht.
 
-**Ein Symbol pro Liste.** Sechzehn eingebaute Symbole stehen zur Auswahl –
-Haushalt, Arbeit, Einkauf, Lernen, Sport, Reise, Musik, Essen, Ideen, Termine,
-Personen und so weiter. Sie liegen als Inline-SVG im Code: keine zusätzliche
-Datei, kein Netzzugriff, keine Lizenzfrage, kein Byte Zuwachs im Bundle.
+**Ein Symbol pro Liste.** 55 Symbole stehen zur Auswahl – von Haushalt, Arbeit
+und Einkauf über Bagger, Schachfigur und Violine bis zu Drache, Torii und
+Skulptieren. Sie liegen als Inline-SVG im Code: keine zusätzliche Datei und kein
+Netzzugriff zur Laufzeit.
 
 Gespeichert wird nur die **Kennung** (`std:haushalt`), nicht das Bild. Die
 Darstellung bleibt damit Sache der App – eine weitere Symbolreihe lässt sich
 später ergänzen, ohne Daten umzuschreiben und ohne Datenbankänderung. Kennungen,
 die eine Fassung nicht kennt, werden einfach als „kein Symbol" angezeigt.
 
-Warum nur sechzehn und nicht zwölftausend: Ein Symbol soll helfen, eine Liste
-schneller wiederzufinden. Mehr Auswahl macht genau das langsamer – aus sechzehn
-zu wählen geht schneller als aus tausenden. Wenn dir etwas fehlt, ist ein
-einzelnes Symbol in einer Minute ergänzt.
+Warum 55 und nicht zwölftausend: Ein Symbol soll helfen, eine Liste schneller
+wiederzufinden. Eine Sammlung mit tausenden Einträgen macht genau das
+langsamer – man sucht, statt auszuwählen. Die Motive sind nach
+Alltagstauglichkeit ausgewählt, nicht nach Vollständigkeit.
+
+Die meisten Symbole sind von Hand gezeichnet. Für Motive, die sich auf 24 Pixeln
+so nicht sauber darstellen lassen – Bagger, Schachfigur, Violine und ähnliche –
+kommen Symbole aus **Material Design Icons** dazu (Apache-2.0, siehe
+`THIRD-PARTY.md`). Erzeugt werden sie einmalig mit `npm run icons:generate`; das
+Ergebnis liegt im Repository, damit die App zur Laufzeit keine Fremdquelle
+kennt. **Font Awesome** ist bewusst nicht dabei – dessen Symbole stehen unter
+CC BY 4.0 und verlangen eine sichtbare Namensnennung.
+
+Ein neues Symbol zu ergänzen ist Handarbeit an einer Stelle:
+`LIST_ICONS_HAND_DRAWN` in `src/ui/listIcons.ts` oder ein Eintrag in
+`scripts/generate-mdi-icons.mjs`.
 
 Was jemand darf, hängt an der Rolle. Nur der Besitzer kann umbenennen, teilen
 und löschen; Mitglieder sehen stattdessen „Liste verlassen". Serverseitig

@@ -68,6 +68,10 @@ export function ListIconPicker({
           Symbol entfernen
         </button>
       ) : null}
+
+      <p className="text-xs text-neutral-600">
+        Ein Teil der Symbole stammt aus Material Design Icons (Apache-2.0) – siehe THIRD-PARTY.md.
+      </p>
     </div>
   )
 }

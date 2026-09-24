@@ -16,14 +16,20 @@ export function ListIcon({ icon, className = 'h-5 w-5' }: { icon: string | null;
   if (!definition) return null
 
   return (
+    /*
+      Zwei Arten der Zeichnung: Die handgezeichneten Symbole sind Striche, die
+      von Material Design Icons sind Flächen. Beides mit derselben Einstellung
+      zu zeichnen ließe die einen wie Gerüste und die anderen wie Kleckse
+      aussehen.
+    */
     <svg
       viewBox="0 0 24 24"
       className={className}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      fill={definition.filled ? 'currentColor' : 'none'}
+      stroke={definition.filled ? 'none' : 'currentColor'}
+      strokeWidth={definition.filled ? undefined : 1.8}
+      strokeLinecap={definition.filled ? undefined : 'round'}
+      strokeLinejoin={definition.filled ? undefined : 'round'}
       aria-hidden="true"
       data-testid="list-icon"
       data-icon={definition.id}
