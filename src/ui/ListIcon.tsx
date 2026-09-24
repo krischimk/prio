@@ -23,7 +23,7 @@ export function ListIcon({ icon, className = 'h-5 w-5' }: { icon: string | null;
       aussehen.
     */
     <svg
-      viewBox="0 0 24 24"
+      viewBox={definition.viewBox ?? '0 0 24 24'}
       className={className}
       fill={definition.filled ? 'currentColor' : 'none'}
       stroke={definition.filled ? 'none' : 'currentColor'}

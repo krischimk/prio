@@ -13,10 +13,11 @@
  * Gezeichnet wird als Inline-SVG im 24×24-Raster mit `currentColor`, also ohne
  * zusätzliche Datei und ohne Netzzugriff (siehe `ListIcon.tsx`).
  *
- * Die meisten Symbole sind von Hand gezeichnet. Für Motive, die sich so nicht
- * sauber darstellen lassen – Bagger, Schachfigur, Violine und ähnliche – kommen
- * Symbole aus Material Design Icons dazu (`listIconsMdi.ts`, Apache-2.0,
- * siehe THIRD-PARTY.md).
+ * Hier stehen die von Hand gezeichneten Symbole. Alles Weitere – und das ist
+ * der größere Teil – kommt aus Material Design Icons (`listIconsMdi.ts`,
+ * Apache-2.0, siehe THIRD-PARTY.md). Selbst gezeichnet wird nur noch, wenn es
+ * für ein Motiv gar keine fertige Vorlage gibt; gezeichnete Symbole sind auf
+ * 24 Pixeln meist schwerer zu erkennen.
  */
 
 import { LIST_ICONS_MDI } from './listIconsMdi'
@@ -26,8 +27,15 @@ export interface ListIconDefinition {
   id: string
   /** Beschriftung für die Auswahl und für Vorleseprogramme. */
   label: string
-  /** Pfade im 24×24-Raster. */
+  /** Pfade im eigenen Raster (siehe `viewBox`). */
   paths: string[]
+  /**
+   * Das Raster der Pfade, z. B. `0 0 24 24`.
+   *
+   * Nicht jede Sammlung zeichnet auf 24×24 – Temaki etwa auf 50×50. Ohne
+   * eigene Angabe landete so ein Symbol winzig in einer Ecke.
+   */
+  viewBox?: string
   /**
    * `true` zeichnet die Pfade als Fläche statt als Strich.
    *
@@ -135,19 +143,6 @@ const LIST_ICONS_HAND_DRAWN: ListIconDefinition[] = [
   },
   { id: 'std:flag', label: 'Merken', paths: ['M5.5 20.5V4M5.5 5h12l-2.2 4 2.2 4h-12'] },
 
-  /*
-   * Die folgenden fünf gibt es bei Material Design Icons nicht. Sie sind
-   * deshalb von Hand gezeichnet – bewusst einfacher gehalten, damit sie auf
-   * 24 Pixeln noch erkennbar sind.
-   */
-  {
-    id: 'std:dragon',
-    label: 'Drache',
-    paths: [
-      'M4 15.5c0-4.4 3.6-8 8-8 1.6 0 3.1.5 4.4 1.3L20 6l-.5 4.3c1 1.1 1.5 2.6 1.5 4.2 0 .9-.2 1.7-.5 2.5h-6.3L12 21l-2.1-4H7z',
-      'M9.5 12h.01M8.5 17l1.1-1.7M11.8 17l1-1.7',
-    ],
-  },
   {
     id: 'std:japan',
     label: 'Japan',
@@ -156,36 +151,6 @@ const LIST_ICONS_HAND_DRAWN: ListIconDefinition[] = [
       'M5.5 9.5h13',
       'M7.5 9.5v11M16.5 9.5v11',
       'M6 6l1.5 3.5M18 6l-1.5 3.5',
-    ],
-  },
-  {
-    id: 'std:climb',
-    label: 'Klettern',
-    paths: [
-      'M18.5 3.5v17',
-      'M10 8.2v4.4',
-      'M10 9.4l4.5-3M10 11.4l4 1.6',
-      'M10 12.6l-2.2 3.6M10 12.6l2.4 3.6',
-      'M11.6 5.6a1.6 1.6 0 1 0-3.2 0 1.6 1.6 0 0 0 3.2 0z',
-    ],
-  },
-  {
-    id: 'std:sculpt',
-    label: 'Bildhauern',
-    paths: [
-      'M3.5 6.5h6.5V10H3.5z',
-      'M6.75 10v6.5',
-      'M13.5 8.5l5 5-2 2-5-5z',
-      'M11.5 10.5l-6 6',
-    ],
-  },
-  {
-    id: 'std:rock',
-    label: 'Fels',
-    paths: [
-      'M3.5 18.5l1.7-6.2 3.1-3.1 3.6-2.7 4 2.4 2.6 4.2-1.1 5.4z',
-      'M8.3 9.2l3.6 3.4 3.8-2.2',
-      'M11.9 12.6l-.8 5.9',
     ],
   },
 ]
