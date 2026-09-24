@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
 import { ListIcon } from './ListIcon'
+import { ListIconPicker } from './ListIconPicker'
 import { useTasks } from '../app/hooks'
 import { useBackLayer } from '../app/useBackLayer'
 import type { LocalList } from '../domain/types'
@@ -21,6 +22,7 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
   const [renaming, setRenaming] = useState(false)
   const [name, setName] = useState(list.name)
   const [shareOpen, setShareOpen] = useState(false)
+  const [iconOpen, setIconOpen] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   // Die Zurück-Taste schließt zuerst das, was zuletzt geöffnet wurde.
@@ -83,6 +85,13 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
               <button
                 type="button"
                 className={`${ghostButton} px-2 py-1 text-xs`}
+                onClick={() => setIconOpen((offen) => !offen)}
+              >
+                Symbol
+              </button>
+              <button
+                type="button"
+                className={`${ghostButton} px-2 py-1 text-xs`}
                 aria-expanded={shareOpen}
                 onClick={() => setShareOpen((open) => !open)}
               >
@@ -120,6 +129,7 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
           </div>
         )}
 
+        {iconOpen ? <ListIconPicker list={list} /> : null}
         {shareOpen ? <SharePanel list={list} currentUserId={currentUserId} /> : null}
       </header>
 

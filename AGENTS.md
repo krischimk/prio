@@ -125,6 +125,16 @@ Konkret:
 * **Textformate stehen in einer gemeinsamen Funktion.** Fälligkeit, Zähler,
   Statusmeldungen – wenn zwei Ansichten dieselbe Information zeigen, stammt der
   Text aus derselben Quelle (z. B. `formatDueLabel` in `src/ui/datetime.ts`).
+* **Jede Funktion ist auf beiden Oberflächen erreichbar.** Was auf dem Telefon
+  geht, geht auch in der breiten Ansicht – und umgekehrt. Eine Aktion nur auf
+  einem Bildschirm ist ein **Fehler**, kein Zwischenstand. Beim Hinzufügen
+  immer fragen: Wo ist die andere Stelle? Wenn die Antwort „nirgends“ lautet,
+  ist die Arbeit nicht fertig.
+* **Prüfbar:** Für jede Listen- und Aufgabenaktion gibt es einen E2E-Fall in
+  `tests/e2e/mobile.spec.ts` (Telefon) **und** einen in `tests/e2e/lists.spec.ts`
+  bzw. `tests/e2e/tasks.spec.ts` (breite Ansicht). Fehlt einer, ist die Regel
+  verletzt – genau so ist die Symbolauswahl versehentlich nur auf dem Telefon
+  gelandet.
 * **Vor jeder UI-Änderung fragen:** Braucht die andere Ansicht das auch? Wenn ja
   → gemeinsam umsetzen. Wenn nein → bewusst dagegen entscheiden.
 * **Nichts verdoppeln, was nur zufällig gleich aussieht.** Zwei fast gleiche
