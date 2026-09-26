@@ -30,6 +30,10 @@ jobs:
     steps:
       - name: Repository auschecken
         uses: actions/checkout@v7
+        with:
+          # Ohne die volle Historie fehlt der Tag-Text, und genau der ist der
+          # Changelog des Releases.
+          fetch-depth: 0
 
       - name: Node.js einrichten
         uses: actions/setup-node@v7
@@ -117,9 +121,19 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Der Text der Tag-Anmerkung ist der Changelog. GitHub kann ihn nicht
+          # selbst erzeugen: Ohne Pull Requests bleibt bei `--generate-notes`
+          # nur ein Verweis auf den Vergleich zweier Tags, und das ist keine
+          # lesbare Liste. Der Tag-Text wird deshalb beim Setzen des Tags
+          # geschrieben – siehe AGENTS.md.
+          git tag -l --format='%(contents)' "${GITHUB_REF_NAME}" > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "Der Tag ${GITHUB_REF_NAME} hat keinen Text – bitte mit -m annotieren." >&2
+            exit 1
+          fi
           gh release create "${GITHUB_REF_NAME}" "prio-${{ steps.version.outputs.name }}.apk" \
             --title "prio ${GITHUB_REF_NAME}" \
-            --generate-notes
+            --notes-file release-notes.md
 
       - name: APK als Artefakt sichern (Probelauf ohne Tag)
         if: github.ref_type != 'tag'
