@@ -96,7 +96,16 @@ const AUSWAHL = [
   ['std:deadlines', 'Fristen', 'mdi', 'clipboard-clock-outline'],
 
   // Freizeit und Natur
-  ['std:strings', 'Streichinstrument', 'mdi', 'violin'],
+  /*
+   * Ein Cellosymbol gibt es nicht: Bei MDI, Lucide, Tabler und den übrigen
+   * freien Sammlungen existiert kein brauchbares. Die einzige gut erkennbare
+   * Violine stammt von Game-icons und steht unter CC BY 3.0 – also mit
+   * sichtbarer Namensnennung, die hier bewusst vermieden wird.
+   *
+   * Selbst gezeichnet wurde es dreimal versucht und dreimal verworfen: Ein
+   * Cello ist eine organische Form, die als Strichumriss auf 24 Pixeln zur
+   * Erdnuss zerfällt.
+   */
   ['std:piano', 'Klavier', 'mdi', 'piano'],
   ['std:chess', 'Schach', 'lucide', 'chess-queen'],
   ['std:sailing', 'Segeln', 'mdi', 'sail-boat'],
