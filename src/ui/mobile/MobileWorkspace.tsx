@@ -11,6 +11,7 @@ import { ListSettingsSheet } from './ListSettingsSheet'
 import { RestoreTasksPanel } from '../RestoreTasksPanel'
 import { TaskDetailSheet } from './TaskDetailSheet'
 import { PlusIcon } from '../icons'
+import { formatOpenTasks } from '../taskCount'
 
 /**
  * Mobile Oberfläche der App.
@@ -59,9 +60,8 @@ export function MobileWorkspace() {
           </p>
         ) : (
           <>
-            <div className="flex items-center justify-between px-4 pb-1 pt-3 text-xs text-neutral-500">
-              <span>{openCount === 1 ? '1 offene Aufgabe' : `${openCount} offene Aufgaben`}</span>
-              <span>{tasks.length} gesamt</span>
+            <div className="px-4 pb-1 pt-3 text-xs text-neutral-500">
+              <span>{formatOpenTasks(openCount)}</span>
             </div>
             <MobileTaskList
               tasks={tasks}

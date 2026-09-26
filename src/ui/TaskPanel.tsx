@@ -9,6 +9,7 @@ import { SharePanel } from './SharePanel'
 import { TaskComposer } from './TaskComposer'
 import { TaskItem } from './TaskItem'
 import { dangerButton, ghostButton, input, primaryButton, secondaryButton } from './styles'
+import { formatOpenTasks } from './taskCount'
 
 /**
  * Hauptbereich: Aufgaben der ausgewählten Liste.
@@ -136,9 +137,8 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
       <TaskComposer listId={list.id} />
 
       <div className="min-h-0 flex-1">
-        <div className="mb-2 flex items-center justify-between text-xs text-neutral-500">
-          <span>{openTasks === 1 ? '1 offene Aufgabe' : `${openTasks} offene Aufgaben`}</span>
-          <span>{tasks.length} gesamt</span>
+        <div className="mb-2 text-xs text-neutral-500">
+          <span>{formatOpenTasks(openTasks)}</span>
         </div>
         {tasks.length === 0 ? (
           <p className="rounded-lg border border-dashed border-neutral-800 px-3 py-6 text-center text-sm text-neutral-500">

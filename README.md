@@ -440,6 +440,22 @@ Wird eine Aufgabe erledigt, gelöscht oder ihr Datum entfernt, wird die
 Erinnerung abgebrochen. Wird ein Datum verschoben, wird der Termin unter
 derselben Nummer neu geplant.
 
+### Was in den Einstellungen steht
+
+| Zustand | Anzeige |
+| --- | --- |
+| Berechtigung fehlt | „Erinnerungen sind aus." und der Knopf zum Aktivieren |
+| Berechtigung verweigert | „Erinnerungen sind blockiert. In den Systemeinstellungen erlauben." |
+| Erlaubt, Termine stehen an | „1 Erinnerung geplant" bzw. „N Erinnerungen geplant" |
+| Erlaubt, nichts steht an | „Erinnerungen sind an." |
+| Browser | „Erinnerungen sind auf diesem Gerät nicht verfügbar." |
+
+> **„Nichts geplant" ist nicht „geht hier nicht".** Beide Fälle ergaben früher
+> keinen Text, und die Einstellungen zeigten darauf „Erinnerungen sind auf
+> diesem Gerät nicht verfügbar." – auch auf dem Telefon, sobald nur gerade
+> kein Termin anstand. Die Beschreibung unterscheidet die beiden Fälle jetzt
+> ausdrücklich (`available` in `src/reminders/reminderStatus.ts`).
+
 ### Grenzen
 
 * **Zustellung kann sich verzögern.** Die App fordert bewusst keine Berechtigung
@@ -463,15 +479,20 @@ gebaute Ansicht. Ab 768 px bleibt die breite Ansicht mit Seitenleiste.
 ┌──────────────────────────────┐
 │ ☰        Haushalt          ● │  ← App-Leiste: Menü, Liste, Sync-Zustand
 ├──────────────────────────────┤
-│ 2 offene Aufgaben   3 gesamt │
+│ 2 offene Aufgaben            │  ← zählt nur, was in der Liste steht
 │ ☐  Rechnung Strom bezahlen   │
 │    Abschlag Q2               │  ← Titel, darunter Beschreibung,
 │    15.02.2027, 18:30         │    darunter Fälligkeit
-│ ☑  Wohnung saugen            │
+│ ☐  Wohnung saugen            │
 ├──────────────────────────────┤
 │             (+)              │  ← neuer Eintrag
 └──────────────────────────────┘
 ```
+
+Es steht **immer nur eine Zahl** da: Abgehakte Aufgaben verlassen die Liste
+sofort (siehe [Erledigen und Wiederherstellen](#erledigen-und-wiederherstellen)),
+also enthält sie ausschließlich offene. Eine zweite Zahl „gesamt" wäre mit der
+ersten immer identisch.
 
 **Bedienung**
 
@@ -500,7 +521,7 @@ In der breiten Ansicht stehen die Knöpfe neben dem Listentitel, auf dem Telefon
 Das ist dasselbe Muster wie bei Aufgaben: antippen öffnet die Details, und dort
 wird auch gelöscht.
 
-**Ein Symbol pro Liste.** 55 Symbole stehen zur Auswahl – von Haushalt, Arbeit
+**Ein Symbol pro Liste.** 60 Symbole stehen zur Auswahl – von Haushalt, Arbeit
 und Einkauf über Klettern, Fels und Nähen bis zu T-Shirt, Klavier und Torii. Sie
 liegen als Inline-SVG im Code: keine zusätzliche Datei und kein Netzzugriff zur
 Laufzeit.
@@ -564,6 +585,10 @@ Wege zurück:
   **sieben Tagen** abgehakt wurde, zuletzt abgehaktes zuerst, mit der Liste und
   dem Zeitpunkt. Auf dem Telefon über das Menü, in der breiten Ansicht über
   „Wiederherstellen“ im Kopfbereich.
+* **Wiederkehrende Aufgaben** stehen dort nur so lange, bis ihr Nachfolger
+  existiert: Mit ihm sind sie fortgeschrieben und gehören nicht mehr ins
+  Wiederherstellen-Fenster (siehe [Wiederkehrende
+  Aufgaben](#wiederkehrende-aufgaben)).
 
 Grundlage ist das Feld `completed_at`: Es wird beim Abhaken gesetzt und beim
 Wiederöffnen wieder geleert (`setTaskCompleted` in `src/db/repositories.ts`).

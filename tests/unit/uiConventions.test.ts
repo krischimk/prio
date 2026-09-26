@@ -30,6 +30,7 @@ const PROJECT_ROOT = process.cwd()
 const UI_DIR = join(PROJECT_ROOT, 'src', 'ui')
 const STYLES_FILE = join(UI_DIR, 'styles.ts')
 const DATETIME_FILE = join(UI_DIR, 'datetime.ts')
+const TASK_COUNT_FILE = join(UI_DIR, 'taskCount.ts')
 
 function collectSourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
@@ -93,6 +94,18 @@ describe('UI-Konventionen', () => {
     expect(
       treffer,
       'Für Fälligkeiten gibt es formatDueLabel in src/ui/datetime.ts – damit beide Ansichten denselben Text zeigen.',
+    ).toEqual([])
+  })
+
+  it('zählt offene Aufgaben nur an einer Stelle', () => {
+    const treffer = findMatches(
+      sourceFiles.filter((file) => file !== TASK_COUNT_FILE),
+      /offene Aufgaben?/,
+    )
+
+    expect(
+      treffer,
+      'Beide Ansichten zeigen denselben Zähler. Text kommt aus formatOpenTasks in src/ui/taskCount.ts.',
     ).toEqual([])
   })
 })

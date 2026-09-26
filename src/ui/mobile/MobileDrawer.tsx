@@ -200,7 +200,7 @@ export function MobileDrawer({
               Erinnerungen aktivieren
             </button>
           ) : null}
-          {!reminders.text && !reminders.canEnable ? (
+          {!reminders.available ? (
             <p className="text-xs text-neutral-500">Erinnerungen sind auf diesem Gerät nicht verfügbar.</p>
           ) : null}
 

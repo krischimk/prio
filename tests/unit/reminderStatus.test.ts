@@ -34,8 +34,22 @@ describe('Anzeige der Erinnerungen', () => {
     expect(describeReminderState(status('ok', 3)).text).toBe('3 Erinnerungen geplant')
   })
 
-  it('schweigt, wenn nichts geplant ist', () => {
-    expect(describeReminderState(status('ok', 0)).text).toBeNull()
+  /**
+   * Gemeldeter Fehler: Stand nichts an, ergab die Beschreibung keinen Text und
+   * keinen Knopf – genau wie im Browser. Die Einstellungen zeigten darauf
+   * „Erinnerungen sind auf diesem Gerät nicht verfügbar.", obwohl die
+   * Berechtigung erteilt war und nur kein Termin anstand.
+   */
+  it('sagt bei erteilter Berechtigung, dass Erinnerungen an sind', () => {
+    const description = describeReminderState(status('ok', 0))
+    expect(description.text).toBe('Erinnerungen sind an.')
+    expect(description.available).toBe(true)
+  })
+
+  it('unterscheidet „nichts geplant" von „geht hier nicht"', () => {
+    expect(describeReminderState(status('ok', 0)).available).toBe(true)
+    expect(describeReminderState(status('unsupported')).available).toBe(false)
+    expect(describeReminderState(null).available).toBe(false)
   })
 
   it('zeigt Fehlermeldungen an', () => {

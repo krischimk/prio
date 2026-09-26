@@ -112,4 +112,36 @@ test('macht eine Aufgabe in der breiten Ansicht wiederkehrend', async ({ page })
   await expect(zeile).toContainText('Täglich')
   // Wartende Zusicherung: Das Schreiben in die Datenbank ist asynchron.
   await expect(zeile).not.toHaveText(vorher)
+
+  // Eine fortgeschriebene Aufgabe gehört nicht ins Wiederherstellen-Fenster:
+  // Sie ist bereits durch ihren Nachfolger ersetzt.
+  await page.getByRole('button', { name: 'Wiederherstellen', exact: true }).click()
+  const panel = page.getByRole('dialog', { name: 'Aufgaben wiederherstellen' })
+  await expect(panel.getByTestId('restore-empty')).toBeVisible()
+  await expect(panel.getByText('Zähne putzen')).toHaveCount(0)
+})
+
+test('holt eine abgehakte Aufgabe in der breiten Ansicht zurück', async ({ page }) => {
+  await register(page, uniqueEmail('l7'))
+  await createList(page, 'Haushalt')
+
+  await page.getByLabel('Neue Aufgabe', { exact: true }).fill('Müll rausbringen')
+  await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click()
+
+  const zeile = page.getByTestId('task-list').locator('li').filter({ hasText: 'Müll rausbringen' })
+  await zeile.getByRole('checkbox').click()
+  await expect(zeile).toHaveCount(0)
+
+  // Abgehakt heißt: aus der Liste verschwunden, aber sieben Tage auffindbar.
+  await page.getByRole('button', { name: 'Wiederherstellen', exact: true }).click()
+  const panel = page.getByRole('dialog', { name: 'Aufgaben wiederherstellen' })
+  const eintrag = panel.locator('li').filter({ hasText: 'Müll rausbringen' })
+  await expect(eintrag).toBeVisible()
+  await expect(eintrag).toContainText('Haushalt')
+
+  await eintrag.getByRole('button', { name: 'Wiederherstellen' }).click()
+
+  // Zurück in der Liste – und nicht mehr im Fenster.
+  await expect(page.getByTestId('task-list').locator('li').filter({ hasText: 'Müll rausbringen' })).toBeVisible()
+  await expect(panel.locator('li').filter({ hasText: 'Müll rausbringen' })).toHaveCount(0)
 })
