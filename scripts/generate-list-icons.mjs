@@ -40,6 +40,34 @@ const SAMMLUNGEN = {
  * Die Reihenfolge bestimmt die Anzeige in der Auswahl.
  */
 const AUSWAHL = [
+  /*
+   * Die ersten Einträge waren einmal von Hand gezeichnet. Sie sind durch
+   * fertige Symbole ersetzt: einheitlichere Bildsprache und eine
+   * nachvollziehbare Herkunft für jedes einzelne Symbol.
+   *
+   * Die Kennungen sind unverändert geblieben – bereits gespeicherte Listen
+   * behalten ihr Symbol also.
+   */
+  ['std:check', 'Erledigt', 'mdi', 'check'],
+  ['std:star', 'Wichtig', 'mdi', 'star-outline'],
+  ['std:heart', 'Favoriten', 'mdi', 'heart-outline'],
+  ['std:home', 'Haushalt', 'mdi', 'home-outline'],
+  ['std:work', 'Arbeit', 'mdi', 'briefcase-outline'],
+  ['std:shopping', 'Einkauf', 'mdi', 'cart-outline'],
+  ['std:study', 'Lernen', 'mdi', 'book-open-variant-outline'],
+  // Tabler statt MDI: MDIs Hantel liegt diagonal und wirkt wie ein Werkzeug.
+  ['std:sport', 'Sport', 'tabler', 'dumbbell'],
+  ['std:travel', 'Reise', 'mdi', 'airplane'],
+  ['std:music', 'Musik', 'mdi', 'music'],
+  ['std:food', 'Essen', 'mdi', 'silverware-fork-knife'],
+  ['std:ideas', 'Ideen', 'mdi', 'lightbulb-outline'],
+  ['std:calendar', 'Termine', 'mdi', 'calendar-outline'],
+  ['std:people', 'Personen', 'mdi', 'account-outline'],
+  ['std:folder', 'Sonstiges', 'mdi', 'folder-outline'],
+  ['std:flag', 'Merken', 'mdi', 'flag-outline'],
+  // Für das Torii gibt es bei MDI nichts; Tabler hat eines.
+  ['std:japan', 'Japan', 'tabler', 'torii'],
+
   // Haushalt und Alltag
   ['std:suitcase', 'Koffer', 'mdi', 'bag-suitcase-outline'],
   ['std:computer', 'Computer', 'mdi', 'monitor'],

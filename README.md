@@ -520,9 +520,14 @@ Apache-2.0, verlangen also nur den Lizenztext und keine sichtbare Nennung
 App zur Laufzeit keine Fremdquelle kennt. **Font Awesome** ist bewusst nicht
 dabei – dessen Symbole stehen unter CC BY 4.0.
 
-Selbst gezeichnet sind nur noch die 16 ursprünglichen Symbole und das Torii für
-„Japan", für das es keine Vorlage gibt. Gezeichnete Symbole sind auf 24 Pixeln
-schwerer zu erkennen, deshalb ist das die Ausnahme.
+Es gibt **kein selbst gezeichnetes Symbol mehr**. Die ursprünglichen sechzehn
+wurden durch fertige Vorlagen ersetzt – das gibt eine einheitlichere Bildsprache
+und für jedes Symbol eine nachvollziehbare Herkunft. Die Kennungen sind dabei
+unverändert geblieben, bereits gespeicherte Listen behalten ihr Symbol also.
+
+Für zwei Motive kommt das Symbol von Tabler statt von MDI: die **Hantel**
+(MDIs Fassung liegt diagonal und wirkt wie ein Werkzeug) und das **Torii** für
+„Japan" (bei MDI gibt es keines).
 
 Ein neues Symbol zu ergänzen ist ein Eintrag in
 `scripts/generate-list-icons.mjs` plus `npm run icons:generate`.
