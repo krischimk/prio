@@ -492,12 +492,27 @@ describe('Repositories (lokale Geschäftslogik)', () => {
       expect(nachfolger).toBeUndefined()
     })
 
-    it('zeigt eine fortgeschriebene Aufgabe nicht zum Wiederherstellen', async () => {
+    it('zeigt auch die fortgeschriebene Aufgabe zum Wiederherstellen', async () => {
+      const listId = await newList()
+      const { task } = await neueWiederholung(listId)
+      const erledigt = await device.repositories.setTaskCompleted(task.id, true)
+
+      // Eine Regel für alle: sieben Tage ab dem Abhaken. Die abgehakte Fassung
+      // bleibt auffindbar, während der nächste Termin offen in der Liste steht.
+      const wiederherstellbar = await device.repositories.listRestorableTasks()
+      expect(wiederherstellbar.map((t) => t.id)).toEqual([erledigt.id])
+      expect((await device.repositories.listTasks(listId)).map((t) => t.title)).toEqual([
+        'Wiederkehrend',
+      ])
+    })
+
+    it('nimmt die fortgeschriebene Aufgabe nach sieben Tagen aus dem Fenster', async () => {
       const listId = await newList()
       const { task } = await neueWiederholung(listId)
       await device.repositories.setTaskCompleted(task.id, true)
 
-      // Mit Nachfolger ist sie fortgeschrieben und gehört nicht mehr dorthin.
+      device.clock.advance(8 * 24 * 60 * 60 * 1000)
+
       expect(await device.repositories.listRestorableTasks()).toHaveLength(0)
     })
 

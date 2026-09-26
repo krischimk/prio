@@ -585,14 +585,18 @@ Wege zurück:
   **sieben Tagen** abgehakt wurde, zuletzt abgehaktes zuerst, mit der Liste und
   dem Zeitpunkt. Auf dem Telefon über das Menü, in der breiten Ansicht über
   „Wiederherstellen“ im Kopfbereich.
-* **Wiederkehrende Aufgaben** stehen dort nur so lange, bis ihr Nachfolger
-  existiert: Mit ihm sind sie fortgeschrieben und gehören nicht mehr ins
-  Wiederherstellen-Fenster (siehe [Wiederkehrende
-  Aufgaben](#wiederkehrende-aufgaben)).
+* **Wiederkehrende Aufgaben** sind nicht ausgenommen: Auch ihre abgehakte
+  Fassung bleibt sieben Tage auffindbar, während der Nachfolger offen in der
+  Liste steht. Eine Regel für alle, kein Sonderfall.
 
 Grundlage ist das Feld `completed_at`: Es wird beim Abhaken gesetzt und beim
 Wiederöffnen wieder geleert (`setTaskCompleted` in `src/db/repositories.ts`).
 Das Fenster ist `RESTORE_WINDOW_DAYS` an derselben Stelle.
+
+> **Aufpassen beim Wiederherstellen einer wiederkehrenden Aufgabe.** Der Knopf
+> öffnet nicht nur die alte Fassung, er nimmt auch ihren Nachfolger zurück –
+> sonst stünde dieselbe Aufgabe doppelt da. Das ist dieselbe Mechanik wie
+> „Rückgängig" direkt nach dem Abhaken, nur eben auch noch Tage später.
 
 Nach den sieben Tagen ist eine Aufgabe **nicht gelöscht**, nur nicht mehr über
 die Oberfläche erreichbar. Sie bleibt in der Datenbank und wird weiterhin
@@ -617,9 +621,11 @@ als erledigt stehen – so bleibt nachvollziehbar, wann etwas zuletzt getan wurd
 * **Rückgängig nimmt den Nachfolger zurück.** Sonst stünde die Aufgabe doppelt
   in der Liste – einmal offen, einmal als Nachfolger. Ein bereits erledigter
   Nachfolger bleibt dabei unangetastet.
-* **Nicht mehr im Wiederherstellen-Fenster:** Eine wiederkehrende Aufgabe mit
-  Nachfolger ist fortgeschrieben und taucht deshalb nicht unter „Aufgaben
-  wiederherstellen" auf.
+* **Die abgehakte Fassung bleibt auffindbar.** Sie steht wie jede andere
+  abgehakte Aufgabe sieben Tage lang unter „Aufgaben wiederherstellen" – auch
+  dann, wenn der Nachfolger bereits existiert. Wiederherstellen holt sie zurück
+  und nimmt den Nachfolger mit (siehe [Erledigen und
+  Wiederherstellen](#erledigen-und-wiederherstellen)).
 * **Die Kennung des Nachfolgers wird berechnet**, nicht zufällig gewürfelt – aus
   Aufgabe und nächstem Termin. Hakst du dieselbe Aufgabe auf zwei Geräten
   offline ab, entsteht auf beiden dieselbe Kennung, und der Abgleich verschmilzt

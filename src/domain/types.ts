@@ -67,9 +67,10 @@ export interface LocalTask extends SyncableRow, LocalOnly {
   /**
    * Die beim Abhaken entstandene Nachfolgeaufgabe.
    *
-   * Daran hängen zwei Regeln: Solange ein Nachfolger existiert, taucht die
-   * abgehakte Aufgabe nicht unter „Aufgaben wiederherstellen" auf, und
-   * „Rückgängig" weiß dadurch, was es entfernen muss.
+   * Daran hängt eine Regel: „Rückgängig" – und ebenso das Wiederherstellen aus
+   * den Einstellungen – weiß dadurch, was mit zurückgenommen werden muss.
+   * Für das Wiederherstellen-Fenster selbst spielt das Feld keine Rolle: Dort
+   * gilt für jede abgehakte Aufgabe dasselbe siebentägige Fenster.
    */
   successor_id: string | null
   /**

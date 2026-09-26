@@ -113,12 +113,11 @@ test('macht eine Aufgabe in der breiten Ansicht wiederkehrend', async ({ page })
   // Wartende Zusicherung: Das Schreiben in die Datenbank ist asynchron.
   await expect(zeile).not.toHaveText(vorher)
 
-  // Eine fortgeschriebene Aufgabe gehört nicht ins Wiederherstellen-Fenster:
-  // Sie ist bereits durch ihren Nachfolger ersetzt.
+  // Auch die fortgeschriebene Aufgabe bleibt sieben Tage auffindbar – eine
+  // Regel für alle. Der Nachfolger steht daneben offen in der Liste.
   await page.getByRole('button', { name: 'Wiederherstellen', exact: true }).click()
   const panel = page.getByRole('dialog', { name: 'Aufgaben wiederherstellen' })
-  await expect(panel.getByTestId('restore-empty')).toBeVisible()
-  await expect(panel.getByText('Zähne putzen')).toHaveCount(0)
+  await expect(panel.locator('li').filter({ hasText: 'Zähne putzen' })).toBeVisible()
 })
 
 test('holt eine abgehakte Aufgabe in der breiten Ansicht zurück', async ({ page }) => {

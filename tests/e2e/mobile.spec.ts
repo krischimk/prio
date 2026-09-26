@@ -358,12 +358,12 @@ test('legt beim Abhaken einer wiederkehrenden Aufgabe den nächsten Termin an', 
   // sofortiges Auslesen käme noch vor der Aktualisierung.
   await expect(nachher).not.toHaveText(vorher)
 
-  // Die abgehakte Fassung gehört nicht ins Wiederherstellen-Fenster: Sie ist
-  // durch ihren Nachfolger ersetzt. Sonst stünde die Aufgabe doppelt zur Wahl.
+  // Auch die abgehakte Fassung bleibt sieben Tage auffindbar – eine Regel für
+  // alle. Der Nachfolger steht daneben offen in der Liste.
   await page.getByRole('button', { name: 'Menü öffnen' }).click()
   await page.getByRole('button', { name: 'Aufgaben wiederherstellen' }).click()
   const panel = page.getByRole('dialog', { name: 'Aufgaben wiederherstellen' })
-  await expect(panel.getByTestId('restore-empty')).toBeVisible()
+  await expect(panel.locator('li').filter({ hasText: 'Zähne putzen' })).toBeVisible()
 })
 
 test('nimmt den Nachfolger beim Rückgängigmachen zurück', async ({ page }) => {

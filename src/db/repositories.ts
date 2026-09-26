@@ -76,6 +76,10 @@ export interface Repositories {
   /**
    * Abgehakte Aufgaben aller Listen, die noch wiederhergestellt werden können –
    * zuletzt abgehakte zuerst.
+   *
+   * Eine Regel für alle: `RESTORE_WINDOW_DAYS` Tage ab `completed_at`.
+   * Wiederkehrende Aufgaben sind nicht ausgenommen – die abgehakte Fassung
+   * bleibt auffindbar, während der Nachfolger offen in der Liste steht.
    */
   listRestorableTasks(): Promise<LocalTask[]>
 
@@ -446,9 +450,6 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
           (task) =>
             task.deleted_at === null &&
             task.completed &&
-            // Mit Nachfolger ist die Aufgabe bereits fortgeschrieben – dann
-            // gehört sie nicht mehr ins Wiederherstellen-Fenster.
-            task.successor_id === null &&
             task.completed_at !== null &&
             task.completed_at >= grenze,
         )
