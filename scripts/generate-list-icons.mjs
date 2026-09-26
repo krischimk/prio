@@ -41,94 +41,80 @@ const SAMMLUNGEN = {
  */
 const AUSWAHL = [
   /*
-   * Die ersten Einträge waren einmal von Hand gezeichnet. Sie sind durch
-   * fertige Symbole ersetzt: einheitlichere Bildsprache und eine
-   * nachvollziehbare Herkunft für jedes einzelne Symbol.
-   *
-   * Die Kennungen sind unverändert geblieben – bereits gespeicherte Listen
-   * behalten ihr Symbol also.
+   * Nach Themen geordnet, damit Verwandtes in der Auswahl nebeneinander
+   * steht. Die Komponenten bleiben reine Kommentare – in der Oberfläche gibt
+   * es keine Überschriften, nur die Reihenfolge.
    */
+
+  // Alltag und Besorgung
   ['std:check', 'Erledigt', 'mdi', 'check'],
   ['std:star', 'Wichtig', 'mdi', 'star-outline'],
   ['std:heart', 'Favoriten', 'mdi', 'heart-outline'],
-  ['std:home', 'Haushalt', 'mdi', 'home-outline'],
-  ['std:work', 'Arbeit', 'mdi', 'briefcase-outline'],
-  ['std:shopping', 'Einkauf', 'mdi', 'cart-outline'],
-  ['std:study', 'Lernen', 'mdi', 'book-open-variant-outline'],
-  // Tabler statt MDI: MDIs Hantel liegt diagonal und wirkt wie ein Werkzeug.
-  ['std:sport', 'Sport', 'tabler', 'dumbbell'],
-  ['std:travel', 'Reise', 'mdi', 'airplane'],
-  ['std:music', 'Musik', 'mdi', 'music'],
-  ['std:food', 'Essen', 'mdi', 'silverware-fork-knife'],
-  ['std:ideas', 'Ideen', 'mdi', 'lightbulb-outline'],
-  ['std:calendar', 'Termine', 'mdi', 'calendar-outline'],
-  ['std:people', 'Personen', 'mdi', 'account-outline'],
-  ['std:folder', 'Sonstiges', 'mdi', 'folder-outline'],
   ['std:flag', 'Merken', 'mdi', 'flag-outline'],
-  // Für das Torii gibt es bei MDI nichts; Tabler hat eines.
-  ['std:japan', 'Japan', 'tabler', 'torii'],
+  ['std:home', 'Haushalt', 'mdi', 'home-outline'],
+  ['std:shopping', 'Einkauf', 'mdi', 'cart-outline'],
+  ['std:money', 'Finanzen', 'mdi', 'cash'],
+  ['std:hanger', 'Kleidung', 'mdi', 'hanger'],
+  ['std:shirt', 'T-Shirt', 'mdi', 'tshirt-crew-outline'],
+  ['std:cleaning', 'Putzen', 'lucide', 'broom-sparkles'],
+  ['std:garden', 'Garten', 'lucide', 'shovel'],
+  ['std:plant', 'Pflanzen', 'lucide', 'plant-pot'],
 
-  // Haushalt und Alltag
-  ['std:suitcase', 'Koffer', 'mdi', 'bag-suitcase-outline'],
-  ['std:computer', 'Computer', 'mdi', 'monitor'],
+  // Arbeit und Lernen
+  ['std:work', 'Arbeit', 'mdi', 'briefcase-outline'],
   ['std:graduation', 'Studium', 'mdi', 'school-outline'],
-  ['std:gift', 'Geschenk', 'mdi', 'gift-outline'],
+  ['std:study', 'Lernen', 'mdi', 'book-open-variant-outline'],
+  ['std:notebook', 'Notizbuch', 'mdi', 'notebook-outline'],
+  ['std:pencil', 'Stift', 'mdi', 'pencil-outline'],
+  ['std:scroll', 'Schriftstück', 'mdi', 'feather'],
+  ['std:checklist', 'Checkliste', 'mdi', 'checkbox-multiple-marked-outline'],
+  ['std:deadlines', 'Fristen', 'mdi', 'clipboard-clock-outline'],
   ['std:code', 'Programmieren', 'mdi', 'code-tags'],
   ['std:terminal', 'Konsole', 'mdi', 'console'],
-  ['std:tools', 'Werkzeug', 'mdi', 'wrench-outline'],
-  ['std:pencil', 'Stift', 'mdi', 'pencil-outline'],
-  ['std:search', 'Suche', 'mdi', 'magnify'],
-  ['std:medical', 'Gesundheit', 'mdi', 'hospital-box-outline'],
-  ['std:refresh', 'Wiederholen', 'mdi', 'reload'],
   ['std:server', 'Server', 'mdi', 'server-outline'],
-  ['std:notebook', 'Notizbuch', 'mdi', 'notebook-outline'],
-  ['std:car', 'Auto', 'mdi', 'car-outline'],
-  ['std:shirt', 'T-Shirt', 'mdi', 'tshirt-crew-outline'],
-  ['std:hanger', 'Kleidung', 'mdi', 'hanger'],
-  ['std:money', 'Finanzen', 'mdi', 'cash'],
-  ['std:megaphone', 'Ankündigung', 'mdi', 'bullhorn-outline'],
-  ['std:checklist', 'Checkliste', 'mdi', 'checkbox-multiple-marked-outline'],
-  ['std:group', 'Gruppe', 'mdi', 'account-multiple-outline'],
-  ['std:birthday', 'Geburtstag', 'mdi', 'cake-variant-outline'],
-  ['std:flash', 'Blitz', 'mdi', 'flash-outline'],
-  ['std:cloud', 'Cloud', 'mdi', 'cloud-outline'],
-  // Klemmbrett mit Uhr – naheliegend für Fristen.
-  ['std:deadlines', 'Fristen', 'mdi', 'clipboard-clock-outline'],
-
-  // Freizeit und Natur
-  /*
-   * Ein Cellosymbol gibt es nicht: Bei MDI, Lucide, Tabler und den übrigen
-   * freien Sammlungen existiert kein brauchbares. Die einzige gut erkennbare
-   * Violine stammt von Game-icons und steht unter CC BY 3.0 – also mit
-   * sichtbarer Namensnennung, die hier bewusst vermieden wird.
-   *
-   * Selbst gezeichnet wurde es dreimal versucht und dreimal verworfen: Ein
-   * Cello ist eine organische Form, die als Strichumriss auf 24 Pixeln zur
-   * Erdnuss zerfällt.
-   */
-  ['std:piano', 'Klavier', 'mdi', 'piano'],
-  ['std:chess', 'Schach', 'lucide', 'chess-queen'],
-  ['std:sailing', 'Segeln', 'mdi', 'sail-boat'],
-  ['std:plant', 'Pflanzen', 'lucide', 'plant-pot'],
-  ['std:garden', 'Garten', 'lucide', 'shovel'],
-  ['std:climb', 'Klettern', 'mdi', 'carabiner'],
-  ['std:stone', 'Fels', 'lucide', 'stone'],
-  ['std:mountain', 'Berge', 'mdi', 'image-filter-hdr-outline'],
-
-  // Handwerk und Tätigkeiten
-  ['std:sewing', 'Nähen', 'tabler', 'needle-thread'],
-  ['std:cleaning', 'Putzen', 'lucide', 'broom-sparkles'],
-  ['std:art', 'Kunst', 'mdi', 'palette-outline'],
+  ['std:computer', 'Computer', 'mdi', 'monitor'],
   ['std:math', 'Mathematik', 'mdi', 'calculator-variant-outline'],
-  ['std:chef', 'Kochen', 'mdi', 'chef-hat'],
-  ['std:tree', 'Baum', 'mdi', 'file-tree-outline'],
-  ['std:hammer-sickle', 'Hammer und Sichel', 'mdi', 'hammer-sickle'],
-  ['std:scroll', 'Schriftstück', 'mdi', 'feather'],
   ['std:graph', 'Graph', 'mdi', 'graph-outline'],
 
-  // Unterwegs und Austausch
-  ['std:send', 'Senden', 'lucide', 'send'],
+  // Menschen und Termine
+  ['std:calendar', 'Termine', 'mdi', 'calendar-outline'],
+  ['std:birthday', 'Geburtstag', 'mdi', 'cake-variant-outline'],
+  ['std:people', 'Personen', 'mdi', 'account-outline'],
+  ['std:group', 'Gruppe', 'mdi', 'account-multiple-outline'],
+  ['std:medical', 'Gesundheit', 'mdi', 'hospital-box-outline'],
+  ['std:megaphone', 'Ankündigung', 'mdi', 'bullhorn-outline'],
   ['std:translate', 'Sprache', 'mdi', 'translate'],
+  ['std:gift', 'Geschenk', 'mdi', 'gift-outline'],
+
+  // Freizeit und Natur
+  ['std:sport', 'Sport', 'tabler', 'dumbbell'],
+  ['std:climb', 'Klettern', 'mdi', 'carabiner'],
+  ['std:travel', 'Reise', 'mdi', 'airplane'],
+  ['std:car', 'Auto', 'mdi', 'car-outline'],
+  ['std:sailing', 'Segeln', 'mdi', 'sail-boat'],
+  ['std:mountain', 'Berge', 'mdi', 'image-filter-hdr-outline'],
+  ['std:stone', 'Fels', 'lucide', 'stone'],
+  ['std:japan', 'Japan', 'tabler', 'torii'],
+  ['std:music', 'Musik', 'mdi', 'music'],
+  ['std:piano', 'Klavier', 'mdi', 'piano'],
+  ['std:chess', 'Schach', 'lucide', 'chess-queen'],
+  ['std:chef', 'Kochen', 'mdi', 'chef-hat'],
+  ['std:food', 'Essen', 'mdi', 'silverware-fork-knife'],
+  ['std:art', 'Kunst', 'mdi', 'palette-outline'],
+  ['std:sewing', 'Nähen', 'tabler', 'needle-thread'],
+  ['std:ideas', 'Ideen', 'mdi', 'lightbulb-outline'],
+
+  // Sonstiges
+  ['std:suitcase', 'Koffer', 'mdi', 'bag-suitcase-outline'],
+  ['std:cloud', 'Cloud', 'mdi', 'cloud-outline'],
+  ['std:flash', 'Blitz', 'mdi', 'flash-outline'],
+  ['std:refresh', 'Wiederholen', 'mdi', 'reload'],
+  ['std:search', 'Suche', 'mdi', 'magnify'],
+  ['std:send', 'Senden', 'lucide', 'send'],
+  ['std:tree', 'Baum', 'mdi', 'file-tree-outline'],
+  ['std:hammer-sickle', 'Hammer und Sichel', 'mdi', 'hammer-sickle'],
+  ['std:folder', 'Sonstiges', 'mdi', 'folder-outline'],
+  ['std:tools', 'Werkzeug', 'mdi', 'wrench-outline'],
 ]
 
 /** Liest Pfade, Zeichenart und Raster eines Symbols. */
