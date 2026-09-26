@@ -79,7 +79,8 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
 ### Aufgaben
 
 * Felder: `id`, `list_id`, `title`, optionale `description`, optionales
-  `due_at` (mit Uhrzeit), `completed`, `created_at`, `updated_at`, `deleted_at`
+  `due_at` (mit Uhrzeit), `completed`, optionale `recurrence`, `successor_id`,
+  `created_at`, `updated_at`, `deleted_at`
 * Erstellen, bearbeiten, erledigen, in eine andere Liste verschieben, löschen
 * Abgehakte Aufgaben verschwinden aus der Liste und sind sieben Tage lang unter
   *Einstellungen → Aufgaben wiederherstellen* auffindbar
@@ -87,8 +88,10 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
 * Erinnerungen: Hat eine Aufgabe ein Fälligkeitsdatum in der Zukunft, plant
   die Android-App eine Benachrichtigung. Details unter
   [Erinnerungen](#erinnerungen)
-* Bewusst nicht enthalten: Prioritäten, Tags, Unteraufgaben, Wiederholungen,
-  Anhänge, Kommentare
+* Wiederkehrende Aufgaben: täglich, wöchentlich, monatlich oder jährlich –
+  Details unter [Wiederkehrende Aufgaben](#wiederkehrende-aufgaben)
+* Bewusst nicht enthalten: Prioritäten, Tags, Unteraufgaben, Anhänge,
+  Kommentare
 
 ### Offline und Synchronisation
 
@@ -191,8 +194,8 @@ Supabase noch nicht konfiguriert ist.
 3. **Migrationen anwenden.** Zwei Wege:
 
    **a) SQL-Editor** (ohne CLI): die Dateien in `supabase/migrations/` in
-   Reihenfolge des Dateinamens vollständig einfügen und ausführen (aktuell
-   `0001` bis `0005`). Am einfachsten die Sammeldatei (siehe unten).
+   Reihenfolge des Dateinamens vollständig einfügen und ausführen. Am
+   einfachsten die Sammeldatei (siehe unten).
 
    Einfacher geht es mit der Sammeldatei – ein einziger Einfüge-Vorgang:
 
@@ -1045,6 +1048,10 @@ fehlschlagender Test oder Build lässt die Pipeline fehlschlagen.
 
 ### Nicht Teil von 0.1
 
-Prioritäten, Tags, Suche, Filter, Wiederholungen, Anhänge, Kommentare,
-Benachrichtigungen, Echtzeit-Synchronisation, Light Mode, Offline-Anmeldung
-ohne vorherige Sitzung, Rollen jenseits von Besitzer/Mitglied.
+Prioritäten, Tags, Suche, Filter, Anhänge, Kommentare, Echtzeit-Synchronisation,
+Light Mode, Offline-Anmeldung ohne vorherige Sitzung, Rollen jenseits von
+Besitzer/Mitglied.
+
+> Wiederholungen und Benachrichtigungen standen hier ursprünglich auch – beide
+> sind inzwischen gebaut (siehe [Wiederkehrende
+> Aufgaben](#wiederkehrende-aufgaben) und [Erinnerungen](#erinnerungen)).
