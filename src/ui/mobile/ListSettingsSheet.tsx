@@ -6,7 +6,7 @@ import { ListIcon } from '../ListIcon'
 import { ListIconPicker } from '../ListIconPicker'
 import { SharePanel } from '../SharePanel'
 import { dangerButton, errorMessage, input, primaryButton, secondaryButton } from '../styles'
-import { CloseIcon } from './icons'
+import { CloseIcon } from '../icons'
 
 /**
  * Verwaltung der aktuellen Liste – umbenennen, teilen, löschen oder verlassen.

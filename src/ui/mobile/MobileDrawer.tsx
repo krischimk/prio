@@ -8,7 +8,7 @@ import type { LocalList } from '../../domain/types'
 import { errorMessage, input, primaryButton, secondaryButton } from '../styles'
 import { ListIcon } from '../ListIcon'
 import { UpdateEntry } from '../UpdateEntry'
-import { CloseIcon } from './icons'
+import { CloseIcon } from '../icons'
 
 /**
  * Ausklappbares Menü der mobilen Ansicht.

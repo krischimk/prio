@@ -3,8 +3,9 @@ import { useBackLayer } from '../../app/useBackLayer'
 import { useWorkspace } from '../../app/useWorkspace'
 import type { LocalList, LocalTask } from '../../domain/types'
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../datetime'
+import { RecurrenceSelect } from '../RecurrenceSelect'
 import { dangerButton, input, primaryButton, secondaryButton } from '../styles'
-import { CloseIcon, MoveIcon, TrashIcon } from './icons'
+import { CloseIcon, MoveIcon, TrashIcon } from '../icons'
 
 /**
  * Detail- und Bearbeitungsansicht einer Aufgabe.
@@ -33,6 +34,7 @@ export function TaskDetailSheet({
   const [title, setTitle] = useState(task?.title ?? '')
   const [description, setDescription] = useState(task?.description ?? '')
   const [dueAt, setDueAt] = useState(toDateTimeLocalValue(task?.due_at ?? null))
+  const [recurrence, setRecurrence] = useState(task?.recurrence ?? '')
   // Eigener Zustand statt `task.completed`: Die übergebene Aufgabe ist eine
   // Momentaufnahme und würde nach dem Umschalten nicht nachziehen.
   const [completed, setCompleted] = useState(task?.completed ?? false)
@@ -52,12 +54,14 @@ export function TaskDetailSheet({
           title,
           description,
           dueAt: fromDateTimeLocalValue(dueAt),
+          recurrence: recurrence === '' ? null : recurrence,
         })
       } else {
         await repositories.updateTask(task.id, {
           title,
           description,
           dueAt: fromDateTimeLocalValue(dueAt),
+          recurrence: recurrence === '' ? null : recurrence,
         })
       }
       onClose()
@@ -147,10 +151,21 @@ export function TaskDetailSheet({
               id="detail-due"
               type="datetime-local"
               value={dueAt}
-              onChange={(event) => setDueAt(event.target.value)}
+              onChange={(event) => {
+                setDueAt(event.target.value)
+                // Ohne Fälligkeit gibt es nichts fortzuschreiben.
+                if (event.target.value === '') setRecurrence('')
+              }}
               className={input}
             />
           </div>
+
+          <RecurrenceSelect
+            id="detail-recurrence"
+            value={recurrence}
+            disabled={dueAt === ''}
+            onChange={setRecurrence}
+          />
 
           {task !== null ? (
             <button

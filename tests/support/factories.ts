@@ -16,6 +16,8 @@ export function localTask(overrides: Partial<LocalTask> = {}): LocalTask {
     due_at: null,
     completed: false,
     completed_at: null,
+    recurrence: null,
+    successor_id: null,
     position: 0,
     created_at: T0,
     updated_at: T0,

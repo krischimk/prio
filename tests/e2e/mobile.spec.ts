@@ -326,3 +326,64 @@ test('entfernt das Symbol einer Liste wieder', async ({ page }) => {
 
   await expect(page.getByTestId('app-bar-title').getByTestId('list-icon')).toHaveCount(0)
 })
+
+/** Ein datetime-local-Wert für einen Tag in der Zukunft. */
+function inTagen(tage: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + tage)
+  const zweistellig = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${zweistellig(d.getMonth() + 1)}-${zweistellig(d.getDate())}T09:00`
+}
+
+test('legt beim Abhaken einer wiederkehrenden Aufgabe den nächsten Termin an', async ({ page }) => {
+  await register(page, uniqueEmail('m14'))
+  await createList(page, 'Routinen')
+
+  await page.getByRole('button', { name: 'Neue Aufgabe' }).click()
+  await page.getByLabel('Titel', { exact: true }).fill('Zähne putzen')
+  await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
+  await page.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
+  await page.getByRole('button', { name: 'Speichern', exact: true }).click()
+
+  await expect(taskRow(page, 'Zähne putzen')).toContainText('Täglich')
+  const vorher = await taskRow(page, 'Zähne putzen').innerText()
+
+  await page.getByLabel('Aufgabe erledigen: Zähne putzen').click()
+
+  // Die Aufgabe verschwindet nicht, sondern steht mit dem nächsten Termin da.
+  const nachher = taskRow(page, 'Zähne putzen')
+  await expect(nachher).toBeVisible()
+  await expect(nachher).toContainText('Täglich')
+  // Wartende Zusicherung: Das Schreiben in die Datenbank ist asynchron, ein
+  // sofortiges Auslesen käme noch vor der Aktualisierung.
+  await expect(nachher).not.toHaveText(vorher)
+})
+
+test('nimmt den Nachfolger beim Rückgängigmachen zurück', async ({ page }) => {
+  await register(page, uniqueEmail('m15'))
+  await createList(page, 'Routinen')
+
+  await page.getByRole('button', { name: 'Neue Aufgabe' }).click()
+  await page.getByLabel('Titel', { exact: true }).fill('Zähne putzen')
+  await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
+  await page.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
+  await page.getByRole('button', { name: 'Speichern', exact: true }).click()
+
+  await page.getByLabel('Aufgabe erledigen: Zähne putzen').click()
+  await page.getByTestId('undo-bar').getByRole('button', { name: 'Rückgängig' }).click()
+
+  // Nur eine Zeile – die Aufgabe steht nicht doppelt da.
+  await expect(page.getByTestId('task-row')).toHaveCount(1)
+  await expect(page.getByText('1 offene Aufgabe')).toBeVisible()
+})
+
+test('erlaubt eine Wiederholung erst mit Fälligkeitsdatum', async ({ page }) => {
+  await register(page, uniqueEmail('m16'))
+  await createList(page, 'Routinen')
+
+  await page.getByRole('button', { name: 'Neue Aufgabe' }).click()
+  await expect(page.getByLabel('Wiederholung', { exact: true })).toBeDisabled()
+
+  await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
+  await expect(page.getByLabel('Wiederholung', { exact: true })).toBeEnabled()
+})

@@ -3,7 +3,7 @@ import { useLists, useRestorableTasks } from '../app/hooks'
 import { useWorkspace } from '../app/useWorkspace'
 import { RESTORE_WINDOW_DAYS } from '../db/repositories'
 import { formatCompletedLabel } from './datetime'
-import { CloseIcon } from './mobile/icons'
+import { CloseIcon } from './icons'
 import { primaryButton } from './styles'
 
 /**

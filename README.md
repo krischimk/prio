@@ -570,10 +570,35 @@ Nach den sieben Tagen ist eine Aufgabe **nicht gelöscht**, nur nicht mehr über
 die Oberfläche erreichbar. Sie bleibt in der Datenbank und wird weiterhin
 synchronisiert.
 
-> **Wiederkehrende Aufgaben** gibt es noch nicht. Sobald sie dazukommen, gilt
-> zusätzlich: Eine wiederkehrende Aufgabe bleibt nur so lange im
-> Wiederherstellen-Fenster, bis ihr Nachfolger existiert. Das ist dann eine
-> Ergänzung im Filter von `listRestorableTasks`.
+### Wiederkehrende Aufgaben
+
+Eine wiederkehrende Aufgabe wird beim Abhaken **ersetzt**, nicht verschoben: Es
+entsteht eine neue Aufgabe mit dem nächsten Termin. Der abgehakte Eintrag bleibt
+als erledigt stehen – so bleibt nachvollziehbar, wann etwas zuletzt getan wurde.
+
+* **Vier Intervalle:** täglich, wöchentlich, monatlich, jährlich.
+* **Wiederholung braucht eine Fälligkeit.** Ohne Datum gibt es nichts
+  fortzuschreiben; das Auswahlfeld ist dann abgeschaltet und sagt auch, warum.
+* **Gerechnet wird vom Fälligkeitsdatum**, nicht vom Abhaken: Wer eine
+  Wochenaufgabe montags abhakt, bleibt bei Montag. Die Uhrzeit bleibt erhalten,
+  auch über die Zeitumstellung.
+* **Monatsenden werden geklemmt:** Der 31. wird im Februar zum 28. bzw. 29.
+* **Kein Rückstand:** Liegt der Termin längst in der Vergangenheit, wird so weit
+  vorgerückt, bis er in der Zukunft liegt. Eine seit drei Wochen fällige
+  Wochenaufgabe springt also auf nächste Woche.
+* **Rückgängig nimmt den Nachfolger zurück.** Sonst stünde die Aufgabe doppelt
+  in der Liste – einmal offen, einmal als Nachfolger. Ein bereits erledigter
+  Nachfolger bleibt dabei unangetastet.
+* **Nicht mehr im Wiederherstellen-Fenster:** Eine wiederkehrende Aufgabe mit
+  Nachfolger ist fortgeschrieben und taucht deshalb nicht unter „Aufgaben
+  wiederherstellen" auf.
+* **Die Kennung des Nachfolgers wird berechnet**, nicht zufällig gewürfelt – aus
+  Aufgabe und nächstem Termin. Hakst du dieselbe Aufgabe auf zwei Geräten
+  offline ab, entsteht auf beiden dieselbe Kennung, und der Abgleich verschmilzt
+  sie, statt zwei Nachfolger anzulegen.
+
+Der Nachfolger behält den **Platz** der Vorgängerin in der Liste, statt ans Ende
+zu rutschen.
 
 ### Reihenfolge
 

@@ -1,4 +1,5 @@
 import { systemClock, timeOf, type Clock } from '../domain/clock'
+import { isRecurrence, nextOccurrence, successorId } from '../domain/recurrence'
 import { newId } from '../domain/ids'
 import type { LocalList, LocalListMember, LocalTask } from '../domain/types'
 import type { LocalDatabase } from './localDb'
@@ -31,12 +32,14 @@ export interface CreateTaskInput {
   title: string
   description?: string | null
   dueAt?: string | null
+  recurrence?: string | null
 }
 
 export interface UpdateTaskInput {
   title?: string
   description?: string | null
   dueAt?: string | null
+  recurrence?: string | null
 }
 
 export interface Repositories {
@@ -117,11 +120,55 @@ export function compareTasks(a: LocalTask, b: LocalTask): number {
   return a.title.localeCompare(b.title)
 }
 
+/**
+ * Nimmt nur bekannte Wiederholungen an.
+ *
+ * Ein unbekannter Wert wird zu `null` statt zu einem Fehler: Eine Wiederholung
+ * aus einer neueren Fassung darf das Speichern nicht blockieren, sie wird
+ * schlicht als „keine" behandelt.
+ */
+function normalisiereWiederholung(wert: string | null | undefined): string | null {
+  return isRecurrence(wert) ? wert : null
+}
+
 export function createRepositories(db: LocalDatabase, clock: Clock = systemClock): Repositories {
   /** Baut die Felder, die bei jeder lokalen Änderung gesetzt werden. */
   function stamp(): { updated_at: string; dirty: 1 } {
     return { updated_at: clock.now(), dirty: 1 }
   }
+/**
+ * Öffnet eine abgehakte Aufgabe wieder.
+ *
+ * Hat sie einen Nachfolger, wird der **zurückgenommen** – sonst stünde die
+ * Aufgabe doppelt in der Liste: einmal offen, einmal als Nachfolger. Der
+ * Nachfolger wird weich gelöscht, weil er bereits hochgeladen sein kann.
+ *
+ * Ein bereits erledigter Nachfolger bleibt unangetastet: Wer ihn schon abgehakt
+ * hat, will ihn nicht durch ein Rückgängig der Vorgängerin verlieren.
+ */
+async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): Promise<LocalTask> {
+  const nachfolgerId = task.successor_id
+  const geoeffnet: LocalTask = {
+    ...task,
+    completed: false,
+    completed_at: null,
+    successor_id: null,
+    ...stamp(),
+  }
+
+  await db.transaction('rw', db.tasks, async () => {
+    if (nachfolgerId) {
+      const nachfolger = await db.tasks.get(nachfolgerId)
+      if (nachfolger && !nachfolger.completed && nachfolger.deleted_at === null) {
+        await db.tasks.put({ ...nachfolger, deleted_at: now, ...stamp() })
+      }
+    }
+    await db.tasks.put(geoeffnet)
+  })
+
+  return geoeffnet
+}
+
 
   async function requireList(listId: string): Promise<LocalList> {
     const list = await db.lists.get(listId)
@@ -230,6 +277,8 @@ export function createRepositories(db: LocalDatabase, clock: Clock = systemClock
         due_at: optionalText(input.dueAt),
         completed: false,
         completed_at: null,
+        recurrence: normalisiereWiederholung(input.recurrence),
+        successor_id: null,
         position: hoechste + 1,
         created_at: now,
         updated_at: now,
@@ -248,6 +297,10 @@ export function createRepositories(db: LocalDatabase, clock: Clock = systemClock
         description:
           patch.description === undefined ? task.description : optionalText(patch.description),
         due_at: patch.dueAt === undefined ? task.due_at : optionalText(patch.dueAt),
+        recurrence:
+          patch.recurrence === undefined
+            ? task.recurrence
+            : normalisiereWiederholung(patch.recurrence),
         ...stamp(),
       }
       await db.tasks.put(updated)
@@ -257,17 +310,67 @@ export function createRepositories(db: LocalDatabase, clock: Clock = systemClock
     /**
      * Abhaken setzt den Zeitpunkt, Wiederöffnen löscht ihn wieder. Nur so weiß
      * die Wiederherstellen-Liste, wie lange eine Aufgabe noch dorthin gehört.
+     *
+     * Bei einer **wiederkehrenden** Aufgabe entsteht dabei der Nachfolger mit
+     * dem nächsten Termin. Beides geschieht in einer Transaktion – eine
+     * abgehakte Aufgabe ohne Nachfolger wäre sonst möglich, und die Aufgabe
+     * wäre für immer verschwunden.
      */
     async setTaskCompleted(taskId, completed) {
       const task = await requireTask(taskId)
-      const updated: LocalTask = {
+      const now = clock.now()
+
+      if (!completed) {
+        return wiederOeffnen(db, task, now)
+      }
+
+      const erledigt: LocalTask = {
         ...task,
-        completed,
-        completed_at: completed ? clock.now() : null,
+        completed: true,
+        completed_at: now,
         ...stamp(),
       }
-      await db.tasks.put(updated)
-      return updated
+
+      // Ohne Fälligkeit gibt es nichts fortzuschreiben.
+      if (!isRecurrence(task.recurrence) || task.due_at === null) {
+        await db.tasks.put(erledigt)
+        return erledigt
+      }
+
+      const naechsterTermin = nextOccurrence(task.due_at, task.recurrence, now)
+      // Berechnete Kennung: Auf zwei Geräten entsteht dieselbe, und der Abgleich
+      // verschmilzt sie, statt zwei Nachfolger entstehen zu lassen.
+      const nachfolgerId = await successorId(task.id, naechsterTermin)
+
+      const nachfolger: LocalTask = {
+        ...task,
+        id: nachfolgerId,
+        due_at: naechsterTermin,
+        completed: false,
+        completed_at: null,
+        successor_id: null,
+        created_at: now,
+        updated_at: now,
+        deleted_at: null,
+        dirty: 1,
+      }
+
+      erledigt.successor_id = nachfolgerId
+
+      await db.transaction('rw', db.tasks, async () => {
+        const vorhanden = await db.tasks.get(nachfolgerId)
+        if (!vorhanden) {
+          await db.tasks.put(nachfolger)
+        } else if (vorhanden.deleted_at !== null) {
+          // Nach einem Rückgängig war er weich gelöscht – jetzt wieder beleben,
+          // aber den ursprünglichen Anlegezeitpunkt behalten.
+          await db.tasks.put({ ...nachfolger, created_at: vorhanden.created_at })
+        }
+        // Ist er offen und vorhanden, bleibt er unangetastet: Vielleicht wurde
+        // er inzwischen bearbeitet.
+        await db.tasks.put(erledigt)
+      })
+      return erledigt
     },
 
     /**
@@ -343,6 +446,9 @@ export function createRepositories(db: LocalDatabase, clock: Clock = systemClock
           (task) =>
             task.deleted_at === null &&
             task.completed &&
+            // Mit Nachfolger ist die Aufgabe bereits fortgeschrieben – dann
+            // gehört sie nicht mehr ins Wiederherstellen-Fenster.
+            task.successor_id === null &&
             task.completed_at !== null &&
             task.completed_at >= grenze,
         )

@@ -236,6 +236,8 @@ describe('Repositories (lokale Geschäftslogik)', () => {
       await device.db.tasks.update(später.id, {
         completed: true,
         completed_at: device.clock.now(),
+        recurrence: null,
+        successor_id: null,
       })
       expect((await device.repositories.listTasks(listId)).map((task) => task.title)).toEqual([
         'Früher',
@@ -402,6 +404,117 @@ describe('Repositories (lokale Geschäftslogik)', () => {
     })
   })
 
+  describe('Wiederkehrende Aufgaben', () => {
+    /** Legt eine wiederkehrende Aufgabe an; der Termin liegt in der Zukunft. */
+    async function neueWiederholung(listId: string, wiederholung = 'daily') {
+      const termin = new Date(2099, 0, 15, 18, 30).toISOString()
+      const task = await device.repositories.createTask({
+        listId,
+        title: 'Wiederkehrend',
+        dueAt: termin,
+        recurrence: wiederholung,
+      })
+      return { task, termin }
+    }
+
+    it('legt beim Abhaken den Nachfolger mit dem nächsten Termin an', async () => {
+      const listId = await newList()
+      const { task } = await neueWiederholung(listId)
+
+      const erledigt = await device.repositories.setTaskCompleted(task.id, true)
+      expect(erledigt.successor_id).not.toBeNull()
+
+      const nachfolger = await device.repositories.getTask(erledigt.successor_id!)
+      expect(nachfolger).toBeDefined()
+      // Gleicher Titel, gleiche Liste, gleiche Wiederholung …
+      expect(nachfolger?.title).toBe('Wiederkehrend')
+      expect(nachfolger?.list_id).toBe(listId)
+      expect(nachfolger?.recurrence).toBe('daily')
+      // … und der Termin ist einen Tag weiter, zur selben Uhrzeit.
+      expect(nachfolger?.due_at).toBe(new Date(2099, 0, 16, 18, 30).toISOString())
+      expect(nachfolger?.completed).toBe(false)
+    })
+
+    it('behält den Platz in der Liste', async () => {
+      const listId = await newList()
+      await device.repositories.createTask({ listId, title: 'Davor' })
+      const { task } = await neueWiederholung(listId)
+      await device.repositories.createTask({ listId, title: 'Danach' })
+
+      const erledigt = await device.repositories.setTaskCompleted(task.id, true)
+      const nachfolger = await device.repositories.getTask(erledigt.successor_id!)
+
+      // Der Nachfolger bleibt an seinem Platz, statt ans Ende zu rutschen.
+      expect(nachfolger?.position).toBe(task.position)
+      expect((await device.repositories.listTasks(listId)).map((t) => t.title)).toEqual([
+        'Davor',
+        'Wiederkehrend',
+        'Danach',
+      ])
+    })
+
+    it('erzeugt keinen Nachfolger ohne Wiederholung', async () => {
+      const listId = await newList()
+      const task = await device.repositories.createTask({ listId, title: 'Einmalig' })
+      const erledigt = await device.repositories.setTaskCompleted(task.id, true)
+      expect(erledigt.successor_id).toBeNull()
+      expect(await device.repositories.listTasks(listId)).toHaveLength(0)
+    })
+
+    it('erzeugt keinen Nachfolger ohne Fälligkeit', async () => {
+      const listId = await newList()
+      const task = await device.repositories.createTask({
+        listId,
+        title: 'Ohne Termin',
+        recurrence: 'daily',
+      })
+      const erledigt = await device.repositories.setTaskCompleted(task.id, true)
+      expect(erledigt.successor_id).toBeNull()
+    })
+
+    it('nimmt den Nachfolger beim Wiederöffnen zurück', async () => {
+      const listId = await newList()
+      const { task } = await neueWiederholung(listId)
+
+      const erledigt = await device.repositories.setTaskCompleted(task.id, true)
+      const nachfolgerId = erledigt.successor_id!
+      expect(await device.repositories.listTasks(listId)).toHaveLength(1)
+
+      const wieder = await device.repositories.setTaskCompleted(task.id, false)
+
+      expect(wieder.successor_id).toBeNull()
+      expect(wieder.completed).toBe(false)
+      // Nur die ursprüngliche Aufgabe steht noch in der Liste – nicht beide.
+      const offen = await device.repositories.listTasks(listId)
+      expect(offen.map((t) => t.id)).toEqual([task.id])
+      // Der Nachfolger ist weich gelöscht, damit der Abgleich ihn zurücknimmt.
+      const nachfolger = await device.repositories.getTask(nachfolgerId)
+      expect(nachfolger).toBeUndefined()
+    })
+
+    it('zeigt eine fortgeschriebene Aufgabe nicht zum Wiederherstellen', async () => {
+      const listId = await newList()
+      const { task } = await neueWiederholung(listId)
+      await device.repositories.setTaskCompleted(task.id, true)
+
+      // Mit Nachfolger ist sie fortgeschrieben und gehört nicht mehr dorthin.
+      expect(await device.repositories.listRestorableTasks()).toHaveLength(0)
+    })
+
+    it('legt denselben Nachfolger nicht zweimal an', async () => {
+      const listId = await newList()
+      const { task } = await neueWiederholung(listId)
+
+      const erst = await device.repositories.setTaskCompleted(task.id, true)
+      await device.repositories.setTaskCompleted(task.id, false)
+      const zweit = await device.repositories.setTaskCompleted(task.id, true)
+
+      // Gleiche Kennung, also weiterhin nur eine offene Aufgabe.
+      expect(zweit.successor_id).toBe(erst.successor_id)
+      expect(await device.repositories.listTasks(listId)).toHaveLength(1)
+    })
+  })
+
   describe('Listen', () => {
     it('erstellt eine private Liste', async () => {
       const list = await device.repositories.createList('Privat', userId)
@@ -454,6 +567,8 @@ describe('Repositories (lokale Geschäftslogik)', () => {
         due_at: null,
         completed: false,
         completed_at: null,
+        recurrence: null,
+        successor_id: null,
         // Ohne `position` – so sah die Zeile vor Version 0.4.1 aus.
         position: undefined as unknown as number,
         created_at: device.clock.now(),

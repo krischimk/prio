@@ -3,7 +3,7 @@ import { useBackLayer } from '../../app/useBackLayer'
 import { useWorkspace } from '../../app/useWorkspace'
 import type { LocalList, LocalTask } from '../../domain/types'
 import { errorMessage, ghostButton } from '../styles'
-import { CloseIcon } from './icons'
+import { CloseIcon } from '../icons'
 
 /**
  * Auswahl der Ziel-Liste beim Verschieben einer Aufgabe.

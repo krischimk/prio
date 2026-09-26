@@ -2,7 +2,7 @@ import { useWorkspace } from '../../app/useWorkspace'
 import { describeSyncState } from '../../sync/syncStatus'
 import { attentionDot, statusTone } from '../styles'
 import { useUpdate } from '../useUpdate'
-import { MenuIcon } from './icons'
+import { MenuIcon } from '../icons'
 import { ListIcon } from '../ListIcon'
 
 /**

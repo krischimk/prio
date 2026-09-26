@@ -58,6 +58,21 @@ export interface LocalTask extends SyncableRow, LocalOnly {
    */
   completed_at: IsoDateTime | null
   /**
+   * Wiederholung der Aufgabe: `daily`, `weekly`, `monthly` oder `yearly`.
+   *
+   * `null` heißt „keine Wiederholung". Unbekannte Werte behandelt die App
+   * genauso – eine neue Wiederholungsart soll keine Datenbankänderung brauchen.
+   */
+  recurrence: string | null
+  /**
+   * Die beim Abhaken entstandene Nachfolgeaufgabe.
+   *
+   * Daran hängen zwei Regeln: Solange ein Nachfolger existiert, taucht die
+   * abgehakte Aufgabe nicht unter „Aufgaben wiederherstellen" auf, und
+   * „Rückgängig" weiß dadurch, was es entfernen muss.
+   */
+  successor_id: string | null
+  /**
    * Vom Benutzer bestimmte Reihenfolge innerhalb der Liste (kleiner = weiter
    * oben). Neue Aufgaben bekommen die höchste Position und landen damit unten.
    *

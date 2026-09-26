@@ -56,6 +56,8 @@ export function toRemoteTask(local: LocalTask): RemoteTask {
     due_at: normalizeIso(local.due_at),
     completed: local.completed,
     completed_at: normalizeIso(local.completed_at),
+    recurrence: local.recurrence,
+    successor_id: local.successor_id,
     // Letzte Absicherung an der Grenze: `NaN` würde beim Senden zu `null`, und
     // die Spalte ist `not null`. Ein ungültiger Wert darf das Hochladen nicht
     // für die gesamte Charge scheitern lassen.
@@ -74,8 +76,10 @@ export function fromRemoteTask(remote: RemoteTask): LocalTask {
     description: remote.description,
     due_at: normalizeIso(remote.due_at),
     completed: remote.completed,
-    // Ältere Zeilen kennen das Feld noch nicht – null ist der richtige Rückfall.
+    // Ältere Zeilen kennen die Felder noch nicht – null ist der richtige Rückfall.
     completed_at: normalizeIso(remote.completed_at ?? null),
+    recurrence: remote.recurrence ?? null,
+    successor_id: remote.successor_id ?? null,
     position: remote.position ?? 0,
     created_at: normalizeIso(remote.created_at),
     updated_at: normalizeIso(remote.updated_at),

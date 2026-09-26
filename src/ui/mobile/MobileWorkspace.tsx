@@ -10,7 +10,7 @@ import { MoveTaskSheet } from './MoveTaskSheet'
 import { ListSettingsSheet } from './ListSettingsSheet'
 import { RestoreTasksPanel } from '../RestoreTasksPanel'
 import { TaskDetailSheet } from './TaskDetailSheet'
-import { PlusIcon } from './icons'
+import { PlusIcon } from '../icons'
 
 /**
  * Mobile Oberfläche der App.

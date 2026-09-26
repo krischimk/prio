@@ -82,3 +82,34 @@ test('teilt eine Liste in der breiten Ansicht', async ({ page }) => {
   await expect(page.getByRole('form', { name: 'Liste teilen' })).toBeVisible()
   await expect(page.getByText('Noch keine Mitglieder.')).toBeVisible()
 })
+
+test('macht eine Aufgabe in der breiten Ansicht wiederkehrend', async ({ page }) => {
+  await register(page, uniqueEmail('l6'))
+  await createList(page, 'Routinen')
+
+  await page.getByLabel('Neue Aufgabe', { exact: true }).fill('Zähne putzen')
+  await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click()
+
+  const morgen = new Date()
+  morgen.setDate(morgen.getDate() + 1)
+  const zweistellig = (n: number) => String(n).padStart(2, '0')
+  const eingabe = `${morgen.getFullYear()}-${zweistellig(morgen.getMonth() + 1)}-${zweistellig(morgen.getDate())}T09:00`
+
+  const zeile = page.getByTestId('task-list').locator('li').filter({ hasText: 'Zähne putzen' })
+  await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
+
+  const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
+  await formular.getByLabel('Fällig am (optional)', { exact: true }).fill(eingabe)
+  await formular.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
+  await formular.getByRole('button', { name: 'Speichern' }).click()
+
+  await expect(zeile).toContainText('Täglich')
+
+  // Abhaken: Die Aufgabe bleibt mit dem nächsten Termin stehen.
+  const vorher = await zeile.innerText()
+  await zeile.getByRole('checkbox').click()
+  await expect(zeile).toBeVisible()
+  await expect(zeile).toContainText('Täglich')
+  // Wartende Zusicherung: Das Schreiben in die Datenbank ist asynchron.
+  await expect(zeile).not.toHaveText(vorher)
+})

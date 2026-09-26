@@ -14,6 +14,7 @@ App. Sie sind so geschrieben, dass sie sich gefahrlos erneut ausführen lassen
 | `0006_task_completed_at.sql` | Spalte `completed_at` für „Aufgaben wiederherstellen“ |
 | `0007_list_leave.sql` | Richtlinie, damit Mitglieder eine geteilte Liste verlassen können |
 | `0008_list_icon.sql` | Spalte `icon` für das Listensymbol |
+| `0009_task_recurrence.sql` | Spalten `recurrence` und `successor_id` für wiederkehrende Aufgaben |
 
 ## Anwenden
 

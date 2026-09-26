@@ -4,6 +4,9 @@ import { useBackLayer } from '../app/useBackLayer'
 import { useUndo } from './useUndo'
 import type { LocalTask } from '../domain/types'
 import { formatDueLabel, fromDateTimeLocalValue, toDateTimeLocalValue } from './datetime'
+import { RepeatIcon } from './icons'
+import { describeRecurrence } from './recurrence'
+import { RecurrenceSelect } from './RecurrenceSelect'
 import { dangerButton, dangerText, ghostButton, input, primaryButton, secondaryButton } from './styles'
 
 /**
@@ -22,11 +25,13 @@ export function TaskItem({ task }: { task: LocalTask }) {
   const [title, setTitle] = useState(task.title)
   const [description, setDescription] = useState(task.description ?? '')
   const [dueAt, setDueAt] = useState('')
+  const [recurrence, setRecurrence] = useState('')
 
   const startEditing = () => {
     setTitle(task.title)
     setDescription(task.description ?? '')
     setDueAt(toDateTimeLocalValue(task.due_at))
+    setRecurrence(task.recurrence ?? '')
     setEditing(true)
   }
 
@@ -36,6 +41,7 @@ export function TaskItem({ task }: { task: LocalTask }) {
       title,
       description,
       dueAt: fromDateTimeLocalValue(dueAt),
+      recurrence: recurrence === '' ? null : recurrence,
     })
     setEditing(false)
   }
@@ -76,10 +82,20 @@ export function TaskItem({ task }: { task: LocalTask }) {
               id={`due-${task.id}`}
               type="datetime-local"
               value={dueAt}
-              onChange={(event) => setDueAt(event.target.value)}
+              onChange={(event) => {
+                setDueAt(event.target.value)
+                // Ohne Fälligkeit gibt es nichts fortzuschreiben.
+                if (event.target.value === '') setRecurrence('')
+              }}
               className={input}
             />
           </div>
+          <RecurrenceSelect
+            id={`recurrence-${task.id}`}
+            value={recurrence}
+            disabled={dueAt === ''}
+            onChange={setRecurrence}
+          />
           <div className="flex gap-2">
             <button type="submit" className={primaryButton}>
               Speichern
@@ -94,6 +110,7 @@ export function TaskItem({ task }: { task: LocalTask }) {
   }
 
   const due = task.due_at === null ? null : formatDueLabel(task.due_at, task.completed)
+  const wiederholung = describeRecurrence(task.recurrence)
 
   return (
     <li className="flex items-start gap-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-3">
@@ -117,6 +134,12 @@ export function TaskItem({ task }: { task: LocalTask }) {
         ) : null}
         {due ? (
           <p className={`mt-1 text-xs ${due.overdue ? dangerText : 'text-neutral-500'}`}>{due.text}</p>
+        ) : null}
+        {wiederholung ? (
+          <p className="mt-1 flex items-center gap-1 text-xs text-neutral-500">
+            <RepeatIcon className="h-3 w-3 shrink-0" />
+            {wiederholung}
+          </p>
         ) : null}
       </div>
       <div className="flex shrink-0 gap-1">

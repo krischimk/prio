@@ -3,6 +3,8 @@ import { useWorkspace } from '../../app/useWorkspace'
 import { useUndo } from '../useUndo'
 import type { LocalTask } from '../../domain/types'
 import { formatDueLabel } from '../datetime'
+import { RepeatIcon } from '../icons'
+import { describeRecurrence } from '../recurrence'
 import { dangerText } from '../styles'
 import { useReorderDrag, type ReorderDrag } from './useReorderDrag'
 
@@ -80,6 +82,7 @@ function MobileTaskRow({
   const { repositories } = useWorkspace()
   const { offerUndo } = useUndo()
   const due = task.due_at === null ? null : formatDueLabel(task.due_at, task.completed)
+  const wiederholung = describeRecurrence(task.recurrence)
   const handlers = drag.getRowHandlers(task.id, index)
 
   return (
@@ -126,6 +129,12 @@ function MobileTaskRow({
         {due ? (
           <span className={`mt-0.5 block text-xs ${due.overdue ? dangerText : 'text-neutral-500'}`}>
             {due.text}
+          </span>
+        ) : null}
+        {wiederholung ? (
+          <span className="mt-0.5 flex items-center gap-1 text-xs text-neutral-500">
+            <RepeatIcon className="h-3 w-3 shrink-0" />
+            {wiederholung}
           </span>
         ) : null}
       </button>
