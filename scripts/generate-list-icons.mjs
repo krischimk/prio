@@ -47,11 +47,24 @@ const SAMMLUNGEN = {
  * der Symbole darin bestimmt die Anzeige.
  */
 const GRUPPEN = [
-  ['Alltag und Haushalt', [
+  ['Allgemein', [
     ['std:check', 'Erledigt', 'lucide', 'check'],
     ['std:star', 'Wichtig', 'mdi', 'star-outline'],
     ['std:heart', 'Favoriten', 'mdi', 'heart-outline'],
     ['std:flag', 'Merken', 'lucide', 'flag'],
+    ['std:calendar', 'Termine', 'mdi', 'calendar-outline'],
+    ['std:people', 'Personen', 'lucide', 'user'],
+    ['std:group', 'Gruppe', 'lucide', 'users'],
+    ['std:megaphone', 'Ankündigung', 'mdi', 'bullhorn-outline'],
+    ['std:ideas', 'Ideen', 'mdi', 'lightbulb-outline'],
+    ['std:send', 'Senden', 'lucide', 'send'],
+    ['std:search', 'Suche', 'mdi', 'magnify'],
+    ['std:refresh', 'Wiederholen', 'lucide', 'refresh-cw'],
+    ['std:flash', 'Blitz', 'lucide', 'zap'],
+    ['std:folder', 'Sonstiges', 'mdi', 'folder-outline'],
+    ['std:hammer-sickle', 'Hammer und Sichel', 'mdi', 'hammer-sickle'],
+  ]],
+  ['Privates', [
     ['std:home', 'Haushalt', 'mdi', 'home-outline'],
     ['std:shopping', 'Einkauf', 'mdi', 'cart-outline'],
     ['std:money', 'Finanzen', 'mdi', 'cash'],
@@ -60,6 +73,12 @@ const GRUPPEN = [
     ['std:cleaning', 'Putzen', 'lucide', 'broom-sparkles'],
     ['std:garden', 'Garten', 'lucide', 'shovel'],
     ['std:plant', 'Pflanzen', 'lucide', 'plant-pot'],
+    ['std:chef', 'Kochen', 'lucide', 'chef-hat'],
+    ['std:food', 'Essen', 'lucide', 'utensils'],
+    ['std:medical', 'Gesundheit', 'mdi', 'hospital-box-outline'],
+    ['std:tools', 'Werkzeug', 'lucide', 'wrench'],
+    ['std:birthday', 'Geburtstag', 'mdi', 'cake-variant-outline'],
+    ['std:gift', 'Geschenk', 'lucide', 'gift'],
   ]],
   ['Arbeit und Lernen', [
     ['std:work', 'Arbeit', 'mdi', 'briefcase-outline'],
@@ -70,61 +89,35 @@ const GRUPPEN = [
     ['std:scroll', 'Schriftstück', 'mdi', 'feather'],
     ['std:checklist', 'Checkliste', 'mdi', 'checkbox-multiple-marked-outline'],
     ['std:deadlines', 'Fristen', 'mdi', 'clipboard-clock-outline'],
-  ]],
-  ['Computer', [
+    ['std:computer', 'Computer', 'mdi', 'monitor'],
     ['std:code', 'Programmieren', 'lucide', 'code-xml'],
     ['std:terminal', 'Konsole', 'mdi', 'console'],
     ['std:server', 'Server', 'mdi', 'server-outline'],
-    ['std:computer', 'Computer', 'mdi', 'monitor'],
     ['std:cloud', 'Cloud', 'mdi', 'cloud-outline'],
     ['std:tree', 'Baum', 'lucide', 'folder-tree'],
     ['std:graph', 'Graph', 'lucide', 'network'],
     ['std:math', 'Mathematik', 'mdi', 'calculator-variant-outline'],
   ]],
-  ['Menschen und Termine', [
-    ['std:calendar', 'Termine', 'mdi', 'calendar-outline'],
-    ['std:people', 'Personen', 'lucide', 'user'],
-    ['std:group', 'Gruppe', 'lucide', 'users'],
-    ['std:medical', 'Gesundheit', 'mdi', 'hospital-box-outline'],
-    ['std:megaphone', 'Ankündigung', 'mdi', 'bullhorn-outline'],
-  ]],
-  ['Kochen und Feiern', [
-    ['std:chef', 'Kochen', 'lucide', 'chef-hat'],
-    ['std:food', 'Essen', 'lucide', 'utensils'],
-    ['std:birthday', 'Geburtstag', 'mdi', 'cake-variant-outline'],
-    ['std:gift', 'Geschenk', 'lucide', 'gift'],
-  ]],
-  ['Freizeit und Natur', [
-    ['std:sport', 'Sport', 'lucide', 'dumbbell'],
-    ['std:climb', 'Klettern', 'mdi', 'carabiner'],
+  ['Reisen', [
     ['std:travel', 'Reise', 'lucide', 'plane'],
     ['std:car', 'Auto', 'mdi', 'car-outline'],
-    ['std:sailing', 'Segeln', 'mdi', 'sail-boat'],
+    ['std:suitcase', 'Koffer', 'mdi', 'bag-suitcase-outline'],
     ['std:mountain', 'Berge', 'mdi', 'image-filter-hdr-outline'],
     ['std:stone', 'Fels', 'lucide', 'stone'],
+    ['std:japan', 'Japan', 'tabler', 'torii'],
+    ['std:translate', 'Sprache', 'mdi', 'translate'],
   ]],
-  ['Musik und Kultur', [
+  ['Hobbies', [
+    ['std:sport', 'Sport', 'mdi', 'dumbbell'],
+    ['std:climb', 'Klettern', 'mdi', 'carabiner'],
+    ['std:sailing', 'Segeln', 'mdi', 'sail-boat'],
     ['std:music', 'Musik', 'lucide', 'music'],
     ['std:piano', 'Klavier', 'mdi', 'piano'],
     ['std:chess', 'Schach', 'lucide', 'chess-queen'],
     ['std:art', 'Kunst', 'mdi', 'palette-outline'],
-    ['std:translate', 'Sprache', 'mdi', 'translate'],
-    ['std:japan', 'Japan', 'tabler', 'torii'],
     ['std:sewing', 'Nähen', 'tabler', 'needle-thread'],
-    ['std:ideas', 'Ideen', 'mdi', 'lightbulb-outline'],
-  ]],
-  ['Sonstiges', [
-    ['std:suitcase', 'Koffer', 'mdi', 'bag-suitcase-outline'],
-    ['std:flash', 'Blitz', 'lucide', 'zap'],
-    ['std:refresh', 'Wiederholen', 'lucide', 'refresh-cw'],
-    ['std:search', 'Suche', 'mdi', 'magnify'],
-    ['std:send', 'Senden', 'lucide', 'send'],
-    ['std:tools', 'Werkzeug', 'lucide', 'wrench'],
-    ['std:hammer-sickle', 'Hammer und Sichel', 'mdi', 'hammer-sickle'],
-    ['std:folder', 'Sonstiges', 'mdi', 'folder-outline'],
   ]],
 ]
-
 /** Alle Einträge flach, jeweils mit ihrer Gruppe. */
 const AUSWAHL = GRUPPEN.flatMap(([gruppe, eintraege]) =>
   eintraege.map(([id, label, sammlung, name]) => ({ id, label, sammlung, name, gruppe })),
