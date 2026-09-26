@@ -9,11 +9,13 @@
 -- etwas zuletzt getan wurde.
 --
 -- `successor_id` verweist von der abgehakten Aufgabe auf ihren Nachfolger.
--- Daran hängen zwei Regeln:
+-- Daran hängt eine Regel:
 --
---   * Solange ein Nachfolger existiert, taucht die abgehakte Aufgabe **nicht**
---     in „Aufgaben wiederherstellen" auf – sie ist ja bereits fortgeschrieben.
---   * „Rückgängig" erkennt daran, was es wieder entfernen muss.
+--   * „Rückgängig" erkennt daran, was es wieder entfernen muss. Dasselbe gilt
+--     für das Wiederherstellen aus den Einstellungen.
+--
+-- Für das Wiederherstellen-Fenster selbst spielt das Feld keine Rolle: Dort gilt
+-- für jede abgehakte Aufgabe dasselbe siebentägige Fenster ab `completed_at`.
 --
 -- Eine Fremdschlüssel-Bedingung gibt es bewusst nicht: Beim Abhaken auf zwei
 -- Geräten entsteht auf beiden dieselbe Nachfolge-Kennung (sie wird berechnet,

@@ -48,12 +48,23 @@ rendern und die Screenshots **anschauen** (siehe Tests).
 
 ## Datenschicht
 
-* **Migrationen sind append-only.** Eine bereits eingespielte Datei wird nicht
-  nachträglich geändert; es kommt eine neue dazu (`0006_…`). Bestehende
-  Datenbanken sollen sich durch erneutes Ausführen aktualisieren lassen.
-* Migrationen sind wiederholbar (`if not exists`, `create or replace`,
-  `drop policy if exists`) und laufen in einer Transaktion, wenn sie Policies
-  anfassen.
+* **Migrationen sind wiederholbar.** Jede Datei muss sich beliebig oft ausführen
+  lassen (`if not exists`, `create or replace`, `drop policy if exists`) und
+  liefert dabei dasselbe Ergebnis. Policy-Änderungen laufen in einer Transaktion.
+* **Bestehende Dateien dürfen geändert werden.** Es gibt keine
+  Versionsverwaltung, die eingespielte Stände festhält: Eingespielt wird per
+  SQL-Editor, und die Sammeldatei (`npm run db:sql`) wird aus den Dateien neu
+  erzeugt. Eine geänderte Migration wirkt also beim nächsten Einspielen – auch
+  bei einer Datenbank, die die alte Fassung schon kennt. Das ist gewollt: Eine
+  falsche Spalte, ein fehlender Index oder ein irreführender Kommentar sollen
+  nicht als neue Datei daneben stehen bleiben.
+  * Bedingung: Die Datei bleibt wiederholbar, und ein zweiter Lauf ändert
+    nichts mehr.
+  * Wer eine Datei ändert, spielt die Sammeldatei danach erneut ein.
+* **Was Daten anfasst, kommt in eine neue Datei.** Ein `update`, `delete`,
+  `drop column` oder ein Backfill in einer bestehenden Datei liefe beim
+  nächsten Einspielen erneut und überschriebe neuere Daten. Solche Schritte
+  gehören einmalig ausgeführt und datiert (`0010_…`).
 * Neue Migrationen landen automatisch in der Sammeldatei (`npm run db:sql`).
 * **Erst die Migration, dann die App-Version, die sie braucht.** Sendet die App
   eine Spalte, die es serverseitig nicht gibt, scheitert jeder Sync mit
