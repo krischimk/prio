@@ -213,6 +213,14 @@ Supabase noch nicht konfiguriert ist.
    supabase db push
    ```
 
+   > **Anderer Weg, andere Regel.** Die CLI merkt sich nur die *Versionsnummern*
+   > der eingespielten Migrationen, nicht ihren Inhalt. Eine nachträglich
+   > geänderte Datei wird beim nächsten `db push` deshalb **stillschweigend
+   > übersprungen** – man hält die Änderung für eingespielt, und sie ist es nie.
+   > Wer die CLI benutzt, legt eine geänderte Migration als neue Datei an oder
+   > hilft mit `supabase migration repair` nach. Der Weg über den SQL-Editor und
+   > die Sammeldatei kennt das Problem nicht: Dort wird immer alles ausgeführt.
+
 4. **E-Mail-Anmeldung prüfen:** *Authentication → Providers → Email* muss aktiv
    sein. Für schnelles Ausprobieren ist es praktisch, *Confirm email*
    abzuschalten – sonst muss nach der Registrierung erst die E-Mail bestätigt
