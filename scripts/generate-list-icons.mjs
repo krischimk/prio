@@ -39,85 +39,96 @@ const SAMMLUNGEN = {
  *
  * Die Reihenfolge bestimmt die Anzeige in der Auswahl.
  */
-const AUSWAHL = [
-  /*
-   * Nach Themen geordnet, damit Verwandtes in der Auswahl nebeneinander
-   * steht. Die Komponenten bleiben reine Kommentare – in der Oberfläche gibt
-   * es keine Überschriften, nur die Reihenfolge.
-   */
-
-  // Alltag und Besorgung
-  ['std:check', 'Erledigt', 'lucide', 'check'],
-  ['std:star', 'Wichtig', 'mdi', 'star-outline'],
-  ['std:heart', 'Favoriten', 'mdi', 'heart-outline'],
-  ['std:flag', 'Merken', 'lucide', 'flag'],
-  ['std:home', 'Haushalt', 'mdi', 'home-outline'],
-  ['std:shopping', 'Einkauf', 'mdi', 'cart-outline'],
-  ['std:money', 'Finanzen', 'mdi', 'cash'],
-  ['std:hanger', 'Kleidung', 'mdi', 'hanger'],
-  ['std:shirt', 'T-Shirt', 'lucide', 'shirt'],
-  ['std:cleaning', 'Putzen', 'lucide', 'broom-sparkles'],
-  ['std:garden', 'Garten', 'lucide', 'shovel'],
-  ['std:plant', 'Pflanzen', 'lucide', 'plant-pot'],
-
-  // Arbeit und Lernen
-  ['std:work', 'Arbeit', 'mdi', 'briefcase-outline'],
-  ['std:graduation', 'Studium', 'lucide', 'graduation-cap'],
-  ['std:study', 'Lernen', 'mdi', 'book-open-variant-outline'],
-  ['std:notebook', 'Notizbuch', 'mdi', 'notebook-outline'],
-  ['std:pencil', 'Stift', 'lucide', 'pencil'],
-  ['std:scroll', 'Schriftstück', 'mdi', 'feather'],
-  ['std:checklist', 'Checkliste', 'mdi', 'checkbox-multiple-marked-outline'],
-  ['std:deadlines', 'Fristen', 'mdi', 'clipboard-clock-outline'],
-  ['std:code', 'Programmieren', 'lucide', 'code-xml'],
-  ['std:terminal', 'Konsole', 'mdi', 'console'],
-  ['std:server', 'Server', 'mdi', 'server-outline'],
-  ['std:computer', 'Computer', 'mdi', 'monitor'],
-  ['std:math', 'Mathematik', 'mdi', 'calculator-variant-outline'],
-  ['std:graph', 'Graph', 'lucide', 'network'],
-
-  // Menschen und Termine
-  ['std:calendar', 'Termine', 'mdi', 'calendar-outline'],
-  ['std:birthday', 'Geburtstag', 'mdi', 'cake-variant-outline'],
-  ['std:people', 'Personen', 'lucide', 'user'],
-  ['std:group', 'Gruppe', 'lucide', 'users'],
-  ['std:medical', 'Gesundheit', 'mdi', 'hospital-box-outline'],
-  ['std:megaphone', 'Ankündigung', 'mdi', 'bullhorn-outline'],
-  ['std:translate', 'Sprache', 'mdi', 'translate'],
-  ['std:gift', 'Geschenk', 'lucide', 'gift'],
-
-  // Freizeit und Natur
-  ['std:sport', 'Sport', 'tabler', 'dumbbell'],
-  ['std:climb', 'Klettern', 'mdi', 'carabiner'],
-  ['std:travel', 'Reise', 'lucide', 'plane'],
-  ['std:car', 'Auto', 'mdi', 'car-outline'],
-  ['std:sailing', 'Segeln', 'mdi', 'sail-boat'],
-  ['std:mountain', 'Berge', 'mdi', 'image-filter-hdr-outline'],
-  ['std:stone', 'Fels', 'lucide', 'stone'],
-  ['std:japan', 'Japan', 'tabler', 'torii'],
-  ['std:music', 'Musik', 'lucide', 'music'],
-  ['std:piano', 'Klavier', 'mdi', 'piano'],
-  ['std:chess', 'Schach', 'lucide', 'chess-queen'],
-  ['std:chef', 'Kochen', 'lucide', 'chef-hat'],
-  ['std:food', 'Essen', 'lucide', 'utensils'],
-  ['std:art', 'Kunst', 'mdi', 'palette-outline'],
-  ['std:sewing', 'Nähen', 'tabler', 'needle-thread'],
-  ['std:ideas', 'Ideen', 'mdi', 'lightbulb-outline'],
-
-  // Sonstiges
-  ['std:suitcase', 'Koffer', 'mdi', 'bag-suitcase-outline'],
-  ['std:cloud', 'Cloud', 'mdi', 'cloud-outline'],
-  ['std:flash', 'Blitz', 'lucide', 'zap'],
-  ['std:refresh', 'Wiederholen', 'lucide', 'refresh-cw'],
-  ['std:search', 'Suche', 'mdi', 'magnify'],
-  ['std:send', 'Senden', 'lucide', 'send'],
-  ['std:tree', 'Baum', 'lucide', 'folder-tree'],
-  ['std:hammer-sickle', 'Hammer und Sichel', 'mdi', 'hammer-sickle'],
-  ['std:folder', 'Sonstiges', 'mdi', 'folder-outline'],
-  ['std:tools', 'Werkzeug', 'lucide', 'wrench'],
+/**
+ * Die Auswahl in thematischen Gruppen.
+ *
+ * Die Gruppen werden in der Oberfläche als Überschriften gezeigt – deshalb
+ * stehen sie hier und nicht nur als Kommentar. Reihenfolge der Gruppen und
+ * der Symbole darin bestimmt die Anzeige.
+ */
+const GRUPPEN = [
+  ['Alltag und Haushalt', [
+    ['std:check', 'Erledigt', 'lucide', 'check'],
+    ['std:star', 'Wichtig', 'mdi', 'star-outline'],
+    ['std:heart', 'Favoriten', 'mdi', 'heart-outline'],
+    ['std:flag', 'Merken', 'lucide', 'flag'],
+    ['std:home', 'Haushalt', 'mdi', 'home-outline'],
+    ['std:shopping', 'Einkauf', 'mdi', 'cart-outline'],
+    ['std:money', 'Finanzen', 'mdi', 'cash'],
+    ['std:hanger', 'Kleidung', 'mdi', 'hanger'],
+    ['std:shirt', 'T-Shirt', 'lucide', 'shirt'],
+    ['std:cleaning', 'Putzen', 'lucide', 'broom-sparkles'],
+    ['std:garden', 'Garten', 'lucide', 'shovel'],
+    ['std:plant', 'Pflanzen', 'lucide', 'plant-pot'],
+  ]],
+  ['Arbeit und Lernen', [
+    ['std:work', 'Arbeit', 'mdi', 'briefcase-outline'],
+    ['std:graduation', 'Studium', 'lucide', 'graduation-cap'],
+    ['std:study', 'Lernen', 'mdi', 'book-open-variant-outline'],
+    ['std:notebook', 'Notizbuch', 'mdi', 'notebook-outline'],
+    ['std:pencil', 'Stift', 'lucide', 'pencil'],
+    ['std:scroll', 'Schriftstück', 'mdi', 'feather'],
+    ['std:checklist', 'Checkliste', 'mdi', 'checkbox-multiple-marked-outline'],
+    ['std:deadlines', 'Fristen', 'mdi', 'clipboard-clock-outline'],
+  ]],
+  ['Computer', [
+    ['std:code', 'Programmieren', 'lucide', 'code-xml'],
+    ['std:terminal', 'Konsole', 'mdi', 'console'],
+    ['std:server', 'Server', 'mdi', 'server-outline'],
+    ['std:computer', 'Computer', 'mdi', 'monitor'],
+    ['std:cloud', 'Cloud', 'mdi', 'cloud-outline'],
+    ['std:tree', 'Baum', 'lucide', 'folder-tree'],
+    ['std:graph', 'Graph', 'lucide', 'network'],
+    ['std:math', 'Mathematik', 'mdi', 'calculator-variant-outline'],
+  ]],
+  ['Menschen und Termine', [
+    ['std:calendar', 'Termine', 'mdi', 'calendar-outline'],
+    ['std:people', 'Personen', 'lucide', 'user'],
+    ['std:group', 'Gruppe', 'lucide', 'users'],
+    ['std:medical', 'Gesundheit', 'mdi', 'hospital-box-outline'],
+    ['std:megaphone', 'Ankündigung', 'mdi', 'bullhorn-outline'],
+  ]],
+  ['Kochen und Feiern', [
+    ['std:chef', 'Kochen', 'lucide', 'chef-hat'],
+    ['std:food', 'Essen', 'lucide', 'utensils'],
+    ['std:birthday', 'Geburtstag', 'mdi', 'cake-variant-outline'],
+    ['std:gift', 'Geschenk', 'lucide', 'gift'],
+  ]],
+  ['Freizeit und Natur', [
+    ['std:sport', 'Sport', 'lucide', 'dumbbell'],
+    ['std:climb', 'Klettern', 'mdi', 'carabiner'],
+    ['std:travel', 'Reise', 'lucide', 'plane'],
+    ['std:car', 'Auto', 'mdi', 'car-outline'],
+    ['std:sailing', 'Segeln', 'mdi', 'sail-boat'],
+    ['std:mountain', 'Berge', 'mdi', 'image-filter-hdr-outline'],
+    ['std:stone', 'Fels', 'lucide', 'stone'],
+  ]],
+  ['Musik und Kultur', [
+    ['std:music', 'Musik', 'lucide', 'music'],
+    ['std:piano', 'Klavier', 'mdi', 'piano'],
+    ['std:chess', 'Schach', 'lucide', 'chess-queen'],
+    ['std:art', 'Kunst', 'mdi', 'palette-outline'],
+    ['std:translate', 'Sprache', 'mdi', 'translate'],
+    ['std:japan', 'Japan', 'tabler', 'torii'],
+    ['std:sewing', 'Nähen', 'tabler', 'needle-thread'],
+    ['std:ideas', 'Ideen', 'mdi', 'lightbulb-outline'],
+  ]],
+  ['Sonstiges', [
+    ['std:suitcase', 'Koffer', 'mdi', 'bag-suitcase-outline'],
+    ['std:flash', 'Blitz', 'lucide', 'zap'],
+    ['std:refresh', 'Wiederholen', 'lucide', 'refresh-cw'],
+    ['std:search', 'Suche', 'mdi', 'magnify'],
+    ['std:send', 'Senden', 'lucide', 'send'],
+    ['std:tools', 'Werkzeug', 'lucide', 'wrench'],
+    ['std:hammer-sickle', 'Hammer und Sichel', 'mdi', 'hammer-sickle'],
+    ['std:folder', 'Sonstiges', 'mdi', 'folder-outline'],
+  ]],
 ]
 
-/** Liest Pfade, Zeichenart und Raster eines Symbols. */
+/** Alle Einträge flach, jeweils mit ihrer Gruppe. */
+const AUSWAHL = GRUPPEN.flatMap(([gruppe, eintraege]) =>
+  eintraege.map(([id, label, sammlung, name]) => ({ id, label, sammlung, name, gruppe })),
+)/** Liest Pfade, Zeichenart und Raster eines Symbols. */
 function symbolLesen(sammlung, name) {
   const { paket, ordner } = SAMMLUNGEN[sammlung]
   const datei = join(WURZEL, 'node_modules', paket, ordner, `${name}.svg`)
@@ -134,7 +145,7 @@ function symbolLesen(sammlung, name) {
   return { pfade, gefuellt, viewBox }
 }
 
-const eintraege = AUSWAHL.map(([id, label, sammlung, name]) => {
+const eintraege = AUSWAHL.map(({ id, label, sammlung, name, gruppe }) => {
   const { pfade, gefuellt, viewBox } = symbolLesen(sammlung, name)
   const liste = pfade.map((d) => `      '${d}',`).join('\n')
   // Das übliche Raster wird nicht wiederholt – es ist die Vorgabe der App.
@@ -144,6 +155,7 @@ const eintraege = AUSWAHL.map(([id, label, sammlung, name]) => {
     id: '${id}',
     label: '${label}',
     source: '${sammlung}/${name}',
+    group: '${gruppe}',
 ${gefuellt ? '    filled: true,\n' : ''}${raster}    paths: [
 ${liste}
     ],

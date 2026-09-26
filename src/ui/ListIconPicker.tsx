@@ -1,6 +1,6 @@
 import { useWorkspace } from '../app/useWorkspace'
 import type { LocalList } from '../domain/types'
-import { LIST_ICONS } from './listIcons'
+import { groupListIcons } from './listIcons'
 import { ListIcon } from './ListIcon'
 import { secondaryButton } from './styles'
 
@@ -44,22 +44,38 @@ export function ListIconPicker({
         außerhalb des Rasters. Als Kachel bliebe eine einzelne Zeile übrig, und
         das sähe nach Versehen aus.
       */}
-      <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8" data-testid="icon-picker">
-        {LIST_ICONS.map((eintrag) => (
-          <button
-            key={eintrag.id}
-            type="button"
-            aria-label={eintrag.label}
-            aria-pressed={list.icon === eintrag.id}
-            onClick={() => setzen(eintrag.id)}
-            className={`flex aspect-square items-center justify-center rounded-md border ${
-              list.icon === eintrag.id
-                ? 'border-indigo-500 bg-indigo-950/60 text-indigo-100'
-                : 'border-neutral-700 bg-neutral-900 text-neutral-300 hover:bg-neutral-800'
-            }`}
-          >
-            <ListIcon icon={eintrag.id} className="h-6 w-6" />
-          </button>
+      {/*
+        Die Gruppen kommen als Überschriften mit: Bei 60 Symbolen findet man
+        ein Motiv schneller, wenn Verwandtes untereinander steht und benannt
+        ist.
+      */}
+      <div className="space-y-4" data-testid="icon-picker">
+        {groupListIcons().map((gruppe) => (
+          <div key={gruppe.name ?? 'ohne Gruppe'}>
+            {gruppe.name ? (
+              <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-500">
+                {gruppe.name}
+              </h4>
+            ) : null}
+            <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8">
+              {gruppe.icons.map((eintrag) => (
+                <button
+                  key={eintrag.id}
+                  type="button"
+                  aria-label={eintrag.label}
+                  aria-pressed={list.icon === eintrag.id}
+                  onClick={() => setzen(eintrag.id)}
+                  className={`flex aspect-square items-center justify-center rounded-md border ${
+                    list.icon === eintrag.id
+                      ? 'border-indigo-500 bg-indigo-950/60 text-indigo-100'
+                      : 'border-neutral-700 bg-neutral-900 text-neutral-300 hover:bg-neutral-800'
+                  }`}
+                >
+                  <ListIcon icon={eintrag.id} className="h-6 w-6" />
+                </button>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
 

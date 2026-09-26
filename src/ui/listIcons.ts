@@ -44,6 +44,13 @@ export interface ListIconDefinition {
   filled?: boolean
   /** Herkunft bei fremden Symbolen – nur für die Nachvollziehbarkeit. */
   source?: string
+  /**
+   * Themengruppe, unter der das Symbol in der Auswahl steht.
+   *
+   * Die Gruppen kommen aus `scripts/generate-list-icons.mjs`; die Auswahl
+   * setzt sie als Überschriften um.
+   */
+  group?: string
 }
 
 /**
@@ -55,6 +62,32 @@ export interface ListIconDefinition {
  */
 export const LIST_ICONS: ListIconDefinition[] = LIST_ICONS_MDI
 
+export interface ListIconGroup {
+  /** Überschrift der Gruppe, `null` für Symbole ohne Zuordnung. */
+  name: string | null
+  icons: ListIconDefinition[]
+}
+
+/**
+ * Fasst die Symbole nach ihrer Gruppe zusammen – in der Reihenfolge der Liste.
+ *
+ * Fortlaufend gesammelt: Symbole derselben Gruppe stehen dadurch beieinander,
+ * sofern der Erzeuger sie so einsortiert hat. Eine Gruppe, die später noch
+ * einmal auftaucht, bekäme eine zweite Überschrift – das wäre ein Fehler in
+ * `scripts/generate-list-icons.mjs`.
+ */
+export function groupListIcons(icons: ListIconDefinition[] = LIST_ICONS): ListIconGroup[] {
+  const gruppen: ListIconGroup[] = []
+  for (const icon of icons) {
+    const name = icon.group ?? null
+    const letzte = gruppen.at(-1)
+    if (letzte && letzte.name === name) letzte.icons.push(icon)
+    else gruppen.push({ name, icons: [icon] })
+  }
+  return gruppen
+}
+
+/** Symbol anhand seiner Kennung. Unbekannte Kennungen ergeben kein Symbol. */
 export function findListIcon(id: string | null): ListIconDefinition | null {
   if (!id) return null
   return LIST_ICONS.find((entry) => entry.id === id) ?? null

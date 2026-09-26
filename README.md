@@ -520,6 +520,11 @@ Apache-2.0, verlangen also nur den Lizenztext und keine sichtbare Nennung
 App zur Laufzeit keine Fremdquelle kennt. **Font Awesome** ist bewusst nicht
 dabei – dessen Symbole stehen unter CC BY 4.0.
 
+Die Auswahl ist in **acht Themengruppen** gegliedert, die als Überschriften
+erscheinen: Alltag und Haushalt, Arbeit und Lernen, Computer, Menschen und
+Termine, Kochen und Feiern, Freizeit und Natur, Musik und Kultur, Sonstiges.
+Bei 60 Symbolen findet man ein Motiv so deutlich schneller.
+
 Es gibt **kein selbst gezeichnetes Symbol mehr**. Die ursprünglichen sechzehn
 wurden durch fertige Vorlagen ersetzt – das gibt eine einheitlichere Bildsprache
 und für jedes Symbol eine nachvollziehbare Herkunft. Die Kennungen sind dabei
