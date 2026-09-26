@@ -58,8 +58,23 @@ export function useRestorableTasks(): LocalTask[] {
   return tasks
 }
 
-export function useMembers(listId: string | null): LocalListMember[] {
+/**
+ * Die selbst gemerkten Vorlaufzeiten für die Erinnerungs-Schnellauswahl.
+ *
+ * Eine Eingabehilfe, keine Angabe über eine Aufgabe – sie liegt deshalb in
+ * `meta` und wird nicht synchronisiert.
+ */
+export function useReminderPresets(): number[] {
   const { repositories, dataVersion } = useWorkspace()
+  const [presets, setPresets] = useState<number[]>([])
+  useEffect(
+    () => subscribe(() => repositories.listReminderPresets(), setPresets),
+    [repositories, dataVersion],
+  )
+  return presets
+}
+
+export function useMembers(listId: string | null): LocalListMember[] {  const { repositories, dataVersion } = useWorkspace()
   const [members, setMembers] = useState<LocalListMember[]>([])
   useEffect(
     () => subscribe(() => (listId === null ? Promise.resolve([]) : repositories.listMembers(listId)), setMembers),

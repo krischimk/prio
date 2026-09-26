@@ -4,10 +4,12 @@ import { useBackLayer } from '../app/useBackLayer'
 import { useUndo } from './useUndo'
 import type { LocalTask } from '../domain/types'
 import { formatDueLabel, fromDateTimeLocalValue, toDateTimeLocalValue } from './datetime'
-import { RepeatIcon } from './icons'
+import { BellIcon, RepeatIcon } from './icons'
 import { describeRecurrence } from './recurrence'
 import { RecurrenceSelect } from './RecurrenceSelect'
-import { dangerButton, dangerText, ghostButton, input, primaryButton, secondaryButton } from './styles'
+import { ReminderSelect } from './ReminderSelect'
+import { defaultReminderForDue, describeReminder, type ReminderValue } from './reminder'
+import { dangerButton, dangerText, ghostButton, input, primaryButton, secondaryButton, attentionText } from './styles'
 
 /**
  * Eine Aufgabe in der Liste.
@@ -26,12 +28,23 @@ export function TaskItem({ task }: { task: LocalTask }) {
   const [description, setDescription] = useState(task.description ?? '')
   const [dueAt, setDueAt] = useState('')
   const [recurrence, setRecurrence] = useState('')
+  const [erinnerungEingabe, setErinnerung] = useState<ReminderValue>({
+    remindAt: null,
+    reminderOffsetMinutes: null,
+  })
 
   const startEditing = () => {
     setTitle(task.title)
     setDescription(task.description ?? '')
     setDueAt(toDateTimeLocalValue(task.due_at))
     setRecurrence(task.recurrence ?? '')
+    // Nur das Feld der aktuellen Form – das andere bleibt `undefined`, damit
+    // ein Wechsel der Wiederholung den Moment umrechnen kann.
+    setErinnerung(
+      task.recurrence !== null && task.due_at !== null
+        ? { reminderOffsetMinutes: task.reminder_offset_minutes }
+        : { remindAt: task.remind_at },
+    )
     setEditing(true)
   }
 
@@ -42,6 +55,8 @@ export function TaskItem({ task }: { task: LocalTask }) {
       description,
       dueAt: fromDateTimeLocalValue(dueAt),
       recurrence: recurrence === '' ? null : recurrence,
+      remindAt: erinnerungEingabe.remindAt,
+      reminderOffsetMinutes: erinnerungEingabe.reminderOffsetMinutes,
     })
     setEditing(false)
   }
@@ -83,9 +98,11 @@ export function TaskItem({ task }: { task: LocalTask }) {
               type="datetime-local"
               value={dueAt}
               onChange={(event) => {
-                setDueAt(event.target.value)
+                const neu = event.target.value
+                setDueAt(neu)
+                setErinnerung((aktuell) => defaultReminderForDue(neu, aktuell))
                 // Ohne Fälligkeit gibt es nichts fortzuschreiben.
-                if (event.target.value === '') setRecurrence('')
+                if (neu === '') setRecurrence('')
               }}
               className={input}
             />
@@ -95,6 +112,15 @@ export function TaskItem({ task }: { task: LocalTask }) {
             value={recurrence}
             disabled={dueAt === ''}
             onChange={setRecurrence}
+          />
+          <ReminderSelect
+            idPrefix={`task-${task.id}`}
+            dueAt={fromDateTimeLocalValue(dueAt)}
+            recurrence={recurrence === '' ? null : recurrence}
+            remindAt={erinnerungEingabe.remindAt}
+            reminderOffsetMinutes={erinnerungEingabe.reminderOffsetMinutes}
+            disabled={dueAt === '' && recurrence !== ''}
+            onChange={setErinnerung}
           />
           <div className="flex gap-2">
             <button type="submit" className={primaryButton}>
@@ -111,6 +137,7 @@ export function TaskItem({ task }: { task: LocalTask }) {
 
   const due = task.due_at === null ? null : formatDueLabel(task.due_at, task.completed)
   const wiederholung = describeRecurrence(task.recurrence)
+  const erinnerung = describeReminder(task)
 
   return (
     <li className="flex items-start gap-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-3">
@@ -139,6 +166,16 @@ export function TaskItem({ task }: { task: LocalTask }) {
           <p className="mt-1 flex items-center gap-1 text-xs text-neutral-500">
             <RepeatIcon className="h-3 w-3 shrink-0" />
             {wiederholung}
+          </p>
+        ) : null}
+        {erinnerung ? (
+          <p
+            className={`mt-1 flex items-center gap-1 text-xs ${
+              erinnerung.afterDue ? attentionText : 'text-neutral-500'
+            }`}
+          >
+            <BellIcon className="h-3 w-3 shrink-0" />
+            {erinnerung.text}
           </p>
         ) : null}
       </div>

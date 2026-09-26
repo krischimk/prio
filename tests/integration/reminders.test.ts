@@ -33,7 +33,15 @@ describe('Erinnerungsdienst', () => {
 
   async function createTaskWithDue(title: string, dueAt: string): Promise<string> {
     const list = await device.repositories.createList('Arbeit', userId)
-    const task = await device.repositories.createTask({ listId: list.id, title, dueAt })
+    // Erinnerung und Fälligkeit sind getrennt: Eine Fälligkeit allein plant
+    // nichts mehr. „Zur Fälligkeit" ist die Voreinstellung des Formulars und
+    // der Rückfall der Migration 0010 – hier also `remindAt: dueAt`.
+    const task = await device.repositories.createTask({
+      listId: list.id,
+      title,
+      dueAt,
+      remindAt: dueAt,
+    })
     return task.id
   }
 
@@ -132,7 +140,9 @@ describe('Erinnerungsdienst', () => {
     expect(await device.db.reminders.count()).toBe(0)
   })
 
-  it('verschiebt eine Erinnerung, wenn sich die Fälligkeit ändert', async () => {
+  it('lässt eine absolute Erinnerung stehen, wenn sich die Fälligkeit ändert', async () => {
+    // Der Kern der Trennung: Bei einer einmaligen Aufgabe ist der gewählte
+    // Moment unabhängig vom Termin. Wer ihn mitziehen will, setzt ihn neu.
     const taskId = await createTaskWithDue('Bericht', DUE_SOON)
     await service.sync()
     const alteNummer = [...port.pending.keys()][0]
@@ -143,15 +153,40 @@ describe('Erinnerungsdienst', () => {
 
     expect(port.pending.size).toBe(1)
     expect([...port.pending.keys()][0]).toBe(alteNummer)
+    expect([...port.pending.values()][0]?.at).toBe(DUE_SOON)
+  })
+
+  it('verschiebt die Erinnerung, wenn sie ausdrücklich mitgesetzt wird', async () => {
+    const taskId = await createTaskWithDue('Bericht', DUE_SOON)
+    await service.sync()
+
+    device.clock.advance(1000)
+    await device.repositories.updateTask(taskId, { dueAt: DUE_LATER, remindAt: DUE_LATER })
+    await service.sync()
+
     expect([...port.pending.values()][0]?.at).toBe(DUE_LATER)
   })
 
-  it('entfernt die Erinnerung, wenn das Fälligkeitsdatum gelöscht wird', async () => {
+  it('behält die Erinnerung, wenn das Fälligkeitsdatum gelöscht wird', async () => {
+    // Beide sind getrennt – das Entfernen des einen darf das andere nicht
+    // still löschen.
     const taskId = await createTaskWithDue('Bericht', DUE_SOON)
     await service.sync()
 
     device.clock.advance(1000)
     await device.repositories.updateTask(taskId, { dueAt: null })
+    await service.sync()
+
+    expect(port.pending.size).toBe(1)
+    expect([...port.pending.values()][0]?.at).toBe(DUE_SOON)
+  })
+
+  it('entfernt die Erinnerung, wenn sie ausdrücklich geleert wird', async () => {
+    const taskId = await createTaskWithDue('Bericht', DUE_SOON)
+    await service.sync()
+
+    device.clock.advance(1000)
+    await device.repositories.updateTask(taskId, { remindAt: null })
     await service.sync()
 
     expect(port.pending.size).toBe(0)
@@ -173,8 +208,18 @@ describe('Erinnerungsdienst', () => {
 
   it('vergibt fortlaufende Nummern ohne Kollision', async () => {
     const list = await device.repositories.createList('Arbeit', userId)
-    await device.repositories.createTask({ listId: list.id, title: 'A', dueAt: DUE_SOON })
-    await device.repositories.createTask({ listId: list.id, title: 'B', dueAt: DUE_LATER })
+    await device.repositories.createTask({
+      listId: list.id,
+      title: 'A',
+      dueAt: DUE_SOON,
+      remindAt: DUE_SOON,
+    })
+    await device.repositories.createTask({
+      listId: list.id,
+      title: 'B',
+      dueAt: DUE_LATER,
+      remindAt: DUE_LATER,
+    })
 
     await service.sync()
 

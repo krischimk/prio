@@ -394,3 +394,50 @@ test('erlaubt eine Wiederholung erst mit Fälligkeitsdatum', async ({ page }) =>
   await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
   await expect(page.getByLabel('Wiederholung', { exact: true })).toBeEnabled()
 })
+
+test('setzt auf dem Telefon einen eigenen Vorlauf für eine wiederkehrende Aufgabe', async ({ page }) => {
+  await register(page, uniqueEmail('m17'))
+  await createList(page, 'Routinen')
+
+  await page.getByRole('button', { name: 'Neue Aufgabe' }).click()
+  await page.getByLabel('Titel', { exact: true }).fill('Zähne putzen')
+  await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
+  await page.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
+
+  // Die Form folgt der Wiederholung: relativer Vorlauf statt Zeitpunkt.
+  const erinnerung = page.getByLabel('Erinnerung', { exact: true })
+  await expect(erinnerung.locator('option')).toContainText(['Keine', 'Zur Fälligkeit'])
+  await erinnerung.selectOption('custom')
+
+  await page.getByLabel('Stunden vorher oder nachher', { exact: true }).fill('1')
+  await page.getByLabel('Minuten vorher oder nachher', { exact: true }).fill('30')
+
+  // Die Vorschau rechnet in absolute Zeit um – daran hängt die Verständlichkeit.
+  await expect(page.getByText(/1 Std 30 Min vorher/)).toBeVisible()
+  await page.getByRole('button', { name: 'Speichern', exact: true }).click()
+
+  await expect(taskRow(page, 'Zähne putzen')).toContainText('Erinnert:')
+})
+
+test('nimmt einen Vorlauf auf dem Telefon in die Schnellauswahl auf', async ({ page }) => {
+  await register(page, uniqueEmail('m18'))
+  await createList(page, 'Routinen')
+
+  await page.getByRole('button', { name: 'Neue Aufgabe' }).click()
+  await page.getByLabel('Titel', { exact: true }).fill('Gießen')
+  await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
+  await page.getByLabel('Wiederholung', { exact: true }).selectOption('weekly')
+  await page.getByLabel('Erinnerung', { exact: true }).selectOption('custom')
+  await page.getByLabel('Stunden vorher oder nachher', { exact: true }).fill('4')
+
+  const stern = page.getByRole('button', { name: 'In die Schnellauswahl aufnehmen' })
+  await stern.click()
+  await expect(page.getByRole('button', { name: 'Aus der Schnellauswahl entfernen' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Speichern', exact: true }).click()
+  await expect(taskRow(page, 'Gießen')).toBeVisible()
+
+  // Beim nächsten Mal steht der Wert direkt in der Auswahl.
+  await taskRow(page, 'Gießen').click()
+  await expect(page.getByLabel('Erinnerung', { exact: true })).toContainText('4 Std vorher')
+})

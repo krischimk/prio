@@ -1,9 +1,11 @@
 import { systemClock, timeOf, type Clock } from '../domain/clock'
 import { isRecurrence, nextOccurrence, successorId } from '../domain/recurrence'
+import { alignReminder, isPlausibleOffset } from '../domain/reminder'
 import { newId } from '../domain/ids'
 import type { LocalList, LocalListMember, LocalTask } from '../domain/types'
 import type { LocalDatabase } from './localDb'
 import { optionalText, requireText, ValidationError } from './validation'
+import { META_REMINDER_PRESETS, readMeta, writeMeta } from '../sync/syncStore'
 
 /**
  * Geschäftslogik für Listen, Aufgaben und Mitgliedschaften.
@@ -33,6 +35,10 @@ export interface CreateTaskInput {
   description?: string | null
   dueAt?: string | null
   recurrence?: string | null
+  /** Absoluter Erinnerungszeitpunkt – gilt für einmalige Aufgaben. */
+  remindAt?: string | null
+  /** Vorlauf in Minuten – gilt für wiederkehrende Aufgaben, negativ = danach. */
+  reminderOffsetMinutes?: number | null
 }
 
 export interface UpdateTaskInput {
@@ -40,6 +46,8 @@ export interface UpdateTaskInput {
   description?: string | null
   dueAt?: string | null
   recurrence?: string | null
+  remindAt?: string | null
+  reminderOffsetMinutes?: number | null
 }
 
 export interface Repositories {
@@ -83,6 +91,16 @@ export interface Repositories {
    */
   listRestorableTasks(): Promise<LocalTask[]>
 
+  /**
+   * Die selbst gemerkten Vorlaufzeiten für die Schnellauswahl, in der
+   * Reihenfolge des Hinzufügens.
+   *
+   * Eine Eingabehilfe, keine Angabe über eine Aufgabe – deshalb liegt sie in
+   * `meta` und wird nicht synchronisiert.
+   */
+  listReminderPresets(): Promise<number[]>
+  setReminderPresets(minutes: number[]): Promise<void>
+
   // Mitgliedschaften
   listMembers(listId: string): Promise<LocalListMember[]>
   markListShared(listId: string): Promise<void>
@@ -122,17 +140,6 @@ export function compareTasks(a: LocalTask, b: LocalTask): number {
   const createdB = Date.parse(b.created_at)
   if (createdA !== createdB) return createdA - createdB
   return a.title.localeCompare(b.title)
-}
-
-/**
- * Nimmt nur bekannte Wiederholungen an.
- *
- * Ein unbekannter Wert wird zu `null` statt zu einem Fehler: Eine Wiederholung
- * aus einer neueren Fassung darf das Speichern nicht blockieren, sie wird
- * schlicht als „keine" behandelt.
- */
-function normalisiereWiederholung(wert: string | null | undefined): string | null {
-  return isRecurrence(wert) ? wert : null
 }
 
 export function createRepositories(db: LocalDatabase, clock: Clock = systemClock): Repositories {
@@ -278,10 +285,19 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
         list_id: input.listId,
         title: requireText(input.title, 'Der Titel'),
         description: optionalText(input.description),
-        due_at: optionalText(input.dueAt),
+        // `undefined` heißt „nicht mitgeschickt" – siehe `ReminderTarget`.
+        ...alignReminder(
+          null,
+          {
+            due_at: optionalText(input.dueAt),
+            recurrence: input.recurrence ?? null,
+            remind_at: input.remindAt,
+            reminder_offset_minutes: input.reminderOffsetMinutes,
+          },
+          Date.parse(now),
+        ),
         completed: false,
         completed_at: null,
-        recurrence: normalisiereWiederholung(input.recurrence),
         successor_id: null,
         position: hoechste + 1,
         created_at: now,
@@ -300,11 +316,21 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
         title: patch.title === undefined ? task.title : requireText(patch.title, 'Der Titel'),
         description:
           patch.description === undefined ? task.description : optionalText(patch.description),
-        due_at: patch.dueAt === undefined ? task.due_at : optionalText(patch.dueAt),
-        recurrence:
-          patch.recurrence === undefined
-            ? task.recurrence
-            : normalisiereWiederholung(patch.recurrence),
+        // Fälligkeit, Wiederholung und Erinnerung hängen zusammen und werden
+        // deshalb gemeinsam ausgerichtet – siehe `alignReminder`.
+        ...alignReminder(
+          task,
+          {
+            due_at: patch.dueAt === undefined ? task.due_at : optionalText(patch.dueAt),
+            recurrence: patch.recurrence === undefined ? task.recurrence : patch.recurrence,
+            // Bewusst nicht auf den gespeicherten Wert zurückgefallen: Nur so
+            // kann `alignReminder` „nicht mitgeschickt" von „keine Erinnerung"
+            // unterscheiden und den Moment beim Formwechsel umrechnen.
+            remind_at: patch.remindAt,
+            reminder_offset_minutes: patch.reminderOffsetMinutes,
+          },
+          Date.parse(clock.now()),
+        ),
         ...stamp(),
       }
       await db.tasks.put(updated)
@@ -456,6 +482,27 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
         // Zuletzt abgehakt zuerst. Die Zeitstempel liegen alle im selben
         // ISO-Format vor, der Vergleich ist deshalb stabil.
         .sort((a, b) => (b.completed_at ?? '').localeCompare(a.completed_at ?? ''))
+    },
+
+    async listReminderPresets() {
+      const roh = await readMeta(db, META_REMINDER_PRESETS)
+      if (roh === null) return []
+      try {
+        const werte: unknown = JSON.parse(roh)
+        if (!Array.isArray(werte)) return []
+        // Nur brauchbare Zahlen durchlassen: Eine von Hand verbogene Zeile darf
+        // die Auswahl nicht unbrauchbar machen.
+        return werte.filter(
+          (wert): wert is number => typeof wert === 'number' && isPlausibleOffset(wert),
+        )
+      } catch {
+        return []
+      }
+    },
+
+    async setReminderPresets(minutes) {
+      const sauber = minutes.filter(isPlausibleOffset).map((wert) => Math.round(wert))
+      await writeMeta(db, META_REMINDER_PRESETS, JSON.stringify(sauber))
     },
 
     async listMembers(listId) {

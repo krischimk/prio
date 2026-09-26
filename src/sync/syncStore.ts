@@ -16,6 +16,15 @@ import type { LocalDatabase } from '../db/localDb'
 
 export const META_LAST_SYNC_AT = 'last_sync_at'
 export const META_LAST_SYNC_STATUS = 'last_sync_status'
+/**
+ * Die selbst gemerkten Vorlaufzeiten für die Schnellauswahl.
+ *
+ * Bewusst nur lokal: Es ist eine Eingabehilfe, keine Angabe über eine Aufgabe.
+ * Sie liegt in der Datenbank des Benutzers (`prio-user-<id>`) und ist damit pro
+ * Konto getrennt, wandert aber nicht auf andere Geräte – dafür bräuchte es einen
+ * Sync-Pfad für Einstellungen, den es noch nicht gibt.
+ */
+export const META_REMINDER_PRESETS = 'reminder_presets'
 
 export interface DirtyRows {
   lists: LocalList[]

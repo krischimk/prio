@@ -8,8 +8,13 @@ import type { LocalList, LocalTask } from '../domain/types'
  * sich das Verhalten vollständig und schnell testen.
  *
  * Regeln:
- *  - Nur Aufgaben mit Fälligkeitsdatum (inklusive Uhrzeit).
- *  - Erledigte und gelöschte Aufgaben erinnern nicht.
+ *  - **Wann** erinnert wird, steht an der Aufgabe und hängt an ihrer Form:
+ *    wiederkehrende Aufgaben tragen einen Vorlauf (`reminder_offset_minutes`,
+ *    vorzeichenbehaftet – negativ heißt *nach* der Fälligkeit), einmalige einen
+ *    absoluten Zeitpunkt (`remind_at`). Die Form folgt der Wiederholung und
+ *    wird in `alignReminder` festgelegt.
+ *  - Erledigte und gelöschte Aufgaben erinnern nicht. Ein Nachempfinden für
+ *    eine offene Aufgabe verstummt also, sobald sie abgehakt ist.
  *  - Zeitpunkte in der Vergangenheit werden nicht geplant. Eine Aufgabe, die
  *    während einer Offline-Phase fällig geworden ist, würde sonst beim ersten
  *    Sync eine Benachrichtigung auslösen – das wäre Lärm, keine Erinnerung.
@@ -24,6 +29,26 @@ export interface ReminderCandidate {
   at: string
 }
 
+const MINUTE_MS = 60_000
+
+/**
+ * Der Zeitpunkt, zu dem eine Aufgabe erinnern soll – oder `null`.
+ *
+ * Ausgelagert und exportiert, weil die Oberfläche denselben Wert für ihre
+ * Vorschau braucht („Erinnert am …"). Zwei Rechenwege für dieselbe Zahl wären
+ * genau die Art Abweichung, die man erst im Betrieb merkt.
+ */
+export function reminderTimeFor(task: LocalTask): string | null {
+  if (task.recurrence !== null && task.due_at !== null) {
+    const offset = task.reminder_offset_minutes
+    if (offset === null || !Number.isFinite(offset)) return null
+    const zeitpunkt = Date.parse(task.due_at) - offset * MINUTE_MS
+    if (!Number.isFinite(zeitpunkt)) return null
+    return new Date(zeitpunkt).toISOString()
+  }
+  return task.remind_at
+}
+
 export function planReminders(tasks: LocalTask[], lists: LocalList[], nowMs: number): ReminderCandidate[] {
   const listNames = new Map(lists.map((list) => [list.id, list.name]))
 
@@ -31,16 +56,18 @@ export function planReminders(tasks: LocalTask[], lists: LocalList[], nowMs: num
   for (const task of tasks) {
     if (task.deleted_at !== null) continue
     if (task.completed) continue
-    if (task.due_at === null) continue
 
-    const dueMs = Date.parse(task.due_at)
-    if (Number.isNaN(dueMs) || dueMs <= nowMs) continue
+    const at = reminderTimeFor(task)
+    if (at === null) continue
+
+    const atMs = Date.parse(at)
+    if (Number.isNaN(atMs) || atMs <= nowMs) continue
 
     candidates.push({
       taskId: task.id,
       title: task.title,
       body: listNames.get(task.list_id) ?? 'prio',
-      at: normalizeIso(task.due_at),
+      at: normalizeIso(at),
     })
   }
 

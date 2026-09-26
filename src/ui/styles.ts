@@ -87,3 +87,13 @@ export const successBox =
 
 /** Zurückgenommener Text für Hinweise und Metadaten. */
 export const mutedText = 'text-neutral-500'
+
+/**
+ * Ein Bediensymbol, das einen aktiven Zustand zeigt – etwa der gefüllte Stern
+ * an einer Erinnerung, die in der Schnellauswahl liegt.
+ *
+ * Steht hier und nicht in der Komponente, weil derselbe Zustand überall
+ * dieselbe Farbe haben soll. Der Architekturtest fängt nur die Statusfarben
+ * (emerald/amber/red) ab; für alles andere ist diese Datei die Absprache.
+ */
+export const activeIcon = 'text-indigo-400'

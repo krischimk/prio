@@ -74,3 +74,40 @@ export function RepeatIcon({ className = 'h-4 w-4' }: { className?: string }) {
     </svg>
   )
 }
+
+/** Erinnerung – kennzeichnet eine Aufgabe mit Benachrichtigung. */
+export function BellIcon({ className = 'h-4 w-4' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
+      <path d="M6 9a6 6 0 1 1 12 0c0 4 1.5 5.5 1.5 5.5H4.5S6 13 6 9Z" />
+      <path d="M10 18a2 2 0 0 0 4 0" />
+    </svg>
+  )
+}
+
+/**
+ * Stern zum Merken eines Wertes.
+ *
+ * Gefüllt heißt „gemerkt". Der Umriss kommt aus `base`, die Füllung wird
+ * überschrieben – so bleibt der Stern dieselbe Form wie die übrigen
+ * Bediensymbole.
+ */
+export function StarIcon({
+  className = 'h-4 w-4',
+  filled = false,
+}: {
+  className?: string
+  filled?: boolean
+}) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      aria-hidden="true"
+      {...base}
+      fill={filled ? 'currentColor' : 'none'}
+    >
+      <path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z" />
+    </svg>
+  )
+}

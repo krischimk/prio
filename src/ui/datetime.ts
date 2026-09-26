@@ -74,3 +74,15 @@ export function formatDueLabel(dueAt: string, completed: boolean): DueLabel {
     overdue,
   }
 }
+
+/**
+ * Wann erinnert wird – für die Zeile unter einer Aufgabe und für die Vorschau
+ * im Formular.
+ *
+ * Steht hier und nicht in `reminder.ts`, weil dort die Textbausteine für den
+ * Vorlauf leben und jede Datumsdarstellung an dieser einen Stelle entstehen
+ * soll (siehe `uiConventions.test.ts`).
+ */
+export function formatReminderLabel(at: string): string {
+  return `Erinnert: ${formatDateTime(at)}`
+}

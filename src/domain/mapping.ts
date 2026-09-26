@@ -58,6 +58,8 @@ export function toRemoteTask(local: LocalTask): RemoteTask {
     completed_at: normalizeIso(local.completed_at),
     recurrence: local.recurrence,
     successor_id: local.successor_id,
+    remind_at: normalizeIso(local.remind_at),
+    reminder_offset_minutes: local.reminder_offset_minutes,
     // Letzte Absicherung an der Grenze: `NaN` würde beim Senden zu `null`, und
     // die Spalte ist `not null`. Ein ungültiger Wert darf das Hochladen nicht
     // für die gesamte Charge scheitern lassen.
@@ -80,6 +82,15 @@ export function fromRemoteTask(remote: RemoteTask): LocalTask {
     completed_at: normalizeIso(remote.completed_at ?? null),
     recurrence: remote.recurrence ?? null,
     successor_id: remote.successor_id ?? null,
+    // Ältere Zeilen kennen die Erinnerungsfelder noch nicht. `null` heißt
+    // „keine Erinnerung" – die Migration 0010 füllt bestehende Aufgaben
+    // einmalig auf, damit sich am Verhalten nichts ändert.
+    remind_at: normalizeIso(remote.remind_at ?? null),
+    reminder_offset_minutes:
+      typeof remote.reminder_offset_minutes === 'number' &&
+      Number.isFinite(remote.reminder_offset_minutes)
+        ? remote.reminder_offset_minutes
+        : null,
     position: remote.position ?? 0,
     created_at: normalizeIso(remote.created_at),
     updated_at: normalizeIso(remote.updated_at),

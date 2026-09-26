@@ -80,7 +80,8 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
 
 * Felder: `id`, `list_id`, `title`, optionale `description`, optionales
   `due_at` (mit Uhrzeit), `completed`, optionale `recurrence`, `successor_id`,
-  `created_at`, `updated_at`, `deleted_at`
+  `remind_at` bzw. `reminder_offset_minutes` (Erinnerung, siehe
+  [Erinnerungen](#erinnerungen)), `created_at`, `updated_at`, `deleted_at`
 * Erstellen, bearbeiten, erledigen, in eine andere Liste verschieben, löschen
 * Abgehakte Aufgaben verschwinden aus der Liste und sind sieben Tage lang unter
   *Einstellungen → Aufgaben wiederherstellen* auffindbar
@@ -419,20 +420,45 @@ Sync frisch vom Server zurück.
 
 ## Erinnerungen
 
-Hat eine Aufgabe ein Fälligkeitsdatum mit Uhrzeit in der Zukunft, plant die
-Android-App eine Benachrichtigung. Sie kommt auch an, wenn die App geschlossen
-ist – die Termine liegen beim Betriebssystem (Android: AlarmManager), nicht in
-einem Timer der Web-Oberfläche.
+Eine Aufgabe kann erinnern – **unabhängig davon, ob und wann sie fällig ist**.
+Die Benachrichtigung kommt auch an, wenn die App geschlossen ist: Die Termine
+liegen beim Betriebssystem (Android: AlarmManager), nicht in einem Timer der
+Web-Oberfläche.
+
+### Wann erinnert wird
+
+Die Erinnerung steht an der Aufgabe, und ihre **Form folgt der Wiederholung**:
+
+| Aufgabe | Feld | Beispiel |
+| --- | --- | --- |
+| einmalig | `remind_at` – ein absoluter Zeitpunkt | „am 15.02.2027 um 17:00" |
+| wiederkehrend | `reminder_offset_minutes` – ein Vorlauf, vorzeichenbehaftet | „1 Std 30 Min vorher" |
+
+Warum diese Aufteilung: Eine absolute Erinnerung an einer wiederkehrenden
+Aufgabe feuerte genau einmal und wäre ab der zweiten Ausführung falsch. Ein
+Vorlauf an einer einmaligen Aufgabe könnte nichts, was ein absoluter Zeitpunkt
+nicht auch könnte.
+
+**Der Vorlauf darf negativ sein.** `-240` heißt „4 Stunden nach der Fälligkeit"
+– ein Nachempfinden für Aufgaben, die noch offen sind. Ist die Aufgabe bis
+dahin abgehakt, verstummt es von selbst: Erledigte Aufgaben erinnern nicht.
+
+Beim Setzen einer Fälligkeit wird die Erinnerung mit derselben Zeit
+vorbelegt – das war vor der Trennung immer so, und ein stiller Wegfall wäre
+eine Verschlechterung. Danach ist sie eine eigene Angabe: Wer die Fälligkeit
+verschiebt, verschiebt **nicht** die Erinnerung.
 
 ### Wie es funktioniert
 
 | Datei | Aufgabe |
 | --- | --- |
+| `src/domain/reminder.ts` | Reine Funktion: Welche Form hat die Erinnerung, und was passiert beim Wechsel? |
 | `src/reminders/reminderPlan.ts` | Reine Funktion: Welche Aufgaben sollen erinnern? |
 | `src/reminders/reminderReconciler.ts` | Reine Funktion: Was muss geplant, verschoben, abgebrochen werden? |
 | `src/reminders/localNotificationsPort.ts` | Schnittstelle zu den Benachrichtigungen des Systems |
 | `src/reminders/capacitorNotifications.ts` | Umsetzung mit `@capacitor/local-notifications` |
 | `src/reminders/reminderService.ts` | Ablauf: Berechtigung, lesen, abgleichen, schreiben |
+| `src/ui/ReminderSelect.tsx` | Auswahlfeld – dieselbe Komponente in beiden Ansichten |
 
 Der Abgleich läuft nach jedem Sync, nach jeder lokalen Änderung und beim Start.
 Er ist **idempotent**: Unveränderte Termine werden nicht angefasst, ein zweiter
@@ -441,12 +467,28 @@ Lauf berührt das Betriebssystem gar nicht.
 Geplant wird, wenn eine Aufgabe
 
 * nicht gelöscht und nicht erledigt ist,
-* ein Fälligkeitsdatum hat und
-* dieses in der Zukunft liegt.
+* eine Erinnerung hat (eine Fälligkeit allein genügt **nicht** mehr) und
+* der errechnete Zeitpunkt in der Zukunft liegt.
 
-Wird eine Aufgabe erledigt, gelöscht oder ihr Datum entfernt, wird die
-Erinnerung abgebrochen. Wird ein Datum verschoben, wird der Termin unter
-derselben Nummer neu geplant.
+Wird eine Aufgabe erledigt oder gelöscht, wird die Erinnerung abgebrochen. Wird
+der Zeitpunkt verschoben, wird der Termin unter derselben Nummer neu geplant.
+
+**Die Absicht wird synchronisiert, der Zustand nicht.** Wann erinnert werden
+soll, steht an der Aufgabe und gilt damit auf allen Geräten; welche
+Benachrichtigung tatsächlich geplant ist, weiß jedes Gerät für sich
+(lokale `reminders`-Tabelle mit der Nummer beim Betriebssystem).
+
+### Die Schnellauswahl
+
+Neben dem Feld steht ein **Stern**. Er bezieht sich immer auf den Wert, der
+gerade in den Feldern steht: gefüllt heißt „gemerkt", ein Klick nimmt ihn auf
+oder wieder heraus. Um einen gemerkten Wert zu entfernen, wählt man ihn aus –
+dann steht er in den Feldern und der Stern ist gleich daneben.
+
+Gemerkt wird pro Konto in der lokalen `meta`-Tabelle (`reminder_presets`).
+Bewusst **nicht** synchronisiert: Es ist eine Eingabehilfe, keine Angabe über
+eine Aufgabe. Wer sie auf allen Geräten gleich haben will, bräuchte einen
+Sync-Pfad für Einstellungen, den es noch nicht gibt.
 
 ### Was in den Einstellungen steht
 

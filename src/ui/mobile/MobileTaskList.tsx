@@ -3,9 +3,10 @@ import { useWorkspace } from '../../app/useWorkspace'
 import { useUndo } from '../useUndo'
 import type { LocalTask } from '../../domain/types'
 import { formatDueLabel } from '../datetime'
-import { RepeatIcon } from '../icons'
+import { BellIcon, RepeatIcon } from '../icons'
 import { describeRecurrence } from '../recurrence'
-import { dangerText } from '../styles'
+import { describeReminder } from '../reminder'
+import { attentionText, dangerText } from '../styles'
 import { useReorderDrag, type ReorderDrag } from './useReorderDrag'
 
 /**
@@ -83,6 +84,7 @@ function MobileTaskRow({
   const { offerUndo } = useUndo()
   const due = task.due_at === null ? null : formatDueLabel(task.due_at, task.completed)
   const wiederholung = describeRecurrence(task.recurrence)
+  const erinnerung = describeReminder(task)
   const handlers = drag.getRowHandlers(task.id, index)
 
   return (
@@ -135,6 +137,16 @@ function MobileTaskRow({
           <span className="mt-0.5 flex items-center gap-1 text-xs text-neutral-500">
             <RepeatIcon className="h-3 w-3 shrink-0" />
             {wiederholung}
+          </span>
+        ) : null}
+        {erinnerung ? (
+          <span
+            className={`mt-0.5 flex items-center gap-1 text-xs ${
+              erinnerung.afterDue ? attentionText : 'text-neutral-500'
+            }`}
+          >
+            <BellIcon className="h-3 w-3 shrink-0" />
+            {erinnerung.text}
           </span>
         ) : null}
       </button>

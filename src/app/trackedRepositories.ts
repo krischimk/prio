@@ -35,6 +35,7 @@ export function withChangeTracking(repositories: Repositories, onChange: () => v
     markListShared: track(repositories.markListShared.bind(repositories)),
     removeMember: track(repositories.removeMember.bind(repositories)),
     leaveList: track(repositories.leaveList.bind(repositories)),
+    setReminderPresets: track(repositories.setReminderPresets.bind(repositories)),
 
     // Reine Lesezugriffe – hier darf nichts gezählt werden.
     getList: repositories.getList.bind(repositories),
@@ -43,5 +44,6 @@ export function withChangeTracking(repositories: Repositories, onChange: () => v
     listTasks: repositories.listTasks.bind(repositories),
     listRestorableTasks: repositories.listRestorableTasks.bind(repositories),
     listMembers: repositories.listMembers.bind(repositories),
+    listReminderPresets: repositories.listReminderPresets.bind(repositories),
   }
 }

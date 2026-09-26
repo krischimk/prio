@@ -74,6 +74,30 @@ export interface LocalTask extends SyncableRow, LocalOnly {
    */
   successor_id: string | null
   /**
+   * Absoluter Erinnerungszeitpunkt – gilt für **einmalige** Aufgaben.
+   *
+   * Bewusst getrennt von `due_at`: Der gewählte Moment bleibt der gewählte
+   * Moment, auch wenn sich die Fälligkeit später verschiebt. Und er darf hinter
+   * der Fälligkeit liegen („in zwei Stunden nachfassen").
+   *
+   * Bei wiederkehrenden Aufgaben ist das Feld immer `null` – dort gilt
+   * `reminder_offset_minutes`. Welches der beiden zählt, entscheidet
+   * `recurrence`; siehe `alignReminder` in `src/domain/reminder.ts`.
+   */
+  remind_at: IsoDateTime | null
+  /**
+   * Vorlauf in Minuten gegenüber `due_at` – gilt für **wiederkehrende**
+   * Aufgaben, vorzeichenbehaftet:
+   *
+   *   positiv  vor der Fälligkeit (90 = 1 Std 30 Min vorher),
+   *   null     keine Erinnerung,
+   *   negativ  nach der Fälligkeit (-240 = 4 Std danach).
+   *
+   * Relativ, weil eine absolute Erinnerung nur die erste Ausführung träfe und
+   * ab der zweiten falsch wäre.
+   */
+  reminder_offset_minutes: number | null
+  /**
    * Vom Benutzer bestimmte Reihenfolge innerhalb der Liste (kleiner = weiter
    * oben). Neue Aufgaben bekommen die höchste Position und landen damit unten.
    *
