@@ -1,8 +1,7 @@
-import { isRecurrence } from '../domain/recurrence'
 import { timeFromOffset } from '../domain/reminder'
 import type { LocalTask } from '../domain/types'
 import { reminderTimeFor } from '../reminders/reminderPlan'
-import { formatReminderLabel, fromDateTimeLocalValue } from './datetime'
+import { formatReminderLabel } from './datetime'
 
 /**
  * Texte rund um die Erinnerung.
@@ -93,26 +92,4 @@ export function describeReminder(task: LocalTask): ReminderLabel | null {
     text: formatReminderLabel(at),
     afterDue: dueMs !== null && atMs > dueMs,
   }
-}
-
-/**
- * Voreinstellung beim Setzen einer Fälligkeit.
- *
- * Wer einen Termin einträgt, will in aller Regel auch daran erinnert werden –
- * das war vor der Trennung immer so, und ein stiller Wegfall wäre eine
- * Verschlechterung. Sobald eine Erinnerung gesetzt ist, rührt die Funktion
- * nichts mehr an: Auch das Löschen bleibt damit eine bewusste Entscheidung.
- */
-export function defaultReminderForDue(
-  dueAt: string | null,
-  recurrence: string | null,
-  aktuell: ReminderValue,
-): ReminderValue {
-  if (dueAt === null) return aktuell
-  if (aktuell.remindAt != null || aktuell.reminderOffsetMinutes != null) return aktuell
-  // Die Form muss zur Wiederholung passen, sonst zeigt das Feld etwas anderes
-  // an, als beim Speichern herauskommt.
-  return isRecurrence(recurrence)
-    ? { reminderOffsetMinutes: 0 }
-    : { remindAt: fromDateTimeLocalValue(dueAt) }
 }

@@ -8,7 +8,7 @@ import { BellIcon, RepeatIcon } from './icons'
 import { describeRecurrence } from './recurrence'
 import { RecurrenceSelect } from './RecurrenceSelect'
 import { ReminderSelect } from './ReminderSelect'
-import { defaultReminderForDue, describeReminder, type ReminderValue } from './reminder'
+import { describeReminder, type ReminderValue } from './reminder'
 import { dangerButton, dangerText, ghostButton, input, primaryButton, secondaryButton, attentionText } from './styles'
 
 /**
@@ -100,7 +100,6 @@ export function TaskItem({ task }: { task: LocalTask }) {
               onChange={(event) => {
                 const neu = event.target.value
                 setDueAt(neu)
-                setErinnerung((aktuell) => defaultReminderForDue(neu, recurrence === '' ? null : recurrence, aktuell))
                 // Ohne Fälligkeit gibt es nichts fortzuschreiben.
                 if (neu === '') setRecurrence('')
               }}

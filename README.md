@@ -443,10 +443,10 @@ nicht auch könnte.
 – ein Nachempfinden für Aufgaben, die noch offen sind. Ist die Aufgabe bis
 dahin abgehakt, verstummt es von selbst: Erledigte Aufgaben erinnern nicht.
 
-Beim Setzen einer Fälligkeit wird die Erinnerung mit derselben Zeit
-vorbelegt – das war vor der Trennung immer so, und ein stiller Wegfall wäre
-eine Verschlechterung. Danach ist sie eine eigene Angabe: Wer die Fälligkeit
-verschiebt, verschiebt **nicht** die Erinnerung.
+**Eine Fälligkeit setzt keine Erinnerung.** Wer erinnert werden will, wählt es
+ausdrücklich – „Zur Fälligkeit" ist dabei eine Auswahl wie jede andere. Und die
+Erinnerung ist eine eigene Angabe: Wer die Fälligkeit verschiebt, verschiebt
+nicht die Erinnerung.
 
 ### Wie es funktioniert
 

@@ -4,7 +4,7 @@ import { useWorkspace } from '../../app/useWorkspace'
 import type { LocalList, LocalTask } from '../../domain/types'
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../datetime'
 import { RecurrenceSelect } from '../RecurrenceSelect'
-import { defaultReminderForDue, type ReminderValue } from '../reminder'
+import type { ReminderValue } from '../reminder'
 import { ReminderSelect } from '../ReminderSelect'
 import { dangerButton, input, primaryButton, secondaryButton } from '../styles'
 import { CloseIcon, MoveIcon, TrashIcon } from '../icons'
@@ -167,7 +167,6 @@ export function TaskDetailSheet({
               onChange={(event) => {
                 const neu = event.target.value
                 setDueAt(neu)
-                setErinnerung((aktuell) => defaultReminderForDue(neu, recurrence === '' ? null : recurrence, aktuell))
                 // Ohne Fälligkeit gibt es nichts fortzuschreiben.
                 if (neu === '') setRecurrence('')
               }}
