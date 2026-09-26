@@ -207,3 +207,26 @@ test('nimmt einen Vorlauf in der breiten Ansicht in die Schnellauswahl auf', asy
     page.getByRole('form', { name: /Aufgabe bearbeiten/ }).getByLabel('Erinnerung', { exact: true }),
   ).toContainText('6 Std vorher')
 })
+
+test('erlaubt in der breiten Ansicht eine Erinnerung ohne Fälligkeitsdatum', async ({ page }) => {
+  await register(page, uniqueEmail('l10'))
+  await createList(page, 'Alltag')
+
+  await page.getByLabel('Neue Aufgabe', { exact: true }).fill('Jonna anrufen')
+  await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click()
+
+  const zeile = page.getByTestId('task-list').locator('li').filter({ hasText: 'Jonna anrufen' })
+  await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
+
+  const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
+  const erinnerung = formular.getByLabel('Erinnerung', { exact: true })
+  await expect(erinnerung.locator('option[value="at-due"]')).toBeDisabled()
+  await erinnerung.selectOption('custom')
+  await expect(formular.getByLabel('Erinnerung am', { exact: true })).toBeVisible()
+
+  await formular.getByLabel('Erinnerung am', { exact: true }).fill(morgenUm(17))
+  await formular.getByRole('button', { name: 'Speichern' }).click()
+
+  await expect(zeile).toContainText('Erinnert:')
+  await expect(zeile).not.toContainText('Fällig:')
+})

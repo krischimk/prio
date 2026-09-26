@@ -448,3 +448,26 @@ test('nimmt einen Vorlauf auf dem Telefon in die Schnellauswahl auf', async ({ p
   await taskRow(page, 'Gießen').click()
   await expect(page.getByLabel('Erinnerung', { exact: true })).toContainText('4 Std vorher')
 })
+
+test('erlaubt auf dem Telefon eine Erinnerung ohne Fälligkeitsdatum', async ({ page }) => {
+  await register(page, uniqueEmail('m19'))
+  await createList(page, 'Alltag')
+
+  await page.getByRole('button', { name: 'Neue Aufgabe' }).click()
+  await page.getByLabel('Titel', { exact: true }).fill('Jonna anrufen')
+
+  // Ohne Fälligkeit ist „Zur Fälligkeit" nicht wählbar – der eigene Zeitpunkt
+  // muss es sein. Und er muss sich auch öffnen lassen, wenn noch keine
+  // Erinnerung gesetzt ist.
+  const erinnerung = page.getByLabel('Erinnerung', { exact: true })
+  await expect(erinnerung.locator('option[value="at-due"]')).toBeDisabled()
+  await erinnerung.selectOption('custom')
+  await expect(page.getByLabel('Erinnerung am', { exact: true })).toBeVisible()
+
+  await page.getByLabel('Erinnerung am', { exact: true }).fill(inTagen(2))
+  await page.getByRole('button', { name: 'Speichern', exact: true }).click()
+
+  const zeile = taskRow(page, 'Jonna anrufen')
+  await expect(zeile).toContainText('Erinnert:')
+  await expect(zeile).not.toContainText('Fällig:')
+})

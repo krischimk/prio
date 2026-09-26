@@ -114,14 +114,16 @@ function AbsoluteReminder({
   // Auswahl sofort auf „Zur Fälligkeit" zurück, sobald der eigene Wert zufällig
   // genau die Fälligkeit ist – das Feld klappte beim Öffnen wieder zu.
   const [eigeneOffen, setEigeneOffen] = useState(false)
-  const auswahl =
-    value === null
+  // `eigeneOffen` steht vorn: Ohne das fiele die Auswahl auf „Keine" zurück,
+  // solange noch gar keine Erinnerung gesetzt ist – und das Feld ließe sich
+  // ohne Fälligkeit nicht mehr öffnen.
+  const auswahl = eigeneOffen
+    ? EIGENE
+    : value === null
       ? KEINE
-      : eigeneOffen
-        ? EIGENE
-        : dueAt !== null && value === dueAt
-          ? ZUR_FAELLIGKEIT
-          : EIGENE
+      : dueAt !== null && value === dueAt
+        ? ZUR_FAELLIGKEIT
+        : EIGENE
 
   const waehlen = (wahl: string) => {
     if (wahl === KEINE) {
@@ -214,7 +216,13 @@ function RelativeReminder({
   // Eigener Offen-Zustand: Sonst klappte „Eigene …" sofort wieder zu, sobald
   // der eingestellte Wert zufällig eine der festen Stufen trifft (0 ist eine).
   const [eigeneOffen, setEigeneOffen] = useState(false)
-  const auswahlWert = aktuell === null ? KEINE : eigeneOffen || !bekannt ? EIGENE : String(aktuell)
+  const auswahlWert = eigeneOffen
+    ? EIGENE
+    : aktuell === null
+      ? KEINE
+      : bekannt
+        ? String(aktuell)
+        : EIGENE
 
   const waehlen = (wahl: string) => {
     if (wahl === KEINE) {
