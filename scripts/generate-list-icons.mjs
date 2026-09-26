@@ -92,6 +92,8 @@ const AUSWAHL = [
   ['std:birthday', 'Geburtstag', 'mdi', 'cake-variant-outline'],
   ['std:flash', 'Blitz', 'mdi', 'flash-outline'],
   ['std:cloud', 'Cloud', 'mdi', 'cloud-outline'],
+  // Klemmbrett mit Uhr – naheliegend für Fristen.
+  ['std:deadlines', 'Fristen', 'mdi', 'clipboard-clock-outline'],
 
   // Freizeit und Natur
   ['std:strings', 'Streichinstrument', 'mdi', 'violin'],
