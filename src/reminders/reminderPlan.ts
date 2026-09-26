@@ -41,12 +41,15 @@ const MINUTE_MS = 60_000
 export function reminderTimeFor(task: LocalTask): string | null {
   if (task.recurrence !== null && task.due_at !== null) {
     const offset = task.reminder_offset_minutes
-    if (offset === null || !Number.isFinite(offset)) return null
+    if (offset === null || offset === undefined || !Number.isFinite(offset)) return null
     const zeitpunkt = Date.parse(task.due_at) - offset * MINUTE_MS
     if (!Number.isFinite(zeitpunkt)) return null
     return new Date(zeitpunkt).toISOString()
   }
-  return task.remind_at
+  // `?? null`, weil Zeilen aus der Zeit vor der Erinnerung das Feld gar nicht
+  // haben. Ohne das rutschte `undefined` durch jede `null`-Prüfung und die
+  // Oberfläche zeigte ein „Erinnert:" ohne Datum.
+  return task.remind_at ?? null
 }
 
 export function planReminders(tasks: LocalTask[], lists: LocalList[], nowMs: number): ReminderCandidate[] {

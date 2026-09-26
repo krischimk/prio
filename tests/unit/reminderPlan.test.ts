@@ -149,4 +149,14 @@ describe('Erinnerungszeitpunkt einer Aufgabe', () => {
     expect(reminderTimeFor(localTask({ due_at: SOON }))).toBeNull()
     expect(reminderTimeFor(wiederkehrend(null))).toBeNull()
   })
+
+  it('verträgt Zeilen aus der Zeit vor der Erinnerung', () => {
+    // Solche Aufgaben haben die Felder gar nicht – `undefined` statt `null`.
+    const alt = localTask()
+    delete (alt as { remind_at?: unknown }).remind_at
+    delete (alt as { reminder_offset_minutes?: unknown }).reminder_offset_minutes
+
+    expect(reminderTimeFor(alt)).toBeNull()
+    expect(planReminders([alt], lists, NOW)).toHaveLength(0)
+  })
 })

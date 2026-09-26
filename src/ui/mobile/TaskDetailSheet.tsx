@@ -167,7 +167,7 @@ export function TaskDetailSheet({
               onChange={(event) => {
                 const neu = event.target.value
                 setDueAt(neu)
-                setErinnerung((aktuell) => defaultReminderForDue(neu, aktuell))
+                setErinnerung((aktuell) => defaultReminderForDue(neu, recurrence === '' ? null : recurrence, aktuell))
                 // Ohne Fälligkeit gibt es nichts fortzuschreiben.
                 if (neu === '') setRecurrence('')
               }}

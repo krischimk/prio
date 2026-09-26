@@ -402,11 +402,18 @@ test('setzt auf dem Telefon einen eigenen Vorlauf für eine wiederkehrende Aufga
   await page.getByRole('button', { name: 'Neue Aufgabe' }).click()
   await page.getByLabel('Titel', { exact: true }).fill('Zähne putzen')
   await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
+
+  // Mit der Fälligkeit wird die Erinnerung vorbelegt – das war vor der Trennung
+  // immer so, und ein stiller Wegfall wäre eine Verschlechterung.
+  await expect(page.getByLabel('Erinnerung', { exact: true })).toHaveValue('at-due')
+
   await page.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
 
-  // Die Form folgt der Wiederholung: relativer Vorlauf statt Zeitpunkt.
+  // Die Form folgt der Wiederholung: relativer Vorlauf statt Zeitpunkt – und
+  // der Moment wandert mit, statt auf „Keine" zurückzufallen.
   const erinnerung = page.getByLabel('Erinnerung', { exact: true })
   await expect(erinnerung.locator('option')).toContainText(['Keine', 'Zur Fälligkeit'])
+  await expect(erinnerung).toHaveValue('0')
   await erinnerung.selectOption('custom')
 
   await page.getByLabel('Stunden vorher oder nachher', { exact: true }).fill('1')

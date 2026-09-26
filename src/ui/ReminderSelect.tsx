@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useReminderPresets } from '../app/hooks'
 import { useWorkspace } from '../app/useWorkspace'
 import { isRecurrence } from '../domain/recurrence'
+import { absoluteFromOffset, offsetFromAbsolute } from '../domain/reminder'
 import {
   formatReminderLabel,
   fromDateTimeLocalValue,
@@ -51,6 +52,33 @@ export function ReminderSelect({
   onChange: (next: ReminderValue) => void
 }) {
   const relativ = isRecurrence(recurrence) && dueAt !== null
+
+  /*
+   * Wechselt die Form, wandert der Moment mit.
+   *
+   * Sonst stünde im Formular „Keine", während beim Speichern derselbe
+   * Zeitpunkt als Vorlauf herauskäme – die Anzeige und das Ergebnis wären
+   * verschiedene Dinge. Das Repository rechnet zwar ebenfalls um, aber nur,
+   * wenn das Formular zum Wert nichts sagt; hier sagt es etwas, und deshalb
+   * muss es auch das Richtige sagen.
+   */
+  const vorherRelativ = useRef(relativ)
+  useEffect(() => {
+    if (vorherRelativ.current === relativ) return
+    vorherRelativ.current = relativ
+    if (relativ) {
+      onChange({
+        reminderOffsetMinutes:
+          remindAt == null ? null : offsetFromAbsolute(dueAt, remindAt),
+      })
+    } else {
+      onChange({
+        remindAt: absoluteFromOffset(dueAt, reminderOffsetMinutes ?? null, Date.now()),
+      })
+    }
+    // Absichtlich nur am Formwechsel aufgehängt; die Werte sind die Quelle.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [relativ])
 
   return relativ ? (
     <RelativeReminder
