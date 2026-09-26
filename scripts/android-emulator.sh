@@ -10,6 +10,7 @@
 #   npm run android:emu          Emulator mit Fenster starten
 #   npm run android:emu:install  Debug-APK bauen, installieren und öffnen
 #   npm run android:emu:shot     Screenshot ablegen
+#   npm run android:emu:eval     Ausdruck im laufenden WebView auswerten
 #   npm run android:emu:stop     Emulator beenden
 #
 # Das eigentliche Bedienen und Beurteilen passiert im Fenster – das Skript
@@ -128,13 +129,44 @@ stop() {
   info "Emulator beendet."
 }
 
+# Führt im laufenden WebView einen Ausdruck aus. Zwei Dinge werden dabei leicht
+# übersehen: Der Devtools-Anschluss liegt im Emulator, nicht auf diesem Rechner
+# – ohne `adb forward` endet der Aufruf in „Connection refused“. Und der
+# Anschlussname trägt die Prozessnummer der App, die sich bei jedem Start
+# ändert.
+eval_webview() {
+  require adb
+  device_online || { warn "Kein Emulator läuft."; exit 1; }
+
+  local pid socket
+  pid="$(adb shell pidof -s "$APP_ID" 2>/dev/null | tr -d '\r')"
+  socket=""
+  if [ -n "$pid" ]; then
+    socket="$(adb shell cat /proc/net/unix 2>/dev/null \
+      | grep -o "webview_devtools_remote_$pid" | head -1)"
+  fi
+  if [ -z "$socket" ]; then
+    socket="$(adb shell cat /proc/net/unix 2>/dev/null \
+      | grep -o 'webview_devtools_remote_[0-9]*' | sort -u | tail -1)"
+  fi
+  [ -n "$socket" ] || {
+    warn "Kein WebView gefunden. Läuft die App? (npm run android:emu:install)"
+    exit 1
+  }
+
+  adb forward tcp:9222 "localabstract:$socket" >/dev/null
+  node "$PROJECT_DIR/scripts/webview-eval.mjs" "$@"
+  adb forward --remove tcp:9222 >/dev/null 2>&1 || true
+}
+
 case "${1:-}" in
   start) start ;;
   install) install_app ;;
   shot) shift; screenshot "${1:-}" ;;
   stop) stop ;;
+  eval) shift; eval_webview "$@" ;;
   *)
-    echo "Aufruf: $0 {start|install|shot [datei]|stop}"
+    echo "Aufruf: $0 {start|install|shot [datei]|eval <ausdruck>|stop}"
     exit 1
     ;;
 esac

@@ -833,6 +833,9 @@ npm run android:emu          # startet den Emulator (AVD „prio-test“)
 npm run android:emu:install  # baut die Debug-APK, installiert und öffnet sie
 npm run android:emu:shot     # legt einen Screenshot auf den Desktop
 npm run android:emu:stop
+
+# Einen Ausdruck im laufenden WebView auswerten (prüfen ohne Neubau):
+npm run android:emu:eval -- 'JSON.stringify(Object.keys(localStorage))'
 ```
 
 **Anmeldung und Testdaten bleiben erhalten** – über App-Aktualisierungen und

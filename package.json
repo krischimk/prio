@@ -28,7 +28,7 @@
     "android:emu:install": "bash scripts/android-emulator.sh install",
     "android:emu:shot": "bash scripts/android-emulator.sh shot",
     "android:emu:stop": "bash scripts/android-emulator.sh stop",
-    "android:emu:eval": "node scripts/webview-eval.mjs",
+    "android:emu:eval": "bash scripts/android-emulator.sh eval",
     "icons:generate": "node scripts/generate-list-icons.mjs"
   },
   "dependencies": {
