@@ -1,6 +1,10 @@
 # prio
 
-**Offline-first To-do-App – Version 0.6.2 (technischer Prototyp).**
+**Offline-first To-do-App – technischer Prototyp.**
+
+Die jeweilige Fassung steht in `package.json` und in den Git-Tags; jeder Tag
+trägt seinen Changelog als Text (siehe [APK-Releases über
+GitHub](#apk-releases-über-github)).
 
 Ziel dieser Version ist ausdrücklich **kein fertiges Produkt**, sondern eine
 schlanke Grundlage, mit der die Kernarchitektur zuverlässig getestet werden
