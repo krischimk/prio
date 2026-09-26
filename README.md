@@ -905,13 +905,25 @@ installierte App legen – sie müsste zuerst deinstalliert werden (die Daten
 kommen danach aus der Cloud zurück). Den Ordner also sichern. Der Keystore ist
 über `.gitignore` ausgeschlossen und darf nie ins Repository.
 
-`versionName` entspricht dem Tag ohne führendes `v`, `versionCode` kommt aus der
-Workflow-Laufnummer und ist damit bei jedem Release höher.
+`versionName` entspricht dem Tag ohne führendes `v`. `versionCode` wird aus der
+Version in `package.json` gerechnet – `major*10000 + minor*100 + patch`, also
+0.9.0 → 900 und 0.10.0 → 1000. Dieselbe Formel gilt für lokale Builds und für
+das Release. So ist er bei jeder neuen Version höher, und die im Emulator
+installierte Fassung lässt sich ohne Deinstallation durch die Release-APK
+ersetzen. Der Workflow bricht ab, wenn Tag und `package.json` nicht
+zusammenpassen.
 
-> **Debug-APK und Release-APK sind unterschiedlich signiert.** Wer zuerst die
-> lokal gebaute Debug-APK installiert hat, muss sie einmal deinstallieren, bevor
-> sich die Release-APK aus GitHub installieren lässt. Danach funktionieren alle
-> weiteren Releases als normales Update.
+> **Vorher kam der `versionCode` aus der Workflow-Laufnummer.** Das lag unter
+> dem `versionCode` lokal gebauter Fassungen; Android lehnte die Release-APK im
+> Emulator dann als „Downgrade" ab.
+
+> **Debug-APK und Release-APK sind derselbe Schlüssel – im Emulator.** Wer über
+> `npm run android:emu:install` installiert, signiert mit dem Release-Schlüssel
+> (`~/.prio-android/emulator.env`), deshalb ist der Wechsel zwischen
+> Emulator-Fassung und Release-APK ein normales Update: Anmeldung und Daten
+> bleiben erhalten. Ein `adb uninstall` ist nie nötig und würde die Anmeldung
+> löschen. Ein `./gradlew assembleDebug` **ohne** diese Variablen benutzt
+> dagegen die flüchtige Debug-Signatur; dann hilft nur Deinstallieren.
 
 **Voraussetzung im Repository.** Vite schreibt die Supabase-Konfiguration zur
 Build-Zeit in das Bundle. Im CI gibt es keine `.env`, deshalb müssen beide Werte

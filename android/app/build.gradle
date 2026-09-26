@@ -14,13 +14,20 @@ apply plugin: 'com.android.application'
 def keystoreFile = System.getenv("PRIO_KEYSTORE_FILE")
 def hasSigningKey = keystoreFile != null && file(keystoreFile).exists()
 def versionNameFromEnv = System.getenv("PRIO_VERSION_NAME")
-def versionCodeFromEnv = System.getenv("PRIO_VERSION_CODE")
 
 /*
- * Lokal gebaute Fassungen melden dieselbe Version wie das Release.
+ * Version und versionCode kommen aus package.json – für lokale Builds und für
+ * das Release gleichermaßen.
  *
+ * Lokal gebaute Fassungen melden damit dieselbe Version wie das Release.
  * Vorher stand hier "0.1.0": Eine im Emulator installierte Debug-Fassung hielt
  * sich damit für uralt und bot bei jedem Start ein Update an.
+ *
+ * Der versionCode nach der Formel ist monoton, solange Haupt- und Nebenversion
+ * unter 100 bleiben (0.9.0 -> 900, 0.10.0 -> 1000). Wichtig ist das für
+ * Android: Ein Update mit kleinerem versionCode gilt als Downgrade und wird
+ * abgelehnt – auch beim Wechsel zwischen Emulator-Fassung und Release-APK.
+ * Deshalb setzt der Release-Workflow den versionCode nicht mehr selbst.
  */
 def pkgVersion = new groovy.json.JsonSlurper().parse(file("${rootDir}/../package.json")).version
 def pkgTeile = pkgVersion.tokenize('.').collect { it.isInteger() ? it.toInteger() : 0 }
@@ -33,8 +40,8 @@ android {
         applicationId "de.krischi.prio"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        // Version kommt aus der Umgebung, damit sie zum Git-Tag passt.
-        versionCode = versionCodeFromEnv != null ? versionCodeFromEnv.toInteger() : pkgVersionCode
+        versionCode = pkgVersionCode
+        // Der Name darf vom Tag kommen: Er ist die Anzeige, nicht die Ordnung.
         versionName = versionNameFromEnv != null ? versionNameFromEnv : pkgVersion
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {

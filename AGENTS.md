@@ -75,6 +75,11 @@ rendern und die Screenshots **anschauen** (siehe Tests).
 * **Tag und Version müssen zusammenpassen.** Die Update-Prüfung vergleicht den
   Git-Tag der Veröffentlichung mit der installierten Version (`App.getInfo()`).
   Ein Release ohne passenden Tag im Namen macht die Prüfung falsch.
+* **Der `versionCode` kommt aus `package.json`, nicht aus der Laufnummer.** Er
+  folgt `major*10000 + minor*100 + patch` und ist damit für lokale und
+  veröffentlichte Fassungen derselbe. Android lehnt Updates mit kleinerem
+  `versionCode` als „Downgrade" ab – mit der Laufnummer ließ sich die
+  Release-APK nicht über die Emulator-Fassung legen.
 * **Das Repository muss öffentlich bleiben.** Die Update-Prüfung holt die
   Veröffentlichung anonym von GitHub; bei einem privaten Repository antwortet
   GitHub mit `404`. Wird die Sichtbarkeit zurückgestellt, bricht das Feature
