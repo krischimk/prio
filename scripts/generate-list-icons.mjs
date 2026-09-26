@@ -62,6 +62,8 @@ const AUSWAHL = [
   ['std:checklist', 'Checkliste', 'mdi', 'checkbox-multiple-marked-outline'],
   ['std:group', 'Gruppe', 'mdi', 'account-multiple-outline'],
   ['std:birthday', 'Geburtstag', 'mdi', 'cake-variant-outline'],
+  ['std:flash', 'Blitz', 'mdi', 'flash-outline'],
+  ['std:cloud', 'Cloud', 'mdi', 'cloud-outline'],
 
   // Freizeit und Natur
   ['std:strings', 'Streichinstrument', 'mdi', 'violin'],
