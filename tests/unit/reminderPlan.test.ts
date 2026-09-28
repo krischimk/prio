@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { planReminders, reminderTimeFor } from '../../src/reminders/reminderPlan'
+import { planReminders, reminderTimesFor } from '../../src/reminders/reminderPlan'
 import { localList, localTask } from '../support/factories'
 
 /**
@@ -8,12 +8,12 @@ import { localList, localTask } from '../support/factories'
  * Seit Erinnerung und Fälligkeit getrennt sind, entscheidet die **Form** der
  * Aufgabe, wann erinnert wird:
  *
- *   einmalig     → `remind_at`, ein absoluter Zeitpunkt
- *   wiederkehrend → `reminder_offset_minutes` gegenüber der Fälligkeit,
- *                   vorzeichenbehaftet – negativ heißt *nach* der Fälligkeit
+ *   einmalig     → absolute Zeitpunkte
+ *   wiederkehrend → Vorläufe gegenüber der Fälligkeit, vorzeichenbehaftet –
+ *                   negativ heißt *nach* der Fälligkeit
  *
- * Eine Aufgabe ohne Erinnerung erinnert nicht, auch wenn sie eine Fälligkeit
- * hat.
+ * **Jede Erinnerung wird ein eigener Termin.** Eine Aufgabe ohne Erinnerung
+ * erinnert nicht, auch wenn sie eine Fälligkeit hat.
  */
 const NOW = Date.parse('2026-01-01T12:00:00.000Z')
 const PAST = '2026-01-01T11:00:00.000Z'
@@ -22,21 +22,22 @@ const LATER = '2026-01-02T09:00:00.000Z'
 
 const lists = [localList({ id: 'list-1', name: 'Arbeit' })]
 
-/** Eine einmalige Aufgabe mit absolutem Erinnerungszeitpunkt. */
+/** Eine einmalige Aufgabe mit absoluten Erinnerungen. */
 function einmalig(overrides: Parameters<typeof localTask>[0] = {}) {
-  return localTask({ list_id: 'list-1', remind_at: SOON, ...overrides })
+  return localTask({
+    list_id: 'list-1',
+    reminders: [{ form: 'absolute', at: SOON }],
+    ...overrides,
+  })
 }
 
-/** Eine wiederkehrende Aufgabe mit Vorlauf. */
-function wiederkehrend(
-  offsetMinutes: number | null,
-  overrides: Parameters<typeof localTask>[0] = {},
-) {
+/** Eine wiederkehrende Aufgabe mit Vorläufen. */
+function wiederkehrend(offsets: number[], overrides: Parameters<typeof localTask>[0] = {}) {
   return localTask({
     list_id: 'list-1',
     due_at: SOON,
     recurrence: 'daily',
-    reminder_offset_minutes: offsetMinutes,
+    reminders: offsets.map((minutes) => ({ form: 'offset' as const, minutes })),
     ...overrides,
   })
 }
@@ -50,9 +51,25 @@ describe('Erinnerungen planen', () => {
   })
 
   it('erinnert nicht, wenn keine Erinnerung gesetzt ist', () => {
-    // Der Kern der Trennung: Eine Fälligkeit allein plant nichts mehr.
-    const tasks = [localTask({ id: 't1', due_at: SOON, remind_at: null })]
+    // Der Kern der Trennung: Eine Fälligkeit allein plant nichts.
+    const tasks = [localTask({ id: 't1', due_at: SOON, reminders: [] })]
     expect(planReminders(tasks, lists, NOW)).toHaveLength(0)
+  })
+
+  it('macht aus jeder Erinnerung einen eigenen Termin', () => {
+    const tasks = [
+      einmalig({
+        id: 't1',
+        reminders: [
+          { form: 'absolute', at: SOON },
+          { form: 'absolute', at: LATER },
+        ],
+      }),
+    ]
+    const plan = planReminders(tasks, lists, NOW)
+
+    expect(plan.map((entry) => entry.at)).toEqual([SOON, LATER])
+    expect(plan.every((entry) => entry.taskId === 't1')).toBe(true)
   })
 
   it('erinnert auch ohne Fälligkeit, wenn ein Zeitpunkt gesetzt ist', () => {
@@ -60,17 +77,30 @@ describe('Erinnerungen planen', () => {
     expect(planReminders(tasks, lists, NOW).map((entry) => entry.taskId)).toEqual(['t1'])
   })
 
-  it('erinnert bei einem Erinnerungszeitpunkt in der Vergangenheit nicht', () => {
+  it('erinnert bei einem Zeitpunkt in der Vergangenheit nicht', () => {
     // Sonst würde nach einer Offline-Phase eine Welle alter Erinnerungen
     // ausgelöst – Lärm statt Nutzen.
-    const tasks = [einmalig({ id: 't1', remind_at: PAST })]
+    const tasks = [einmalig({ id: 't1', reminders: [{ form: 'absolute', at: PAST }] })]
     expect(planReminders(tasks, lists, NOW)).toHaveLength(0)
   })
 
+  it('lässt nur die Erinnerungen weg, die schon vorbei sind', () => {
+    const tasks = [
+      einmalig({
+        id: 't1',
+        reminders: [
+          { form: 'absolute', at: PAST },
+          { form: 'absolute', at: SOON },
+        ],
+      }),
+    ]
+    expect(planReminders(tasks, lists, NOW).map((entry) => entry.at)).toEqual([SOON])
+  })
+
   it('ignoriert erledigte Aufgaben', () => {
-    // Wichtig für den Nachlauf: Ist die Aufgabe abgehakt, verstummt auch die
-    // Erinnerung, die nach der Fälligkeit liegen sollte.
-    const tasks = [wiederkehrend(240, { id: 't1', completed: true })]
+    // Wichtig für den Nachlauf: Ist die Aufgabe abgehakt, verstummen auch die
+    // Erinnerungen, die nach der Fälligkeit liegen sollten.
+    const tasks = [wiederkehrend([240], { id: 't1', completed: true })]
     expect(planReminders(tasks, lists, NOW)).toHaveLength(0)
   })
 
@@ -79,30 +109,36 @@ describe('Erinnerungen planen', () => {
     expect(planReminders(tasks, lists, NOW)).toHaveLength(0)
   })
 
-  it('zieht bei wiederkehrenden Aufgaben den Vorlauf ab', () => {
-    const tasks = [wiederkehrend(30, { id: 't1' })]
-    expect(planReminders(tasks, lists, NOW)[0]?.at).toBe('2026-01-01T12:30:00.000Z')
+  it('zieht bei wiederkehrenden Aufgaben die Vorläufe ab', () => {
+    const tasks = [wiederkehrend([30, 60], { id: 't1', due_at: LATER })]
+    const plan = planReminders(tasks, lists, NOW)
+
+    // Nach Zeit sortiert: 60 Minuten vorher liegt früher als 30 Minuten vorher.
+    expect(plan.map((entry) => entry.at)).toEqual([
+      '2026-01-02T08:00:00.000Z',
+      '2026-01-02T08:30:00.000Z',
+    ])
   })
 
   it('erinnert bei Vorlauf 0 zur Fälligkeit', () => {
-    const tasks = [wiederkehrend(0, { id: 't1' })]
+    const tasks = [wiederkehrend([0], { id: 't1' })]
     expect(planReminders(tasks, lists, NOW)[0]?.at).toBe(SOON)
   })
 
   it('erlaubt einen Nachlauf: negativer Vorlauf liegt hinter der Fälligkeit', () => {
-    const tasks = [wiederkehrend(-240, { id: 't1' })]
+    const tasks = [wiederkehrend([-240], { id: 't1' })]
     expect(planReminders(tasks, lists, NOW)[0]?.at).toBe('2026-01-01T17:00:00.000Z')
   })
 
-  it('plant nichts, wenn die wiederkehrende Aufgabe keinen Vorlauf hat', () => {
-    const tasks = [wiederkehrend(null, { id: 't1' })]
+  it('plant nichts, wenn die wiederkehrende Aufgabe keine Erinnerung hat', () => {
+    const tasks = [wiederkehrend([], { id: 't1' })]
     expect(planReminders(tasks, lists, NOW)).toHaveLength(0)
   })
 
   it('ignoriert einen Vorlauf, wenn die Fälligkeit fehlt', () => {
-    // Kann nach `alignReminder` nicht vorkommen; die Planung verlässt sich
+    // Kann nach `alignReminders` nicht vorkommen; die Planung verlässt sich
     // nicht darauf.
-    const tasks = [wiederkehrend(30, { id: 't1', due_at: null })]
+    const tasks = [wiederkehrend([30], { id: 't1', due_at: null })]
     expect(planReminders(tasks, lists, NOW)).toHaveLength(0)
   })
 
@@ -119,14 +155,19 @@ describe('Erinnerungen planen', () => {
 
   it('sortiert nach Zeitpunkt', () => {
     const tasks = [
-      einmalig({ id: 't1', title: 'Später', remind_at: LATER }),
-      einmalig({ id: 't2', title: 'Früher', remind_at: SOON }),
+      einmalig({ id: 't1', title: 'Später', reminders: [{ form: 'absolute', at: LATER }] }),
+      einmalig({ id: 't2', title: 'Früher', reminders: [{ form: 'absolute', at: SOON }] }),
     ]
     expect(planReminders(tasks, lists, NOW).map((entry) => entry.title)).toEqual(['Früher', 'Später'])
   })
 
   it('normalisiert Zeitstempel verschiedener Schreibweisen', () => {
-    const tasks = [einmalig({ id: 't1', remind_at: '2026-01-01T13:00:00.000000+00:00' })]
+    const tasks = [
+      einmalig({
+        id: 't1',
+        reminders: [{ form: 'absolute', at: '2026-01-01T13:00:00.000000+00:00' }],
+      }),
+    ]
     expect(planReminders(tasks, lists, NOW)[0]?.at).toBe(SOON)
   })
 
@@ -135,28 +176,22 @@ describe('Erinnerungen planen', () => {
   })
 })
 
-describe('Erinnerungszeitpunkt einer Aufgabe', () => {
-  it('gibt bei absoluten Erinnerungen den Zeitpunkt zurück', () => {
-    expect(reminderTimeFor(einmalig({ remind_at: SOON }))).toBe(SOON)
+describe('Erinnerungszeitpunkte einer Aufgabe', () => {
+  it('gibt bei absoluten Erinnerungen die Zeitpunkte zurück', () => {
+    expect(reminderTimesFor(einmalig({ reminders: [{ form: 'absolute', at: SOON }] }))).toEqual([
+      SOON,
+    ])
   })
 
   it('rechnet bei wiederkehrenden Aufgaben aus der Fälligkeit', () => {
-    expect(reminderTimeFor(wiederkehrend(90))).toBe('2026-01-01T11:30:00.000Z')
-    expect(reminderTimeFor(wiederkehrend(-90))).toBe('2026-01-01T14:30:00.000Z')
+    expect(reminderTimesFor(wiederkehrend([90, -90]))).toEqual([
+      '2026-01-01T11:30:00.000Z',
+      '2026-01-01T14:30:00.000Z',
+    ])
   })
 
-  it('gibt null zurück, wenn keine Erinnerung gesetzt ist', () => {
-    expect(reminderTimeFor(localTask({ due_at: SOON }))).toBeNull()
-    expect(reminderTimeFor(wiederkehrend(null))).toBeNull()
-  })
-
-  it('verträgt Zeilen aus der Zeit vor der Erinnerung', () => {
-    // Solche Aufgaben haben die Felder gar nicht – `undefined` statt `null`.
-    const alt = localTask()
-    delete (alt as { remind_at?: unknown }).remind_at
-    delete (alt as { reminder_offset_minutes?: unknown }).reminder_offset_minutes
-
-    expect(reminderTimeFor(alt)).toBeNull()
-    expect(planReminders([alt], lists, NOW)).toHaveLength(0)
+  it('gibt eine leere Liste zurück, wenn keine Erinnerung gesetzt ist', () => {
+    expect(reminderTimesFor(localTask({ due_at: SOON }))).toEqual([])
+    expect(reminderTimesFor(wiederkehrend([]))).toEqual([])
   })
 })

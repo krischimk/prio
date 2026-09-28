@@ -54,25 +54,31 @@ describe('Upgrade der lokalen Datenbank', () => {
     })
     alteVersion.close()
 
-    // Jetzt die App öffnen – sie kennt nur die neue Klasse mit Version 2.
+    // Jetzt die App öffnen – sie kennt nur die neue Klasse mit Version 5.
     const db = await openLocalDatabase(userId)
 
-    expect(db.verno).toBe(3)
+    expect(db.verno).toBe(5)
     expect(await db.tasks.count()).toBe(1)
     expect((await db.tasks.get('task-1'))?.title).toBe('Bestandsaufgabe')
     expect(await db.lists.count()).toBe(1)
 
-    // Die neue Tabelle ist benutzbar und indexiert.
-    await db.reminders.put({ taskId: 'task-1', notificationId: 1, at: '2026-06-01T09:00:00.000Z' })
-    expect(await db.reminders.count()).toBe(1)
-    expect((await db.reminders.get('task-1'))?.notificationId).toBe(1)
+    // Die Buchhaltungstabelle ist benutzbar und über Aufgabe **und** Zeitpunkt
+    // geschlüsselt – eine Aufgabe kann mehrere Erinnerungen haben.
+    const at = '2026-06-01T09:00:00.000Z'
+    const atZwei = '2026-06-01T08:00:00.000Z'
+    await db.reminders.put({ taskId: 'task-1', notificationId: 1, at })
+    await db.reminders.put({ taskId: 'task-1', notificationId: 2, at: atZwei })
+
+    expect(await db.reminders.count()).toBe(2)
+    expect((await db.reminders.get(['task-1', at]))?.notificationId).toBe(1)
+    expect((await db.reminders.get(['task-1', atZwei]))?.notificationId).toBe(2)
 
     db.close()
   })
 
   it('legt eine frische Datenbank direkt in der neuesten Version an', async () => {
     const db = await openLocalDatabase(createTestUserId('frisch'))
-    expect(db.verno).toBe(3)
+    expect(db.verno).toBe(5)
     expect(await db.reminders.count()).toBe(0)
     db.close()
   })

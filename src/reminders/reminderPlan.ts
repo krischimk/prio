@@ -1,4 +1,5 @@
 import { normalizeIso } from '../domain/clock'
+import { reminderTimeOf } from '../domain/reminder'
 import type { LocalList, LocalTask } from '../domain/types'
 
 /**
@@ -8,11 +9,12 @@ import type { LocalList, LocalTask } from '../domain/types'
  * sich das Verhalten vollständig und schnell testen.
  *
  * Regeln:
- *  - **Wann** erinnert wird, steht an der Aufgabe und hängt an ihrer Form:
- *    wiederkehrende Aufgaben tragen einen Vorlauf (`reminder_offset_minutes`,
- *    vorzeichenbehaftet – negativ heißt *nach* der Fälligkeit), einmalige einen
- *    absoluten Zeitpunkt (`remind_at`). Die Form folgt der Wiederholung und
- *    wird in `alignReminder` festgelegt.
+ *  - **Wann** erinnert wird, steht an der Aufgabe: als Liste von Vorläufen
+ *    (wiederkehrende Aufgaben, vorzeichenbehaftet – negativ heißt *nach* der
+ *    Fälligkeit) oder absoluten Zeitpunkten (einmalige). Die Form folgt der
+ *    Wiederholung und wird in `alignReminders` festgelegt.
+ *  - **Jede Erinnerung wird ein eigener Termin.** Eine Aufgabe mit „1 Tag
+ *    vorher" und „1 Std vorher" plant zwei Benachrichtigungen.
  *  - Erledigte und gelöschte Aufgaben erinnern nicht. Ein Nachempfinden für
  *    eine offene Aufgabe verstummt also, sobald sie abgehakt ist.
  *  - Zeitpunkte in der Vergangenheit werden nicht geplant. Eine Aufgabe, die
@@ -29,27 +31,18 @@ export interface ReminderCandidate {
   at: string
 }
 
-const MINUTE_MS = 60_000
-
 /**
- * Der Zeitpunkt, zu dem eine Aufgabe erinnern soll – oder `null`.
+ * Die Zeitpunkte, zu denen eine Aufgabe erinnern soll – in stabilem Format,
+ * ohne Vergangenheitsprüfung.
  *
- * Ausgelagert und exportiert, weil die Oberfläche denselben Wert für ihre
+ * Ausgelagert und exportiert, weil die Oberfläche dieselben Werte für ihre
  * Vorschau braucht („Erinnert am …"). Zwei Rechenwege für dieselbe Zahl wären
  * genau die Art Abweichung, die man erst im Betrieb merkt.
  */
-export function reminderTimeFor(task: LocalTask): string | null {
-  if (task.recurrence !== null && task.due_at !== null) {
-    const offset = task.reminder_offset_minutes
-    if (offset === null || offset === undefined || !Number.isFinite(offset)) return null
-    const zeitpunkt = Date.parse(task.due_at) - offset * MINUTE_MS
-    if (!Number.isFinite(zeitpunkt)) return null
-    return new Date(zeitpunkt).toISOString()
-  }
-  // `?? null`, weil Zeilen aus der Zeit vor der Erinnerung das Feld gar nicht
-  // haben. Ohne das rutschte `undefined` durch jede `null`-Prüfung und die
-  // Oberfläche zeigte ein „Erinnert:" ohne Datum.
-  return task.remind_at ?? null
+export function reminderTimesFor(task: LocalTask): string[] {
+  return task.reminders
+    .map((reminder) => reminderTimeOf(reminder, task.due_at))
+    .filter((at): at is string => at !== null)
 }
 
 export function planReminders(tasks: LocalTask[], lists: LocalList[], nowMs: number): ReminderCandidate[] {
@@ -60,18 +53,19 @@ export function planReminders(tasks: LocalTask[], lists: LocalList[], nowMs: num
     if (task.deleted_at !== null) continue
     if (task.completed) continue
 
-    const at = reminderTimeFor(task)
-    if (at === null) continue
+    // Eine Aufgabe kann mehrere Erinnerungen tragen – jede wird ein eigener
+    // Termin beim Betriebssystem.
+    for (const at of reminderTimesFor(task)) {
+      const atMs = Date.parse(at)
+      if (Number.isNaN(atMs) || atMs <= nowMs) continue
 
-    const atMs = Date.parse(at)
-    if (Number.isNaN(atMs) || atMs <= nowMs) continue
-
-    candidates.push({
-      taskId: task.id,
-      title: task.title,
-      body: listNames.get(task.list_id) ?? 'prio',
-      at: normalizeIso(at),
-    })
+      candidates.push({
+        taskId: task.id,
+        title: task.title,
+        body: listNames.get(task.list_id) ?? 'prio',
+        at: normalizeIso(at),
+      })
+    }
   }
 
   // Stabile Reihenfolge: erst nach Zeit, dann nach ID. Das erleichtert

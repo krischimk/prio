@@ -1,10 +1,9 @@
-import { timeFromOffset } from '../domain/reminder'
+import { reminderTimeOf, type TaskReminder } from '../domain/reminder'
 import type { LocalTask } from '../domain/types'
-import { reminderTimeFor } from '../reminders/reminderPlan'
 import { formatReminderLabel } from './datetime'
 
 /**
- * Texte rund um die Erinnerung.
+ * Texte rund um die Erinnerungen.
  *
  * Eine Stelle für beide Ansichten – wie `formatDueLabel` für die Fälligkeit.
  * Ohne das stünde „30 Min vorher" auf dem Telefon anders da als in der breiten
@@ -42,15 +41,9 @@ export function formatReminderOffset(minutes: number): string {
     : `${formatDuration(minutes)} nach der Fälligkeit`
 }
 
-/**
- * Zeitpunkt aus Fälligkeit und Vorlauf, wie ihn die Vorschau zeigt.
- *
- * Anders als `absoluteFromOffset` wird auch ein Zeitpunkt in der Vergangenheit
- * ausgegeben: Sonst stünde in der Vorschau nichts, und der Nutzer wüsste nicht,
- * warum.
- */
-export function reminderPreview(dueAt: string | null, offsetMinutes: number | null): string | null {
-  return timeFromOffset(dueAt, offsetMinutes)
+/** Kurzform für die Auswahlliste eines Vorlaufs, ohne Richtungswort. */
+export function formatOffsetChoice(minutes: number): string {
+  return minutes === 0 ? 'Zur Fälligkeit' : formatDuration(minutes)
 }
 
 export interface ReminderLabel {
@@ -61,35 +54,49 @@ export interface ReminderLabel {
 }
 
 /**
- * Was das Formular gerade vorgibt.
+ * Die Erinnerungen als Zeilen unter einer Aufgabe – **eine je Erinnerung**.
  *
- * Nur das Feld, das zur aktuellen Form gehört, wird gesetzt. Das andere bleibt
- * `undefined` – daran erkennt `alignReminder`, dass es den Moment beim Wechsel
- * der Form umrechnen soll. Ein ausdrückliches `null` heißt dagegen „keine
- * Erinnerung" und wird wörtlich übernommen.
- */
-export interface ReminderValue {
-  remindAt?: string | null
-  reminderOffsetMinutes?: number | null
-}
-
-/**
- * Die Erinnerung als Zeile unter einer Aufgabe.
- *
- * `null`, wenn es nichts zu sagen gibt: Ohne Erinnerung, oder wenn sie ohnehin
+ * Leer, wenn es nichts zu sagen gibt: ohne Erinnerung, oder wenn eine ohnehin
  * zur Fälligkeit passiert – dann stünde in jeder Zeile dasselbe wie in der
  * Zeile darüber.
  */
-export function describeReminder(task: LocalTask): ReminderLabel | null {
-  const at = reminderTimeFor(task)
-  if (at === null) return null
-
+export function describeReminders(task: LocalTask): ReminderLabel[] {
   const dueMs = task.due_at === null ? null : Date.parse(task.due_at)
-  const atMs = Date.parse(at)
-  if (dueMs !== null && dueMs === atMs) return null
 
-  return {
-    text: formatReminderLabel(at),
-    afterDue: dueMs !== null && atMs > dueMs,
-  }
+  return task.reminders.flatMap((reminder) => {
+    const at = reminderTimeOf(reminder, task.due_at)
+    if (at === null) return []
+    const atMs = Date.parse(at)
+    if (!Number.isFinite(atMs)) return []
+    if (dueMs !== null && dueMs === atMs) return []
+
+    return [
+      {
+        text: formatReminderLabel(at),
+        afterDue: dueMs !== null && atMs > dueMs,
+      },
+    ]
+  })
+}
+
+/**
+ * Ein Vorschlag für eine neu hinzugefügte Erinnerung.
+ *
+ * Eine leere Zeile wäre unbrauchbar, also wird etwas Plausibles vorbelegt, das
+ * sofort geändert werden kann: bei wiederkehrenden Aufgaben „zur Fälligkeit",
+ * bei einmaligen die Fälligkeit selbst – und ohne Fälligkeit die nächste volle
+ * Stunde.
+ */
+export function reminderSuggestion(
+  recurrence: string | null,
+  dueAt: string | null,
+  nowMs: number,
+): TaskReminder {
+  if (dueAt !== null && recurrence !== null) return { form: 'offset', minutes: 0 }
+  if (dueAt !== null) return { form: 'absolute', at: dueAt }
+
+  const naechsteStunde = new Date(nowMs)
+  naechsteStunde.setMinutes(0, 0, 0)
+  naechsteStunde.setHours(naechsteStunde.getHours() + 1)
+  return { form: 'absolute', at: naechsteStunde.toISOString() }
 }

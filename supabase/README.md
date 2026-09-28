@@ -16,6 +16,7 @@ App. Sie sind so geschrieben, dass sie sich gefahrlos erneut ausführen lassen
 | `0008_list_icon.sql` | Spalte `icon` für das Listensymbol |
 | `0009_task_recurrence.sql` | Spalten `recurrence` und `successor_id` für wiederkehrende Aufgaben |
 | `0010_task_reminder.sql` | Spalten `remind_at` und `reminder_offset_minutes`; trennt die Erinnerung von der Fälligkeit |
+| `0011_task_reminders.sql` | Spalte `reminders` (jsonb) – mehrere Erinnerungen je Aufgabe. Zieht die Einzelwerte aus 0010 einmalig um und entfernt die alten Spalten |
 
 ## Anwenden
 

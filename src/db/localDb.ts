@@ -81,6 +81,34 @@ export class LocalDatabase extends Dexie {
             }
           }),
       )
+
+    /*
+     * Version 4 und 5: Eine Aufgabe kann mehrere Erinnerungen tragen.
+     *
+     * Die Buchhaltung wird über **Aufgabe und Zeitpunkt** zusammen
+     * geschlüsselt statt nur über die Aufgabe. Dexie kann einen Primärschlüssel
+     * nicht in derselben Version ändern, deshalb in zwei Schritten: erst die
+     * alte Tabelle weg, dann die neue anlegen.
+     *
+     * Das kostet nichts: Die Tabelle ist eine Momentaufnahme dessen, was beim
+     * Betriebssystem liegt, und wird beim nächsten Abgleich ohnehin neu
+     * aufgebaut.
+     */
+    this.version(4).stores({
+      lists: 'id, owner_id, updated_at, dirty',
+      list_members: '[list_id+user_id], list_id, user_id, updated_at, dirty',
+      tasks: 'id, list_id, updated_at, dirty',
+      meta: 'key',
+      reminders: null,
+    })
+
+    this.version(5).stores({
+      lists: 'id, owner_id, updated_at, dirty',
+      list_members: '[list_id+user_id], list_id, user_id, updated_at, dirty',
+      tasks: 'id, list_id, updated_at, dirty',
+      meta: 'key',
+      reminders: '[taskId+at], taskId, notificationId, at',
+    })
   }
 }
 

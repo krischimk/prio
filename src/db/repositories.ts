@@ -1,6 +1,6 @@
 import { systemClock, timeOf, type Clock } from '../domain/clock'
 import { isRecurrence, nextOccurrence, successorId } from '../domain/recurrence'
-import { alignReminder, isPlausibleOffset } from '../domain/reminder'
+import { alignReminders, isPlausibleOffset, type TaskReminder } from '../domain/reminder'
 import { newId } from '../domain/ids'
 import type { LocalList, LocalListMember, LocalTask } from '../domain/types'
 import type { LocalDatabase } from './localDb'
@@ -35,10 +35,8 @@ export interface CreateTaskInput {
   description?: string | null
   dueAt?: string | null
   recurrence?: string | null
-  /** Absoluter Erinnerungszeitpunkt – gilt für einmalige Aufgaben. */
-  remindAt?: string | null
-  /** Vorlauf in Minuten – gilt für wiederkehrende Aufgaben, negativ = danach. */
-  reminderOffsetMinutes?: number | null
+  /** Die Erinnerungen der Aufgabe. Fehlt das Feld, bleibt die bisherige Liste. */
+  reminders?: TaskReminder[]
 }
 
 export interface UpdateTaskInput {
@@ -46,8 +44,7 @@ export interface UpdateTaskInput {
   description?: string | null
   dueAt?: string | null
   recurrence?: string | null
-  remindAt?: string | null
-  reminderOffsetMinutes?: number | null
+  reminders?: TaskReminder[]
 }
 
 export interface Repositories {
@@ -286,13 +283,12 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
         title: requireText(input.title, 'Der Titel'),
         description: optionalText(input.description),
         // `undefined` heißt „nicht mitgeschickt" – siehe `ReminderTarget`.
-        ...alignReminder(
+        ...alignReminders(
           null,
           {
             due_at: optionalText(input.dueAt),
             recurrence: input.recurrence ?? null,
-            remind_at: input.remindAt,
-            reminder_offset_minutes: input.reminderOffsetMinutes,
+            reminders: input.reminders,
           },
           Date.parse(now),
         ),
@@ -318,16 +314,15 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
           patch.description === undefined ? task.description : optionalText(patch.description),
         // Fälligkeit, Wiederholung und Erinnerung hängen zusammen und werden
         // deshalb gemeinsam ausgerichtet – siehe `alignReminder`.
-        ...alignReminder(
+        ...alignReminders(
           task,
           {
             due_at: patch.dueAt === undefined ? task.due_at : optionalText(patch.dueAt),
             recurrence: patch.recurrence === undefined ? task.recurrence : patch.recurrence,
             // Bewusst nicht auf den gespeicherten Wert zurückgefallen: Nur so
-            // kann `alignReminder` „nicht mitgeschickt" von „keine Erinnerung"
-            // unterscheiden und den Moment beim Formwechsel umrechnen.
-            remind_at: patch.remindAt,
-            reminder_offset_minutes: patch.reminderOffsetMinutes,
+            // kann `alignReminders` „nicht mitgeschickt" von „keine Erinnerung"
+            // unterscheiden und die Liste beim Formwechsel umrechnen.
+            reminders: patch.reminders,
           },
           Date.parse(clock.now()),
         ),

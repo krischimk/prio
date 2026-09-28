@@ -165,10 +165,15 @@ test('setzt in der breiten Ansicht einen eigenen Vorlauf für eine wiederkehrend
 
   const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
   await formular.getByLabel('Fällig am (optional)', { exact: true }).fill(morgenUm(9))
+  await expect(formular.getByText('Keine. Eine Fälligkeit erinnert nicht von selbst.')).toBeVisible()
+
   await formular.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
+  await formular.getByRole('button', { name: 'Weitere Erinnerung' }).click()
 
   // Die Form folgt der Wiederholung: relativer Vorlauf statt Zeitpunkt.
-  await formular.getByLabel('Erinnerung', { exact: true }).selectOption('custom')
+  const erinnerung = formular.getByLabel('Erinnerung', { exact: true })
+  await expect(erinnerung).toHaveValue('0')
+  await erinnerung.selectOption('custom')
   await formular.getByLabel('Stunden vorher oder nachher', { exact: true }).fill('4')
 
   await expect(formular.getByText(/4 Std vorher/)).toBeVisible()
@@ -177,35 +182,29 @@ test('setzt in der breiten Ansicht einen eigenen Vorlauf für eine wiederkehrend
   await expect(zeile).toContainText('Erinnert:')
 })
 
-test('nimmt einen Vorlauf in der breiten Ansicht in die Schnellauswahl auf', async ({ page }) => {
-  await register(page, uniqueEmail('l9'))
+test('legt in der breiten Ansicht mehrere Erinnerungen an', async ({ page }) => {
+  await register(page, uniqueEmail('l11'))
   await createList(page, 'Routinen')
 
-  await page.getByLabel('Neue Aufgabe', { exact: true }).fill('Gießen')
+  await page.getByLabel('Neue Aufgabe', { exact: true }).fill('Medikament')
   await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click()
 
-  const zeile = page.getByTestId('task-list').locator('li').filter({ hasText: 'Gießen' })
+  const zeile = page.getByTestId('task-list').locator('li').filter({ hasText: 'Medikament' })
   await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
 
   const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
   await formular.getByLabel('Fällig am (optional)', { exact: true }).fill(morgenUm(9))
-  await formular.getByLabel('Wiederholung', { exact: true }).selectOption('weekly')
-  await formular.getByLabel('Erinnerung', { exact: true }).selectOption('custom')
-  await formular.getByLabel('Stunden vorher oder nachher', { exact: true }).fill('6')
+  await formular.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
 
-  await formular.getByRole('button', { name: 'In die Schnellauswahl aufnehmen' }).click()
-  await expect(
-    formular.getByRole('button', { name: 'Aus der Schnellauswahl entfernen' }),
-  ).toBeVisible()
+  await formular.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+  await formular.getByLabel('Erinnerung', { exact: true }).selectOption('1440')
+  await formular.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+  await formular.getByLabel('Erinnerung', { exact: true }).nth(1).selectOption('60')
 
+  await expect(formular.getByText('2 Termine')).toBeVisible()
   await formular.getByRole('button', { name: 'Speichern' }).click()
-  await expect(zeile).toBeVisible()
 
-  // Beim nächsten Mal steht der Wert direkt in der Auswahl.
-  await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
-  await expect(
-    page.getByRole('form', { name: /Aufgabe bearbeiten/ }).getByLabel('Erinnerung', { exact: true }),
-  ).toContainText('6 Std vorher')
+  await expect(zeile.getByText('Erinnert:')).toHaveCount(2)
 })
 
 test('erlaubt in der breiten Ansicht eine Erinnerung ohne Fälligkeitsdatum', async ({ page }) => {
@@ -219,9 +218,7 @@ test('erlaubt in der breiten Ansicht eine Erinnerung ohne Fälligkeitsdatum', as
   await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
 
   const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
-  const erinnerung = formular.getByLabel('Erinnerung', { exact: true })
-  await expect(erinnerung.locator('option[value="at-due"]')).toBeDisabled()
-  await erinnerung.selectOption('custom')
+  await formular.getByRole('button', { name: 'Weitere Erinnerung' }).click()
   await expect(formular.getByLabel('Erinnerung am', { exact: true })).toBeVisible()
 
   await formular.getByLabel('Erinnerung am', { exact: true }).fill(morgenUm(17))

@@ -34,13 +34,12 @@ describe('Erinnerungsdienst', () => {
   async function createTaskWithDue(title: string, dueAt: string): Promise<string> {
     const list = await device.repositories.createList('Arbeit', userId)
     // Erinnerung und Fälligkeit sind getrennt: Eine Fälligkeit allein plant
-    // nichts mehr. „Zur Fälligkeit" ist die Voreinstellung des Formulars und
-    // der Rückfall der Migration 0010 – hier also `remindAt: dueAt`.
+    // nichts mehr.
     const task = await device.repositories.createTask({
       listId: list.id,
       title,
       dueAt,
-      remindAt: dueAt,
+      reminders: [{ form: 'absolute', at: dueAt }],
     })
     return task.id
   }
@@ -161,7 +160,10 @@ describe('Erinnerungsdienst', () => {
     await service.sync()
 
     device.clock.advance(1000)
-    await device.repositories.updateTask(taskId, { dueAt: DUE_LATER, remindAt: DUE_LATER })
+    await device.repositories.updateTask(taskId, {
+      dueAt: DUE_LATER,
+      reminders: [{ form: 'absolute', at: DUE_LATER }],
+    })
     await service.sync()
 
     expect([...port.pending.values()][0]?.at).toBe(DUE_LATER)
@@ -181,12 +183,12 @@ describe('Erinnerungsdienst', () => {
     expect([...port.pending.values()][0]?.at).toBe(DUE_SOON)
   })
 
-  it('entfernt die Erinnerung, wenn sie ausdrücklich geleert wird', async () => {
+  it('entfernt die Erinnerungen, wenn die Liste ausdrücklich geleert wird', async () => {
     const taskId = await createTaskWithDue('Bericht', DUE_SOON)
     await service.sync()
 
     device.clock.advance(1000)
-    await device.repositories.updateTask(taskId, { remindAt: null })
+    await device.repositories.updateTask(taskId, { reminders: [] })
     await service.sync()
 
     expect(port.pending.size).toBe(0)
@@ -212,13 +214,13 @@ describe('Erinnerungsdienst', () => {
       listId: list.id,
       title: 'A',
       dueAt: DUE_SOON,
-      remindAt: DUE_SOON,
+      reminders: [{ form: 'absolute', at: DUE_SOON }],
     })
     await device.repositories.createTask({
       listId: list.id,
       title: 'B',
       dueAt: DUE_LATER,
-      remindAt: DUE_LATER,
+      reminders: [{ form: 'absolute', at: DUE_LATER }],
     })
 
     await service.sync()

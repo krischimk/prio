@@ -1,13 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { describeReminder, formatDuration, formatReminderOffset } from '../../src/ui/reminder'
+import {
+  describeReminders,
+  formatDuration,
+  formatReminderOffset,
+  reminderSuggestion,
+} from '../../src/ui/reminder'
 import { localTask } from '../support/factories'
 
 /**
- * Die Texte der Erinnerung.
+ * Die Texte der Erinnerungen.
  *
  * Sie entstehen an einer Stelle, damit Telefon und breite Ansicht dasselbe
  * sagen – die Regel aus `AGENTS.md`, die schon einmal verletzt wurde.
  */
+
+const DUE = '2099-01-15T18:30:00.000Z'
 
 describe('Dauer beschreiben', () => {
   it('lässt Nullteile weg', () => {
@@ -52,46 +59,84 @@ describe('Vorlauf beschreiben', () => {
   })
 })
 
-describe('Erinnerung einer Aufgabe beschreiben', () => {
-  const DUE = '2099-01-15T18:30:00.000Z'
-
+describe('Erinnerungen einer Aufgabe beschreiben', () => {
   it('schweigt, wenn keine Erinnerung gesetzt ist', () => {
-    expect(describeReminder(localTask({ due_at: DUE }))).toBeNull()
+    expect(describeReminders(localTask({ due_at: DUE }))).toEqual([])
   })
 
   it('schweigt, wenn die Erinnerung ohnehin zur Fälligkeit passiert', () => {
     // Sonst stünde in jeder Zeile dasselbe wie in der Zeile darüber.
-    expect(describeReminder(localTask({ due_at: DUE, remind_at: DUE }))).toBeNull()
+    expect(
+      describeReminders(localTask({ due_at: DUE, reminders: [{ form: 'absolute', at: DUE }] })),
+    ).toEqual([])
   })
 
   it('nennt den Zeitpunkt, wenn er von der Fälligkeit abweicht', () => {
-    const label = describeReminder(localTask({ due_at: DUE, remind_at: '2099-01-15T17:00:00.000Z' }))
-    expect(label?.text).toContain('Erinnert:')
-    expect(label?.afterDue).toBe(false)
+    const labels = describeReminders(
+      localTask({
+        due_at: DUE,
+        reminders: [{ form: 'absolute', at: '2099-01-15T17:00:00.000Z' }],
+      }),
+    )
+    expect(labels).toHaveLength(1)
+    expect(labels[0]?.text).toContain('Erinnert:')
+    expect(labels[0]?.afterDue).toBe(false)
   })
 
-  it('kennzeichnet einen Nachlauf', () => {
-    const label = describeReminder(localTask({ due_at: DUE, remind_at: '2099-01-15T20:00:00.000Z' }))
-    expect(label?.afterDue).toBe(true)
+  it('gibt je Erinnerung eine Zeile zurück', () => {
+    const labels = describeReminders(
+      localTask({
+        due_at: DUE,
+        reminders: [
+          { form: 'absolute', at: '2099-01-15T17:00:00.000Z' },
+          { form: 'absolute', at: '2099-01-15T20:00:00.000Z' },
+        ],
+      }),
+    )
+    expect(labels).toHaveLength(2)
+    expect(labels[1]?.afterDue).toBe(true)
   })
 
   it('zeigt eine Erinnerung auch ohne Fälligkeit', () => {
-    const label = describeReminder(localTask({ due_at: null, remind_at: '2099-01-15T18:00:00.000Z' }))
-    expect(label?.text).toContain('Erinnert:')
-    expect(label?.afterDue).toBe(false)
+    const labels = describeReminders(
+      localTask({ due_at: null, reminders: [{ form: 'absolute', at: '2099-01-15T18:00:00.000Z' }] }),
+    )
+    expect(labels).toHaveLength(1)
+    expect(labels[0]?.text).toContain('Erinnert:')
   })
 
   it('rechnet bei wiederkehrenden Aufgaben aus dem Vorlauf', () => {
-    const label = describeReminder(
-      localTask({ due_at: DUE, recurrence: 'daily', reminder_offset_minutes: 30 }),
+    const labels = describeReminders(
+      localTask({ due_at: DUE, recurrence: 'daily', reminders: [{ form: 'offset', minutes: 30 }] }),
     )
-    expect(label?.text).toContain('Erinnert:')
-    expect(label?.afterDue).toBe(false)
+    expect(labels).toHaveLength(1)
+    expect(labels[0]?.afterDue).toBe(false)
   })
 
-  it('schweigt bei einer wiederkehrenden Aufgabe mit Vorlauf 0', () => {
+  it('schweigt bei einem Vorlauf von 0', () => {
     expect(
-      describeReminder(localTask({ due_at: DUE, recurrence: 'daily', reminder_offset_minutes: 0 })),
-    ).toBeNull()
+      describeReminders(
+        localTask({ due_at: DUE, recurrence: 'daily', reminders: [{ form: 'offset', minutes: 0 }] }),
+      ),
+    ).toEqual([])
+  })
+})
+
+describe('Vorschlag für eine neue Erinnerung', () => {
+  const NOW = Date.parse('2099-01-15T14:23:00.000Z')
+
+  it('schlägt bei wiederkehrenden Aufgaben die Fälligkeit vor', () => {
+    expect(reminderSuggestion('daily', DUE, NOW)).toEqual({ form: 'offset', minutes: 0 })
+  })
+
+  it('schlägt bei einmaligen Aufgaben mit Fälligkeit diese vor', () => {
+    expect(reminderSuggestion(null, DUE, NOW)).toEqual({ form: 'absolute', at: DUE })
+  })
+
+  it('schlägt ohne Fälligkeit die nächste volle Stunde vor', () => {
+    const vorschlag = reminderSuggestion(null, null, NOW)
+    expect(vorschlag.form).toBe('absolute')
+    expect(vorschlag.form === 'absolute' && new Date(vorschlag.at).getMinutes()).toBe(0)
+    expect(vorschlag.form === 'absolute' && Date.parse(vorschlag.at)).toBeGreaterThan(NOW)
   })
 })

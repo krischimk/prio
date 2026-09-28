@@ -532,124 +532,113 @@ describe('Repositories (lokale Geschäftslogik)', () => {
 
   describe('Erinnerungen', () => {
     const TERMIN = new Date(2099, 0, 15, 18, 30).toISOString()
+    const FRUEHER = new Date(2099, 0, 15, 17, 0).toISOString()
 
-    it('speichert bei einer einmaligen Aufgabe den absoluten Zeitpunkt', async () => {
+    it('speichert bei einer einmaligen Aufgabe absolute Zeitpunkte', async () => {
       const listId = await newList()
-      const erinnerung = new Date(2099, 0, 15, 17, 0).toISOString()
       const task = await device.repositories.createTask({
         listId,
         title: 'Einmalig',
         dueAt: TERMIN,
-        remindAt: erinnerung,
+        reminders: [{ form: 'absolute', at: FRUEHER }],
       })
 
-      expect(task.remind_at).toBe(erinnerung)
-      expect(task.reminder_offset_minutes).toBeNull()
+      expect(task.reminders).toEqual([{ form: 'absolute', at: FRUEHER }])
+    })
+
+    it('trägt mehrere Erinnerungen', async () => {
+      const listId = await newList()
+      const task = await device.repositories.createTask({
+        listId,
+        title: 'Zweimal',
+        dueAt: TERMIN,
+        reminders: [
+          { form: 'absolute', at: FRUEHER },
+          { form: 'absolute', at: TERMIN },
+        ],
+      })
+
+      expect(task.reminders).toHaveLength(2)
     })
 
     it('erlaubt eine Erinnerung ohne Fälligkeit', async () => {
       const listId = await newList()
-      const erinnerung = new Date(2099, 0, 15, 18, 0).toISOString()
       const task = await device.repositories.createTask({
         listId,
         title: 'Anrufen',
-        remindAt: erinnerung,
+        reminders: [{ form: 'absolute', at: FRUEHER }],
       })
 
       expect(task.due_at).toBeNull()
-      expect(task.remind_at).toBe(erinnerung)
+      expect(task.reminders).toHaveLength(1)
     })
 
-    it('speichert bei einer wiederkehrenden Aufgabe den Vorlauf', async () => {
+    it('macht aus absoluten Zeitpunkten Vorläufe, sobald die Aufgabe wiederkehrt', async () => {
       const listId = await newList()
       const task = await device.repositories.createTask({
         listId,
-        title: 'Wiederkehrend',
+        title: 'Wird wiederkehrend',
         dueAt: TERMIN,
-        recurrence: 'daily',
-        reminderOffsetMinutes: 90,
-        // Ein absoluter Wert darf daneben nichts werden.
-        remindAt: TERMIN,
-      })
-
-      expect(task.reminder_offset_minutes).toBe(90)
-      expect(task.remind_at).toBeNull()
-    })
-
-    it('erlaubt einen Nachlauf', async () => {
-      const listId = await newList()
-      const task = await device.repositories.createTask({
-        listId,
-        title: 'Nachfassen',
-        dueAt: TERMIN,
-        recurrence: 'daily',
-        reminderOffsetMinutes: -240,
-      })
-
-      expect(task.reminder_offset_minutes).toBe(-240)
-    })
-
-    it('verwirft eine Wiederholung ohne Fälligkeit', async () => {
-      // Die Regel steht im Repository, nicht im Formular – beide Oberflächen
-      // bekommen sie damit geschenkt.
-      const listId = await newList()
-      const task = await device.repositories.createTask({
-        listId,
-        title: 'Ohne Termin',
-        recurrence: 'daily',
-      })
-
-      expect(task.recurrence).toBeNull()
-    })
-
-    it('rechnet beim Einschalten der Wiederholung den Zeitpunkt um', async () => {
-      const listId = await newList()
-      const erinnerung = new Date(2099, 0, 15, 17, 0).toISOString()
-      const task = await device.repositories.createTask({
-        listId,
-        title: 'Erst einmalig',
-        dueAt: TERMIN,
-        remindAt: erinnerung,
+        reminders: [{ form: 'absolute', at: FRUEHER }],
       })
 
       const geaendert = await device.repositories.updateTask(task.id, { recurrence: 'daily' })
 
-      // 18:30 minus 17:00 sind 90 Minuten – der Moment bleibt derselbe.
-      expect(geaendert.reminder_offset_minutes).toBe(90)
-      expect(geaendert.remind_at).toBeNull()
+      // 18:30 minus 17:00 sind 90 Minuten.
+      expect(geaendert.reminders).toEqual([{ form: 'offset', minutes: 90 }])
     })
 
-    it('rechnet beim Abschalten der Wiederholung den Vorlauf um', async () => {
+    it('macht aus Vorläufen Zeitpunkte, sobald die Wiederholung wegfällt', async () => {
       const listId = await newList()
       const task = await device.repositories.createTask({
         listId,
-        title: 'Erst wiederkehrend',
+        title: 'War wiederkehrend',
         dueAt: TERMIN,
         recurrence: 'daily',
-        reminderOffsetMinutes: 90,
+        reminders: [{ form: 'offset', minutes: 90 }],
       })
 
       const geaendert = await device.repositories.updateTask(task.id, { recurrence: null })
 
-      expect(geaendert.remind_at).toBe(new Date(2099, 0, 15, 17, 0).toISOString())
-      expect(geaendert.reminder_offset_minutes).toBeNull()
+      expect(geaendert.reminders).toEqual([{ form: 'absolute', at: FRUEHER }])
     })
 
-    it('löscht eine Erinnerung, wenn sie ausdrücklich geleert wird', async () => {
+    it('leert die Liste, wenn sie ausdrücklich geleert wird', async () => {
       const listId = await newList()
       const task = await device.repositories.createTask({
         listId,
         title: 'Mit Erinnerung',
         dueAt: TERMIN,
         recurrence: 'daily',
-        reminderOffsetMinutes: 90,
+        reminders: [{ form: 'offset', minutes: 90 }],
       })
 
-      const geaendert = await device.repositories.updateTask(task.id, {
-        reminderOffsetMinutes: null,
+      const geaendert = await device.repositories.updateTask(task.id, { reminders: [] })
+      expect(geaendert.reminders).toEqual([])
+    })
+
+    it('übernimmt die Erinnerungen in die Nachfolgeaufgabe', async () => {
+      // Der Nachfolger erbt alle Felder – die Erinnerungen rücken dadurch von
+      // allein mit, ohne eigenen Code im Abhaken.
+      const listId = await newList()
+      const task = await device.repositories.createTask({
+        listId,
+        title: 'Täglich',
+        dueAt: TERMIN,
+        recurrence: 'daily',
+        reminders: [
+          { form: 'offset', minutes: 30 },
+          { form: 'offset', minutes: 1440 },
+        ],
       })
 
-      expect(geaendert.reminder_offset_minutes).toBeNull()
+      const erledigt = await device.repositories.setTaskCompleted(task.id, true)
+      const nachfolger = await device.repositories.getTask(erledigt.successor_id!)
+
+      expect(nachfolger?.reminders).toEqual([
+        { form: 'offset', minutes: 30 },
+        { form: 'offset', minutes: 1440 },
+      ])
     })
 
     it('merkt sich Vorlaufzeiten und gibt sie in Reihenfolge zurück', async () => {
@@ -674,25 +663,6 @@ describe('Repositories (lokale Geschäftslogik)', () => {
     it('übersteht eine verbogene Zeile in den Einstellungen', async () => {
       await device.db.meta.put({ key: 'reminder_presets', value: 'kein json' })
       expect(await device.repositories.listReminderPresets()).toEqual([])
-    })
-
-    it('übernimmt den Vorlauf in die Nachfolgeaufgabe', async () => {
-      // Der Nachfolger erbt alle Felder – die Erinnerung rückt dadurch von
-      // allein mit, ohne eigenen Code im Abhaken.
-      const listId = await newList()
-      const task = await device.repositories.createTask({
-        listId,
-        title: 'Täglich',
-        dueAt: TERMIN,
-        recurrence: 'daily',
-        reminderOffsetMinutes: 30,
-      })
-
-      const erledigt = await device.repositories.setTaskCompleted(task.id, true)
-      const nachfolger = await device.repositories.getTask(erledigt.successor_id!)
-
-      expect(nachfolger?.reminder_offset_minutes).toBe(30)
-      expect(nachfolger?.remind_at).toBeNull()
     })
   })
 
@@ -750,8 +720,7 @@ describe('Repositories (lokale Geschäftslogik)', () => {
         completed_at: null,
         recurrence: null,
         successor_id: null,
-        remind_at: null,
-        reminder_offset_minutes: null,
+        reminders: [],
         // Ohne `position` – so sah die Zeile vor Version 0.4.1 aus.
         position: undefined as unknown as number,
         created_at: device.clock.now(),

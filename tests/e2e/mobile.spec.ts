@@ -404,16 +404,15 @@ test('setzt auf dem Telefon einen eigenen Vorlauf für eine wiederkehrende Aufga
   await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
 
   // Eine Fälligkeit setzt keine Erinnerung – sie ist eine eigene Angabe.
-  const erinnerung = page.getByLabel('Erinnerung', { exact: true })
-  await expect(erinnerung).toHaveValue('')
+  await expect(page.getByText('Keine. Eine Fälligkeit erinnert nicht von selbst.')).toBeVisible()
 
-  // Ausdrücklich „Zur Fälligkeit" wählen, dann die Wiederholung einschalten:
-  // Die Form wechselt, und der Moment wandert mit, statt auf „Keine" zu fallen.
-  await erinnerung.selectOption('at-due')
   await page.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
-  await expect(erinnerung.locator('option')).toContainText(['Keine', 'Zur Fälligkeit'])
-  await expect(erinnerung).toHaveValue('0')
+  await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
 
+  // Die Form folgt der Wiederholung: relativer Vorlauf, vorbelegt mit
+  // „Zur Fälligkeit".
+  const erinnerung = page.getByLabel('Erinnerung', { exact: true })
+  await expect(erinnerung).toHaveValue('0')
   await erinnerung.selectOption('custom')
 
   await page.getByLabel('Stunden vorher oder nachher', { exact: true }).fill('1')
@@ -426,6 +425,52 @@ test('setzt auf dem Telefon einen eigenen Vorlauf für eine wiederkehrende Aufga
   await expect(taskRow(page, 'Zähne putzen')).toContainText('Erinnert:')
 })
 
+test('legt auf dem Telefon mehrere Erinnerungen an', async ({ page }) => {
+  await register(page, uniqueEmail('m20'))
+  await createList(page, 'Routinen')
+
+  await page.getByRole('button', { name: 'Neue Aufgabe' }).click()
+  await page.getByLabel('Titel', { exact: true }).fill('Medikament')
+  await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
+  await page.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
+
+  // Erste Erinnerung: ein Tag vorher.
+  await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+  await page.getByLabel('Erinnerung', { exact: true }).selectOption('1440')
+
+  // Zweite Erinnerung: eine Stunde vorher.
+  await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+  await expect(page.getByLabel('Erinnerung', { exact: true })).toHaveCount(2)
+  await page.getByLabel('Erinnerung', { exact: true }).nth(1).selectOption('60')
+
+  await expect(page.getByText('2 Termine')).toBeVisible()
+  await page.getByRole('button', { name: 'Speichern', exact: true }).click()
+
+  // Beide stehen als eigene Zeile unter der Aufgabe.
+  await expect(taskRow(page, 'Medikament').getByText('Erinnert:')).toHaveCount(2)
+})
+
+test('entfernt auf dem Telefon eine von zwei Erinnerungen', async ({ page }) => {
+  await register(page, uniqueEmail('m21'))
+  await createList(page, 'Routinen')
+
+  await page.getByRole('button', { name: 'Neue Aufgabe' }).click()
+  await page.getByLabel('Titel', { exact: true }).fill('Gießen')
+  await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
+  await page.getByLabel('Wiederholung', { exact: true }).selectOption('weekly')
+
+  await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+  await page.getByLabel('Erinnerung', { exact: true }).selectOption('1440')
+  await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+  await page.getByLabel('Erinnerung', { exact: true }).nth(1).selectOption('60')
+
+  await page.getByRole('button', { name: 'Erinnerung 1 entfernen' }).click()
+  await expect(page.getByLabel('Erinnerung', { exact: true })).toHaveCount(1)
+
+  await page.getByRole('button', { name: 'Speichern', exact: true }).click()
+  await expect(taskRow(page, 'Gießen').getByText('Erinnert:')).toHaveCount(1)
+})
+
 test('nimmt einen Vorlauf auf dem Telefon in die Schnellauswahl auf', async ({ page }) => {
   await register(page, uniqueEmail('m18'))
   await createList(page, 'Routinen')
@@ -434,6 +479,7 @@ test('nimmt einen Vorlauf auf dem Telefon in die Schnellauswahl auf', async ({ p
   await page.getByLabel('Titel', { exact: true }).fill('Gießen')
   await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
   await page.getByLabel('Wiederholung', { exact: true }).selectOption('weekly')
+  await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
   await page.getByLabel('Erinnerung', { exact: true }).selectOption('custom')
   await page.getByLabel('Stunden vorher oder nachher', { exact: true }).fill('4')
 
@@ -446,7 +492,7 @@ test('nimmt einen Vorlauf auf dem Telefon in die Schnellauswahl auf', async ({ p
 
   // Beim nächsten Mal steht der Wert direkt in der Auswahl.
   await taskRow(page, 'Gießen').click()
-  await expect(page.getByLabel('Erinnerung', { exact: true })).toContainText('4 Std vorher')
+  await expect(page.getByLabel('Erinnerung', { exact: true })).toContainText('4 Std')
 })
 
 test('erlaubt auf dem Telefon eine Erinnerung ohne Fälligkeitsdatum', async ({ page }) => {
@@ -456,12 +502,9 @@ test('erlaubt auf dem Telefon eine Erinnerung ohne Fälligkeitsdatum', async ({ 
   await page.getByRole('button', { name: 'Neue Aufgabe' }).click()
   await page.getByLabel('Titel', { exact: true }).fill('Jonna anrufen')
 
-  // Ohne Fälligkeit ist „Zur Fälligkeit" nicht wählbar – der eigene Zeitpunkt
-  // muss es sein. Und er muss sich auch öffnen lassen, wenn noch keine
-  // Erinnerung gesetzt ist.
-  const erinnerung = page.getByLabel('Erinnerung', { exact: true })
-  await expect(erinnerung.locator('option[value="at-due"]')).toBeDisabled()
-  await erinnerung.selectOption('custom')
+  // Ohne Fälligkeit gibt es nichts, worauf sich ein Vorlauf beziehen könnte –
+  // die Erinnerung ist dann ein absoluter Zeitpunkt.
+  await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
   await expect(page.getByLabel('Erinnerung am', { exact: true })).toBeVisible()
 
   await page.getByLabel('Erinnerung am', { exact: true }).fill(inTagen(2))

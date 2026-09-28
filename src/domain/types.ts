@@ -9,6 +9,8 @@
  * Die Umwandlung passiert ausschließlich in `domain/mapping.ts`.
  */
 
+import type { TaskReminder } from './reminder'
+
 /** ISO-8601-Zeitstempel in UTC, z. B. `2026-01-31T12:00:00.000Z`. */
 export type IsoDateTime = string
 
@@ -74,29 +76,17 @@ export interface LocalTask extends SyncableRow, LocalOnly {
    */
   successor_id: string | null
   /**
-   * Absoluter Erinnerungszeitpunkt – gilt für **einmalige** Aufgaben.
+   * Die Erinnerungen der Aufgabe – leer heißt keine.
    *
-   * Bewusst getrennt von `due_at`: Der gewählte Moment bleibt der gewählte
-   * Moment, auch wenn sich die Fälligkeit später verschiebt. Und er darf hinter
-   * der Fälligkeit liegen („in zwei Stunden nachfassen").
+   * Bewusst getrennt von `due_at`: Eine Fälligkeit setzt keine Erinnerung, und
+   * der gewählte Moment bleibt der gewählte Moment, auch wenn sich die
+   * Fälligkeit später verschiebt.
    *
-   * Bei wiederkehrenden Aufgaben ist das Feld immer `null` – dort gilt
-   * `reminder_offset_minutes`. Welches der beiden zählt, entscheidet
-   * `recurrence`; siehe `alignReminder` in `src/domain/reminder.ts`.
+   * Die Form folgt der Wiederholung – bei einer wiederkehrenden Aufgabe stehen
+   * hier Vorläufe, bei einer einmaligen absolute Zeitpunkte. Die Regeln stehen
+   * in `src/domain/reminder.ts`.
    */
-  remind_at: IsoDateTime | null
-  /**
-   * Vorlauf in Minuten gegenüber `due_at` – gilt für **wiederkehrende**
-   * Aufgaben, vorzeichenbehaftet:
-   *
-   *   positiv  vor der Fälligkeit (90 = 1 Std 30 Min vorher),
-   *   null     keine Erinnerung,
-   *   negativ  nach der Fälligkeit (-240 = 4 Std danach).
-   *
-   * Relativ, weil eine absolute Erinnerung nur die erste Ausführung träfe und
-   * ab der zweiten falsch wäre.
-   */
-  reminder_offset_minutes: number | null
+  reminders: TaskReminder[]
   /**
    * Vom Benutzer bestimmte Reihenfolge innerhalb der Liste (kleiner = weiter
    * oben). Neue Aufgaben bekommen die höchste Position und landen damit unten.
@@ -140,6 +130,14 @@ export interface LocalMeta {
  *
  * `notificationId` ist eine kleine, fortlaufende Zahl: Android verlangt für
  * Benachrichtigungen eine 32-Bit-Ganzzahl, keine UUID.
+ */
+/**
+ * Eine tatsächlich beim Betriebssystem geplante Benachrichtigung.
+ *
+ * Reine Buchhaltung des Geräts – nicht synchronisiert. Eine Aufgabe kann
+ * mehrere Zeilen haben; zusammengehalten wird eine Zeile über **Aufgabe und
+ * Zeitpunkt**. Damit bringt das Löschen einer Erinnerung die Nummern der
+ * übrigen nicht durcheinander.
  */
 export interface LocalReminder {
   taskId: string

@@ -1,11 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { useBackLayer } from '../../app/useBackLayer'
 import { useWorkspace } from '../../app/useWorkspace'
+import type { TaskReminder } from '../../domain/reminder'
 import type { LocalList, LocalTask } from '../../domain/types'
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../datetime'
 import { RecurrenceSelect } from '../RecurrenceSelect'
-import type { ReminderValue } from '../reminder'
-import { ReminderSelect } from '../ReminderSelect'
+import { ReminderList } from '../ReminderList'
 import { dangerButton, input, primaryButton, secondaryButton } from '../styles'
 import { CloseIcon, MoveIcon, TrashIcon } from '../icons'
 
@@ -37,13 +37,7 @@ export function TaskDetailSheet({
   const [description, setDescription] = useState(task?.description ?? '')
   const [dueAt, setDueAt] = useState(toDateTimeLocalValue(task?.due_at ?? null))
   const [recurrence, setRecurrence] = useState(task?.recurrence ?? '')
-  // Nur das Feld der aktuellen Form – das andere bleibt `undefined`, damit ein
-  // Wechsel der Wiederholung den Moment umrechnen kann.
-  const [erinnerung, setErinnerung] = useState<ReminderValue>(
-    task && task.recurrence !== null && task.due_at !== null
-      ? { reminderOffsetMinutes: task.reminder_offset_minutes }
-      : { remindAt: task?.remind_at ?? null },
-  )
+  const [erinnerungen, setErinnerungen] = useState<TaskReminder[]>(task?.reminders ?? [])
   // Eigener Zustand statt `task.completed`: Die übergebene Aufgabe ist eine
   // Momentaufnahme und würde nach dem Umschalten nicht nachziehen.
   const [completed, setCompleted] = useState(task?.completed ?? false)
@@ -64,8 +58,7 @@ export function TaskDetailSheet({
           description,
           dueAt: fromDateTimeLocalValue(dueAt),
           recurrence: recurrence === '' ? null : recurrence,
-          remindAt: erinnerung.remindAt,
-          reminderOffsetMinutes: erinnerung.reminderOffsetMinutes,
+          reminders: erinnerungen,
         })
       } else {
         await repositories.updateTask(task.id, {
@@ -73,8 +66,7 @@ export function TaskDetailSheet({
           description,
           dueAt: fromDateTimeLocalValue(dueAt),
           recurrence: recurrence === '' ? null : recurrence,
-          remindAt: erinnerung.remindAt,
-          reminderOffsetMinutes: erinnerung.reminderOffsetMinutes,
+          reminders: erinnerungen,
         })
       }
       onClose()
@@ -181,14 +173,12 @@ export function TaskDetailSheet({
             onChange={setRecurrence}
           />
 
-          <ReminderSelect
+          <ReminderList
             idPrefix="detail"
             dueAt={fromDateTimeLocalValue(dueAt)}
             recurrence={recurrence === '' ? null : recurrence}
-            remindAt={erinnerung.remindAt}
-            reminderOffsetMinutes={erinnerung.reminderOffsetMinutes}
-            disabled={dueAt === '' && recurrence !== ''}
-            onChange={setErinnerung}
+            reminders={erinnerungen}
+            onChange={setErinnerungen}
           />
 
           {task !== null ? (

@@ -2,13 +2,14 @@ import { useState, type FormEvent } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
 import { useBackLayer } from '../app/useBackLayer'
 import { useUndo } from './useUndo'
+import type { TaskReminder } from '../domain/reminder'
 import type { LocalTask } from '../domain/types'
 import { formatDueLabel, fromDateTimeLocalValue, toDateTimeLocalValue } from './datetime'
 import { BellIcon, RepeatIcon } from './icons'
 import { describeRecurrence } from './recurrence'
 import { RecurrenceSelect } from './RecurrenceSelect'
-import { ReminderSelect } from './ReminderSelect'
-import { describeReminder, type ReminderValue } from './reminder'
+import { ReminderList } from './ReminderList'
+import { describeReminders } from './reminder'
 import { dangerButton, dangerText, ghostButton, input, primaryButton, secondaryButton, attentionText } from './styles'
 
 /**
@@ -28,23 +29,14 @@ export function TaskItem({ task }: { task: LocalTask }) {
   const [description, setDescription] = useState(task.description ?? '')
   const [dueAt, setDueAt] = useState('')
   const [recurrence, setRecurrence] = useState('')
-  const [erinnerungEingabe, setErinnerung] = useState<ReminderValue>({
-    remindAt: null,
-    reminderOffsetMinutes: null,
-  })
+  const [erinnerungenEingabe, setErinnerungen] = useState<TaskReminder[]>([])
 
   const startEditing = () => {
     setTitle(task.title)
     setDescription(task.description ?? '')
     setDueAt(toDateTimeLocalValue(task.due_at))
     setRecurrence(task.recurrence ?? '')
-    // Nur das Feld der aktuellen Form – das andere bleibt `undefined`, damit
-    // ein Wechsel der Wiederholung den Moment umrechnen kann.
-    setErinnerung(
-      task.recurrence !== null && task.due_at !== null
-        ? { reminderOffsetMinutes: task.reminder_offset_minutes }
-        : { remindAt: task.remind_at },
-    )
+    setErinnerungen(task.reminders)
     setEditing(true)
   }
 
@@ -55,8 +47,7 @@ export function TaskItem({ task }: { task: LocalTask }) {
       description,
       dueAt: fromDateTimeLocalValue(dueAt),
       recurrence: recurrence === '' ? null : recurrence,
-      remindAt: erinnerungEingabe.remindAt,
-      reminderOffsetMinutes: erinnerungEingabe.reminderOffsetMinutes,
+      reminders: erinnerungenEingabe,
     })
     setEditing(false)
   }
@@ -112,14 +103,12 @@ export function TaskItem({ task }: { task: LocalTask }) {
             disabled={dueAt === ''}
             onChange={setRecurrence}
           />
-          <ReminderSelect
+          <ReminderList
             idPrefix={`task-${task.id}`}
             dueAt={fromDateTimeLocalValue(dueAt)}
             recurrence={recurrence === '' ? null : recurrence}
-            remindAt={erinnerungEingabe.remindAt}
-            reminderOffsetMinutes={erinnerungEingabe.reminderOffsetMinutes}
-            disabled={dueAt === '' && recurrence !== ''}
-            onChange={setErinnerung}
+            reminders={erinnerungenEingabe}
+            onChange={setErinnerungen}
           />
           <div className="flex gap-2">
             <button type="submit" className={primaryButton}>
@@ -136,7 +125,7 @@ export function TaskItem({ task }: { task: LocalTask }) {
 
   const due = task.due_at === null ? null : formatDueLabel(task.due_at, task.completed)
   const wiederholung = describeRecurrence(task.recurrence)
-  const erinnerung = describeReminder(task)
+  const erinnerungen = describeReminders(task)
 
   return (
     <li className="flex items-start gap-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-3">
@@ -167,8 +156,9 @@ export function TaskItem({ task }: { task: LocalTask }) {
             {wiederholung}
           </p>
         ) : null}
-        {erinnerung ? (
+        {erinnerungen.map((erinnerung, index) => (
           <p
+            key={index}
             className={`mt-1 flex items-center gap-1 text-xs ${
               erinnerung.afterDue ? attentionText : 'text-neutral-500'
             }`}
@@ -176,7 +166,7 @@ export function TaskItem({ task }: { task: LocalTask }) {
             <BellIcon className="h-3 w-3 shrink-0" />
             {erinnerung.text}
           </p>
-        ) : null}
+        ))}
       </div>
       <div className="flex shrink-0 gap-1">
         <button type="button" className={`${ghostButton} px-2 py-1 text-xs`} onClick={startEditing}>

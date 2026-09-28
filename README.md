@@ -84,8 +84,8 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
 
 * Felder: `id`, `list_id`, `title`, optionale `description`, optionales
   `due_at` (mit Uhrzeit), `completed`, optionale `recurrence`, `successor_id`,
-  `remind_at` bzw. `reminder_offset_minutes` (Erinnerung, siehe
-  [Erinnerungen](#erinnerungen)), `created_at`, `updated_at`, `deleted_at`
+  `reminders` (Liste, siehe [Erinnerungen](#erinnerungen)), `created_at`,
+  `updated_at`, `deleted_at`
 * Erstellen, bearbeiten, erledigen, in eine andere Liste verschieben, löschen
 * Abgehakte Aufgaben verschwinden aus der Liste und sind sieben Tage lang unter
   *Einstellungen → Aufgaben wiederherstellen* auffindbar
@@ -431,12 +431,14 @@ Web-Oberfläche.
 
 ### Wann erinnert wird
 
-Die Erinnerung steht an der Aufgabe, und ihre **Form folgt der Wiederholung**:
+Eine Aufgabe kann **mehrere** Erinnerungen tragen, und jede wird ein eigener
+Termin beim Betriebssystem. Sie stehen als Liste an der Aufgabe
+(`tasks.reminders`), und ihre **Form folgt der Wiederholung**:
 
-| Aufgabe | Feld | Beispiel |
+| Aufgabe | Eintrag | Beispiel |
 | --- | --- | --- |
-| einmalig | `remind_at` – ein absoluter Zeitpunkt | „am 15.02.2027 um 17:00" |
-| wiederkehrend | `reminder_offset_minutes` – ein Vorlauf, vorzeichenbehaftet | „1 Std 30 Min vorher" |
+| einmalig | `{"form":"absolute","at":…}` | „am 15.02.2027 um 17:00" |
+| wiederkehrend | `{"form":"offset","minutes":…}` | „1 Std 30 Min vorher" |
 
 Warum diese Aufteilung: Eine absolute Erinnerung an einer wiederkehrenden
 Aufgabe feuerte genau einmal und wäre ab der zweiten Ausführung falsch. Ein
@@ -449,8 +451,30 @@ dahin abgehakt, verstummt es von selbst: Erledigte Aufgaben erinnern nicht.
 
 **Eine Fälligkeit setzt keine Erinnerung.** Wer erinnert werden will, wählt es
 ausdrücklich – „Zur Fälligkeit" ist dabei eine Auswahl wie jede andere. Und die
-Erinnerung ist eine eigene Angabe: Wer die Fälligkeit verschiebt, verschiebt
-nicht die Erinnerung.
+Erinnerungen sind eine eigene Angabe: Wer die Fälligkeit verschiebt,
+verschiebt sie nicht mit.
+
+**Warum eine Spalte und keine eigene Tabelle.** Erinnerungen sind Teil der
+Absicht einer Aufgabe und werden immer zusammen mit ihr gelesen. Eine zweite
+Tabelle bräuchte Policies, `grant`s, einen vierten Sync-Pfad und eigenes
+`dirty`-Tracking – viel Apparat für eine kurze, geordnete Liste, die mit der
+Aufgabe zusammen im Last-Write-Wins wandert. Dieselbe Überlegung wie bei
+`recurrence`.
+
+### Die Liste im Formular
+
+Ein Abschnitt „Erinnerungen" mit einer Zeile je Erinnerung, einem Knopf
+**„Weitere Erinnerung"** und einem Papierkorb je Zeile. Bei wiederkehrenden
+Aufgaben ist jede Zeile eine Auswahl (feste Stufen, gemerkte Werte, „Eigene …"),
+bei einmaligen ein Zeitpunktfeld.
+
+Was sich nicht umrechnen lässt, fällt weg: Wird aus einer einmaligen Aufgabe
+eine wiederkehrende, wandert jede Erinnerung in einen Vorlauf – außer sie läge
+dann in der Vergangenheit. Umgekehrt genauso.
+
+Höchstens **10 Erinnerungen** je Aufgabe. Jede ist ein Alarm beim
+Betriebssystem; zehn sind großzügig, und eine verbogene Zeile soll das Gerät
+nicht mit Hunderten von Terminen fluten.
 
 ### Wie es funktioniert
 
@@ -484,10 +508,10 @@ Benachrichtigung tatsächlich geplant ist, weiß jedes Gerät für sich
 
 ### Die Schnellauswahl
 
-Neben dem Feld steht ein **Stern**. Er bezieht sich immer auf den Wert, der
-gerade in den Feldern steht: gefüllt heißt „gemerkt", ein Klick nimmt ihn auf
-oder wieder heraus. Um einen gemerkten Wert zu entfernen, wählt man ihn aus –
-dann steht er in den Feldern und der Stern ist gleich daneben.
+Neben der eigenen Vorlaufzeit steht ein **Stern**. Er bezieht sich immer auf
+den Wert, der gerade in den Feldern steht: gefüllt heißt „gemerkt", ein Klick
+nimmt ihn auf oder wieder heraus. Um einen gemerkten Wert zu entfernen, wählt
+man ihn aus – dann steht er in den Feldern und der Stern ist gleich daneben.
 
 Gemerkt wird pro Konto in der lokalen `meta`-Tabelle (`reminder_presets`).
 Bewusst **nicht** synchronisiert: Es ist eine Eingabehilfe, keine Angabe über

@@ -8,6 +8,10 @@ import { T0, T1, T2 } from '../support/factories'
  *
  * Der wichtigste Punkt: Der Abgleich ist idempotent und lässt unveränderte
  * Termine in Ruhe – sonst würde bei jedem Sync alles neu geplant.
+ *
+ * Zusammengehalten wird eine Zeile über **Aufgabe und Zeitpunkt**. Das ist die
+ * entscheidende Eigenschaft für mehrere Erinnerungen je Aufgabe: Das Entfernen
+ * einer lässt die Nummern der übrigen in Ruhe.
  */
 
 function candidate(taskId: string, at: string, title = taskId): ReminderCandidate {
@@ -42,14 +46,41 @@ describe('Erinnerungen abgleichen', () => {
     expect(actions.tracked).toEqual(tracked)
   })
 
-  it('verschiebt einen Termin und behält die Nummer bei', () => {
+  it('verschiebt einen Termin: alter ab, neuer geplant', () => {
+    // Ein verschobener Zeitpunkt ist ein anderer Termin – er bekommt eine
+    // eigene Nummer. Dafür bleibt die Zuordnung eindeutig, auch wenn mehrere
+    // Erinnerungen an derselben Aufgabe hängen.
     const tracked = [{ taskId: 't1', notificationId: 7, at: T1 }]
     const actions = reconcileReminders([candidate('t1', T2)], tracked, counter(100))
 
     expect(actions.cancel).toEqual([7])
     expect(actions.schedule).toHaveLength(1)
-    expect(actions.schedule[0]).toMatchObject({ taskId: 't1', notificationId: 7, at: T2 })
-    expect(actions.tracked).toEqual([{ taskId: 't1', notificationId: 7, at: T2 }])
+    expect(actions.schedule[0]).toMatchObject({ taskId: 't1', notificationId: 101, at: T2 })
+    expect(actions.tracked).toEqual([{ taskId: 't1', notificationId: 101, at: T2 }])
+  })
+
+  it('plant mehrere Erinnerungen derselben Aufgabe getrennt', () => {
+    const actions = reconcileReminders(
+      [candidate('t1', T1), candidate('t1', T2)],
+      [],
+      counter(),
+    )
+
+    expect(actions.schedule).toHaveLength(2)
+    expect(actions.tracked).toHaveLength(2)
+  })
+
+  it('lässt beim Entfernen einer Erinnerung die andere in Ruhe', () => {
+    const tracked = [
+      { taskId: 't1', notificationId: 1, at: T1 },
+      { taskId: 't1', notificationId: 2, at: T2 },
+    ]
+    const actions = reconcileReminders([candidate('t1', T2)], tracked, counter(100))
+
+    // Nur die erste fällt weg – die zweite behält ihre Nummer.
+    expect(actions.cancel).toEqual([1])
+    expect(actions.schedule).toEqual([])
+    expect(actions.tracked).toEqual([{ taskId: 't1', notificationId: 2, at: T2 }])
   })
 
   it('bricht Termine ab, die nicht mehr gebraucht werden', () => {
@@ -96,6 +127,8 @@ describe('Erinnerungen abgleichen', () => {
     expect(actions.cancel).toEqual([2, 3])
     expect(actions.schedule.map((entry) => entry.taskId).sort()).toEqual(['neu', 'verschoben'])
     expect(actions.tracked).toHaveLength(3)
+    // Der unveränderte Termin behält seine Nummer.
+    expect(actions.tracked.find((entry) => entry.taskId === 'bleibt')?.notificationId).toBe(1)
   })
 
   it('ist idempotent: ein zweiter Lauf ohne Änderungen tut nichts', () => {

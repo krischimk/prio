@@ -5,7 +5,7 @@ import type { LocalTask } from '../../domain/types'
 import { formatDueLabel } from '../datetime'
 import { BellIcon, RepeatIcon } from '../icons'
 import { describeRecurrence } from '../recurrence'
-import { describeReminder } from '../reminder'
+import { describeReminders } from '../reminder'
 import { attentionText, dangerText } from '../styles'
 import { useReorderDrag, type ReorderDrag } from './useReorderDrag'
 
@@ -84,7 +84,7 @@ function MobileTaskRow({
   const { offerUndo } = useUndo()
   const due = task.due_at === null ? null : formatDueLabel(task.due_at, task.completed)
   const wiederholung = describeRecurrence(task.recurrence)
-  const erinnerung = describeReminder(task)
+  const erinnerungen = describeReminders(task)
   const handlers = drag.getRowHandlers(task.id, index)
 
   return (
@@ -139,8 +139,9 @@ function MobileTaskRow({
             {wiederholung}
           </span>
         ) : null}
-        {erinnerung ? (
+        {erinnerungen.map((erinnerung, index) => (
           <span
+            key={index}
             className={`mt-0.5 flex items-center gap-1 text-xs ${
               erinnerung.afterDue ? attentionText : 'text-neutral-500'
             }`}
@@ -148,7 +149,7 @@ function MobileTaskRow({
             <BellIcon className="h-3 w-3 shrink-0" />
             {erinnerung.text}
           </span>
-        ) : null}
+        ))}
       </button>
     </li>
   )
