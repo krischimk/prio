@@ -24,12 +24,50 @@ nur die Regeln, die man beim Arbeiten kennen muss.
 ## Nach jeder Änderung
 
 ```bash
-npm run ci          # Typecheck, Lint, Tests, Produktionsbuild
-npm run test:e2e    # echter Browser gegen den Mock-Server
+npm run ci          # Typecheck, Lint, Tests, Produktionsbuild (rund 15 s)
+npm run test:e2e    # echter Browser gegen den Mock-Server (rund 50 s)
 ```
 
 Beides muss grün sein. Bei Oberflächenänderungen zusätzlich in Telefongröße
 rendern und die Screenshots **anschauen** (siehe Tests).
+
+### Während der Arbeit nicht jedes Mal alles
+
+`npm run ci` ist billig, aber nicht kostenlos, und ein voller E2E-Lauf und ein
+Release sind es erst recht. Faustregel nach Umfang:
+
+| Was geändert wurde | Was laufen muss |
+| --- | --- |
+| eine Datei, Logik | `npx vitest run <datei>` (rund 1 s) |
+| mehrere Dateien | `npm run ci` |
+| ein Ablauf in der Oberfläche | zusätzlich **nur** die betroffene E2E-Datei |
+| vor dem Commit | `npm run ci` und alle E2E-Dateien |
+| nur Text, Kommentar, README | `npm run ci` |
+
+### Was einen Auftrag wirklich langsam macht
+
+Gemessen, in absteigender Reihenfolge:
+
+1. **Zwei Releases in einem Auftrag.** Ein Release-Workflow baut rund drei
+   Minuten, und er lässt sich nicht abkürzen. Wenn nach dem Tag noch etwas
+   gefunden wird, kostet das einen zweiten.
+2. **Synchron auf GitHub warten.** `gh run watch` blockiert. Als Hintergrund-Job
+   starten und weiterarbeiten.
+3. **Emulator-Runden.** Jeder `android:emu:eval` ist ein eigener Hin-und-Rückweg,
+   jeder Neubau ein Gradle-Lauf. Prüfungen bündeln statt einzeln abzufragen.
+4. **Der Emulator zum Schluss.** Ist er der letzte Schritt, findet man Fehler
+   nach dem Release statt davor.
+
+### Deshalb gilt
+
+* **Erst im Emulator prüfen, dann taggen.** Nie umgekehrt. Der Emulator ist die
+  letzte Prüfung *vor* dem Release, nicht danach – genau so ist 0.12.0 mit
+  einem schwarzen Bildschirm veröffentlicht worden.
+* **Ein Release je Auftrag.** Was beim Prüfen auffällt, geht in dieselbe
+  Fassung.
+* **GitHub-Läufe im Hintergrund** starten und währenddessen weiterarbeiten.
+* **Shell-Aufrufe bündeln**, wo sie zusammengehören: Dateien lesen, prüfen und
+  messen in einem Aufruf statt in fünf.
 
 ## Architektur – nicht aufweichen
 
