@@ -76,6 +76,79 @@ describe('Upgrade der lokalen Datenbank', () => {
     db.close()
   })
 
+  it('zieht die alten Erinnerungsfelder in die Liste um', async () => {
+    // Der gemeldete Fehler: Die Aufgabenzeilen behielten `remind_at` und
+    // `reminder_offset_minutes`, das neue Feld fehlte – und die Oberfläche
+    // stürzte beim Lesen ab („Cannot read properties of undefined").
+    const alteVersion = new Dexie(localDbName(userId))
+    alteVersion.version(1).stores({
+      lists: 'id, owner_id, updated_at, dirty',
+      list_members: '[list_id+user_id], list_id, user_id, updated_at, dirty',
+      tasks: 'id, list_id, updated_at, dirty',
+      meta: 'key',
+    })
+    await alteVersion.open()
+    await alteVersion.table('tasks').bulkPut([
+      {
+        id: 'einmalig',
+        list_id: 'list-1',
+        title: 'Einmalig',
+        description: null,
+        due_at: '2026-06-01T09:00:00.000Z',
+        completed: false,
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z',
+        deleted_at: null,
+        dirty: 0,
+        remind_at: '2026-06-01T08:00:00.000Z',
+        reminder_offset_minutes: null,
+      },
+      {
+        id: 'taeglich',
+        list_id: 'list-1',
+        title: 'Täglich',
+        description: null,
+        due_at: '2026-06-01T09:00:00.000Z',
+        completed: false,
+        recurrence: 'daily',
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z',
+        deleted_at: null,
+        dirty: 0,
+        remind_at: null,
+        reminder_offset_minutes: 90,
+      },
+      {
+        id: 'ohne',
+        list_id: 'list-1',
+        title: 'Ohne Erinnerung',
+        description: null,
+        due_at: null,
+        completed: false,
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-01T00:00:00.000Z',
+        deleted_at: null,
+        dirty: 0,
+        remind_at: null,
+        reminder_offset_minutes: null,
+      },
+    ])
+    alteVersion.close()
+
+    const db = await openLocalDatabase(userId)
+
+    expect((await db.tasks.get('einmalig'))?.reminders).toEqual([
+      { form: 'absolute', at: '2026-06-01T08:00:00.000Z' },
+    ])
+    expect((await db.tasks.get('taeglich'))?.reminders).toEqual([{ form: 'offset', minutes: 90 }])
+    expect((await db.tasks.get('ohne'))?.reminders).toEqual([])
+    // Die alten Felder sind weg, und die Zeilen gehen noch einmal raus.
+    expect(Object.keys((await db.tasks.get('einmalig')) ?? {})).not.toContain('remind_at')
+    expect((await db.tasks.get('einmalig'))?.dirty).toBe(1)
+
+    db.close()
+  })
+
   it('legt eine frische Datenbank direkt in der neuesten Version an', async () => {
     const db = await openLocalDatabase(createTestUserId('frisch'))
     expect(db.verno).toBe(5)

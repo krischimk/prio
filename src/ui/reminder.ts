@@ -1,4 +1,4 @@
-import { reminderTimeOf, type TaskReminder } from '../domain/reminder'
+import { parseReminders, reminderTimeOf, type TaskReminder } from '../domain/reminder'
 import type { LocalTask } from '../domain/types'
 import { formatReminderLabel } from './datetime'
 
@@ -63,7 +63,8 @@ export interface ReminderLabel {
 export function describeReminders(task: LocalTask): ReminderLabel[] {
   const dueMs = task.due_at === null ? null : Date.parse(task.due_at)
 
-  return task.reminders.flatMap((reminder) => {
+  // Eine Zeile aus einer älteren Fassung hat das Feld womöglich gar nicht.
+  return parseReminders(task.reminders).flatMap((reminder) => {
     const at = reminderTimeOf(reminder, task.due_at)
     if (at === null) return []
     const atMs = Date.parse(at)

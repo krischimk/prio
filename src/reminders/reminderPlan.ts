@@ -1,5 +1,5 @@
 import { normalizeIso } from '../domain/clock'
-import { reminderTimeOf } from '../domain/reminder'
+import { parseReminders, reminderTimeOf } from '../domain/reminder'
 import type { LocalList, LocalTask } from '../domain/types'
 
 /**
@@ -40,7 +40,10 @@ export interface ReminderCandidate {
  * genau die Art Abweichung, die man erst im Betrieb merkt.
  */
 export function reminderTimesFor(task: LocalTask): string[] {
-  return task.reminders
+  // `parseReminders` statt direktem Zugriff: Eine Zeile aus einer älteren
+  // Fassung hat das Feld womöglich gar nicht, und ein `undefined` darf die
+  // Aufgabe nicht unlesbar machen.
+  return parseReminders(task.reminders)
     .map((reminder) => reminderTimeOf(reminder, task.due_at))
     .filter((at): at is string => at !== null)
 }

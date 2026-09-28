@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie'
+import type { TaskReminder } from '../domain/reminder'
 import type { LocalList, LocalListMember, LocalMeta, LocalReminder, LocalTask } from '../domain/types'
 
 /**
@@ -93,6 +94,11 @@ export class LocalDatabase extends Dexie {
      * Das kostet nichts: Die Tabelle ist eine Momentaufnahme dessen, was beim
      * Betriebssystem liegt, und wird beim nächsten Abgleich ohnehin neu
      * aufgebaut.
+     *
+     * Die Aufgaben selbst werden hier ebenfalls umgezogen: Aus `remind_at` bzw.
+     * `reminder_offset_minutes` wird die Liste. Ohne das hätte eine bestehende
+     * Zeile das Feld gar nicht, und die Oberfläche stürzte beim Lesen ab –
+     * derselbe Fehler wie damals bei `position`, nur an anderer Stelle.
      */
     this.version(4).stores({
       lists: 'id, owner_id, updated_at, dirty',
@@ -102,14 +108,50 @@ export class LocalDatabase extends Dexie {
       reminders: null,
     })
 
-    this.version(5).stores({
-      lists: 'id, owner_id, updated_at, dirty',
-      list_members: '[list_id+user_id], list_id, user_id, updated_at, dirty',
-      tasks: 'id, list_id, updated_at, dirty',
-      meta: 'key',
-      reminders: '[taskId+at], taskId, notificationId, at',
-    })
+    this.version(5)
+      .stores({
+        lists: 'id, owner_id, updated_at, dirty',
+        list_members: '[list_id+user_id], list_id, user_id, updated_at, dirty',
+        tasks: 'id, list_id, updated_at, dirty',
+        meta: 'key',
+        reminders: '[taskId+at], taskId, notificationId, at',
+      })
+      .upgrade((tx) =>
+        tx
+          .table('tasks')
+          .toCollection()
+          .modify((task: AlteAufgabe) => {
+            if (Array.isArray(task.reminders)) return
+
+            const reminders: TaskReminder[] = []
+            if (
+              task.recurrence !== null &&
+              task.due_at !== null &&
+              typeof task.reminder_offset_minutes === 'number'
+            ) {
+              reminders.push({ form: 'offset', minutes: task.reminder_offset_minutes })
+            } else if (typeof task.remind_at === 'string' && task.remind_at !== '') {
+              reminders.push({ form: 'absolute', at: task.remind_at })
+            }
+
+            task.reminders = reminders
+            delete task.remind_at
+            delete task.reminder_offset_minutes
+            // Als geändert markieren, damit die neue Form auch ankommt.
+            task.dirty = 1
+          }),
+      )
   }
+}
+
+/**
+ * Eine Aufgabe, wie sie vor Version 5 in der lokalen Datenbank lag: mit zwei
+ * einzelnen Erinnerungsfeldern statt einer Liste.
+ */
+type AlteAufgabe = LocalTask & {
+  reminders?: TaskReminder[]
+  remind_at?: string | null
+  reminder_offset_minutes?: number | null
 }
 
 /**
