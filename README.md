@@ -1031,16 +1031,31 @@ bauen; sie landet dann nur als Artefakt und nicht als Release.
 Signatur zur bereits installierten App passt. Deshalb wird nicht mit der
 flüchtigen Debug-Signatur gearbeitet, sondern mit einem festen Schlüssel:
 
+Die privaten Dateien liegen synchronisiert unter
+`Dokumente/Codex-Projekte/Prio/Android-Signierung` im lokalen Nextcloud-Ordner.
+Nach dem Klonen auf einem Rechner stellt folgender Befehl den gewohnten
+`~/.prio-android`-Pfad als Verknüpfung her:
+
+```bash
+python scripts/setup_private_data.py
+```
+
+Nextcloud wird unter `~/Nextcloud`, `~/Documents/Nextcloud` und
+`~/Dokumente/Nextcloud` gesucht; bei einem anderen Speicherort setzt man
+`NEXTCLOUD_ROOT`.
+
 | | |
 | --- | --- |
 | Keystore | `~/.prio-android/prio-release.keystore` |
 | Zugangsdaten | `~/.prio-android/ZUGANGSDATEN.txt` |
+| Lokale Web-Konfiguration | `.env` (Verknüpfung zur privaten Nextcloud-Ablage) |
 | GitHub-Secrets | `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` |
 
 Geht der Keystore verloren, lässt sich keine neue Version mehr über die
 installierte App legen – sie müsste zuerst deinstalliert werden (die Daten
-kommen danach aus der Cloud zurück). Den Ordner also sichern. Der Keystore ist
-über `.gitignore` ausgeschlossen und darf nie ins Repository.
+kommen danach aus der Cloud zurück). Nextcloud sichert deshalb den privaten
+Ordner unabhängig vom öffentlichen Repository. Der Keystore darf nie ins
+Repository.
 
 `versionName` entspricht dem Tag ohne führendes `v`. `versionCode` wird aus der
 Version in `package.json` gerechnet – `major*10000 + minor*100 + patch`, also

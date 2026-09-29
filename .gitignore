@@ -58,5 +58,7 @@ Thumbs.db
 *.sw?
 
 # Sonstiges
+__pycache__/
+*.pyc
 *.local
 .eslintcache
