@@ -97,6 +97,29 @@ describe('UI-Konventionen', () => {
     ).toEqual([])
   })
 
+  /**
+   * Tailwind ordnet Padding-Klassen in der Reihenfolge des **Stylesheets**,
+   * nicht des Klassenattributs. Ein an `input` angehängtes `px-2` verdrängt
+   * das `px-3` deshalb nicht – die Angabe wirkt schlicht nicht.
+   *
+   * Genau daran ist einmal ein Feld gescheitert: Die Zahlen für Tage, Stunden
+   * und Minuten blieben 39 Pixel schmal, und ab drei Ziffern zeigte das Feld
+   * nur noch die letzten beiden. Bei einem **Eingabefeld** ist das ein Fehler,
+   * weil der Inhalt nicht mehr lesbar ist; bei einem Knopf ändert dieselbe
+   * wirkungslose Angabe nur die Außengröße. Geprüft wird deshalb nur das Feld.
+   */
+  it('ändert die Polsterung von Eingabefeldern nicht durch angehängte Klassen', () => {
+    const treffer = findMatches(
+      sourceFiles.filter((file) => file !== STYLES_FILE),
+      /\$\{input\}\s+(?:p|px|py|pt|pb|pl|pr)-\d/,
+    )
+
+    expect(
+      treffer,
+      'Die angehängte Klasse verdrängt die aus `input` nicht. Eigenen Stil in src/ui/styles.ts anlegen (siehe numberInput).',
+    ).toEqual([])
+  })
+
   it('zählt offene Aufgaben nur an einer Stelle', () => {
     const treffer = findMatches(
       sourceFiles.filter((file) => file !== TASK_COUNT_FILE),

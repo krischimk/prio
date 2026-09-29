@@ -21,6 +21,13 @@ import type { SyncTone } from '../sync/syncStatus'
 
 const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400'
 
+/*
+ * Achtung: Angehängte Klassen verdrängen diese Polsterung nicht.
+ *
+ * Tailwind ordnet die Utilities in der Reihenfolge des Stylesheets, nicht des
+ * Klassenattributs – ein an `primaryButton` gehängtes `px-2` bleibt wirkungslos.
+ * Für einen schmaleren Knopf braucht es einen eigenen Stil.
+ */
 export const button = `inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`
 
 export const primaryButton = `${button} bg-indigo-500 text-white hover:bg-indigo-400`
@@ -32,6 +39,16 @@ export const ghostButton = `${button} text-neutral-400 hover:bg-neutral-800 hove
 export const dangerButton = `${button} border border-red-900/60 bg-red-950/40 text-red-300 hover:bg-red-950/70`
 
 export const input = `w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 ${focusRing}`
+
+/**
+ * Schmales Feld für die Zahlen einer eigenen Vorlaufzeit.
+ *
+ * Bewusst nicht aus `input` zusammengesetzt: Tailwind ordnet Padding-Klassen in
+ * der Reihenfolge des Stylesheets, nicht des Klassenattributs. Ein angehängtes
+ * `px-2` verdrängt das `px-3` aus `input` deshalb nicht – das Feld blieb breit
+ * gepolstert und schnitt bei drei Ziffern ab.
+ */
+export const numberInput = `w-full rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm text-neutral-100 ${focusRing}`
 
 export const card = 'rounded-lg border border-neutral-800 bg-neutral-900/60 p-4'
 

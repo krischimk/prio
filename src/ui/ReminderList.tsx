@@ -21,7 +21,7 @@ import {
   formatReminderOffset,
   reminderSuggestion,
 } from './reminder'
-import { activeIcon, ghostButton, input, mutedText, secondaryButton } from './styles'
+import { activeIcon, ghostButton, input, mutedText, numberInput, secondaryButton } from './styles'
 
 /**
  * Erinnerungen einer Aufgabe – in beiden Ansichten dieselbe Komponente.
@@ -318,14 +318,18 @@ function CustomOffset({
         const gelesen = Number(event.target.value)
         setzen({ [id]: Number.isFinite(gelesen) ? Math.min(Math.max(0, gelesen), max) : 0 })
       }}
-      className={`${input} px-2 py-1`}
+      className={numberInput}
     />
   )
 
   return (
     <div className="mt-2 space-y-2">
+      {/*
+        Zwei Zeilen statt einer: Nebeneinander blieben für Tage, Std und Min
+        je rund 39 Pixel übrig, und ab drei Ziffern schnitt das Feld ab.
+      */}
       <div className="flex items-end gap-2">
-        <div className="w-24 shrink-0">
+        <div className="flex-1">
           <label htmlFor={`${idPrefix}-richtung`} className="mb-1 block text-xs text-neutral-400">
             Richtung
           </label>
@@ -338,23 +342,11 @@ function CustomOffset({
               setRichtung(neu)
               setzen({}, neu)
             }}
-            className={`${input} px-2 py-1`}
+            className={input}
           >
             <option value="vorher">vorher</option>
             <option value="nachher">nachher</option>
           </select>
-        </div>
-        <div className="flex-1">
-          <label className="mb-1 block text-xs text-neutral-400">Tage</label>
-          {zahl('tage', 'Tage vorher oder nachher', felder.tage, 3650)}
-        </div>
-        <div className="flex-1">
-          <label className="mb-1 block text-xs text-neutral-400">Std</label>
-          {zahl('stunden', 'Stunden vorher oder nachher', felder.stunden, 23)}
-        </div>
-        <div className="flex-1">
-          <label className="mb-1 block text-xs text-neutral-400">Min</label>
-          {zahl('minuten', 'Minuten vorher oder nachher', felder.minuten, 59)}
         </div>
         <button
           type="button"
@@ -364,12 +356,27 @@ function CustomOffset({
             remembered ? 'Aus der Schnellauswahl entfernen' : 'In die Schnellauswahl aufnehmen'
           }
           title={remembered ? 'Aus der Schnellauswahl entfernen' : 'In der Schnellauswahl behalten'}
-          className={`${ghostButton} shrink-0 px-2 py-2 ${
+          className={`${ghostButton} shrink-0 px-3 py-2 ${
             remembered ? activeIcon : 'text-neutral-500'
           }`}
         >
           <StarIcon filled={remembered} />
         </button>
+      </div>
+
+      <div className="flex items-end gap-2">
+        <div className="min-w-0 flex-1">
+          <label className="mb-1 block text-xs text-neutral-400">Tage</label>
+          {zahl('tage', 'Tage vorher oder nachher', felder.tage, 3650)}
+        </div>
+        <div className="min-w-0 flex-1">
+          <label className="mb-1 block text-xs text-neutral-400">Std</label>
+          {zahl('stunden', 'Stunden vorher oder nachher', felder.stunden, 23)}
+        </div>
+        <div className="min-w-0 flex-1">
+          <label className="mb-1 block text-xs text-neutral-400">Min</label>
+          {zahl('minuten', 'Minuten vorher oder nachher', felder.minuten, 59)}
+        </div>
       </div>
       <p className={`text-xs ${mutedText}`}>
         {formatReminderOffset(value)}
