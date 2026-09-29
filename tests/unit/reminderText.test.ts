@@ -105,6 +105,41 @@ describe('Erinnerungen einer Aufgabe beschreiben', () => {
     expect(labels[0]?.text).toContain('Erinnert:')
   })
 
+  it('benennt eine stummgeschaltete Erinnerung und lässt sie stehen', () => {
+    // Sie muss sichtbar bleiben – sonst wüsste man nicht mehr, warum man nicht
+    // geweckt wird.
+    const labels = describeReminders(
+      localTask({
+        due_at: DUE,
+        reminders: [{ form: 'absolute', at: '2099-01-15T17:00:00.000Z', mutedBy: ['a'] }],
+      }),
+      'a',
+    )
+    expect(labels).toHaveLength(1)
+    expect(labels[0]?.muted).toBe(true)
+    expect(labels[0]?.text).toContain('für mich stumm')
+  })
+
+  it('zeigt eine stummgeschaltete Erinnerung auch zur Fälligkeit', () => {
+    // Für alle anderen wäre sie eine Dublette zur Fälligkeitszeile; für die
+    // stummgeschaltete Person ist sie die einzige Spur ihrer Entscheidung.
+    const task = localTask({ due_at: DUE, reminders: [{ form: 'absolute', at: DUE, mutedBy: ['a'] }] })
+    expect(describeReminders(task, 'a')).toHaveLength(1)
+    expect(describeReminders(task, 'b')).toHaveLength(0)
+  })
+
+  it('benennt sie nicht für andere', () => {
+    const labels = describeReminders(
+      localTask({
+        due_at: DUE,
+        reminders: [{ form: 'absolute', at: '2099-01-15T17:00:00.000Z', mutedBy: ['a'] }],
+      }),
+      'b',
+    )
+    expect(labels[0]?.muted).toBe(false)
+    expect(labels[0]?.text).not.toContain('stumm')
+  })
+
   it('rechnet bei wiederkehrenden Aufgaben aus dem Vorlauf', () => {
     const labels = describeReminders(
       localTask({ due_at: DUE, recurrence: 'daily', reminders: [{ form: 'offset', minutes: 30 }] }),
@@ -131,6 +166,16 @@ describe('Vorschlag für eine neue Erinnerung', () => {
 
   it('schlägt bei einmaligen Aufgaben mit Fälligkeit diese vor', () => {
     expect(reminderSuggestion(null, DUE, NOW)).toEqual({ form: 'absolute', at: DUE })
+  })
+
+  it('weicht dem aus, was schon da ist', () => {
+    // Sonst fiele die zweite Zeile beim Speichern als Dublette weg.
+    const erste = reminderSuggestion(null, DUE, NOW, [])
+    const zweite = reminderSuggestion(null, DUE, NOW, [erste])
+    expect(zweite).not.toEqual(erste)
+
+    const dritte = reminderSuggestion('daily', DUE, NOW, [{ form: 'offset', minutes: 0 }])
+    expect(dritte).toEqual({ form: 'offset', minutes: 10 })
   })
 
   it('schlägt ohne Fälligkeit die nächste volle Stunde vor', () => {

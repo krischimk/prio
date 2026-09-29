@@ -105,6 +105,7 @@ export function WorkspaceProvider({
           reminders: createReminderService({
             db: database,
             port: createCapacitorNotificationsPort(),
+            viewerId: userId,
           }),
         })
       })

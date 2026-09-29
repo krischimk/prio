@@ -3,7 +3,7 @@ import { useWorkspace } from '../../app/useWorkspace'
 import { useUndo } from '../useUndo'
 import type { LocalTask } from '../../domain/types'
 import { formatDueLabel } from '../datetime'
-import { BellIcon, RepeatIcon } from '../icons'
+import { BellIcon, BellOffIcon, RepeatIcon } from '../icons'
 import { describeRecurrence } from '../recurrence'
 import { describeReminders } from '../reminder'
 import { attentionText, dangerText } from '../styles'
@@ -22,12 +22,14 @@ import { useReorderDrag, type ReorderDrag } from './useReorderDrag'
  */
 export function MobileTaskList({
   tasks,
+  currentUserId,
   onOpenTask,
   onReorder,
 }: {
   tasks: LocalTask[]
   onOpenTask: (task: LocalTask) => void
   onReorder: (orderedTaskIds: string[]) => void
+  currentUserId: string
 }) {
   const listRef = useRef<HTMLUListElement>(null)
   const drag = useReorderDrag({
@@ -55,6 +57,7 @@ export function MobileTaskList({
             drag={drag}
             onOpen={onOpenTask}
             isDragging={drag.draggingId === task.id}
+            currentUserId={currentUserId}
           />
         </Fragment>
       ))}
@@ -73,18 +76,20 @@ function MobileTaskRow({
   drag,
   onOpen,
   isDragging,
+  currentUserId,
 }: {
   task: LocalTask
   index: number
   drag: ReorderDrag
   onOpen: (task: LocalTask) => void
   isDragging: boolean
+  currentUserId: string
 }) {
   const { repositories } = useWorkspace()
   const { offerUndo } = useUndo()
   const due = task.due_at === null ? null : formatDueLabel(task.due_at, task.completed)
   const wiederholung = describeRecurrence(task.recurrence)
-  const erinnerungen = describeReminders(task)
+  const erinnerungen = describeReminders(task, currentUserId)
   const handlers = drag.getRowHandlers(task.id, index)
 
   return (
@@ -143,10 +148,10 @@ function MobileTaskRow({
           <span
             key={index}
             className={`mt-0.5 flex items-center gap-1 text-xs ${
-              erinnerung.afterDue ? attentionText : 'text-neutral-500'
+              erinnerung.afterDue && !erinnerung.muted ? attentionText : 'text-neutral-500'
             }`}
           >
-            <BellIcon className="h-3 w-3 shrink-0" />
+            {erinnerung.muted ? <BellOffIcon className="h-3 w-3 shrink-0" /> : <BellIcon className="h-3 w-3 shrink-0" />}
             {erinnerung.text}
           </span>
         ))}

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { createList, register, resetServer, uniqueEmail } from './support/helpers'
+import { createAccount, createList, register, resetServer, uniqueEmail } from './support/helpers'
 
 /**
  * Listenverwaltung in der **breiten** Ansicht.
@@ -226,4 +226,49 @@ test('erlaubt in der breiten Ansicht eine Erinnerung ohne Fälligkeitsdatum', as
 
   await expect(zeile).toContainText('Erinnert:')
   await expect(zeile).not.toContainText('Fällig:')
+})
+
+test('schaltet eine Erinnerung in der breiten Ansicht nur für sich stumm', async ({ page, request }) => {
+  const emailB = uniqueEmail('l12-b')
+  await createAccount(request, emailB)
+
+  await register(page, uniqueEmail('l12'))
+  await createList(page, 'Haushalt')
+
+  await page.getByLabel('Neue Aufgabe', { exact: true }).fill('Müll rausbringen')
+  await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click()
+
+  const zeile = page.getByTestId('task-list').locator('li').filter({ hasText: 'Müll rausbringen' })
+  await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
+
+  const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
+  await formular.getByLabel('Fällig am (optional)', { exact: true }).fill(morgenUm(9))
+  await formular.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+  await formular.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+
+  // Eine eigene Liste kennt kein Stummschalten – es gäbe niemanden, für den es
+  // gilt.
+  await expect(formular.getByRole('button', { name: /stummschalten/ })).toHaveCount(0)
+  await formular.getByRole('button', { name: 'Speichern' }).click()
+
+  // Erst teilen, dann erscheint der Schalter.
+  await page.getByRole('button', { name: 'Teilen', exact: true }).click()
+  await page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(emailB)
+  await page.getByRole('button', { name: 'Freigeben' }).click()
+  await expect(page.getByRole('status')).toContainText('Freigabe für')
+
+  await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
+  const erneut = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
+  await expect(erneut.getByRole('button', { name: /stummschalten/ })).toHaveCount(2)
+
+  await erneut.getByRole('button', { name: 'Erinnerung 1 für mich stummschalten' }).click()
+  await expect(
+    erneut.getByRole('button', { name: 'Erinnerung 1 wieder für mich einschalten' }),
+  ).toBeVisible()
+  await erneut.getByRole('button', { name: 'Speichern' }).click()
+
+  // In der Liste steht es dran – sonst wüsste man nicht, warum man nicht
+  // geweckt wird.
+  await expect(zeile.getByText('für mich stumm')).toHaveCount(1)
+  await expect(zeile.getByText('Erinnert:')).toHaveCount(2)
 })

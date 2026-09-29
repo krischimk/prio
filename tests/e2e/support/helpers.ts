@@ -43,6 +43,19 @@ export async function register(page: Page, email: string): Promise<void> {
   await expect(page.getByTestId('current-user')).toHaveText(email)
 }
 
+/**
+ * Legt ein Konto direkt am Mock-Server an.
+ *
+ * Reicht, wenn es nur existieren muss – etwa als Empfänger einer Freigabe. Der
+ * umständliche Weg über einen zweiten Browserkontext ist dafür nicht nötig.
+ */
+export async function createAccount(request: APIRequestContext, email: string): Promise<void> {
+  const response = await request.post(`${MOCK_URL}/auth/v1/signup`, {
+    data: { email, password: PASSWORD },
+  })
+  expect(response.ok()).toBe(true)
+}
+
 export async function login(page: Page, email: string): Promise<void> {
   await page.goto('/')
   await page.getByLabel('E-Mail', { exact: true }).fill(email)

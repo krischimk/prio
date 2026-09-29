@@ -476,6 +476,28 @@ Höchstens **10 Erinnerungen** je Aufgabe. Jede ist ein Alarm beim
 Betriebssystem; zehn sind großzügig, und eine verbogene Zeile soll das Gerät
 nicht mit Hunderten von Terminen fluten.
 
+### Geteilte Listen: für sich stummschalten
+
+In einer **geteilten** Liste kann jede Person einzelne Erinnerungen für sich
+abschalten. Der Schalter erscheint nur dort – in einer eigenen Liste gäbe es
+niemanden, für den er gälte.
+
+* Wer stumm schaltet, wird nicht geweckt; **für die anderen bleibt die
+  Erinnerung, wie sie war**. Genau darum geht es: Sonst müsste man sie allen
+  nehmen, um selbst Ruhe zu haben.
+* Die Angabe steht als `mutedBy` **im Erinnerungseintrag** und wandert mit der
+  Aufgabe durch den Sync. Eine eigene Tabelle für „wer will das nicht" wäre ein
+  vierter Sync-Pfad für eine Handvoll Kennungen – dieselbe Überlegung wie bei
+  der Liste selbst. Der Preis: Stummschalten schreibt an der Aufgabe, und bei
+  gleichzeitigen Änderungen gewinnt wie überall der letzte Schreibvorgang.
+* In der Liste bleibt die Erinnerung sichtbar und heißt dann
+  „… · für mich stumm". Auch dann, wenn sie genau zur Fälligkeit passiert:
+  Für die anderen wäre das eine Dublette zur Zeile darüber, für die stumme
+  Person die einzige Spur ihrer Entscheidung.
+* Stummschalten gilt **nur für die eigene Person**, nicht für deren andere
+  Geräte – die Kennung ist die des Kontos, und die ist auf allen Geräten
+  dieselbe.
+
 ### Wie es funktioniert
 
 | Datei | Aufgabe |

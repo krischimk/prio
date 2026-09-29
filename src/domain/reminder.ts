@@ -32,9 +32,10 @@ export type ReminderForm = 'none' | 'absolute' | 'relative'
  * ergibt: So ist ein Datensatz auch dann eindeutig zu lesen, wenn er von Hand
  * verbogen wurde oder aus einer Fassung stammt, die die Regel anders zog.
  */
-export type TaskReminder =
+export type TaskReminder = { mutedBy?: string[] } & (
   | { form: 'absolute'; at: IsoDateTime }
   | { form: 'offset'; minutes: number }
+)
 
 export interface ReminderFields {
   due_at: IsoDateTime | null
@@ -77,6 +78,42 @@ export function reminderFormFor(
 ): ReminderForm {
   if (dueAt === null) return 'none'
   return isRecurrence(recurrence) ? 'relative' : 'absolute'
+}
+
+/**
+ * `true`, wenn diese Person die Erinnerung nicht bekommen will.
+ *
+ * Die Stummschaltung ist eine Angabe **je Person**, und sie liegt trotzdem in
+ * der Aufgabe – die gehört der Liste, und die Liste gehört allen. Eine eigene
+ * Tabelle für „wer will das nicht" wäre der vierte Sync-Pfad für eine
+ * Handvoll Kennungen; siehe README.
+ *
+ * Wer hier nicht steht, bekommt die Erinnerung. Fehlt das Feld ganz, gilt sie
+ * für alle – so verhalten sich auch Aufgaben aus der Zeit vor dieser Funktion.
+ */
+export function isMutedFor(reminder: TaskReminder, viewerId: string): boolean {
+  return reminder.mutedBy?.includes(viewerId) ?? false
+}
+
+/** Setzt oder entfernt die Stummschaltung einer Person. */
+export function withMuted(
+  reminder: TaskReminder,
+  viewerId: string,
+  muted: boolean,
+): TaskReminder {
+  const andere = (reminder.mutedBy ?? []).filter((id) => id !== viewerId)
+  const mutedBy = muted ? [...andere, viewerId] : andere
+
+  // Leere Listen kommen gar nicht erst in die Daten – sonst wüchse die Zeile
+  // mit jedem Stummschalten und wieder Einschalten.
+  if (reminder.form === 'absolute') {
+    return mutedBy.length > 0
+      ? { form: 'absolute', at: reminder.at, mutedBy }
+      : { form: 'absolute', at: reminder.at }
+  }
+  return mutedBy.length > 0
+    ? { form: 'offset', minutes: reminder.minutes, mutedBy }
+    : { form: 'offset', minutes: reminder.minutes }
 }
 
 /**
@@ -203,18 +240,20 @@ function umformen(
 ): TaskReminder[] {
   const ergebnis: TaskReminder[] = []
   for (const reminder of reminders) {
+    // Wer stummgeschaltet hat, bleibt es – auch wenn die Form wechselt.
+    const stumm = reminder.mutedBy !== undefined ? { mutedBy: reminder.mutedBy } : {}
     if (relativ) {
       const minutes =
         reminder.form === 'offset'
           ? reminder.minutes
           : offsetFromAbsolute(dueAt, reminder.at)
-      if (minutes !== null) ergebnis.push({ form: 'offset', minutes })
+      if (minutes !== null) ergebnis.push({ form: 'offset', minutes, ...stumm })
     } else {
       const at =
         reminder.form === 'absolute'
           ? reminder.at
           : absoluteFromOffset(dueAt, reminder.minutes, nowMs)
-      if (at !== null) ergebnis.push({ form: 'absolute', at })
+      if (at !== null) ergebnis.push({ form: 'absolute', at, ...stumm })
     }
   }
   return ergebnis
@@ -236,10 +275,11 @@ function normalisieren(
       reminder.form === 'offset' ? `o:${reminder.minutes}` : `a:${normalizeIso(reminder.at)}`
     if (gesehen.has(schluessel)) continue
     gesehen.add(schluessel)
+    const stumm = reminder.mutedBy !== undefined ? { mutedBy: reminder.mutedBy } : {}
     ergebnis.push(
       reminder.form === 'offset'
-        ? { form: 'offset', minutes: Math.round(reminder.minutes) }
-        : { form: 'absolute', at: normalizeIso(reminder.at) },
+        ? { form: 'offset', minutes: Math.round(reminder.minutes), ...stumm }
+        : { form: 'absolute', at: normalizeIso(reminder.at), ...stumm },
     )
     if (ergebnis.length >= MAX_REMINDERS) break
   }
@@ -260,20 +300,29 @@ export function parseReminders(wert: unknown): TaskReminder[] {
   for (const eintrag of wert) {
     if (typeof eintrag !== 'object' || eintrag === null) continue
     const form = (eintrag as { form?: unknown }).form
+    const stumm = leseMutedBy((eintrag as { mutedBy?: unknown }).mutedBy)
+
     if (form === 'absolute') {
       const at = (eintrag as { at?: unknown }).at
       if (typeof at !== 'string') continue
       try {
-        ergebnis.push({ form: 'absolute', at: normalizeIso(at) })
+        ergebnis.push({ form: 'absolute', at: normalizeIso(at), ...stumm })
       } catch {
         // Ein ungültiger Zeitstempel ist kein Grund, den Rest zu verlieren.
       }
     } else if (form === 'offset') {
       const minutes = (eintrag as { minutes?: unknown }).minutes
       if (typeof minutes === 'number' && isPlausibleOffset(minutes)) {
-        ergebnis.push({ form: 'offset', minutes: Math.round(minutes) })
+        ergebnis.push({ form: 'offset', minutes: Math.round(minutes), ...stumm })
       }
     }
   }
   return ergebnis.slice(0, MAX_REMINDERS)
+}
+
+/** Liest die Stummschaltungen; alles Unbrauchbare fällt weg. */
+function leseMutedBy(wert: unknown): { mutedBy?: string[] } {
+  if (!Array.isArray(wert)) return {}
+  const kennungen = wert.filter((eintrag): eintrag is string => typeof eintrag === 'string')
+  return kennungen.length > 0 ? { mutedBy: kennungen } : {}
 }

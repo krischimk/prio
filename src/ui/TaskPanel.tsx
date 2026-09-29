@@ -147,7 +147,12 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
         ) : (
           <ul className="space-y-2" data-testid="task-list">
             {tasks.map((task) => (
-              <TaskItem key={task.id} task={task} />
+              <TaskItem
+                key={task.id}
+                task={task}
+                listIsShared={list.is_shared}
+                currentUserId={currentUserId}
+              />
             ))}
           </ul>
         )}

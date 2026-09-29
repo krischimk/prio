@@ -1,4 +1,4 @@
-import { parseReminders, reminderTimeOf, type TaskReminder } from '../domain/reminder'
+import { isMutedFor, parseReminders, reminderTimeOf, type TaskReminder } from '../domain/reminder'
 import type { LocalTask } from '../domain/types'
 import { formatReminderLabel } from './datetime'
 
@@ -51,6 +51,8 @@ export interface ReminderLabel {
   text: string
   /** `true`, wenn der Zeitpunkt hinter der Fälligkeit liegt (Nachlauf). */
   afterDue: boolean
+  /** `true`, wenn diese Person die Erinnerung nicht bekommen will. */
+  muted: boolean
 }
 
 /**
@@ -60,7 +62,7 @@ export interface ReminderLabel {
  * zur Fälligkeit passiert – dann stünde in jeder Zeile dasselbe wie in der
  * Zeile darüber.
  */
-export function describeReminders(task: LocalTask): ReminderLabel[] {
+export function describeReminders(task: LocalTask, viewerId: string | null = null): ReminderLabel[] {
   const dueMs = task.due_at === null ? null : Date.parse(task.due_at)
 
   // Eine Zeile aus einer älteren Fassung hat das Feld womöglich gar nicht.
@@ -69,12 +71,20 @@ export function describeReminders(task: LocalTask): ReminderLabel[] {
     if (at === null) return []
     const atMs = Date.parse(at)
     if (!Number.isFinite(atMs)) return []
-    if (dueMs !== null && dueMs === atMs) return []
 
+    // Eine stummgeschaltete Erinnerung bleibt sichtbar – sonst wüsste man nicht
+    // mehr, warum man nicht geweckt wird. Sie wird nur als solche benannt.
+    //
+    // Deshalb wird sie auch dann gezeigt, wenn sie genau zur Fälligkeit
+    // passiert: Für die anderen wäre das eine Dublette zur Zeile darüber, für
+    // die stummgeschaltete Person ist es die einzige Spur ihrer Entscheidung.
+    const muted = viewerId !== null && isMutedFor(reminder, viewerId)
+    if (dueMs !== null && dueMs === atMs && !muted) return []
     return [
       {
-        text: formatReminderLabel(at),
+        text: muted ? `${formatReminderLabel(at)} · für mich stumm` : formatReminderLabel(at),
         afterDue: dueMs !== null && atMs > dueMs,
+        muted,
       },
     ]
   })
@@ -87,17 +97,46 @@ export function describeReminders(task: LocalTask): ReminderLabel[] {
  * sofort geändert werden kann: bei wiederkehrenden Aufgaben „zur Fälligkeit",
  * bei einmaligen die Fälligkeit selbst – und ohne Fälligkeit die nächste volle
  * Stunde.
+ *
+ * **Der Vorschlag weicht dem aus, was schon da ist.** Sonst ergäbe zweimal
+ * „Weitere Erinnerung" zweimal denselben Wert, und beim Speichern fiele die
+ * Dublette stillschweigend weg – eine Zeile, die man hinzufügt und die
+ * verschwindet.
  */
 export function reminderSuggestion(
   recurrence: string | null,
   dueAt: string | null,
   nowMs: number,
+  vorhandene: TaskReminder[] = [],
 ): TaskReminder {
-  if (dueAt !== null && recurrence !== null) return { form: 'offset', minutes: 0 }
-  if (dueAt !== null) return { form: 'absolute', at: dueAt }
+  const belegt = new Set(
+    vorhandene.map((reminder) =>
+      reminder.form === 'offset' ? `o:${reminder.minutes}` : `a:${reminder.at}`,
+    ),
+  )
 
-  const naechsteStunde = new Date(nowMs)
-  naechsteStunde.setMinutes(0, 0, 0)
-  naechsteStunde.setHours(naechsteStunde.getHours() + 1)
-  return { form: 'absolute', at: naechsteStunde.toISOString() }
+  if (dueAt !== null && recurrence !== null) {
+    for (const minuten of [0, 10, 60, 1440, -60, 2880]) {
+      if (!belegt.has(`o:${minuten}`)) return { form: 'offset', minutes: minuten }
+    }
+    return { form: 'offset', minutes: 0 }
+  }
+
+  const basis =
+    dueAt !== null
+      ? Date.parse(dueAt)
+      : (() => {
+          const stunde = new Date(nowMs)
+          stunde.setMinutes(0, 0, 0)
+          stunde.setHours(stunde.getHours() + 1)
+          return stunde.getTime()
+        })()
+
+  // Eine Stunde je Versuch zurück – so entsteht eine Reihe, die man sofort
+  // auseinanderhalten kann.
+  for (let schritt = 0; schritt < 6; schritt += 1) {
+    const at = new Date(basis - schritt * 60 * 60 * 1000).toISOString()
+    if (!belegt.has(`a:${at}`)) return { form: 'absolute', at }
+  }
+  return { form: 'absolute', at: new Date(basis).toISOString() }
 }

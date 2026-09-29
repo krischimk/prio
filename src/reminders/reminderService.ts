@@ -53,6 +53,13 @@ export interface ReminderService {
 export function createReminderService(options: {
   db: LocalDatabase
   port: LocalNotificationsPort
+  /**
+   * Wer die App gerade benutzt.
+   *
+   * Nötig, weil eine Erinnerung **je Person** stummgeschaltet sein kann: Die
+   * Angabe steht in der geteilten Aufgabe, gilt aber nur für einen.
+   */
+  viewerId: string
   clock?: Clock
 }): ReminderService {
   const clock = options.clock ?? systemClock
@@ -83,7 +90,7 @@ export function createReminderService(options: {
       options.db.reminders.toArray(),
     ])
 
-    const desired = planReminders(tasks, lists, clock.nowMs())
+    const desired = planReminders(tasks, lists, clock.nowMs(), options.viewerId)
 
     let counter = Number(await readMeta(options.db, META_REMINDER_ID_COUNTER))
     if (!Number.isFinite(counter) || counter < 0) counter = 0

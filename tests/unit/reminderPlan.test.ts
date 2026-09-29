@@ -142,6 +142,40 @@ describe('Erinnerungen planen', () => {
     expect(planReminders(tasks, lists, NOW)).toHaveLength(0)
   })
 
+  it('weckt niemanden, der die Erinnerung stummgeschaltet hat', () => {
+    const tasks = [
+      einmalig({ id: 't1', reminders: [{ form: 'absolute', at: SOON, mutedBy: ['a'] }] }),
+    ]
+
+    expect(planReminders(tasks, lists, NOW, 'a')).toHaveLength(0)
+    // Für alle anderen bleibt sie bestehen – das ist der ganze Punkt.
+    expect(planReminders(tasks, lists, NOW, 'b').map((entry) => entry.taskId)).toEqual(['t1'])
+  })
+
+  it('trifft nur die stummgeschaltete Erinnerung, nicht die anderen', () => {
+    const tasks = [
+      einmalig({
+        id: 't1',
+        reminders: [
+          { form: 'absolute', at: SOON, mutedBy: ['a'] },
+          { form: 'absolute', at: LATER },
+        ],
+      }),
+    ]
+
+    expect(planReminders(tasks, lists, NOW, 'a').map((entry) => entry.at)).toEqual([LATER])
+    expect(planReminders(tasks, lists, NOW, 'b')).toHaveLength(2)
+  })
+
+  it('plant ohne Kennung alles', () => {
+    // So verhalten sich Aufrufer ohne Person und Tests, die die Stummschaltung
+    // nicht prüfen.
+    const tasks = [
+      einmalig({ id: 't1', reminders: [{ form: 'absolute', at: SOON, mutedBy: ['a'] }] }),
+    ]
+    expect(planReminders(tasks, lists, NOW)).toHaveLength(1)
+  })
+
   it('nennt die Liste als Kontext, sonst einen Ersatztext', () => {
     const tasks = [
       einmalig({ id: 't1', list_id: 'list-1' }),

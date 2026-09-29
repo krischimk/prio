@@ -24,7 +24,12 @@ describe('Erinnerungsdienst', () => {
   beforeEach(async () => {
     device = await createDevice({ userId, gateway: createFakeServer().gatewayFor(userId) })
     port = new FakeNotificationsPort()
-    service = createReminderService({ db: device.db, port, clock: device.clock })
+    service = createReminderService({
+      viewerId: userId,
+      db: device.db,
+      port,
+      clock: device.clock,
+    })
   })
 
   afterEach(async () => {

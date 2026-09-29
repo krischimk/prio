@@ -20,6 +20,7 @@ export function TaskDetailSheet({
   task,
   listId,
   lists,
+  currentUserId,
   onClose,
   onRequestMove,
 }: {
@@ -27,6 +28,7 @@ export function TaskDetailSheet({
   task: LocalTask | null
   listId: string
   lists: LocalList[]
+  currentUserId: string
   onClose: () => void
   onRequestMove: (task: LocalTask) => void
 }) {
@@ -178,6 +180,8 @@ export function TaskDetailSheet({
             dueAt={fromDateTimeLocalValue(dueAt)}
             recurrence={recurrence === '' ? null : recurrence}
             reminders={erinnerungen}
+            viewerId={currentUserId}
+            listIsShared={lists.find((eintrag) => eintrag.id === listId)?.is_shared ?? false}
             onChange={setErinnerungen}
           />
 

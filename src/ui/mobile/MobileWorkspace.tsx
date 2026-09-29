@@ -65,6 +65,7 @@ export function MobileWorkspace() {
             </div>
             <MobileTaskList
               tasks={tasks}
+              currentUserId={userId}
               onOpenTask={(task) => setDetail({ task })}
               onReorder={(orderedTaskIds) => {
                 void repositories.reorderTasks(selected.id, orderedTaskIds)
@@ -115,6 +116,7 @@ export function MobileWorkspace() {
           task={detail.task}
           listId={selected.id}
           lists={lists}
+          currentUserId={userId}
           onClose={() => setDetail(null)}
           onRequestMove={(task) => setMovingTask(task)}
         />

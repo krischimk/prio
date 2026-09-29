@@ -5,8 +5,10 @@ import { isRecurrence } from '../domain/recurrence'
 import {
   MAX_REMINDERS,
   absoluteFromOffset,
+  isMutedFor,
   offsetFromAbsolute,
   reminderTimeOf,
+  withMuted,
   type TaskReminder,
 } from '../domain/reminder'
 import {
@@ -14,7 +16,7 @@ import {
   fromDateTimeLocalValue,
   toDateTimeLocalValue,
 } from './datetime'
-import { BellIcon, PlusIcon, StarIcon, TrashIcon } from './icons'
+import { BellIcon, BellOffIcon, PlusIcon, StarIcon, TrashIcon } from './icons'
 import {
   FIXED_REMINDER_STEPS,
   formatOffsetChoice,
@@ -42,12 +44,18 @@ export function ReminderList({
   dueAt,
   recurrence,
   reminders,
+  viewerId,
+  listIsShared,
   onChange,
 }: {
   idPrefix: string
   dueAt: string | null
   recurrence: string | null
   reminders: TaskReminder[]
+  /** Wer die App benutzt – nötig, um „für mich stumm" zu erkennen. */
+  viewerId?: string
+  /** Nur in geteilten Listen lässt sich eine Erinnerung stummschalten. */
+  listIsShared?: boolean
   onChange: (next: TaskReminder[]) => void
 }) {
   const relativ = isRecurrence(recurrence) && dueAt !== null
@@ -78,7 +86,7 @@ export function ReminderList({
 
   const hinzufuegen = () => {
     if (reminders.length >= MAX_REMINDERS) return
-    onChange([...reminders, reminderSuggestion(recurrence, dueAt, Date.now())])
+    onChange([...reminders, reminderSuggestion(recurrence, dueAt, Date.now(), reminders)])
   }
 
   return (
@@ -98,7 +106,11 @@ export function ReminderList({
         </p>
       ) : (
         <ul className="mb-2 space-y-2">
-          {reminders.map((reminder, index) => (
+          {reminders.map((reminder, index) => {
+            const stumm = viewerId !== undefined && isMutedFor(reminder, viewerId)
+            // Beim Ändern des Wertes darf die Stummschaltung nicht verloren gehen.
+            const behalteStumm = reminder.mutedBy !== undefined ? { mutedBy: reminder.mutedBy } : {}
+            return (
             <li key={index} className="rounded-md border border-neutral-800 p-2">
               <div className="flex items-start gap-2">
                 <div className="min-w-0 flex-1">
@@ -107,16 +119,40 @@ export function ReminderList({
                       idPrefix={`${idPrefix}-r${index}`}
                       dueAt={dueAt}
                       minutes={reminder.form === 'offset' ? reminder.minutes : 0}
-                      onChange={(minutes) => ersetzen(index, { form: 'offset', minutes })}
+                      muted={stumm}
+                      onChange={(minutes) => ersetzen(index, { form: 'offset', minutes, ...behalteStumm })}
                     />
                   ) : (
                     <AbsoluteRow
                       idPrefix={`${idPrefix}-r${index}`}
                       at={reminder.form === 'absolute' ? reminder.at : null}
-                      onChange={(at) => ersetzen(index, { form: 'absolute', at })}
+                      muted={stumm}
+                      onChange={(at) => ersetzen(index, { form: 'absolute', at, ...behalteStumm })}
                     />
                   )}
                 </div>
+                {listIsShared && viewerId !== undefined ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onChange(
+                        reminders.map((eintrag, i) =>
+                          i === index ? withMuted(eintrag, viewerId, !stumm) : eintrag,
+                        ),
+                      )
+                    }
+                    aria-pressed={stumm}
+                    aria-label={
+                      stumm
+                        ? `Erinnerung ${index + 1} wieder für mich einschalten`
+                        : `Erinnerung ${index + 1} für mich stummschalten`
+                    }
+                    title={stumm ? 'Wieder für mich einschalten' : 'Nur für mich stummschalten'}
+                    className={`${ghostButton} shrink-0 px-2 py-2 ${stumm ? mutedText : ''}`}
+                  >
+                    {stumm ? <BellOffIcon className="h-4 w-4" /> : <BellIcon className="h-4 w-4" />}
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => entfernen(index)}
@@ -128,7 +164,8 @@ export function ReminderList({
                 </button>
               </div>
             </li>
-          ))}
+            )
+          })}
         </ul>
       )}
 
@@ -150,10 +187,12 @@ export function ReminderList({
 function AbsoluteRow({
   idPrefix,
   at,
+  muted,
   onChange,
 }: {
   idPrefix: string
   at: string | null
+  muted: boolean
   onChange: (at: string) => void
 }) {
   return (
@@ -174,8 +213,9 @@ function AbsoluteRow({
       />
       {at !== null ? (
         <p className={`mt-1 flex items-center gap-1 text-xs ${mutedText}`}>
-          <BellIcon className="h-3 w-3 shrink-0" />
+          {muted ? <BellOffIcon className="h-3 w-3 shrink-0" /> : <BellIcon className="h-3 w-3 shrink-0" />}
           {formatReminderLabel(at)}
+          {muted ? ' · für mich stumm' : ''}
         </p>
       ) : null}
     </div>
@@ -187,11 +227,13 @@ function OffsetRow({
   idPrefix,
   dueAt,
   minutes,
+  muted,
   onChange,
 }: {
   idPrefix: string
   dueAt: string
   minutes: number
+  muted: boolean
   onChange: (minutes: number) => void
 }) {
   const { repositories } = useWorkspace()
@@ -261,8 +303,9 @@ function OffsetRow({
 
       {zeitpunkt !== null ? (
         <p className={`mt-1 flex items-center gap-1 text-xs ${mutedText}`}>
-          <BellIcon className="h-3 w-3 shrink-0" />
+          {muted ? <BellOffIcon className="h-3 w-3 shrink-0" /> : <BellIcon className="h-3 w-3 shrink-0" />}
           {formatReminderLabel(zeitpunkt)}
+          {muted ? ' · für mich stumm' : ''}
         </p>
       ) : null}
     </div>

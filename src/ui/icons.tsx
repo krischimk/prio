@@ -85,6 +85,17 @@ export function BellIcon({ className = 'h-4 w-4' }: { className?: string }) {
   )
 }
 
+/** Erinnerung, die für mich stummgeschaltet ist – Glocke mit Schrägstrich. */
+export function BellOffIcon({ className = 'h-4 w-4' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
+      <path d="M6 9a6 6 0 0 1 9.2-5.1M18 9c0 4 1.5 5.5 1.5 5.5h-11" />
+      <path d="M4 4l16 16" />
+      <path d="M10 18a2 2 0 0 0 4 0" />
+    </svg>
+  )
+}
+
 /**
  * Stern zum Merken eines Wertes.
  *

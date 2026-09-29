@@ -5,9 +5,11 @@ import {
   alignReminders,
   isPlausibleOffset,
   offsetFromAbsolute,
+  isMutedFor,
   parseReminders,
   reminderFormFor,
   reminderTimeOf,
+  withMuted,
   type ReminderFields,
   type ReminderTarget,
 } from '../../src/domain/reminder'
@@ -295,5 +297,68 @@ describe('Erinnerungen aus der Datenbank lesen', () => {
       minutes: i,
     }))
     expect(parseReminders(viele)).toHaveLength(MAX_REMINDERS)
+  })
+})
+
+describe('Stummschalten je Person', () => {
+  const reminder = { form: 'offset' as const, minutes: 90 }
+
+  it('erkennt, wer stummgeschaltet hat', () => {
+    expect(isMutedFor(reminder, 'a')).toBe(false)
+    expect(isMutedFor(withMuted(reminder, 'a', true), 'a')).toBe(true)
+    expect(isMutedFor(withMuted(reminder, 'a', true), 'b')).toBe(false)
+  })
+
+  it('lässt die Erinnerung selbst unangetastet', () => {
+    expect(withMuted(reminder, 'a', true)).toEqual({ form: 'offset', minutes: 90, mutedBy: ['a'] })
+    expect(withMuted({ form: 'absolute', at: DUE }, 'a', true)).toEqual({
+      form: 'absolute',
+      at: DUE,
+      mutedBy: ['a'],
+    })
+  })
+
+  it('schreibt keine leere Liste in die Daten', () => {
+    // Sonst wüchse die Zeile mit jedem Stummschalten und wieder Einschalten.
+    const stumm = withMuted(reminder, 'a', true)
+    expect(withMuted(stumm, 'a', false)).toEqual(reminder)
+    expect(withMuted(reminder, 'a', false)).toEqual(reminder)
+  })
+
+  it('trägt mehrere Personen ein, ohne sich zu stören', () => {
+    const beide = withMuted(withMuted(reminder, 'a', true), 'b', true)
+    expect(beide.mutedBy).toEqual(['a', 'b'])
+    expect(withMuted(beide, 'a', false).mutedBy).toEqual(['b'])
+  })
+
+  it('überlebt den Wechsel der Form', () => {
+    // Wer stummgeschaltet hat, bleibt es – auch wenn aus dem Vorlauf ein
+    // Zeitpunkt wird.
+    const vorher = felder({
+      recurrence: 'daily',
+      reminders: [{ form: 'offset', minutes: 90, mutedBy: ['a'] }],
+    })
+    const ergebnis = alignReminders(vorher, ziel({ recurrence: null }), NOW)
+
+    expect(ergebnis.reminders).toEqual([
+      { form: 'absolute', at: VORHER, mutedBy: ['a'] },
+    ])
+  })
+})
+
+describe('Stummschaltungen aus der Datenbank lesen', () => {
+  it('liest sie mit', () => {
+    expect(parseReminders([{ form: 'offset', minutes: 30, mutedBy: ['a'] }])).toEqual([
+      { form: 'offset', minutes: 30, mutedBy: ['a'] },
+    ])
+  })
+
+  it('verwirft Unbrauchbares und behält den Rest', () => {
+    expect(parseReminders([{ form: 'offset', minutes: 30, mutedBy: ['a', 7, null] }])).toEqual([
+      { form: 'offset', minutes: 30, mutedBy: ['a'] },
+    ])
+    expect(parseReminders([{ form: 'offset', minutes: 30, mutedBy: 'kaputt' }])).toEqual([
+      { form: 'offset', minutes: 30 },
+    ])
   })
 })

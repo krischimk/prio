@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { resetServer, uniqueEmail } from './support/helpers'
+import { createAccount, resetServer, uniqueEmail } from './support/helpers'
 
 /**
  * E2E-Tests der mobilen Oberfläche.
@@ -513,4 +513,40 @@ test('erlaubt auf dem Telefon eine Erinnerung ohne Fälligkeitsdatum', async ({ 
   const zeile = taskRow(page, 'Jonna anrufen')
   await expect(zeile).toContainText('Erinnert:')
   await expect(zeile).not.toContainText('Fällig:')
+})
+
+test('schaltet eine Erinnerung auf dem Telefon nur für sich stumm', async ({ page, request }) => {
+  const emailB = uniqueEmail('m22-b')
+  await createAccount(request, emailB)
+
+  await register(page, uniqueEmail('m22'))
+  await createList(page, 'Haushalt')
+
+  await page.getByRole('button', { name: 'Neue Aufgabe' }).click()
+  await page.getByLabel('Titel', { exact: true }).fill('Müll rausbringen')
+  await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
+  await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+  await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+
+  await expect(page.getByRole('button', { name: /stummschalten/ })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Speichern', exact: true }).click()
+
+  // Teilen über die Listenverwaltung – dort ist es ein eigener Schritt.
+  await page.getByRole('button', { name: /Liste .* verwalten/ }).click()
+  await page.getByRole('button', { name: 'Teilen', exact: true }).click()
+  await page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(emailB)
+  await page.getByRole('button', { name: 'Freigeben' }).click()
+  await expect(page.getByRole('status')).toContainText('Freigabe für')
+  await page.getByRole('button', { name: 'Schließen' }).click()
+
+  await taskRow(page, 'Müll rausbringen').click()
+  await expect(page.getByRole('button', { name: /stummschalten/ })).toHaveCount(2)
+
+  await page.getByRole('button', { name: 'Erinnerung 1 für mich stummschalten' }).click()
+  await expect(
+    page.getByRole('button', { name: 'Erinnerung 1 wieder für mich einschalten' }),
+  ).toBeVisible()
+  await page.getByRole('button', { name: 'Speichern', exact: true }).click()
+
+  await expect(taskRow(page, 'Müll rausbringen').getByText('für mich stumm')).toHaveCount(1)
 })
