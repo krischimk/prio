@@ -4,6 +4,15 @@ import { defineConfig } from 'vitest/config'
 
 import pkg from './package.json' with { type: 'json' }
 
+// Vitest erbt ein `NODE_ENV` aus der Umgebung. Steht dort `production` – etwa
+// weil der Aufruf aus einem Dienst kommt –, lädt React seine Produktionsfassung
+// ohne `act`, und Vite externalisiert die Node-Builtins (`node:fs`) nicht mehr.
+// Beides lässt Tests scheitern, ohne dass der Quelltext etwas damit zu tun hat.
+// `VITEST` setzt nur Vitest selbst; der Produktionsbuild bleibt unberührt.
+if (process.env.VITEST) {
+  process.env.NODE_ENV = 'test'
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
