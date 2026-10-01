@@ -1037,7 +1037,7 @@ Nach dem Klonen auf einem Rechner stellt folgender Befehl den gewohnten
 `~/.prio-android`-Pfad als Verknüpfung her:
 
 ```bash
-python scripts/setup_private_data.py
+python3 scripts/setup_private_data.py
 ```
 
 Nextcloud wird unter `~/Nextcloud`, `~/Documents/Nextcloud` und
