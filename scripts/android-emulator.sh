@@ -84,10 +84,19 @@ start() {
     info "Emulator läuft bereits."
     return 0
   fi
-  info "Starte $AVD_NAME mit Fenster …"
-  # Ohne `-no-window`, damit das Fenster auf dem Desktop erscheint.
+  # Auf einem Rechner ohne Anzeige (Server, SSH ohne X) lässt sich kein Fenster
+  # öffnen; Qt bricht dann mit „no Qt platform plugin could be initialized“ ab.
+  # Dort läuft der Emulator ohne Fenster – `adb` und Screenshots funktionieren
+  # weiterhin, nur das Zusehen entfällt.
+  local fenster=()
+  if [ -n "${DISPLAY:-}" ]; then
+    info "Starte $AVD_NAME mit Fenster …"
+  else
+    info "Keine Anzeige gefunden – starte $AVD_NAME ohne Fenster."
+    fenster=(-no-window)
+  fi
   # `-no-snapshot` verhindert, dass ein alter Zustand aufgewärmt wird.
-  nohup emulator -avd "$AVD_NAME" -no-audio -no-boot-anim -no-snapshot \
+  nohup emulator -avd "$AVD_NAME" -no-audio -no-boot-anim -no-snapshot "${fenster[@]}" \
     >/tmp/prio-emulator.log 2>&1 &
   wait_for_boot
   info "Emulator bereit."
