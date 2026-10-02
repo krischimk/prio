@@ -880,13 +880,18 @@ verpackt und im WebView geladen.
 | Android SDK | Platform **36**, Build-Tools **36.0.0**, Platform-Tools | `android/variables.gradle` legt `compileSdk = 36` fest. |
 | Gradle | wird vom Wrapper selbst geladen (8.14.3) | – |
 
-Damit Gradle ohne Umgebungsvariablen das richtige JDK nimmt, genügt ein Eintrag
-in der **benutzereigenen** Gradle-Konfiguration (nicht im Repository):
+Damit Gradle das richtige JDK nimmt, genügt für den **Daemon** ein Eintrag in
+der **benutzereigenen** Gradle-Konfiguration (nicht im Repository):
 
 ```properties
 # ~/.gradle/gradle.properties
-org.gradle.java.home=/usr/lib/jvm/java-21-openjdk
+org.gradle.java.home=/usr/lib/jvm/java-21-openjdk-amd64
 ```
+
+Der Wrapper `./gradlew` braucht zusätzlich ein `java` im `PATH` oder ein
+gesetztes `JAVA_HOME` – sonst bricht schon der Start mit „JAVA_HOME is not set"
+ab. Unter Debian erfüllt das `openjdk-21-jdk-headless` aus dem Paketarchiv; der
+Pfad heißt dort `/usr/lib/jvm/java-21-openjdk-amd64`.
 
 Das SDK wird über `android/local.properties` gefunden (auch nicht versioniert):
 
@@ -960,17 +965,22 @@ hielte sich eine ältere Fassung für aktuell).
 ### Im Emulator prüfen
 
 Zum Ausprobieren muss die App nicht aufs Telefon. Der Emulator läuft auf
-demselben Rechner, sein Fenster lässt sich wie ein Handy bedienen:
+demselben Rechner. Mit gesetztem `DISPLAY` erscheint sein Fenster und lässt sich
+wie ein Handy bedienen; ohne Anzeige – etwa auf einem Server – startet das
+Skript ihn fensterlos, dann bleibt der Screenshot zur Beurteilung:
 
 ```bash
 npm run android:emu          # startet den Emulator (AVD „prio-test“)
 npm run android:emu:install  # baut die Debug-APK, installiert und öffnet sie
-npm run android:emu:shot     # legt einen Screenshot auf den Desktop
+npm run android:emu:shot     # legt einen Screenshot ab (ohne Argument nach ~/Desktop)
 npm run android:emu:stop
 
 # Einen Ausdruck im laufenden WebView auswerten (prüfen ohne Neubau):
 npm run android:emu:eval -- 'JSON.stringify(Object.keys(localStorage))'
 ```
+
+Ohne `~/Desktop` – auf einem Server der Normalfall – braucht der Screenshot ein
+Ziel: `npm run android:emu:shot -- /pfad/prio-emulator.png`.
 
 **Anmeldung und Testdaten bleiben erhalten** – über App-Aktualisierungen und
 über Neustarts hinweg. Zwei Dinge sorgen dafür:

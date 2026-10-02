@@ -139,13 +139,15 @@ Gemessen, in absteigender Reihenfolge:
 ### Prüfen im Emulator (Standardweg)
 
 Neue Versionen werden **im Emulator** geprüft, nicht zuerst auf dem Telefon.
-Der Emulator läuft auf demselben Rechner, sein Fenster erscheint auf dem
-Desktop und lässt sich wie ein Handy bedienen.
+Der Emulator läuft auf demselben Rechner. Ist eine Anzeige vorhanden (`DISPLAY`
+gesetzt), erscheint sein Fenster auf dem Desktop und lässt sich wie ein Handy
+bedienen; ohne Anzeige – etwa auf einem Server – startet das Skript ihn
+fensterlos, und es bleibt der Screenshot zur Beurteilung.
 
 ```bash
-npm run android:emu          # Emulator mit Fenster starten
+npm run android:emu          # Emulator starten (mit Fenster, ohne Anzeige fensterlos)
 npm run android:emu:install  # Debug-APK bauen, installieren, öffnen
-npm run android:emu:shot     # Screenshot auf den Desktop legen
+npm run android:emu:shot     # Screenshot ablegen (ohne Argument nach ~/Desktop)
 npm run android:emu:stop
 
 # Einen Ausdruck im laufenden WebView ausführen (prüfen ohne Neubau):
@@ -155,7 +157,11 @@ npm run android:emu:eval 'JSON.stringify(Object.keys(window.Capacitor.Plugins))'
 * **Vorher selbst hinsehen.** Erst `android:emu:shot` und den Screenshot
   ansehen, dann den Nutzer fragen. Das hat schon Fehler gefunden, die keine
   Zusicherung erwischt hätte.
-* **Bedienen und beurteilen** tut der Nutzer – dafür ist das Fenster da.
+* **Ohne Anzeige gibt es kein Fenster.** Ist `DISPLAY` nicht gesetzt, läuft der
+  Emulator fensterlos; bedienen lässt er sich dann nicht, beurteilt wird über
+  Screenshots. Deren Vorgabeziel ist `~/Desktop` – fehlt der Ordner, den Pfad
+  angeben: `npm run android:emu:shot -- /pfad/prio-emulator.png`.
+* **Bedienen und beurteilen** tut der Nutzer – wo ein Fenster da ist.
 * Der Emulator spricht mit dem echten Supabase-Projekt. Wer dort nichts
   anlegen will, meldet sich mit dem eigenen Konto an.
 * **Was der Emulator nicht kann:** echte Benachrichtigungszustellung, die
