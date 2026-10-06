@@ -21,6 +21,8 @@
     "icons": "node scripts/generate-icons.mjs",
     "ci": "npm run typecheck && npm run lint && npm run test && npm run build",
     "db:sql": "node scripts/bundle-migrations.mjs",
+    "db:apply": "npm run db:sql && node scripts/db-apply.mjs",
+    "db:check": "node scripts/db-apply.mjs --check",
     "android:sync": "npm run build && cap sync android",
     "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug",
     "android:release": "npm run build && cap sync android && cd android && ./gradlew assembleRelease",

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Link Prio's private Android signing data from the local Nextcloud folder."""
+"""Link Prio's private data (Android signing, web config, database access)."""
 
 from __future__ import annotations
 
@@ -58,7 +58,23 @@ def main() -> int:
             or project_env.resolve() != (target / "web.env").resolve()
         ):
             raise SystemExit("Die lokale .env-Verknüpfung fehlt oder zeigt falsch.")
-        print("Private Prio-Daten sind vollständig verknüpft.")
+        target_db_env = target / "db.env"
+        project_db_env = PROJECT_ROOT / "supabase" / ".env.local"
+        if target_db_env.is_file() and (
+            not project_db_env.is_symlink()
+            or project_db_env.resolve() != target_db_env.resolve()
+        ):
+            raise SystemExit(
+                "Die Verknüpfung supabase/.env.local fehlt oder zeigt falsch."
+            )
+        if not target_db_env.is_file():
+            print(
+                "Hinweis: db.env fehlt noch – npm run db:apply ist damit noch nicht "
+                "nutzbar (siehe README, Migrationen einspielen)."
+            )
+            print("Alles Übrige ist vollständig verknüpft.")
+        else:
+            print("Private Prio-Daten sind vollständig verknüpft.")
         return 0
 
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -90,6 +106,19 @@ def main() -> int:
         )
     if not project_env.is_symlink():
         project_env.symlink_to(target_env)
+
+    # Optional: der Datenbank-Zugang für `npm run db:apply`. Fehlt db.env, bleibt
+    # alles andere gültig; dann wird nur nichts verknüpft. Eine bereits
+    # vorhandene Datei wird nie überschrieben oder verschoben.
+    target_db_env = target / "db.env"
+    project_db_env = PROJECT_ROOT / "supabase" / ".env.local"
+    if (
+        target_db_env.is_file()
+        and not project_db_env.exists()
+        and not project_db_env.is_symlink()
+    ):
+        project_db_env.symlink_to(target_db_env)
+
     print(f"Private Prio-Daten liegen nun unter {target}.")
     return 0
 

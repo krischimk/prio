@@ -196,13 +196,35 @@ Supabase noch nicht konfiguriert ist.
    > Der alte Variablenname `VITE_SUPABASE_ANON_KEY` wird weiterhin
    > akzeptiert, falls du noch einen Legacy-Key im Einsatz hast.
 
-3. **Migrationen anwenden.** Zwei Wege:
+3. **Migrationen anwenden.** Drei Wege:
 
-   **a) SQL-Editor** (ohne CLI): die Dateien in `supabase/migrations/` in
-   Reihenfolge des Dateinamens vollständig einfügen und ausführen. Am
-   einfachsten die Sammeldatei (siehe unten).
+   **a) `npm run db:apply`** (bequemster Weg, vom Terminal). Es wird immer die
+   vollständige Sammeldatei ausgeführt – dieselbe Semantik wie im SQL-Editor,
+   nur ohne Kopieren. Einmalig nötig:
 
-   Einfacher geht es mit der Sammeldatei – ein einziger Einfüge-Vorgang:
+   * `sudo apt install postgresql-client`
+   * Die Datenbank-Verbindung in `supabase/.env.local`:
+
+     ```
+     SUPABASE_DB_URL=postgresql://postgres.<projekt-id>:<passwort>@db.<projekt-id>.supabase.co:5432/postgres?sslmode=require
+     ```
+
+     Sie steht im Dashboard unter *Connect → Direct connection* (die läuft über
+     IPv6; in einem IPv4-only-Netz stattdessen *Session pooler*, Port 5432). Das
+     Passwort ist der Zugang zur **Datenbank** – nicht der Secret Key der API.
+
+   Die Datei gehört in die private Ablage, nicht ins Repository: als
+   `~/.prio-android/db.env` ablegen und `python3 scripts/setup_private_data.py`
+   laufen lassen, dann ist `supabase/.env.local` verknüpft.
+
+   ```bash
+   npm run db:apply   # Sammeldatei erzeugen und einspielen
+   npm run db:check   # rein lesend: Spalten von tasks und RLS-Status
+   ```
+
+   **b) SQL-Editor** (Rückfallweg ohne Terminal): die Dateien in
+   `supabase/migrations/` in Reihenfolge des Dateinamens vollständig einfügen
+   und ausführen. Am einfachsten die Sammeldatei – ein einziger Einfüge-Vorgang:
 
    ```bash
    npm run db:sql   # erzeugt supabase/all-migrations.sql
@@ -211,7 +233,7 @@ Supabase noch nicht konfiguriert ist.
    Dann den kompletten Inhalt von `supabase/all-migrations.sql` in den
    SQL-Editor einfügen und einmal ausführen.
 
-   **b) Supabase CLI:**
+   **c) Supabase CLI:**
 
    ```bash
    supabase link --project-ref <projekt-id>
@@ -223,8 +245,8 @@ Supabase noch nicht konfiguriert ist.
    > geänderte Datei wird beim nächsten `db push` deshalb **stillschweigend
    > übersprungen** – man hält die Änderung für eingespielt, und sie ist es nie.
    > Wer die CLI benutzt, legt eine geänderte Migration als neue Datei an oder
-   > hilft mit `supabase migration repair` nach. Der Weg über den SQL-Editor und
-   > die Sammeldatei kennt das Problem nicht: Dort wird immer alles ausgeführt.
+   > hilft mit `supabase migration repair` nach. Die Wege über `npm run db:apply`
+   > und den SQL-Editor kennen das Problem nicht: Dort wird immer alles ausgeführt.
 
 4. **E-Mail-Anmeldung prüfen:** *Authentication → Providers → Email* muss aktiv
    sein. Für schnelles Ausprobieren ist es praktisch, *Confirm email*
@@ -313,7 +335,9 @@ HTTP-Aufrufe – aber ohne Cloud.
 | `npm test` | Unit- und Integrationstests |
 | `npm run test:e2e` | E2E-Tests |
 | `npm run icons` | PWA-Icons neu erzeugen |
-| `npm run db:sql` | Die drei Migrationen zu `supabase/all-migrations.sql` zusammenfügen (für den SQL-Editor) |
+| `npm run db:sql` | Alle Migrationen zu `supabase/all-migrations.sql` zusammenfügen |
+| `npm run db:apply` | Sammeldatei erzeugen und per `psql` einspielen (braucht `postgresql-client` und `SUPABASE_DB_URL`) |
+| `npm run db:check` | Rein lesend zeigen, was in der Datenbank steht (Spalten von `tasks`, RLS) |
 | `npm run android:sync` | Web-Bundle bauen und ins Android-Projekt kopieren |
 | `npm run android:apk` | Debug-APK für Android bauen |
 | `npm run android:release` | Signierte Release-APK bauen (braucht den Keystore) |
