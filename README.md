@@ -322,6 +322,7 @@ In-Memory-Ersatz für Supabase, der auch die RLS-Sichtbarkeitsregeln nachbildet.
 | `mobile.spec.ts` | Die Abläufe auf dem Telefon (390 × 844): Menü statt Seitenleiste, Antippen statt Knöpfe, Langdruck zum Verschieben |
 | `lists.spec.ts` | Dieselben Listenabläufe in der breiten Ansicht – Gegenstück zu `mobile.spec.ts` |
 | `parity.spec.ts` | Jede Funktion aus `funktionen` einmal in der breiten Ansicht und einmal auf dem Telefon: erzwingt, dass keine Aktion nur auf einem Bildschirm existiert |
+| `pwa.spec.ts` | Der PWA-Weg gegen den **Produktionsbuild** (`vite preview`, eigenes Playwright-Projekt): Service Worker, Inhalt des Caches, Offline-Start |
 
 Die E2E-Tests starten automatisch zwei Server:
 
@@ -885,10 +886,17 @@ jeweiligen Stelle kommentiert.
 
 ## Deployment (Cloudflare Pages)
 
-Geplantes Hosting ist Cloudflare Pages:
+Die Web-Fassung ist dafür vorbereitet, aber noch nicht veröffentlicht. Cloudflare
+Pages hostet statische Dateien: Es baut das Repository und liefert `dist/` unter
+einer HTTPS-Adresse aus (`<projekt>.pages.dev`); einen Serverprozess gibt es
+nicht. Der kostenlose Tarif reicht für diesen Umfang.
+
+**Einstellungen im Cloudflare-Projekt**
 
 | Einstellung | Wert |
 | --- | --- |
+| Repository | `krischimk/prio` |
+| Produktionsbranch | `main` |
 | Build command | `npm run build` |
 | Build output directory | `dist` |
 | Node-Version | ≥ 22.12 (z. B. `NODE_VERSION=24`) |
@@ -898,9 +906,38 @@ Die Variablen müssen **zur Build-Zeit** gesetzt sein – Vite schreibt sie in d
 Bundle. Der Publishable Key ist dafür vorgesehen und öffentlich; der Schutz
 kommt aus den RLS-Policies.
 
+**Vorher in Supabase einstellen**
+
+* *Authentication → Providers → Email* muss aktiv sein.
+* *Allow new users to sign up* **an** lassen und *Confirm email* **an** lassen:
+  Beim Teilen einer Liste trägt man die E-Mail-Adresse der anderen Person ein,
+  und die App sucht dazu ein **Konto in diesem Projekt**. Wer keines anlegen
+  kann, kann nicht an einer Liste teilnehmen. Die Bestätigung sorgt dafür, dass
+  ein Konto eine echte Mailbox braucht.
+* Wer nicht teilt, kann die Registrierung stattdessen schließen – dann kann
+  niemand außer den vorhandenen Konten hinein.
+
+Die Adresse ist öffentlich; fremde Anmeldungen erzeugen ein leeres Konto und
+sehen keine fremden Daten. Unter *Authentication → Users* stehen alle Konten.
+
+**Nach dem Deployment prüfen**
+
+1. Adresse im Browser öffnen und mit dem eigenen Konto anmelden.
+2. Auf dem Telefon als PWA installieren.
+3. Flugmodus an, App öffnen: Sie muss starten und die Anmeldemaske zeigen.
+   (Dieser Fall ist mit `tests/e2e/pwa.spec.ts` abgesichert.)
+4. In der Passwortverwaltung die Pages-Domain als weitere URI eintragen – neben
+   `androidapp://de.krischi.prio` für die Android-App.
+
+**Was die Web-Fassung nicht kann:** Erinnerungen (die App meldet dort
+„Erinnerungen sind auf diesem Gerät nicht verfügbar"), Installation einer neuen
+Fassung aus der App heraus, und alles, was die Systemleisten des Telefons
+betrifft. Dafür bleibt die APK der Weg.
+
 Für eine Single-Page-App ohne eigene Routen ist kein SPA-Fallback nötig; die App
 läuft unter `/`. Der Service Worker wird nur bei einem Produktionsbuild
-registriert.
+registriert – deshalb läuft der PWA-Test in einem eigenen Playwright-Projekt
+gegen `vite preview` und nicht gegen den Entwicklungsserver.
 
 ---
 

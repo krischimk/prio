@@ -324,6 +324,12 @@ Ausdrücklich **erlaubte** Unterschiede, die nicht angeglichen werden müssen:
 * **Layout:** Screenshots in Telefongröße ansehen. Das hat schon Fehler
   gefunden, die keine Zusicherung erwischt hätte.
 * Neue Sync-Regel ⇒ Fall in `tests/integration/syncScenarios.test.ts` ergänzen.
+* **Der PWA-Weg hat einen eigenen Lauf.** `tests/e2e/pwa.spec.ts` ist ein
+  eigenes Playwright-Projekt gegen den **Produktionsbuild** (`vite preview`),
+  weil sich der Service Worker nur dort registriert. Er prüft, dass der Cache
+  alles enthält, was das HTML zum Start braucht, und dass die App offline
+  startet. Läuft bei `npm run test:e2e` mit; wer am Service Worker, am Manifest
+  oder an `playwright.config.ts` arbeitet, sieht die Wirkung nur dort.
 * Fehlschläge ernst nehmen: Wenn ein Test etwas aufdeckt, wird die Ursache
   behoben, nicht die Erwartung angepasst.
 
