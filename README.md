@@ -940,14 +940,30 @@ Die Reihenfolge ist deshalb: Adresse weitergeben → die Person registriert sich
 und bestätigt → du teilst die Liste. Genau dafür bleibt die Registrierung offen;
 mit geschlossenem Schalter wäre „Teilen" für neue Personen abgeschaltet.
 
-**Warum die Bestätigung anbleibt.** Ohne sie könnte sich jemand mit einer
-fremden Adresse registrieren; mit ihr braucht jedes Konto eine echte Mailbox.
+**Empfehlung: Registrierung zu, Personen einzeln anlegen.** Wer mit einer
+Handvoll bekannter Leute teilt, fährt damit enger: *Authentication → Users →
+Add user* (Konto anlegen) oder *Invite* (Einladung per Mail, je nach Fassung).
+Danach kann die Person sich anmelden, und du kannst teilen. Offene Registrierung
+bringt dann nichts mehr mit, aber drei Angriffsflächen:
 
-**Was „offen" bedeutet.** Wer die Adresse deiner App kennt, kann sich anmelden
-und bekommt ein leeres Konto; fremde Daten sieht er nicht, dafür sorgen die
-RLS-Policies und nicht die Anmeldung. Alle Konten stehen unter *Authentication →
-Users*, ein fremdes lässt sich dort löschen. Die Registrierung nur für eine
-Weile zu schließen ist derselbe Schalter.
+| Angriff | Ohne Gegenmaßnahme |
+| --- | --- |
+| Massenhafte Registrierung | Ein Bot lässt deinen Projekt-Mailer in den Grenzwert laufen – dann kommen **deine eigenen** Bestätigungs- und Einladungsmails nicht mehr durch |
+| Adresse belegen | Ein Fremder registriert die Adresse einer Person, die du einladen willst; sie kann sich danach nicht mehr registrieren, und beim Teilen fällt es nicht auf |
+| Adressen durchprobieren | Jeder angemeldete Nutzer kann mit dem Teilen-Dialog herausfinden, ob eine Adresse in deinem Projekt registriert ist |
+
+**Wenn du die App offen weitergeben willst**, bleibt genau das nötig:
+
+* *Confirm email* **an** – sonst könnte sich jemand mit einer fremden Adresse
+  registrieren und mitlesen, sobald du die Adresse teilst.
+* *Authentication → Rate Limits* prüfen und niedrig setzen (Anmeldungen und
+  Mails je Stunde).
+* Die drei Punkte oben in Kauf nehmen. Sie kosten dich Kontingent, nicht deine
+  Daten – fremde Konten sehen nichts, weil sie nichts freigegeben bekommen.
+
+**Was hier nicht hilft:** die Adresse geheim halten. Projekt-URL und
+Publishable Key stehen im öffentlichen Repository und in jeder ausgelieferten
+APK. Der Schutz kommt aus den Zugriffsregeln, nicht aus Unbekanntheit.
 
 **Nach dem Deployment prüfen**
 
@@ -957,6 +973,12 @@ Weile zu schließen ist derselbe Schalter.
    (Dieser Fall ist mit `tests/e2e/pwa.spec.ts` abgesichert.)
 4. In der Passwortverwaltung die Pages-Domain als weitere URI eintragen – neben
    `androidapp://de.krischi.prio` für die Android-App.
+5. **Die Zugriffsregeln einmal echt prüfen.** Mit einem zweiten Konto anmelden
+   (zweites Browserprofil oder Telefon): Die Listen des ersten Kontos dürfen
+   nicht auftauchen, und ohne Freigabe ist keine davon lesbar. `npm run db:check`
+   zeigt nur, **ob** RLS aktiviert ist – ob die Regeln greifen, prüft nur dieser
+   Versuch. Die Integrationstests bilden die Regeln nach; sie sind kein Ersatz
+   für diesen einen Blick auf das echte Projekt.
 
 **Was die Web-Fassung nicht kann:** Erinnerungen (die App meldet dort
 „Erinnerungen sind auf diesem Gerät nicht verfügbar"), Installation einer neuen
