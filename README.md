@@ -161,14 +161,17 @@ cd prio
 # 2. Abhängigkeiten installieren
 npm install
 
-# 3. .env aus der Vorlage erstellen und ausfüllen
+# 3. Git-Haken einrichten (Typecheck, Lint und Tests vor jedem Commit)
+git config core.hooksPath .githooks
+
+# 4. .env aus der Vorlage erstellen und ausfüllen
 cp .env.example .env
 #    VITE_SUPABASE_URL=...
 #    VITE_SUPABASE_PUBLISHABLE_KEY=...
 
-# 4. Datenbankmigrationen anwenden (siehe nächster Abschnitt)
+# 5. Datenbankmigrationen anwenden (siehe nächster Abschnitt)
 
-# 5. Entwicklungsserver starten
+# 6. Entwicklungsserver starten
 npm run dev            # http://localhost:5173
 ```
 
@@ -280,6 +283,11 @@ npm run test:watch       # Vitest im Watch-Modus
 ```bash
 npx playwright install chromium
 ```
+
+**Vor jedem Commit** läuft der Git-Haken `.githooks/pre-commit` (eingerichtet
+über `git config core.hooksPath .githooks`): Typecheck, Lint und Vitest, rund
+25 Sekunden, ohne Browser. Scheitert eine der drei Prüfungen, entsteht kein
+Commit. Bewusst übergehen lässt er sich mit `git commit --no-verify`.
 
 ### Unit-Tests (`tests/unit`)
 

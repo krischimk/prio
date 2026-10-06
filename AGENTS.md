@@ -24,12 +24,19 @@ nur die Regeln, die man beim Arbeiten kennen muss.
 ## Nach jeder Änderung
 
 ```bash
-npm run ci          # Typecheck, Lint, Tests, Produktionsbuild (rund 15 s)
+npm run ci          # Typecheck, Lint, Tests, Produktionsbuild (rund 30 s)
 npm run test:e2e    # echter Browser gegen den Mock-Server (rund 1,5 min)
 ```
 
 Beides muss grün sein. Bei Oberflächenänderungen zusätzlich in Telefongröße
 rendern und die Screenshots **anschauen** (siehe Tests).
+
+Die billigen Tore hält der Git-Haken `.githooks/pre-commit`: Bei jedem Commit
+laufen Typecheck, Lint und Vitest (rund 25 s), und bei einem Fehlschlag
+entsteht kein Commit. Er wird einmal je Arbeitskopie eingerichtet
+(`git config core.hooksPath .githooks`) und bewusst übergangen, sichtbar per
+`git commit --no-verify`. Er ist der Boden, nicht das Tor: Produktionsbuild und
+E2E bleiben Handarbeit.
 
 ### Während der Arbeit nicht jedes Mal alles
 
@@ -41,7 +48,7 @@ Release sind es erst recht. Faustregel nach Umfang:
 | eine Datei, Logik | `npx vitest run <datei>` (rund 1 s) |
 | mehrere Dateien | `npm run ci` |
 | ein Ablauf in der Oberfläche | zusätzlich **nur** die betroffene E2E-Datei |
-| vor dem Commit | `npm run ci` und alle E2E-Dateien |
+| vor dem Commit | `npm run ci` und alle E2E-Dateien (Typecheck, Lint und Vitest nimmt der Git-Haken schon ab) |
 | nur Text, Kommentar, README | `npm run ci` |
 
 ### Was einen Auftrag wirklich langsam macht

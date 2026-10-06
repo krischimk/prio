@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+#
+# Haken vor dem Commit: die billigen Tore.
+#
+# Läuft bei jedem `git commit` und lehnt den Commit ab, wenn Typecheck, Lint
+# oder die Tests (Unit + Integration, ohne Browser) scheitern. Die teuren
+# Prüfungen – E2E im Browser und der Produktionsbuild – bleiben Handarbeit;
+# sie stehen in AGENTS.md, Abschnitt „Nach jeder Änderung".
+#
+# Einmal je Arbeitskopie einrichten:
+#   git config core.hooksPath .githooks
+#
+# Bewusst übergehen (sichtbar, nicht still):
+#   git commit --no-verify
+#
+# Geprüft wird der Arbeitsstand, nicht der Index: Wer nur einen Teil seiner
+# Änderungen vormerkt, prüft trotzdem den ganzen Baum. Der Haken ist der Boden,
+# die CI bleibt das Netz.
+
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+if [ ! -d node_modules ]; then
+  echo "pre-commit: node_modules fehlt – bitte zuerst 'npm ci' ausführen." >&2
+  exit 1
+fi
+
+# Führt eine Prüfung aus und zeigt ihre Ausgabe nur, wenn sie scheitert.
+pruefe() {
+  local name="$1"
+  local nachsehen="$2"
+  shift 2
+  local log
+  log="$(mktemp)"
+
+  if "$@" >"$log" 2>&1; then
+    printf 'pre-commit: %s ok\n' "$name"
+    rm -f "$log"
+    return 0
+  fi
+
+  printf 'pre-commit: %s FEHLGESCHLAGEN\n\n' "$name" >&2
+  cat "$log" >&2
+  rm -f "$log"
+  echo >&2
+  printf 'pre-commit: kein Commit. Nachsehen mit: %s\n' "$nachsehen" >&2
+  echo "pre-commit: bewusst übergehen mit: git commit --no-verify" >&2
+  exit 1
+}
+
+pruefe "Typecheck (tsc -b)" "npm run typecheck" npm run --silent typecheck
+pruefe "Lint (oxlint)" "npm run lint" npm run --silent lint
+pruefe "Tests (vitest)" "npm run test" npm run --silent test
