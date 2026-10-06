@@ -16,7 +16,7 @@
  * beim Aktivieren gelöscht werden.
  */
 
-const CACHE_NAME = 'prio-shell-v0.1.0'
+const CACHE_NAME = 'prio-shell-v0.2.0'
 
 const APP_SHELL = [
   '/',
@@ -25,14 +25,42 @@ const APP_SHELL = [
   '/favicon.svg',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
+  '/icons/icon-maskable-512.png',
   '/icons/apple-touch-icon.png',
 ]
+
+/**
+ * Sammelt die Dateien mit Inhalts-Hash (das gebaute JS und CSS) aus dem HTML
+ * ein und legt sie mit in den Cache.
+ *
+ * Ohne sie wäre der **erste** Offline-Start leer: Das HTML käme aus dem Cache,
+ * sein JavaScript nicht. Beim allerersten Laden ist der Service Worker noch
+ * nicht im Zugriff, die Dateien laufen also an ihm vorbei – sie landen erst bei
+ * einem zweiten Online-Besuch im Cache. Da die Namen den Hash tragen, kann
+ * diese Liste sie nicht einfach aufzählen; sie stehen aber im HTML.
+ */
+async function cacheBundles(cache) {
+  const antwort = await fetch('/index.html', { cache: 'no-cache' })
+  if (!antwort.ok) return
+
+  const html = await antwort.text()
+  const verweise = new Set()
+  for (const treffer of html.matchAll(/(?:src|href)="([^"]+)"/g)) {
+    const pfad = treffer[1]
+    if (!pfad.startsWith('/') || pfad.startsWith('//')) continue
+    if (pfad.endsWith('.js') || pfad.endsWith('.css')) verweise.add(pfad)
+  }
+  if (verweise.size > 0) await cache.addAll([...verweise])
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(CACHE_NAME)
       await cache.addAll(APP_SHELL)
+      // Ein misslungenes Vorabladen darf den Service Worker nicht verhindern –
+      // dann greift wie bisher der Cache beim zweiten Besuch.
+      await cacheBundles(cache).catch(() => undefined)
       await self.skipWaiting()
     })(),
   )
@@ -70,7 +98,9 @@ async function handleRequest(request) {
       if (response.ok) await cache.put('/index.html', response.clone())
       return response
     } catch {
-      const cached = (await cache.match('/index.html')) ?? (await cache.match('/'))
+      const cached =
+        (await cache.match('/index.html', { ignoreVary: true })) ??
+        (await cache.match('/', { ignoreVary: true }))
       if (cached) return cached
       return new Response('Die App ist offline noch nicht vollständig geladen.', {
         status: 503,
@@ -80,7 +110,12 @@ async function handleRequest(request) {
   }
 
   // Statische Dateien: aus dem Cache, im Hintergrund aktualisieren.
-  const cached = await cache.match(request)
+  //
+  // `ignoreVary`, weil Server ihren Antworten ein `Vary` mitgeben (Vite:
+  // `Origin`, Cloudflare: `Accept-Encoding`) und die Anfrage beim Vorabladen
+  // andere Kopfzeilen trägt als die der Seite – ohne diese Angabe trifft der
+  // Cache dann nicht, und der Offline-Start bleibt leer.
+  const cached = await cache.match(request, { ignoreVary: true })
   if (cached) {
     fetch(request)
       .then((response) => {
