@@ -69,6 +69,28 @@ Gemessen, in absteigender Reihenfolge:
 * **Shell-Aufrufe bündeln**, wo sie zusammengehören: Dateien lesen, prüfen und
   messen in einem Aufruf statt in fünf.
 
+### Sammeln, dann ausliefern
+
+Die teuren Schritte – Emulator-Runde und Release – laufen **einmal je Sammlung**,
+nicht einmal je Änderung. Drei Stufen:
+
+| Stufe | Wann | Was läuft |
+| --- | --- | --- |
+| **Bauen** | bei jeder Änderung | eine Datei: `npx vitest run <datei>`; mehrere: `npm run ci` |
+| **Sammeln** | mehrfach hintereinander | nichts weiter – committen und weitermachen |
+| **Ausliefern** | wenn der Auftrag fertig ist | `npm run ci`, `npm run test:e2e`, **eine** Emulator-Runde für alles Sichtbare, Version, Tag, **ein** Release |
+
+* **Ausprobieren ist nicht Ausliefern.** Zum Ansehen genügt
+  `npm run android:emu:install` – ohne Version, ohne Tag, ohne Release. Ein
+  Release ist nur nötig, wenn die Fassung aufs Telefon soll.
+* **Ein Release ist der Schlussstrich, nicht der Zwischenschritt.** Nicht nach
+  jedem Feature taggen; sonst läuft der drei Minuten lange Bau für jede
+  Kleinigkeit.
+* **Erst `main` pushen, die CI abwarten, dann taggen.** Der Release-Workflow
+  führt kein E2E aus, die CI tut es bei jedem Push auf `main`. Ist sie grün, ist
+  E2E für genau den Commit bewiesen, aus dem die APK entsteht – und die Wartezeit
+  kostet nichts, weil GitHub währenddessen arbeitet.
+
 ## Architektur – nicht aufweichen
 
 * `src/sync` kennt **kein React und kein Supabase**. Neue Cloud-Zugriffe gehören
@@ -90,10 +112,11 @@ Gemessen, in absteigender Reihenfolge:
   lassen (`if not exists`, `create or replace`, `drop policy if exists`) und
   liefert dabei dasselbe Ergebnis. Policy-Änderungen laufen in einer Transaktion.
 * **Bestehende Dateien dürfen geändert werden.** Es gibt keine
-  Versionsverwaltung, die eingespielte Stände festhält: Eingespielt wird per
-  SQL-Editor, und die Sammeldatei (`npm run db:sql`) wird aus den Dateien neu
-  erzeugt. Eine geänderte Migration wirkt also beim nächsten Einspielen – auch
-  bei einer Datenbank, die die alte Fassung schon kennt. Das ist gewollt: Eine
+  Versionsverwaltung, die eingespielte Stände festhält: Eingespielt wird die
+  Sammeldatei – über `npm run db:apply` oder von Hand im SQL-Editor –, und sie
+  wird mit `npm run db:sql` aus den Dateien neu erzeugt. Eine geänderte Migration
+  wirkt also beim nächsten Einspielen – auch bei einer Datenbank, die die alte
+  Fassung schon kennt. Das ist gewollt: Eine
   falsche Spalte, ein fehlender Index oder ein irreführender Kommentar sollen
   nicht als neue Datei daneben stehen bleiben.
   * Bedingung: Die Datei bleibt wiederholbar, und ein zweiter Lauf ändert
@@ -104,6 +127,13 @@ Gemessen, in absteigender Reihenfolge:
   nächsten Einspielen erneut und überschriebe neuere Daten. Solche Schritte
   gehören einmalig ausgeführt und datiert (`0010_…`).
 * Neue Migrationen landen automatisch in der Sammeldatei (`npm run db:sql`).
+* **Einspielen ohne Kopieren:** `npm run db:apply` erzeugt die Sammeldatei und
+  schickt sie per `psql` an das Projekt – dieselbe Semantik wie der SQL-Editor
+  (immer alles, jedes Mal, wiederholbar), nur ohne Handarbeit. `npm run db:check`
+  zeigt rein lesend den Ist-Stand (Spalten von `tasks`, RLS). Einmalig nötig:
+  `postgresql-client` und `SUPABASE_DB_URL` in `supabase/.env.local`, verknüpft
+  nach `~/.prio-android/db.env` (`python3 scripts/setup_private_data.py`). Fehlt
+  die Datei, bleibt der SQL-Editor der Weg.
 * **Erst die Migration, dann die App-Version, die sie braucht.** Sendet die App
   eine Spalte, die es serverseitig nicht gibt, scheitert jeder Sync mit
   `PGRST204`.
@@ -112,6 +142,14 @@ Gemessen, in absteigender Reihenfolge:
   verlassen.
 * Zeitstempel kommen vom Client. Kein Trigger, der `updated_at` überschreibt –
   das würde Last Write Wins aushebeln.
+* **Der Supabase-Skill gilt nur für allgemeine Supabase-Fragen.** Seine
+  Empfehlungen zu Schemaänderungen (`supabase migration new`, `db pull`,
+  `db advisors`, MCP-`execute_sql`) beschreiben das CLI-Modell und gelten hier
+  **nicht**: Migrationen werden von Hand geschrieben, bleiben wiederholbar und
+  werden als vollständige Sammeldatei eingespielt (siehe oben). Seine
+  Sicherheits-Checkliste dagegen gilt – `TO`-Klausel statt `auth.role()`,
+  `USING` **und** `WITH CHECK` bei UPDATE, `SECURITY DEFINER` nur außerhalb
+  exponierter Schemata.
 
 ## Android
 
