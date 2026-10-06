@@ -222,9 +222,10 @@ fensterlos, und es bleibt der Screenshot zur Beurteilung.
 
 ```bash
 npm run android:emu          # Emulator starten (mit Fenster, ohne Anzeige fensterlos)
-npm run android:emu:install  # Debug-APK bauen, installieren, öffnen
+npm run android:emu:install  # Debug-APK gegen den Mock bauen, installieren, öffnen
+npm run android:emu:echt     # dasselbe gegen das echte Supabase-Projekt
 npm run android:emu:shot     # Screenshot ablegen (Ziel siehe unten)
-npm run android:emu:stop
+npm run android:emu:stop     # Emulator und Mock beenden
 
 # Einen Ausdruck im laufenden WebView ausführen (prüfen ohne Neubau):
 npm run android:emu:eval 'JSON.stringify(Object.keys(window.Capacitor.Plugins))'
@@ -240,8 +241,21 @@ npm run android:emu:eval 'JSON.stringify(Object.keys(window.Capacitor.Plugins))'
   Projekt. Ein Pfad als Argument gilt weiterhin:
   `npm run android:emu:shot -- /pfad/prio-emulator.png`.
 * **Bedienen und beurteilen** tut der Nutzer – wo ein Fenster da ist.
-* Der Emulator spricht mit dem echten Supabase-Projekt. Wer dort nichts
-  anlegen will, meldet sich mit dem eigenen Konto an.
+* **Zwei Ziele, ein Standard.** `android:emu:install` baut gegen den lokalen
+  Mock: kein Konto, keine Daten im echten Projekt, beliebig wiederholbar. Das
+  ist der Weg für die Frage „läuft die App, geht die Oberfläche?" – genau die,
+  die 0.12.0 mit dem schwarzen Bildschirm beantwortet hat. `android:emu:echt`
+  baut gegen das echte Projekt aus der privaten `.env` und ist für das da, was
+  der Mock nicht beantworten kann: echte Anmeldung, echte Zugriffsregeln,
+  Benachrichtigungen. Was dort entsteht, liegt dort wirklich.
+* **Welches Ziel läuft, steht in der App** – Kopfzeile (breit) bzw. Menü,
+  als `Mock · 127.0.0.1:54321` oder als Host des Projekts. Ohne diese Anzeige
+  wäre nach einem Wechsel nicht erkennbar, wogegen man prüft; ein grüner Lauf
+  gegen den Mock sagt nichts über die echten Zugriffsregeln.
+* **Ein sauberer Mock-Lauf beginnt mit `adb shell pm clear de.krischi.prio`.**
+  Sonst stehen lokale Daten aus einem früheren Lauf gegen einen leeren Mock –
+  ein anderer Test als der, den man sehen will. Die Anmeldung ist dabei weg,
+  im Mock aber in Sekunden neu erstellt.
 * **Was der Emulator nicht kann:** echte Benachrichtigungszustellung, die
   Tastatur des Geräts, dessen Systemleisten und Hersteller-Eigenheiten. Dafür
   bleibt das echte Telefon nötig – aber nur dafür.
@@ -249,7 +263,8 @@ npm run android:emu:eval 'JSON.stringify(Object.keys(window.Capacitor.Plugins))'
 * **Anmeldung und Daten müssen erhalten bleiben.** Debug-Builds werden mit dem
   Release-Schlüssel signiert (`~/.prio-android/emulator.env`), und der
   Emulator benutzt einen dauerhaften Datenträger. Ein `adb uninstall` ist damit
-  nie nötig – es würde die Anmeldung des Nutzers löschen.
+  nie nötig – es würde die Anmeldung des Nutzers löschen. Ein bewusstes
+  `pm clear` im Mock-Weg ist die Ausnahme, siehe oben.
 
 ## Oberfläche: eine Sprache, zwei Bedienmodelle
 

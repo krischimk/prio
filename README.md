@@ -352,6 +352,8 @@ HTTP-Aufrufe – aber ohne Cloud.
 | `npm run android:sync` | Web-Bundle bauen und ins Android-Projekt kopieren |
 | `npm run android:apk` | Debug-APK für Android bauen |
 | `npm run android:release` | Signierte Release-APK bauen (braucht den Keystore) |
+| `npm run android:emu:install` | Emulator-Fassung gegen den lokalen Mock bauen und installieren |
+| `npm run android:emu:echt` | Emulator-Fassung gegen das echte Supabase-Projekt bauen und installieren |
 | `npm run ci` | Typecheck, Lint, Tests und Build in einem Durchlauf |
 
 ---
@@ -1006,13 +1008,39 @@ Skript ihn fensterlos, dann bleibt der Screenshot zur Beurteilung:
 
 ```bash
 npm run android:emu          # startet den Emulator (AVD „prio-test“)
-npm run android:emu:install  # baut die Debug-APK, installiert und öffnet sie
+npm run android:emu:install  # baut die Debug-APK gegen den Mock, installiert und öffnet sie
+npm run android:emu:echt     # dasselbe gegen das echte Supabase-Projekt
 npm run android:emu:shot     # legt einen Screenshot ab (siehe unten, wohin)
-npm run android:emu:stop
+npm run android:emu:stop     # beendet Emulator und Mock
 
 # Einen Ausdruck im laufenden WebView auswerten (prüfen ohne Neubau):
 npm run android:emu:eval -- 'JSON.stringify(Object.keys(localStorage))'
 ```
+
+**Zwei Ziele, ein Standard.** `android:emu:install` baut gegen den lokalen Mock
+(`tests/mock-supabase`, Port 54321). Der läuft ohne Konto, legt nichts im echten
+Projekt an und lässt sich beliebig wiederholen – das ist der Weg für „läuft die
+App, funktioniert die Oberfläche?". `android:emu:echt` baut gegen das echte
+Projekt aus der privaten `.env`; dafür ist die Anmeldung nötig, und alles, was
+du dort anlegst, liegt dort wirklich. Er ist für die Fragen da, die der Mock
+nicht beantworten kann: echte Anmeldung, echte Zugriffsregeln,
+Benachrichtigungen.
+
+Welches Ziel gerade läuft, **zeigt die App an** – in der Kopfzeile der breiten
+Ansicht bzw. im Menü auf dem Telefon, dort steht bei einem lokalen Ziel
+`Mock · 127.0.0.1:54321` und sonst der Host des Projekts.
+
+Für einen wirklich sauberen Mock-Lauf vorher die lokalen Daten löschen – sonst
+stehen Daten aus einem früheren Lauf gegen einen leeren Mock:
+
+```bash
+adb shell pm clear de.krischi.prio   # löscht auch die Anmeldung
+```
+
+Der Mock-Weg ist nur im Debug-Build möglich: Ein Debug-Manifest erlaubt
+unverschlüsseltes http für die Loopback-Adressen, und die WebView erlaubt
+gemischten Inhalt (beides in `android/app/src/debug/` und in `MainActivity`
+hinter dem Debug-Kennzeichen der App). Der Release-Build enthält nichts davon.
 
 Wohin der Screenshot geht: erst `PRIO_SHOT_DIR`, sonst `~/Desktop`, und wenn es
 den nicht gibt – auf einem Server der Normalfall – in den Ordner
