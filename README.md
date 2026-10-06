@@ -853,9 +853,31 @@ jeweiligen Stelle kommentiert.
    funktioniert dagegen auch offline, weil die Mitgliedschaftszeile lokal
    vorliegt.
 
-5. **Mitglieder werden ohne E-Mail-Adresse angezeigt.** E-Mail-Adressen anderer
-   Nutzer werden nicht synchronisiert (Datensparsamkeit); die Oberfläche zeigt
-   deshalb eine Kurzform der Benutzer-ID.
+5. **Mitglieder werden ohne E-Mail-Adresse angezeigt.** E-Mail-Adressen gehören
+   nicht zum Listenbestand und werden nicht mit ihm synchronisiert; die
+   Mitgliederliste zeigt deshalb eine Kurzform der Benutzer-ID. Eine Ausnahme
+   gibt es seit den Vorschlägen (Punkt 6): Wer mit dir eine Liste teilt, dessen
+   Adresse holt die App gezielt für den Teilen-Dialog – siehe dort.
+
+6. **Beim Teilen wird vorgeschlagen, wer schon mit dir teilt.** Wer eine Liste
+   teilt, tippt sonst für jede weitere Liste dieselbe Adresse – und auf der
+   anderen Seite dasselbe. Die Vorschläge haben deshalb zwei Quellen:
+
+   * Adressen, die du selbst eingetragen hast. Sie liegen als Eingabehilfe in
+     `meta` (wie die vorgemerkten Vorlaufzeiten): nur auf diesem Gerät, nicht
+     synchronisiert.
+   * Personen aus gemeinsamen Listen, über die Serverfunktion
+     `co_member_contacts()` (Migration `0012`). Sie kennt nur, wer mit dir
+     über eine nicht gelöschte Liste verbunden ist – der Besitzer zählt dabei
+     mit, denn er hat keine eigene Mitgliedszeile. Ohne diese Funktion gäbe es
+     nichts vorzuschlagen: lokal sind andere Nutzer nur als Benutzer-ID bekannt.
+     Das ist eine bewusste Umkehr der früheren Linie, wonach niemand die
+     Adresse eines anderen zu sehen bekam; wer gemeinsam an einer Liste
+     arbeitet, sieht nun, mit wem.
+
+   Vorgeschlagen wird, wer in *dieser* Liste noch kein Mitglied ist – verglichen
+   über die Benutzer-ID. Ein Klick setzt die Adresse ins Feld; freigegeben wird
+   mit dem zweiten Klick auf „Freigeben", damit ein Tipp niemandem Zugriff gibt.
 
 6. **Abgelehnte Zeilen bleiben in der Queue.** Lehnt der Server einen Datensatz
    dauerhaft ab (z. B. weil der Zugriff auf eine gemeinsame Liste entzogen
@@ -940,11 +962,11 @@ Die Reihenfolge ist deshalb: Adresse weitergeben → die Person registriert sich
 und bestätigt → du teilst die Liste. Genau dafür bleibt die Registrierung offen;
 mit geschlossenem Schalter wäre „Teilen" für neue Personen abgeschaltet.
 
-**Empfehlung: Registrierung zu, Personen einzeln anlegen.** Wer mit einer
-Handvoll bekannter Leute teilt, fährt damit enger: *Authentication → Users →
-Add user* (Konto anlegen) oder *Invite* (Einladung per Mail, je nach Fassung).
-Danach kann die Person sich anmelden, und du kannst teilen. Offene Registrierung
-bringt dann nichts mehr mit, aber drei Angriffsflächen:
+**Eingestellt wird: Registrierung zu.** Wer mit einer Handvoll bekannter Leute
+teilt, fährt damit enger: *Authentication → Users → Add user* (Konto anlegen)
+oder *Invite* (Einladung per Mail, je nach Fassung). Danach kann die Person sich
+anmelden, und du kannst teilen. Offene Registrierung bringt dann nichts mehr mit,
+aber drei Angriffsflächen:
 
 | Angriff | Ohne Gegenmaßnahme |
 | --- | --- |
