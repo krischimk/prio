@@ -285,8 +285,8 @@ npx playwright install chromium
 ```
 
 **Vor jedem Commit** läuft der Git-Haken `.githooks/pre-commit` (eingerichtet
-über `git config core.hooksPath .githooks`): Typecheck, Lint und Vitest, rund
-25 Sekunden, ohne Browser. Scheitert eine der drei Prüfungen, entsteht kein
+über `git config core.hooksPath .githooks`): Typecheck, Lint und Vitest, unter
+einer Minute, ohne Browser. Scheitert eine der drei Prüfungen, entsteht kein
 Commit. Bewusst übergehen lässt er sich mit `git commit --no-verify`.
 
 ### Unit-Tests (`tests/unit`)
@@ -1066,7 +1066,7 @@ git tag -a v0.2.0 -m "prio 0.2.0"
 git push origin v0.2.0
 ```
 
-Nach etwa zwei Minuten liegt `prio-0.2.0.apk` unter **Releases** im Repository
+Ein paar Minuten später liegt `prio-0.2.0.apk` unter **Releases** im Repository
 und lässt sich direkt am Handy herunterladen. Der Workflow
 (`.github/workflows/release.yml`) prüft zuerst Typecheck, Linting und Tests,
 baut dann das Web-Bundle, signiert die APK und erstellt das Release. Ein

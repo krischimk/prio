@@ -24,16 +24,16 @@ nur die Regeln, die man beim Arbeiten kennen muss.
 ## Nach jeder Änderung
 
 ```bash
-npm run ci          # Typecheck, Lint, Tests, Produktionsbuild (rund 30 s)
-npm run test:e2e    # echter Browser gegen den Mock-Server (rund 1,5 min)
+npm run ci          # Typecheck, Lint, Tests, Produktionsbuild
+npm run test:e2e    # echter Browser gegen den Mock-Server
 ```
 
 Beides muss grün sein. Bei Oberflächenänderungen zusätzlich in Telefongröße
 rendern und die Screenshots **anschauen** (siehe Tests).
 
 Die billigen Tore hält der Git-Haken `.githooks/pre-commit`: Bei jedem Commit
-laufen Typecheck, Lint und Vitest (rund 25 s), und bei einem Fehlschlag
-entsteht kein Commit. Er wird einmal je Arbeitskopie eingerichtet
+laufen Typecheck, Lint und Vitest, und bei einem Fehlschlag entsteht kein
+Commit. Er wird einmal je Arbeitskopie eingerichtet
 (`git config core.hooksPath .githooks`) und bewusst übergangen, sichtbar per
 `git commit --no-verify`. Er ist der Boden, nicht das Tor: Produktionsbuild und
 E2E bleiben Handarbeit.
@@ -43,19 +43,26 @@ E2E bleiben Handarbeit.
 `npm run ci` ist billig, aber nicht kostenlos, und ein voller E2E-Lauf und ein
 Release sind es erst recht. Faustregel nach Umfang:
 
-| Was geändert wurde | Was laufen muss |
-| --- | --- |
-| eine Datei, Logik | `npx vitest run <datei>` (rund 1 s) |
-| mehrere Dateien | `npm run ci` |
-| ein Ablauf in der Oberfläche | zusätzlich **nur** die betroffene E2E-Datei |
-| vor dem Commit | `npm run ci` und alle E2E-Dateien (Typecheck, Lint und Vitest nimmt der Git-Haken schon ab) |
-| nur Text, Kommentar, README | `npm run ci` |
+| Was geändert wurde | Was laufen muss | Größenordnung |
+| --- | --- | --- |
+| eine Datei, Logik | `npx vitest run <datei>` | Sekunden |
+| mehrere Dateien | `npm run ci` | unter einer Minute |
+| ein Ablauf in der Oberfläche | zusätzlich **nur** die betroffene E2E-Datei | ein bis zwei Minuten |
+| vor dem Commit | `npm run ci` und alle E2E-Dateien (Typecheck, Lint und Vitest nimmt der Git-Haken schon ab) | eine bis drei Minuten |
+| nur Text, Kommentar, README | `npm run ci` | unter einer Minute |
+
+**Größenordnungen, nicht Sekunden.** Wie lange eine Stufe dauert, hängt an der
+Maschine. Eine absolute Zahl veraltet still und trägt dann eine Entscheidung
+nicht mehr – genau dafür steht hier die Stufe selbst. Nachmessen statt glauben:
+`time npm run ci`, `time npm run test:e2e`. Weicht eine Stufe um eine
+Größenordnung ab, etwa nach einem Maschinentausch, ist diese Tabelle neu zu
+beurteilen.
 
 ### Was einen Auftrag wirklich langsam macht
 
 Gemessen, in absteigender Reihenfolge:
 
-1. **Zwei Releases in einem Auftrag.** Ein Release-Workflow baut rund drei
+1. **Zwei Releases in einem Auftrag.** Ein Release-Workflow baut ein paar
    Minuten, und er lässt sich nicht abkürzen. Wenn nach dem Tag noch etwas
    gefunden wird, kostet das einen zweiten.
 2. **Synchron auf GitHub warten.** `gh run watch` blockiert. Als Hintergrund-Job
@@ -83,6 +90,13 @@ Fall ihren Zweck nicht, wird sie nicht blind befolgt – der Zweck wird anders
 erfüllt oder der Schritt entfällt, **mit einem Satz Begründung**. Weggelassen
 wird sichtbar, nicht still; im Zweifel wird der Schritt gemacht.
 
+Dazu gehört, wodurch eine Regel durchgesetzt wird: durch eine Prüfung (Test,
+Git-Haken, Workflow) oder allein durch Disziplin. Ist der Fehler maschinell
+ausgeschlossen, geht die Regel, sobald die Prüfung den Fall abdeckt – sie wird
+dann zur Prüfung. Ist sie ungeprüft, wird sie beim nächsten Anfassen prüfbar
+gemacht oder gestrichen, wenn der Fehler strukturell nicht mehr eintreten kann.
+Und beim Hinzufügen gehört der Auslöser dazu: welcher Fehler war das?
+
 Die Tore bleiben: `npm run ci` und alle E2E-Dateien vor dem Commit, eine
 Emulator-Prüfung des tatsächlichen App-Codes vor dem Tag, Tag und Version
 zusammen. Was nur dem Ablauf dient – auf einen grünen Lauf warten, eine Runde
@@ -107,7 +121,7 @@ nicht einmal je Änderung. Drei Stufen:
   `npm run android:emu:install` – ohne Version, ohne Tag, ohne Release. Ein
   Release ist nur nötig, wenn die Fassung aufs Telefon soll.
 * **Ein Release ist der Schlussstrich, nicht der Zwischenschritt.** Nicht nach
-  jedem Feature taggen; sonst läuft der drei Minuten lange Bau für jede
+  jedem Feature taggen; sonst läuft der mehrminütige Bau für jede
   Kleinigkeit.
 * **Erst `main` pushen, die CI abwarten, dann taggen.** Der Release-Workflow
   führt kein E2E aus, die CI tut es bei jedem Push auf `main`. Ist sie grün, ist
