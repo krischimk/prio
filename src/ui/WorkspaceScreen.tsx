@@ -3,6 +3,7 @@ import { useAuth } from '../auth/useAuth'
 import { useLists, useSelectedListId } from '../app/hooks'
 import { useIsDesktop } from '../app/useIsDesktop'
 import { MobileWorkspace } from './mobile/MobileWorkspace'
+import { BackendLabel } from './BackendLabel'
 import { RestoreTasksPanel } from './RestoreTasksPanel'
 import { describeUpdateState } from '../updates/updateStatus'
 import { useUpdate } from './useUpdate'
@@ -53,6 +54,7 @@ function DesktopWorkspace() {
             <span className="text-xs text-neutral-500" data-testid="current-user">
               {user?.email}
             </span>
+            <BackendLabel />
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <ReminderIndicator />

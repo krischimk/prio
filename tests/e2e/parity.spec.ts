@@ -374,6 +374,22 @@ const funktionen: Funktion[] = [
       await expect(telefon.taskRow(page, 'Müll rausbringen').getByText('für mich stumm')).toHaveCount(1)
     },
   },
+  {
+    name: 'Anzeige, mit welchem Datenziel die App spricht',
+    breit: async (page) => {
+      await breit.register(page, uniqueEmail('p-datenziel-b'))
+
+      // Die E2E-Umgebung läuft gegen den lokalen Mock (siehe playwright.config.ts).
+      await expect(page.getByTestId('backend-label')).toHaveText(/Mock · 127\.0\.0\.1:/)
+    },
+    telefon: async (page) => {
+      await telefon.register(page, uniqueEmail('p-datenziel-t'))
+
+      // Auf dem Telefon steht die Anzeige im Menü – erreichbar sein muss sie.
+      await telefon.openMenu(page)
+      await expect(page.getByTestId('backend-label')).toHaveText(/Mock · 127\.0\.0\.1:/)
+    },
+  },
 ]
 
 test.beforeEach(async ({ request }) => {

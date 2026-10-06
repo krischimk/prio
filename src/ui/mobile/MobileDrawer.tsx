@@ -6,6 +6,7 @@ import { describeReminderState } from '../../reminders/reminderStatus'
 import { describeSyncState } from '../../sync/syncStatus'
 import type { LocalList } from '../../domain/types'
 import { errorMessage, input, primaryButton, secondaryButton } from '../styles'
+import { BackendLabel } from '../BackendLabel'
 import { ListIcon } from '../ListIcon'
 import { UpdateEntry } from '../UpdateEntry'
 import { CloseIcon } from '../icons'
@@ -103,9 +104,12 @@ export function MobileDrawer({
             <CloseIcon />
           </button>
         </div>
-        <p className="truncate px-4 pb-4 text-xs text-neutral-500" data-testid="drawer-user">
-          {email}
-        </p>
+        <div className="px-4 pb-4">
+          <p className="truncate text-xs text-neutral-500" data-testid="drawer-user">
+            {email}
+          </p>
+          <BackendLabel />
+        </div>
 
         <section className="px-4 pb-4" aria-label="Listen">
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Listen</h2>
