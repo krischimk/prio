@@ -6,7 +6,7 @@
  * IndexedDB und werden hier bewusst nicht angefasst.
  *
  * In der Capacitor-App wird der Service Worker bewusst NICHT registriert.
- * Capacitor liefert die Dateien aus dem App-Paket unter `https://localhost`
+ * Capacitor liefert die Dateien aus dem App-Paket unter `https://prio.local`
  * aus – die Protokollprüfung allein würde also nicht greifen. Ein Service
  * Worker würde dort die alten Dateien aus dem Cache weiterreichen und ein
  * App-Update überdecken.

@@ -4,11 +4,22 @@ import type { CapacitorConfig } from '@capacitor/cli'
  * Capacitor-Konfiguration für die Android-App.
  *
  * Die Web-App wird als `dist/` in die App verpackt und im WebView unter
- * `https://localhost` geladen. Wichtig:
+ * `https://prio.local` geladen. Wichtig:
  *
  *  - `androidScheme: 'https'` (Standard, hier explizit): Supabase erlaubt
- *    genau diese Herkunft per CORS, und ein sicherer Kontext ist
- *    Voraussetzung für `crypto.randomUUID` und `navigator.onLine`.
+ *    diese Herkunft per CORS (geprüft: Auth antwortet mit `*`, REST spiegelt
+ *    die Herkunft), und ein sicherer Kontext ist Voraussetzung für
+ *    `crypto.randomUUID` und `navigator.onLine`.
+ *  - `hostname: 'prio.local'`: Der Vorgabewert wäre `localhost`. Unter dieser
+ *    Adresse steht die App aber in jeder Passwortverwaltung – und `localhost`
+ *    gehört jedem lokalen Entwicklungsserver. Mit einem eigenen Namen ist der
+ *    Eintrag eindeutig und wiedererkennbar.
+ *
+ *    Der Wechsel der Herkunft ist einmalig teuer: IndexedDB und localStorage
+ *    hängen am Host. Nach dem Update startet die App also einmal mit leerer
+ *    lokaler Datenbank und ohne Anmeldung. Die Daten liegen in Supabase und
+ *    kommen per Sync zurück; was nur lokal und noch nicht hochgeladen war,
+ *    wäre verloren. Deshalb vor dem Update einmal vollständig synchronisieren.
  *  - `webDir: 'dist'` – vor `npx cap sync` muss `npm run build` gelaufen sein.
  *  - Kein `server.url`: Die App lädt ihre Dateien aus dem App-Paket, ist damit
  *    vollständig offline startfähig und braucht keinen Server.
@@ -32,6 +43,7 @@ const config: CapacitorConfig = {
   },
   server: {
     androidScheme: 'https',
+    hostname: 'prio.local',
   },
   plugins: {
     SystemBars: {

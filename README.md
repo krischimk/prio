@@ -1170,11 +1170,19 @@ kann.
 ### Was für Capacitor angepasst wurde
 
 * **Service Worker wird in der App nicht registriert.** Capacitor liefert die
-  Dateien unter `https://localhost` aus; ein Service Worker würde dort nach
+  Dateien unter `https://prio.local` aus; ein Service Worker würde dort nach
   einem App-Update veraltete Dateien aus dem Cache weiterreichen.
-* **`androidScheme: 'https'`** – Supabase erlaubt genau diese Herkunft per CORS
-  (geprüft), und ein sicherer Kontext ist Voraussetzung für
-  `crypto.randomUUID` und `navigator.onLine`.
+* **`androidScheme: 'https'`** – Supabase erlaubt diese Herkunft per CORS
+  (geprüft: Auth antwortet mit `*`, REST spiegelt die Herkunft), und ein
+  sicherer Kontext ist Voraussetzung für `crypto.randomUUID` und
+  `navigator.onLine`.
+* **`hostname: 'prio.local'`** – der Vorgabewert `localhost` ist die Adresse,
+  die eine Passwortverwaltung beim Speichern des Logins sieht, und er gehört
+  jedem lokalen Entwicklungsserver. Mit einem eigenen Namen ist der Eintrag
+  eindeutig. Der Wechsel der Herkunft kostet einmalig die lokalen Daten
+  (IndexedDB und localStorage hängen am Host): nach dem Update startet die App
+  ohne Anmeldung und mit leerer Datenbank, die Daten kommen per Sync zurück.
+  Vorher einmal vollständig synchronisieren, dann ist nichts verloren.
 * **`detectSessionInUrl: false`** war bereits gesetzt, deshalb braucht die App
   keine Deep-Link-Behandlung für Magic-Links.
 * **Die Sitzung liegt in `localStorage`** und übersteht damit App-Neustarts.
