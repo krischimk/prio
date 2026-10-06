@@ -123,10 +123,23 @@ install_app() {
 screenshot() {
   require adb
   device_online || { warn "Kein Emulator läuft."; exit 1; }
-  local target="${1:-$HOME/Desktop/prio-emulator.png}"
-  if [[ "$target" != */* ]]; then
-    target="$HOME/Desktop/$target"
+  # Ablageort: erst PRIO_SHOT_DIR, dann ~/Desktop, sonst der Projektordner
+  # test-results. Auf einem Server ohne Desktopumgebung gibt es ~/Desktop nicht
+  # – dort landete der Screenshot sonst in einem Ordner, den es nicht gibt.
+  # `test-results` ist bereits über .gitignore ausgeschlossen.
+  local dir="${PRIO_SHOT_DIR:-}"
+  if [ -z "$dir" ]; then
+    if [ -d "$HOME/Desktop" ]; then
+      dir="$HOME/Desktop"
+    else
+      dir="$PROJECT_DIR/test-results"
+    fi
   fi
+  local target="${1:-prio-emulator.png}"
+  if [[ "$target" != */* ]]; then
+    target="$dir/$target"
+  fi
+  mkdir -p "$(dirname "$target")"
   adb exec-out screencap -p >"$target"
   info "Screenshot: $target"
 }

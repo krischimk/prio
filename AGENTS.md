@@ -185,7 +185,7 @@ fensterlos, und es bleibt der Screenshot zur Beurteilung.
 ```bash
 npm run android:emu          # Emulator starten (mit Fenster, ohne Anzeige fensterlos)
 npm run android:emu:install  # Debug-APK bauen, installieren, öffnen
-npm run android:emu:shot     # Screenshot ablegen (ohne Argument nach ~/Desktop)
+npm run android:emu:shot     # Screenshot ablegen (Ziel siehe unten)
 npm run android:emu:stop
 
 # Einen Ausdruck im laufenden WebView ausführen (prüfen ohne Neubau):
@@ -197,8 +197,10 @@ npm run android:emu:eval 'JSON.stringify(Object.keys(window.Capacitor.Plugins))'
   Zusicherung erwischt hätte.
 * **Ohne Anzeige gibt es kein Fenster.** Ist `DISPLAY` nicht gesetzt, läuft der
   Emulator fensterlos; bedienen lässt er sich dann nicht, beurteilt wird über
-  Screenshots. Deren Vorgabeziel ist `~/Desktop` – fehlt der Ordner, den Pfad
-  angeben: `npm run android:emu:shot -- /pfad/prio-emulator.png`.
+  Screenshots. Deren Ziel ist `PRIO_SHOT_DIR`, sonst `~/Desktop` und – wenn es
+  den Ordner nicht gibt, auf einem Server der Normalfall – `test-results/` im
+  Projekt. Ein Pfad als Argument gilt weiterhin:
+  `npm run android:emu:shot -- /pfad/prio-emulator.png`.
 * **Bedienen und beurteilen** tut der Nutzer – wo ein Fenster da ist.
 * Der Emulator spricht mit dem echten Supabase-Projekt. Wer dort nichts
   anlegen will, meldet sich mit dem eigenen Konto an.

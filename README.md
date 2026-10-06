@@ -996,15 +996,17 @@ Skript ihn fensterlos, dann bleibt der Screenshot zur Beurteilung:
 ```bash
 npm run android:emu          # startet den Emulator (AVD „prio-test“)
 npm run android:emu:install  # baut die Debug-APK, installiert und öffnet sie
-npm run android:emu:shot     # legt einen Screenshot ab (ohne Argument nach ~/Desktop)
+npm run android:emu:shot     # legt einen Screenshot ab (siehe unten, wohin)
 npm run android:emu:stop
 
 # Einen Ausdruck im laufenden WebView auswerten (prüfen ohne Neubau):
 npm run android:emu:eval -- 'JSON.stringify(Object.keys(localStorage))'
 ```
 
-Ohne `~/Desktop` – auf einem Server der Normalfall – braucht der Screenshot ein
-Ziel: `npm run android:emu:shot -- /pfad/prio-emulator.png`.
+Wohin der Screenshot geht: erst `PRIO_SHOT_DIR`, sonst `~/Desktop`, und wenn es
+den nicht gibt – auf einem Server der Normalfall – in den Ordner
+`test-results/` des Projekts. Ein eigenes Ziel lässt sich immer angeben:
+`npm run android:emu:shot -- /pfad/prio-emulator.png`.
 
 **Anmeldung und Testdaten bleiben erhalten** – über App-Aktualisierungen und
 über Neustarts hinweg. Zwei Dinge sorgen dafür:
