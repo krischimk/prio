@@ -31,6 +31,20 @@ export interface LocalOnly {
   dirty: SyncFlag
 }
 
+/**
+ * Eine Adresse, mit der schon einmal eine Liste geteilt wurde.
+ *
+ * Nur lokal – eine Eingabehilfe für das nächste Teilen, kein Datensatz, der
+ * synchronisiert wird. Siehe `domain/shareContacts.ts`.
+ */
+export interface ShareContact {
+  /** Kleingeschrieben und ohne Leerzeichen – so wird verglichen. */
+  email: string
+  /** Benutzer-ID aus der Antwort des Servers. */
+  user_id: string
+  last_used_at: IsoDateTime
+}
+
 export interface LocalList extends SyncableRow, LocalOnly {
   id: string
   name: string

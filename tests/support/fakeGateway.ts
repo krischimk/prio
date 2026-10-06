@@ -156,6 +156,39 @@ export class FakeGateway implements RemoteGateway {
     return { userId: targetUserId }
   }
 
+  /**
+   * Adressen der Personen, mit denen dieser Benutzer eine nicht gelöschte
+   * Liste teilt – dieselbe Sicht, die die Serverfunktion `co_member_contacts`
+   * herausgibt.
+   */
+  async coMemberContacts(): Promise<{ userId: string; email: string }[]> {
+    const kontakte = new Map<string, string>()
+
+    // Beteiligt ist, wer die Liste besitzt **oder** aktives Mitglied ist.
+    for (const liste of this.server.lists.values()) {
+      if (liste.deleted_at !== null) continue
+
+      const mitglieder = [...this.server.members.values()].filter(
+        (eintrag) => eintrag.list_id === liste.id && eintrag.deleted_at === null,
+      )
+      const dabei =
+        liste.owner_id === this.userId || mitglieder.some((m) => m.user_id === this.userId)
+      if (!dabei) continue
+
+      const beteiligte = [liste.owner_id, ...mitglieder.map((m) => m.user_id)]
+      for (const userId of beteiligte) {
+        if (userId === this.userId || kontakte.has(userId)) continue
+        for (const [email, id] of this.server.accounts) {
+          if (id === userId) kontakte.set(userId, email)
+        }
+      }
+    }
+
+    return [...kontakte]
+      .map(([userId, email]) => ({ userId, email }))
+      .sort((a, b) => a.email.localeCompare(b.email))
+  }
+
   private isOwner(listId: string): boolean {
     return this.server.lists.get(listId)?.owner_id === this.userId
   }
@@ -182,6 +215,11 @@ export class OfflineGateway implements RemoteGateway {
     this.calls += 1
     throw new RemoteError('offline', 'Netzwerk nicht erreichbar.')
   }
+
+  async coMemberContacts(): Promise<{ userId: string; email: string }[]> {
+    this.calls += 1
+    throw new RemoteError('offline', 'Netzwerk nicht erreichbar.')
+  }
 }
 
 export function createFakeServer(): FakeServer {
@@ -200,6 +238,7 @@ export function createLazyGateway(server: FakeServer, currentUserId: () => strin
     pull: () => resolve().pull(),
     push: (payload) => resolve().push(payload),
     shareListByEmail: (listId, email) => resolve().shareListByEmail(listId, email),
+    coMemberContacts: () => resolve().coMemberContacts(),
   }
 }
 

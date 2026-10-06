@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { LocalList, LocalListMember, LocalTask } from '../domain/types'
+import type { LocalList, LocalListMember, LocalTask, ShareContact } from '../domain/types'
 import { useWorkspace } from './useWorkspace'
 
 /**
@@ -25,6 +25,23 @@ function subscribe<T>(load: () => Promise<T>, onValue: (value: T) => void): () =
   return () => {
     active = false
   }
+}
+
+/**
+ * Adressen, mit denen schon einmal eine Liste geteilt wurde – zuletzt
+ * verwendete zuerst.
+ *
+ * Eine Eingabehilfe für das Teilen-Formular: Sie liegt in `meta`, wird nicht
+ * synchronisiert und füllt sich nur aus dem, was der Benutzer selbst einträgt.
+ */
+export function useShareContacts(): ShareContact[] {
+  const { repositories, dataVersion } = useWorkspace()
+  const [contacts, setContacts] = useState<ShareContact[]>([])
+  useEffect(
+    () => subscribe(() => repositories.listShareContacts(), setContacts),
+    [repositories, dataVersion],
+  )
+  return contacts
 }
 
 export function useLists(): LocalList[] {

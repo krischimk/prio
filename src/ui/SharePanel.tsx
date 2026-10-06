@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
-import { useMembers } from '../app/hooks'
+import { useMembers, useShareContacts } from '../app/hooks'
+import { suggestShareContacts } from '../domain/shareContacts'
 import type { LocalList } from '../domain/types'
-import { dangerButton, errorMessage, input, primaryButton, successMessage } from './styles'
+import { dangerButton, errorMessage, ghostButton, input, primaryButton, successMessage } from './styles'
 
 /**
  * Teilen einer Liste über die E-Mail-Adresse eines registrierten Nutzers.
@@ -12,16 +13,27 @@ import { dangerButton, errorMessage, input, primaryButton, successMessage } from
  * werden lokal nur über ihre Benutzer-ID geführt – E-Mail-Adressen anderer
  * Nutzer werden nicht synchronisiert (Datensparsamkeit). Angezeigt wird
  * deshalb eine Kurzform der ID.
+ *
+ * Was der Benutzer selbst einträgt, wird dagegen gemerkt: Adressen, mit denen
+ * schon einmal geteilt wurde, stehen beim nächsten Mal als Vorschlag bereit.
+ * Ohne das müsste man dieselbe Adresse für jede weitere Liste erneut tippen.
+ * Die Vorschläge liegen nur auf diesem Gerät (siehe `domain/shareContacts.ts`)
+ * und werden über die Benutzer-ID gegen die Mitglieder der Liste geprüft.
  */
 export function SharePanel({ list, currentUserId }: { list: LocalList; currentUserId: string }) {
   const { shareListByEmail, repositories } = useWorkspace()
   const members = useMembers(list.id)
+  const contacts = useShareContacts()
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
   const isOwner = list.owner_id === currentUserId
+  const vorschlaege = suggestShareContacts(
+    contacts,
+    members.map((member) => member.user_id),
+  )
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
@@ -30,7 +42,9 @@ export function SharePanel({ list, currentUserId }: { list: LocalList; currentUs
     setError(null)
     setNotice(null)
     try {
-      await shareListByEmail(list.id, email)
+      const { userId } = await shareListByEmail(list.id, email)
+      // Merken, damit dieselbe Adresse beim nächsten Teilen vorgeschlagen wird.
+      await repositories.rememberShareContact(email, userId)
       setNotice(`Freigabe für ${email.trim()} gespeichert.`)
       setEmail('')
     } catch (cause) {
@@ -67,6 +81,32 @@ export function SharePanel({ list, currentUserId }: { list: LocalList; currentUs
           Freigeben
         </button>
       </form>
+
+      {vorschlaege.length > 0 ? (
+        <div>
+          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+            Zuletzt geteilt
+          </h3>
+          <ul className="flex flex-wrap gap-2">
+            {vorschlaege.map((contact) => (
+              <li key={contact.email}>
+                {/*
+                  Ein Klick setzt die Adresse ins Feld, statt sofort freizugeben:
+                  Ein zweiter Klick auf „Freigeben" bestätigt. So kann ein
+                  versehentlicher Tipp niemandem Zugriff geben.
+                */}
+                <button
+                  type="button"
+                  className={`${ghostButton} px-2 py-1 text-xs`}
+                  onClick={() => setEmail(contact.email)}
+                >
+                  {contact.email}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {error ? (
         <p role="alert" className={errorMessage}>

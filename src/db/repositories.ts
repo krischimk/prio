@@ -2,10 +2,21 @@ import { systemClock, timeOf, type Clock } from '../domain/clock'
 import { isRecurrence, nextOccurrence, successorId } from '../domain/recurrence'
 import { alignReminders, isPlausibleOffset, type TaskReminder } from '../domain/reminder'
 import { newId } from '../domain/ids'
-import type { LocalList, LocalListMember, LocalTask } from '../domain/types'
+import type { LocalList, LocalListMember, LocalTask, ShareContact } from '../domain/types'
 import type { LocalDatabase } from './localDb'
 import { optionalText, requireText, ValidationError } from './validation'
-import { META_REMINDER_PRESETS, readMeta, writeMeta } from '../sync/syncStore'
+import {
+  META_REMINDER_PRESETS,
+  META_SHARE_CONTACTS,
+  readMeta,
+  writeMeta,
+} from '../sync/syncStore'
+import {
+  normalizeShareEmail,
+  parseShareContacts,
+  withCoMemberContacts,
+  withShareContact,
+} from '../domain/shareContacts'
 
 /**
  * Geschäftslogik für Listen, Aufgaben und Mitgliedschaften.
@@ -97,6 +108,35 @@ export interface Repositories {
    */
   listReminderPresets(): Promise<number[]>
   setReminderPresets(minutes: number[]): Promise<void>
+
+  /**
+   * Die Adressen, mit denen schon einmal eine Liste geteilt wurde – zuletzt
+   * verwendete zuerst.
+   *
+   * Wie die Vorlaufzeiten eine Eingabehilfe, deshalb in `meta` und ohne
+   * Synchronisation. Gefüllt wird sie nur aus dem, was der Benutzer selbst
+   * eingetragen hat.
+   */
+  listShareContacts(): Promise<ShareContact[]>
+  /**
+   * Merkt eine Adresse nach erfolgreichem Teilen.
+   *
+   * `userId` kommt aus der Antwort des Servers – nur dieses Paar wird gemerkt,
+   * es wird nichts nachgeschlagen.
+   */
+  rememberShareContact(email: string, userId: string): Promise<void>
+  /**
+   * Ergänzt Adressen aus dem Serverbestand: Personen, mit denen eine
+   * gemeinsame Liste besteht.
+   *
+   * Der Server gibt nur diesen Kreis heraus. Geschrieben wird nur, wenn sich
+   * wirklich etwas ändert – der Abgleich läuft oft und soll die Oberfläche
+   * nicht ohne Anlass neu zeichnen.
+   */
+  mergeShareContacts(
+    contacts: ReadonlyArray<{ userId: string; email: string }>,
+    at: string,
+  ): Promise<void>
 
   // Mitgliedschaften
   listMembers(listId: string): Promise<LocalListMember[]>
@@ -498,6 +538,27 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
     async setReminderPresets(minutes) {
       const sauber = minutes.filter(isPlausibleOffset).map((wert) => Math.round(wert))
       await writeMeta(db, META_REMINDER_PRESETS, JSON.stringify(sauber))
+    },
+
+    async listShareContacts() {
+      return parseShareContacts(await readMeta(db, META_SHARE_CONTACTS))
+    },
+
+    async rememberShareContact(email, userId) {
+      const adresse = normalizeShareEmail(email)
+      if (adresse.length === 0 || userId.length === 0) return
+      const bisher = parseShareContacts(await readMeta(db, META_SHARE_CONTACTS))
+      const { updated_at } = stamp()
+      const neu = withShareContact(bisher, adresse, userId, updated_at)
+      await writeMeta(db, META_SHARE_CONTACTS, JSON.stringify(neu))
+    },
+
+    async mergeShareContacts(contacts, at) {
+      if (contacts.length === 0) return
+      const bisher = parseShareContacts(await readMeta(db, META_SHARE_CONTACTS))
+      const neu = withCoMemberContacts(bisher, contacts, at)
+      if (JSON.stringify(neu) === JSON.stringify(bisher)) return
+      await writeMeta(db, META_SHARE_CONTACTS, JSON.stringify(neu))
     },
 
     async listMembers(listId) {

@@ -340,6 +340,40 @@ async function handleRpc(name, request, response) {
     return
   }
 
+  // Adressen der Personen, mit denen der Aufrufer eine Liste teilt. Dieselbe
+  // Sicht wie die Serverfunktion in `0012_co_member_contacts.sql`.
+  if (name === 'co_member_contacts') {
+    // Beteiligt ist, wer die Liste besitzt **oder** aktives Mitglied ist – der
+    // Besitzer hat keine eigene Mitgliedszeile.
+    const meineListen = [...state.lists.values()].filter(
+      (liste) =>
+        !liste.deleted_at &&
+        (liste.owner_id === user.id ||
+          [...state.members.values()].some(
+            (m) => m.list_id === liste.id && m.user_id === user.id && !m.deleted_at,
+          )),
+    )
+
+    const kontakte = new Map()
+    for (const liste of meineListen) {
+      const beteiligte = [liste.owner_id]
+      for (const m of state.members.values()) {
+        if (m.list_id === liste.id && !m.deleted_at) beteiligte.push(m.user_id)
+      }
+      for (const userId of beteiligte) {
+        if (userId === user.id || kontakte.has(userId)) continue
+        const person = [...state.users.values()].find((kandidat) => kandidat.id === userId)
+        if (person && person.email) kontakte.set(userId, String(person.email).toLowerCase())
+      }
+    }
+
+    const zeilen = [...kontakte]
+      .map(([userId, email]) => ({ user_id: userId, email }))
+      .sort((a, b) => a.email.localeCompare(b.email))
+    send(response, 200, zeilen)
+    return
+  }
+
   if (name !== 'share_list_by_email') {
     sendPostgrestError(response, 404, `Unbekannte Funktion: ${name}`, 'PGRST202')
     return

@@ -158,6 +158,22 @@ export function WorkspaceProvider({
       pulled = result.pulled
       if (!mountedRef.current) return
       setSyncStatus(result)
+
+      /*
+       * Vorschläge für das Teilen auffrischen: Wer mit mir eine Liste teilt,
+       * soll beim nächsten Teilen vorgeschlagen werden – auch wenn ich die
+       * Adresse nie selbst eingetippt habe. Bewusst ohne Wirkung auf den
+       * Abgleich: Schlägt es fehl (offline, ältere Serverfassung), bleiben die
+       * bisherigen Vorschläge stehen.
+       */
+      if (repositories) {
+        try {
+          const kontakte = await gateway.coMemberContacts()
+          await repositories.mergeShareContacts(kontakte, new Date().toISOString())
+        } catch {
+          // Der Abgleich ist wichtiger als die Vorschläge.
+        }
+      }
       // Nach einem Pull kann sich lokal etwas geändert haben – die Anzeige
       // muss neu lesen, aber ohne einen weiteren Sync auszulösen.
       if (result.pulled > 0) setDataVersion((value) => value + 1)
@@ -167,7 +183,7 @@ export function WorkspaceProvider({
       // Nur wenn wirklich neue Daten angekommen sind: Erinnerungen nachziehen.
       if (pulled > 0) await refreshReminders()
     }
-  }, [ready, refreshDerivedState, refreshReminders])
+  }, [ready, repositories, gateway, refreshDerivedState, refreshReminders])
 
   const enableReminders = useCallback(async () => {
     if (!ready) return

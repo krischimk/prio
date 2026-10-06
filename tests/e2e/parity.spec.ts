@@ -375,6 +375,65 @@ const funktionen: Funktion[] = [
     },
   },
   {
+    name: 'Vorschlag für eine schon einmal geteilte Adresse',
+    breit: async (page, request) => {
+      const mitglied = uniqueEmail('p-vorschlag-b-mitglied')
+      await createAccount(request, mitglied)
+
+      await breit.register(page, uniqueEmail('p-vorschlag-b'))
+      await breit.createList(page, 'Erste Liste')
+
+      // Erst das Teilen erzeugt den Vorschlag.
+      await page.getByRole('button', { name: 'Teilen', exact: true }).click()
+      await page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(mitglied)
+      await page.getByRole('button', { name: 'Freigeben' }).click()
+      await expect(page.getByRole('status')).toContainText('Freigabe für')
+
+      // In der nächsten Liste ist die Adresse kein Mitglied und wird angeboten.
+      await breit.createList(page, 'Zweite Liste')
+
+      // „Teilen" schaltet das Formular um, und nach dem Listenwechsel bleibt es
+      // offen – ein zweiter Klick würde es also schließen.
+      const teilenFormular = page.getByRole('form', { name: 'Liste teilen' })
+      if (!(await teilenFormular.isVisible())) {
+        await page.getByRole('button', { name: 'Teilen', exact: true }).click()
+      }
+      await expect(teilenFormular).toBeVisible()
+
+      const vorschlag = page.getByRole('button', { name: mitglied })
+      await expect(vorschlag).toBeVisible()
+      await vorschlag.click()
+      await expect(page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true })).toHaveValue(
+        mitglied,
+      )
+    },
+    telefon: async (page, request) => {
+      const mitglied = uniqueEmail('p-vorschlag-t-mitglied')
+      await createAccount(request, mitglied)
+
+      await telefon.register(page, uniqueEmail('p-vorschlag-t'))
+      await telefon.createList(page, 'Erste Liste')
+
+      await page.getByTestId('app-bar-title').click()
+      await page.getByRole('button', { name: 'Teilen', exact: true }).click()
+      await page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(mitglied)
+      await page.getByRole('button', { name: 'Freigeben' }).click()
+      await expect(page.getByRole('status')).toContainText('Freigabe für')
+      await page.getByRole('button', { name: 'Schließen' }).click()
+
+      await telefon.createList(page, 'Zweite Liste')
+      await page.getByTestId('app-bar-title').click()
+      await page.getByRole('button', { name: 'Teilen', exact: true }).click()
+
+      const vorschlag = page.getByRole('button', { name: mitglied })
+      await expect(vorschlag).toBeVisible()
+      await vorschlag.click()
+      await expect(page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true })).toHaveValue(
+        mitglied,
+      )
+    },
+  },
+  {
     name: 'Anzeige, mit welchem Datenziel die App spricht',
     breit: async (page) => {
       await breit.register(page, uniqueEmail('p-datenziel-b'))

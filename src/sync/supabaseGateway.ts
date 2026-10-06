@@ -6,7 +6,12 @@ import type {
   RemoteSnapshot,
   RemoteTask,
 } from '../domain/types'
-import { classifyRemoteError, RemoteError, type RemoteGateway } from './remoteGateway'
+import {
+  classifyRemoteError,
+  RemoteError,
+  type CoMemberContact,
+  type RemoteGateway,
+} from './remoteGateway'
 
 /**
  * Supabase-Implementierung des `RemoteGateway`.
@@ -72,6 +77,22 @@ export function createSupabaseGateway(client: SupabaseClient): RemoteGateway {
       })
       throwIfError(error, 'Die Liste konnte nicht geteilt werden.')
       return { userId: String(data) }
+    },
+
+    async coMemberContacts(): Promise<CoMemberContact[]> {
+      const { data, error } = await client.rpc('co_member_contacts')
+      throwIfError(error, 'Die Kontakte konnten nicht geladen werden.')
+      if (!Array.isArray(data)) return []
+
+      // Defensiv wie überall: Nur brauchbare Zeilen weitergeben.
+      return data
+        .map((zeile) => ({
+          userId: String((zeile as { user_id?: unknown })?.user_id ?? ''),
+          email: String((zeile as { email?: unknown })?.email ?? '')
+            .trim()
+            .toLowerCase(),
+        }))
+        .filter((kontakt) => kontakt.userId.length > 0 && kontakt.email.length > 0)
     },
   }
 }

@@ -71,6 +71,20 @@ test('E2E 4: Benutzer A teilt eine Liste mit Benutzer B', async ({ browser, requ
     // 5. A sieht die Änderung nach dem nächsten Sync.
     await pageA.getByRole('button', { name: 'Jetzt synchronisieren' }).click()
     await expect(taskItem(pageA, 'Aufgabe von B')).toBeVisible()
+
+    // 6. Auch B kennt A: Wer eine gemeinsame Liste hat, wird beim Teilen
+    //    vorgeschlagen – obwohl B die Adresse nie eingetippt hat. Ohne die
+    //    Serverfunktion `co_member_contacts` gäbe es hier nichts vorzuschlagen,
+    //    weil Mitglieder lokal nur über ihre Benutzer-ID geführt werden.
+    await createList(pageB, 'Liste von B')
+    await pageB.getByRole('button', { name: 'Teilen', exact: true }).click()
+
+    const vorschlag = pageB.getByRole('button', { name: emailA })
+    await expect(vorschlag).toBeVisible()
+    await vorschlag.click()
+    await expect(pageB.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true })).toHaveValue(
+      emailA,
+    )
   } finally {
     await contextA.close()
     await contextB.close()

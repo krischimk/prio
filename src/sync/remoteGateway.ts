@@ -38,6 +38,21 @@ export interface RemoteGateway {
    * Zuordnung E-Mail → Benutzer-ID kennt.
    */
   shareListByEmail(listId: string, email: string): Promise<{ userId: string }>
+  /**
+   * Adressen der Personen, mit denen der Aufrufer schon eine Liste teilt.
+   *
+   * Grundlage für die Vorschläge beim Teilen – auch auf der anderen Seite:
+   * Wer eine Liste freigegeben bekommen hat, soll die andere Person später für
+   * eine eigene Liste vorgeschlagen bekommen. Der Server gibt nur diesen Kreis
+   * heraus (Migration `0012`).
+   */
+  coMemberContacts(): Promise<CoMemberContact[]>
+}
+
+/** Eine Person, mit der eine Liste geteilt wird. */
+export interface CoMemberContact {
+  userId: string
+  email: string
 }
 
 /**

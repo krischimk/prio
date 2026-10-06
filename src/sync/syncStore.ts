@@ -26,6 +26,15 @@ export const META_LAST_SYNC_STATUS = 'last_sync_status'
  */
 export const META_REMINDER_PRESETS = 'reminder_presets'
 
+/**
+ * Die Adressen, mit denen schon einmal eine Liste geteilt wurde.
+ *
+ * Ebenfalls bewusst nur lokal: eine Eingabehilfe für das Teilen-Formular. Sie
+ * enthält E-Mail-Adressen anderer Personen – die haben in der Cloud nichts zu
+ * suchen, solange sie dort keinen Zweck erfüllen.
+ */
+export const META_SHARE_CONTACTS = 'share_contacts'
+
 export interface DirtyRows {
   lists: LocalList[]
   members: LocalListMember[]
