@@ -908,17 +908,46 @@ kommt aus den RLS-Policies.
 
 **Vorher in Supabase einstellen**
 
-* *Authentication → Providers → Email* muss aktiv sein.
-* *Allow new users to sign up* **an** lassen und *Confirm email* **an** lassen:
-  Beim Teilen einer Liste trägt man die E-Mail-Adresse der anderen Person ein,
-  und die App sucht dazu ein **Konto in diesem Projekt**. Wer keines anlegen
-  kann, kann nicht an einer Liste teilnehmen. Die Bestätigung sorgt dafür, dass
-  ein Konto eine echte Mailbox braucht.
-* Wer nicht teilt, kann die Registrierung stattdessen schließen – dann kann
-  niemand außer den vorhandenen Konten hinein.
+Drei Schalter im Supabase-Dashboard, alle unter *Authentication* (die genaue
+Seite heißt je nach Fassung *Settings* bzw. *Sign In / Providers*):
 
-Die Adresse ist öffentlich; fremde Anmeldungen erzeugen ein leeres Konto und
-sehen keine fremden Daten. Unter *Authentication → Users* stehen alle Konten.
+| Schalter | So lassen | Was er bewirkt |
+| --- | --- | --- |
+| *Email* (Anbieter) | **an** | Anmeldung mit E-Mail und Passwort. Ohne das geht gar nichts. |
+| *Allow new users to sign up* | **an** | Wer die Adresse der App kennt, kann sich ein Konto anlegen. |
+| *Confirm email* | **an** | Das Konto wird erst nach einem Klick auf den Link in der Mail nutzbar. |
+
+**Was das beim Registrieren bedeutet**
+
+1. Die Person öffnet die Adresse, tippt *Registrieren*, gibt E-Mail und Passwort
+   ein und drückt *Konto erstellen*.
+2. Mit *Confirm email* **an** schickt Supabase eine Mail und die App meldet
+   „Konto erstellt. Bitte die E-Mail-Adresse bestätigen und dann anmelden."
+   Anmelden lässt sie sich erst nach dem Klick; vorher steht dort
+   „Bitte zuerst die E-Mail-Adresse bestätigen."
+3. Mit *Allow new users to sign up* **aus** scheitert schon der Schritt aus 1,
+   und die App zeigt die Meldung des Servers: Es entsteht kein Konto.
+
+**Was das beim Teilen bedeutet**
+
+Beim Teilen trägst du die E-Mail-Adresse der anderen Person ein. Der Server
+prüft, ob es dazu ein **registriertes Konto** gibt; sonst steht dort
+„Es gibt keinen registrierten Nutzer mit dieser E-Mail-Adresse." Bestätigt sein
+muss das Konto dafür nicht – sie kann die Liste aber erst sehen, wenn sie sich
+anmelden kann, und das geht erst nach der Bestätigung.
+
+Die Reihenfolge ist deshalb: Adresse weitergeben → die Person registriert sich
+und bestätigt → du teilst die Liste. Genau dafür bleibt die Registrierung offen;
+mit geschlossenem Schalter wäre „Teilen" für neue Personen abgeschaltet.
+
+**Warum die Bestätigung anbleibt.** Ohne sie könnte sich jemand mit einer
+fremden Adresse registrieren; mit ihr braucht jedes Konto eine echte Mailbox.
+
+**Was „offen" bedeutet.** Wer die Adresse deiner App kennt, kann sich anmelden
+und bekommt ein leeres Konto; fremde Daten sieht er nicht, dafür sorgen die
+RLS-Policies und nicht die Anmeldung. Alle Konten stehen unter *Authentication →
+Users*, ein fremdes lässt sich dort löschen. Die Registrierung nur für eine
+Weile zu schließen ist derselbe Schalter.
 
 **Nach dem Deployment prüfen**
 
