@@ -311,6 +311,9 @@ In-Memory-Ersatz für Supabase, der auch die RLS-Sichtbarkeitsregeln nachbildet.
 | `tasks.spec.ts` | E2E 1: registrieren, Aufgabe erstellen und sehen; erneut anmelden; E2E 2: bearbeiten, erledigen, löschen |
 | `offline.spec.ts` | E2E 3: Netzwerk aus, Aufgabe erstellen, Netzwerk an, Sync, zweites Gerät sieht die Aufgabe |
 | `shared-list.spec.ts` | E2E 4: A teilt mit B, B erstellt Aufgabe, A sieht sie; E2E 4b: B wird entfernt und verliert den Zugriff |
+| `mobile.spec.ts` | Die Abläufe auf dem Telefon (390 × 844): Menü statt Seitenleiste, Antippen statt Knöpfe, Langdruck zum Verschieben |
+| `lists.spec.ts` | Dieselben Listenabläufe in der breiten Ansicht – Gegenstück zu `mobile.spec.ts` |
+| `parity.spec.ts` | Jede Funktion aus `funktionen` einmal in der breiten Ansicht und einmal auf dem Telefon: erzwingt, dass keine Aktion nur auf einem Bildschirm existiert |
 
 Die E2E-Tests starten automatisch zwei Server:
 

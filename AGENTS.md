@@ -25,7 +25,7 @@ nur die Regeln, die man beim Arbeiten kennen muss.
 
 ```bash
 npm run ci          # Typecheck, Lint, Tests, Produktionsbuild (rund 15 s)
-npm run test:e2e    # echter Browser gegen den Mock-Server (rund 50 s)
+npm run test:e2e    # echter Browser gegen den Mock-Server (rund 1,5 min)
 ```
 
 Beides muss grün sein. Bei Oberflächenänderungen zusätzlich in Telefongröße
@@ -252,11 +252,14 @@ Konkret:
   einem Bildschirm ist ein **Fehler**, kein Zwischenstand. Beim Hinzufügen
   immer fragen: Wo ist die andere Stelle? Wenn die Antwort „nirgends“ lautet,
   ist die Arbeit nicht fertig.
-* **Prüfbar:** Für jede Listen- und Aufgabenaktion gibt es einen E2E-Fall in
-  `tests/e2e/mobile.spec.ts` (Telefon) **und** einen in `tests/e2e/lists.spec.ts`
-  bzw. `tests/e2e/tasks.spec.ts` (breite Ansicht). Fehlt einer, ist die Regel
-  verletzt – genau so ist die Symbolauswahl versehentlich nur auf dem Telefon
-  gelandet.
+* **Prüfbar:** `tests/e2e/parity.spec.ts` führt eine Tabelle `funktionen` über
+  **beide** Ansichten. Jeder Eintrag hat genau einen Weg für die breite Ansicht
+  und einen für das Telefon – beide sind Pflichtfelder, ein einseitiger Eintrag
+  lässt sich also gar nicht erst anlegen. Eine neue Listen- oder Aufgabenaktion
+  bekommt dort ihre zwei Wege; fehlt einer in der Wirklichkeit, scheitert genau
+  dieser Test und trägt den Namen der Ansicht davor. Daneben bleiben die
+  ausführlichen Abläufe einer einzelnen Ansicht in `tests/e2e/mobile.spec.ts`
+  und `tests/e2e/lists.spec.ts` bzw. `tests/e2e/tasks.spec.ts`.
 * **Vor jeder UI-Änderung fragen:** Braucht die andere Ansicht das auch? Wenn ja
   → gemeinsam umsetzen. Wenn nein → bewusst dagegen entscheiden.
 * **Nichts verdoppeln, was nur zufällig gleich aussieht.** Zwei fast gleiche
@@ -271,8 +274,9 @@ Ausdrücklich **erlaubte** Unterschiede, die nicht angeglichen werden müssen:
 * Safe-Area-Klassen – nur in der App sinnvoll.
 
 > **Eine Regel ohne Prüfung ist ein Wunsch.** Diese Regeln sind erst belastbar,
-> wenn ein Test sie durchsetzt. Solange es den nicht gibt, gilt: für neuen Code
-> sofort, bestehende Dateien beim nächsten Anfassen umstellen.
+> wenn ein Test sie durchsetzt. Für die Parität gibt es ihn jetzt
+> (`parity.spec.ts`); für alles andere gilt weiter: für neuen Code sofort,
+> bestehende Dateien beim nächsten Anfassen umstellen.
 
 ## Tests
 
