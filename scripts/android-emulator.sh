@@ -8,10 +8,24 @@
 #
 # Aufruf über die npm-Skripte:
 #   npm run android:emu          Emulator mit Fenster starten
-#   npm run android:emu:install  Debug-APK bauen, installieren und öffnen
+#   npm run android:emu:install  Debug-APK gegen den Mock bauen, installieren, öffnen
+#   npm run android:emu:echt     Dasselbe gegen das echte Supabase-Projekt
 #   npm run android:emu:shot     Screenshot ablegen
 #   npm run android:emu:eval     Ausdruck im laufenden WebView auswerten
-#   npm run android:emu:stop     Emulator beenden
+#   npm run android:emu:stop     Emulator und Mock beenden
+#
+# Zwei Ziele, ein Standard:
+#
+#   --mock (Standard)  Der lokale Mock aus tests/mock-supabase. Kein Konto,
+#                      keine Daten im echten Projekt, jederzeit wiederholbar.
+#                      Beantwortet die Frage „läuft die App, geht die
+#                      Oberfläche?".
+#   --echt             Das echte Projekt aus der privaten .env. Braucht die
+#                      Anmeldung und legt echte Daten an. Nötig für die
+#                      Fragen, die der Mock nicht beantworten kann: echte
+#                      Anmeldung, echte Zugriffsregeln, Benachrichtigungen.
+#
+# Welches Ziel gerade läuft, zeigt die App selbst an (Kopfzeile bzw. Menü).
 #
 # Das eigentliche Bedienen und Beurteilen passiert im Fenster – das Skript
 # übernimmt nur Start, Installation und Aufräumen.
@@ -35,6 +49,13 @@ AVD_NAME="${AVD_NAME:-prio-test}"
 APP_ID="de.krischi.prio"
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APK_DEBUG="$PROJECT_DIR/android/app/build/outputs/apk/debug/app-debug.apk"
+
+# Der Mock für den Standardweg. Port und Adresse sind dieselben wie im
+# E2E-Lauf (tests/mock-supabase/server.mjs bindet an 127.0.0.1).
+MOCK_PORT="${MOCK_SUPABASE_PORT:-54321}"
+MOCK_PIDFILE="/tmp/prio-mock.pid"
+MOCK_LOG="/tmp/prio-mock.log"
+MOCK_KEY="e2e-publishable-key"
 
 info() { printf '\033[36m%s\033[0m\n' "$*"; }
 warn() { printf '\033[33m%s\033[0m\n' "$*" >&2; }
@@ -102,11 +123,70 @@ start() {
   info "Emulator bereit."
 }
 
+mock_antwortet() {
+  curl -fsS "http://127.0.0.1:$MOCK_PORT/__test__/health" >/dev/null 2>&1
+}
+
+starte_mock() {
+  if mock_antwortet; then
+    info "Mock läuft bereits auf Port $MOCK_PORT."
+    return 0
+  fi
+  info "Starte den Mock auf Port $MOCK_PORT …"
+  nohup node "$PROJECT_DIR/tests/mock-supabase/server.mjs" "$MOCK_PORT" \
+    >"$MOCK_LOG" 2>&1 &
+  echo $! >"$MOCK_PIDFILE"
+  for _ in $(seq 1 20); do
+    mock_antwortet && return 0
+    sleep 0.5
+  done
+  warn "Der Mock antwortet nicht. Protokoll: $MOCK_LOG"
+  return 1
+}
+
+stoppe_mock() {
+  [ -f "$MOCK_PIDFILE" ] || return 0
+  local pid
+  pid="$(cat "$MOCK_PIDFILE")"
+  if kill "$pid" 2>/dev/null; then
+    info "Mock beendet (PID $pid)."
+  fi
+  rm -f "$MOCK_PIDFILE"
+}
+
 install_app() {
+  local ziel="${1:---mock}"
   require adb
   device_online || start
-  info "Baue das Web-Bundle und die Debug-APK …"
-  (cd "$PROJECT_DIR" && npm run android:apk >/dev/null)
+
+  case "$ziel" in
+    --mock)
+      starte_mock || exit 1
+      # Die App im Emulator spricht mit 127.0.0.1 – ohne diese Weiterleitung
+      # landet sie im Emulator selbst und nicht beim Mock auf diesem Rechner.
+      adb reverse "tcp:$MOCK_PORT" "tcp:$MOCK_PORT" >/dev/null
+      info "Baue das Web-Bundle und die Debug-APK gegen den Mock (Port $MOCK_PORT) …"
+      (
+        cd "$PROJECT_DIR"
+        VITE_SUPABASE_URL="http://127.0.0.1:$MOCK_PORT" \
+          VITE_SUPABASE_PUBLISHABLE_KEY="$MOCK_KEY" \
+          npm run android:apk >/dev/null
+      )
+      info "Ziel: Mock. Die App zeigt es in der Kopfzeile (breit) bzw. im Menü."
+      warn "Lokale Daten aus einem früheren Lauf bleiben in der App. Für einen"
+      warn "sauberen Lauf: adb shell pm clear $APP_ID   (löscht auch die Anmeldung)"
+      ;;
+    --echt)
+      info "Baue das Web-Bundle und die Debug-APK gegen das echte Projekt (aus .env) …"
+      (cd "$PROJECT_DIR" && npm run android:apk >/dev/null)
+      warn "Ziel: echtes Supabase-Projekt. Was du hier anlegst, liegt dort wirklich."
+      ;;
+    *)
+      warn "Unbekanntes Ziel: $ziel (erlaubt: --mock, --echt)"
+      exit 1
+      ;;
+  esac
+
   # Debug- und Release-APK sind verschieden signiert – ein Wechsel scheitert
   # sonst mit INSTALL_FAILED_UPDATE_INCOMPATIBLE.
   adb install -r "$APK_DEBUG" >/dev/null 2>&1 || {
@@ -183,12 +263,15 @@ eval_webview() {
 
 case "${1:-}" in
   start) start ;;
-  install) install_app ;;
+  install) install_app "${2:---mock}" ;;
   shot) shift; screenshot "${1:-}" ;;
-  stop) stop ;;
+  stop)
+    stop
+    stoppe_mock
+    ;;
   eval) shift; eval_webview "$@" ;;
   *)
-    echo "Aufruf: $0 {start|install|shot [datei]|eval <ausdruck>|stop}"
+    echo "Aufruf: $0 {start|install [--mock|--echt]|shot [datei]|eval <ausdruck>|stop}"
     exit 1
     ;;
 esac
