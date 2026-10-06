@@ -69,6 +69,22 @@ Gemessen, in absteigender Reihenfolge:
 * **Shell-Aufrufe bündeln**, wo sie zusammengehören: Dateien lesen, prüfen und
   messen in einem Aufruf statt in fünf.
 
+### Regeln sind Mittel, nicht Selbstzweck
+
+Jede Regel hier hat einen Grund, meistens einen Fehler. Erfüllt sie im konkreten
+Fall ihren Zweck nicht, wird sie nicht blind befolgt – der Zweck wird anders
+erfüllt oder der Schritt entfällt, **mit einem Satz Begründung**. Weggelassen
+wird sichtbar, nicht still; im Zweifel wird der Schritt gemacht.
+
+Die Tore bleiben: `npm run ci` und alle E2E-Dateien vor dem Commit, eine
+Emulator-Prüfung des tatsächlichen App-Codes vor dem Tag, Tag und Version
+zusammen. Was nur dem Ablauf dient – auf einen grünen Lauf warten, eine Runde
+wiederholen, deren Ergebnis schon feststeht –, darf entfallen.
+
+Andere Gegebenheiten, gleicher Zweck: Auf einem Rechner ohne Anzeige und ohne
+`~/Desktop` werden Regeln übersetzt, nicht gestrichen. Jede Regel macht eine
+Annahme über die Umgebung; wer die Umgebung wechselt, prüft diese Annahme.
+
 ### Sammeln, dann ausliefern
 
 Die teuren Schritte – Emulator-Runde und Release – laufen **einmal je Sammlung**,
@@ -89,7 +105,8 @@ nicht einmal je Änderung. Drei Stufen:
 * **Erst `main` pushen, die CI abwarten, dann taggen.** Der Release-Workflow
   führt kein E2E aus, die CI tut es bei jedem Push auf `main`. Ist sie grün, ist
   E2E für genau den Commit bewiesen, aus dem die APK entsteht – und die Wartezeit
-  kostet nichts, weil GitHub währenddessen arbeitet.
+  kostet nichts, weil GitHub währenddessen arbeitet. Entfällt, wenn genau dieser
+  App-Code schon einen grünen E2E-Lauf hat.
 
 ## Architektur – nicht aufweichen
 
