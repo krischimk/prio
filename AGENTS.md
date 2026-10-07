@@ -180,6 +180,12 @@ nicht einmal je Änderung. Drei Stufen:
   „warten“. Vorher war der Upload alles-oder-nichts: eine abgelehnte Zeile hielt
   den ganzen Bestand zurück, und der Zähler wurde nie leer. Auslöser:
   `DESIGN.md` §15.5 C1.
+* **Die Datenschicht hat einen Bereich je Datei.** `src/db/repositories/`:
+  `listen`, `aufgaben`, `mitglieder`, `einstellungen`, dazu `context.ts` für die
+  gemeinsamen Helfer, `types.ts` für die Schnittstelle und `index.ts` als
+  Zusammensetzung. Eine neue Methode gehört in ihren Bereich; nach außen bleibt
+  `createRepositories` aus `src/db/repositories`. Auslöser: `DESIGN.md`
+  §15.5 C3.
 * **Jede Zeile geht durch den Leserand.** Neue Felder erreichen nicht alle
   Zeilen gleichzeitig (alte lokale Zeilen, ältere Geräte, fehlende Migration).
   `src/domain/normalize.ts` macht eine Zeile vollständig – beim Anwenden einer
