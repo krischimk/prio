@@ -75,6 +75,9 @@ Der Schlüssel ist ausschließlich lesend und liegt damit wie die übrigen
 privaten Daten außerhalb des Repositories.
 `
 
+/** Merkt sich, dass der Schlüssel abgelehnt wurde – dann läuft alles anonym. */
+let schluesselAbgelehnt = false
+
 async function hole(pfad, optionen = {}) {
   const kopf = {
     accept: 'application/vnd.github+json',
@@ -83,8 +86,17 @@ async function hole(pfad, optionen = {}) {
   }
   const schluessel = token()
   if (schluessel) kopf.authorization = `Bearer ${schluessel}`
-  const antwort = await fetch(`${API}${pfad}`, { ...optionen, headers: kopf })
-  return antwort
+
+  const anfrage = { ...optionen, headers: kopf }
+  const antwort = await fetch(`${API}${pfad}`, anfrage)
+  if (!schluessel || (antwort.status !== 401 && antwort.status !== 403)) return antwort
+
+  // Abgelaufen, vertippt oder zu wenig Rechte: Ein Schlüssel, der nicht darf,
+  // ist schlimmer als keiner – die Abfrage liefe sonst auf einen Fehler statt
+  // auf die öffentlichen Daten. Also einmal ohne ihn versuchen.
+  schluesselAbgelehnt = true
+  delete anfrage.headers.authorization
+  return fetch(`${API}${pfad}`, anfrage)
 }
 
 function shaAusArgumenten() {
@@ -117,6 +129,13 @@ async function status() {
   console.log(`  ${lauf.html_url}`)
   for (const job of await jobsVon(lauf.id)) {
     console.log(`  ${job.conclusion === 'success' ? '✓' : job.conclusion === 'skipped' ? '·' : '✗'} ${job.name}: ${job.conclusion ?? job.status}`)
+  }
+  if (schluesselAbgelehnt) {
+    console.log(
+      '\nHinweis: Der Schlüssel in ~/.prio-android/github.env wurde abgelehnt ' +
+        '(abgelaufen, vertippt oder ohne Actions-Recht). Die Abfrage lief ohne ihn; ' +
+        'Log und Neustart brauchen einen gültigen.',
+    )
   }
   return lauf
 }
