@@ -54,7 +54,7 @@ export function MobileWorkspace() {
         onOpenList={() => setListSettingsOpen(true)}
       />
 
-      <main className="app-bar-offset pb-28">
+      <main className="app-bar-offset fab-offset">
         {selected === null ? (
           <p className="px-6 py-12 text-center text-body text-ink-faint">
             Öffne oben links das Menü und lege eine Liste an.
@@ -83,7 +83,7 @@ export function MobileWorkspace() {
             type="button"
             onClick={() => setDetail({ task: null })}
             aria-label="Neue Aufgabe"
-            className="pointer-events-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-brand text-on-brand shadow-lg shadow-page/40 active:bg-brand-soft"
+            className="pointer-events-auto mb-fab-gap flex h-fab w-fab items-center justify-center rounded-full bg-brand text-on-brand shadow-lg shadow-page/40 active:bg-brand-soft"
           >
             <PlusIcon />
           </button>

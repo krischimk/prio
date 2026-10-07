@@ -33,7 +33,7 @@ export function MobileAppBar({
 
   return (
     <header className={`safe-top fixed inset-x-0 top-0 z-30 border-b border-line ${appBackground}`}>
-      <div className="flex h-14 items-center gap-1 px-2">
+      <div className="flex h-app-bar items-center gap-1 px-2">
         <button
           type="button"
           onClick={onOpenMenu}

@@ -55,13 +55,15 @@ export function UndoProvider({ children }: { children: ReactNode }) {
       {offer ? (
         <div className="safe-bottom pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4">
           {/*
-            `mb-24` hält Abstand zum runden Plus-Knopf der mobilen Ansicht,
-            `md:mb-4` gilt für die breite Ansicht ohne diesen Knopf.
+            `fab-clearance` hält Abstand zum runden Plus-Knopf; die Klasse
+            rechnet aus der Gerätegeometrie in `index.css` und schaltet für die
+            breite Ansicht selbst um – hier standen vorher zwei Zahlen, die zu
+            einem Knopf in einer anderen Datei passen mussten.
           */}
           <div
             role="status"
             data-testid="undo-bar"
-            className="pointer-events-auto mb-24 flex w-full max-w-md items-center gap-3 rounded-card border border-line-strong bg-raised px-4 py-3 shadow-lg shadow-page/40 md:mb-4"
+            className="fab-clearance pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-card border border-line-strong bg-raised px-4 py-3 shadow-lg shadow-page/40"
           >
             <span className="min-w-0 flex-1 truncate text-body text-ink">
               „{offer.title}“ erledigt

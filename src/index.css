@@ -76,6 +76,18 @@
   --text-display: 1.5rem; /* Anmeldung, große Leerzustände */
   --text-display--line-height: 2rem;
 
+  /*
+   * Gerätegeometrie: die Maße, die zueinander passen müssen.
+   *
+   * Vorher standen sie als Zahlen an vier Orten – `h-14` in der App-Leiste,
+   * `3.5rem` in `.app-bar-offset`, `pb-28` am Inhalt und `mb-24` an der
+   * Rückgängig-Leiste. Wer die Leiste höher macht, brach den Inhalt, ohne dass
+   * eine Beziehung im Code stand.
+   */
+  --spacing-app-bar: 3.5rem; /* Höhe der App-Leiste */
+  --spacing-fab: 3.5rem; /* Durchmesser des runden Plus-Knopfes */
+  --spacing-fab-gap: 1.25rem; /* sein Abstand zum unteren Rand */
+
   /* Rundungen: drei Stufen mit Bedeutung */
   --radius-control: 0.375rem; /* Knöpfe, Felder, Chips */
   --radius-card: 0.5rem; /* Karten und Zeilen */
@@ -210,9 +222,40 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator {
  * Element verwenden.
  */
 
-/* Feste Höhe der App-Leiste plus Systemleiste – für den Abstand des Inhalts. */
+/*
+ * Feste Höhe der App-Leiste plus Systemleiste – für den Abstand des Inhalts.
+ *
+ * Rechnet aus `--spacing-app-bar`; die Leiste selbst nimmt dasselbe Maß
+ * (`h-app-bar` in `MobileAppBar`). Deshalb darf diese Klasse **nicht** mit
+ * `pt-*`/`py-*` auf demselben Element stehen – ungeschichtetes CSS gewinnt.
+ */
 .app-bar-offset {
-  padding-top: calc(3.5rem + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));
+  padding-top: calc(var(--spacing-app-bar) + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));
+}
+
+/*
+ * Platz für den runden Plus-Knopf am unteren Rand (nur Telefon).
+ *
+ * Auch hier gilt: nicht mit `pb-*`/`py-*` auf demselben Element kombinieren.
+ */
+.fab-offset {
+  padding-bottom: calc(var(--spacing-fab) + var(--spacing-fab-gap) + 1rem);
+}
+
+/*
+ * Abstand eines schwebenden Elements (Rückgängig-Leiste) über dem Plus-Knopf.
+ *
+ * Auf der breiten Ansicht gibt es keinen Plus-Knopf; dort bleibt der schmale
+ * Abstand. Die Umschaltung steht hier, weil sie zur Geometrie gehört.
+ */
+.fab-clearance {
+  margin-bottom: calc(var(--spacing-fab) + var(--spacing-fab-gap) + 0.25rem);
+}
+
+@media (min-width: 768px) {
+  .fab-clearance {
+    margin-bottom: 1rem;
+  }
 }
 
 /*
