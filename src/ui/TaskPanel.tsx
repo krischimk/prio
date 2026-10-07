@@ -172,12 +172,17 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
           <div className="space-y-4" data-testid="task-list">
             {gruppen.map((gruppe) => (
               <div key={gruppe.id}>
-                <SectionHeader
-                  name={gruppe.section?.name ?? 'Ohne Bereich'}
-                  anzahl={gruppe.tasks.length}
-                  offen={!zugeklappt.has(gruppe.id)}
-                  onToggle={() => umschalten(gruppe.id)}
-                />
+                {/* Aufgaben ohne Bereich stehen oben, aber ohne Überschrift:
+                    Ein Kopf „Ohne Bereich" wäre nur Lärm. Zuklappen lässt sich
+                    eine Gruppe ohne Kopf auch nicht. */}
+                {gruppe.section === null ? null : (
+                  <SectionHeader
+                    name={gruppe.section.name}
+                    anzahl={gruppe.tasks.length}
+                    offen={!zugeklappt.has(gruppe.id)}
+                    onToggle={() => umschalten(gruppe.id)}
+                  />
+                )}
                 {zugeklappt.has(gruppe.id) ? null : (
                   <ul className="space-y-2">
                     {gruppe.tasks.map((task) => (

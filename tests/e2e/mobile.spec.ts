@@ -554,21 +554,27 @@ test('E2E 6: Bereiche ordnen Aufgaben, nehmen sie beim Ziehen auf und klappen zu
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
   const kopf = (name: string) => page.getByTestId('section-header').filter({ hasText: name })
-  await expect(kopf('Ohne Bereich')).toBeVisible()
   await expect(kopf('Obst')).toContainText('1')
-  // „Ohne Bereich" steht oben, darunter die Bereiche in ihrer Reihenfolge.
-  // Der Kopf wird groß dargestellt; verglichen wird deshalb kleingeschrieben.
+
+  // Aufgaben ohne Bereich stehen oben, **ohne** eigene Überschrift; darunter
+  // die Bereiche in ihrer Reihenfolge. Der Kopf wird groß dargestellt –
+  // verglichen wird deshalb kleingeschrieben.
   const koepfe = (await page.getByTestId('section-header').allInnerTexts()).map((text) =>
     text.toLowerCase(),
   )
-  expect(koepfe[0]).toContain('ohne bereich')
-  expect(koepfe[1]).toContain('obst')
-  expect(koepfe[2]).toContain('getränke')
+  expect(koepfe).toHaveLength(2)
+  expect(koepfe[0]).toContain('obst')
+  expect(koepfe[1]).toContain('getränke')
+
+  // Die Bereiche stehen **unter** den Aufgaben ohne Bereich: „Milch" und
+  // „Saft" zuerst (zuletzt angelegt), dann „Äpfel" im Bereich „Obst".
+  expect(await taskTitles(page)).toEqual(['Milch', 'Saft', 'Äpfel'])
 
   // „Saft" unter „Äpfel" ziehen – damit landet sie im Bereich „Obst".
   await dragRowDown(page, 'Saft', 120)
 
   await expect(kopf('Obst')).toContainText('2')
+  // „Milch" bleibt ohne Bereich und steht deshalb weiter oben.
   expect(await taskTitles(page)).toEqual(['Milch', 'Äpfel', 'Saft'])
 
   // Zuklappen: Die Aufgaben verschwinden, die Zahl bleibt.

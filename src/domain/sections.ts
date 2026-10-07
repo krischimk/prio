@@ -96,8 +96,9 @@ export interface TaskGroup<T> {
  *
  * Reihenfolge der Gruppen: **erst „ohne Bereich", dann die Abschnitte in ihrer
  * Reihenfolge.** Was noch keinem Bereich zugeordnet ist, steht damit dort, wo
- * man es sieht, statt unter einem Abschnitt zu verschwinden. Leere Abschnitte
- * bleiben enthalten – eben angelegt wären sie sonst unsichtbar.
+ * man es sieht, statt unter einem Abschnitt zu verschwinden – **ohne eigene
+ * Überschrift**: Ein Kopf „Ohne Bereich" über den ersten Aufgaben wäre nur Lärm.
+ * Leere Abschnitte bleiben enthalten – eben angelegt wären sie sonst unsichtbar.
  *
  * Innerhalb einer Gruppe bleibt die übergebene Reihenfolge (also `position`)
  * unverändert. Eine Aufgabe, deren Abschnitt es nicht mehr gibt, zählt zu

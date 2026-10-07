@@ -75,13 +75,15 @@ export function MobileTaskList({
             const offen = !zugeklappt.has(gruppe.id)
             return (
               <div key={gruppe.id}>
-                <SectionHeader
-                  name={gruppe.section?.name ?? 'Ohne Bereich'}
-                  anzahl={gruppe.tasks.length}
-                  offen={offen}
-                  onToggle={() => umschalten(gruppe.id)}
-                  className="px-4 pt-3"
-                />
+                {gruppe.section === null ? null : (
+                  <SectionHeader
+                    name={gruppe.section.name}
+                    anzahl={gruppe.tasks.length}
+                    offen={offen}
+                    onToggle={() => umschalten(gruppe.id)}
+                    className="px-4 pt-3"
+                  />
+                )}
                 {offen
                   ? gruppe.tasks.map((task) => {
                       index += 1
