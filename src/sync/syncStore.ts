@@ -1,5 +1,6 @@
 import type { LocalList, LocalListMember, LocalTask, PushPayload } from '../domain/types'
 import type { LocalDatabase } from '../db/localDb'
+import { readMeta, writeMeta } from '../db/metaStore'
 
 /**
  * Persistenz-Helfer für die Sync-Engine.
@@ -16,24 +17,6 @@ import type { LocalDatabase } from '../db/localDb'
 
 export const META_LAST_SYNC_AT = 'last_sync_at'
 export const META_LAST_SYNC_STATUS = 'last_sync_status'
-/**
- * Die selbst gemerkten Vorlaufzeiten für die Schnellauswahl.
- *
- * Bewusst nur lokal: Es ist eine Eingabehilfe, keine Angabe über eine Aufgabe.
- * Sie liegt in der Datenbank des Benutzers (`prio-user-<id>`) und ist damit pro
- * Konto getrennt, wandert aber nicht auf andere Geräte – dafür bräuchte es einen
- * Sync-Pfad für Einstellungen, den es noch nicht gibt.
- */
-export const META_REMINDER_PRESETS = 'reminder_presets'
-
-/**
- * Die Adressen, mit denen schon einmal eine Liste geteilt wurde.
- *
- * Ebenfalls bewusst nur lokal: eine Eingabehilfe für das Teilen-Formular. Sie
- * enthält E-Mail-Adressen anderer Personen – die haben in der Cloud nichts zu
- * suchen, solange sie dort keinen Zweck erfüllen.
- */
-export const META_SHARE_CONTACTS = 'share_contacts'
 
 export interface DirtyRows {
   lists: LocalList[]
@@ -88,11 +71,4 @@ export async function markPushed(db: LocalDatabase, payload: PushPayload): Promi
   })
 }
 
-export async function readMeta(db: LocalDatabase, key: string): Promise<string | null> {
-  const row = await db.meta.get(key)
-  return row ? row.value : null
-}
-
-export async function writeMeta(db: LocalDatabase, key: string, value: string): Promise<void> {
-  await db.meta.put({ key, value })
-}
+export { readMeta, writeMeta }

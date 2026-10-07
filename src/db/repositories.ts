@@ -8,15 +8,17 @@ import {
 } from '../domain/sections'
 import { alignReminders, isPlausibleOffset, type TaskReminder } from '../domain/reminder'
 import { newId } from '../domain/ids'
+import {
+  compareListsByName,
+  compareMembersById,
+  compareRestorable,
+  compareTasks,
+  restoreCutoff,
+} from '../domain/ordering'
 import type { LocalList, LocalListMember, LocalTask, ShareContact } from '../domain/types'
 import type { LocalDatabase } from './localDb'
 import { optionalText, requireText, ValidationError } from './validation'
-import {
-  META_REMINDER_PRESETS,
-  META_SHARE_CONTACTS,
-  readMeta,
-  writeMeta,
-} from '../sync/syncStore'
+import { readMeta, writeMeta } from './metaStore'
 import {
   normalizeShareEmail,
   parseShareContacts,
@@ -44,8 +46,6 @@ import {
  * der Liste, bleibt aber eine Woche lang auffindbar. Danach ist sie nur noch
  * über die Synchronisation erreichbar (sie ist nicht gelöscht, nur verborgen).
  */
-export const RESTORE_WINDOW_DAYS = 7
-
 export interface CreateTaskInput {
   listId: string
   /** Der Abschnitt der neuen Aufgabe; `null` oder weggelassen heißt „ohne". */
@@ -194,18 +194,167 @@ export interface Repositories {
  * ans Ende zu rutschen. Sonst springt die Zeile beim Abhaken unter dem Finger
  * weg.
  */
-export function compareTasks(a: LocalTask, b: LocalTask): number {
-  const positionA = Number.isFinite(a.position) ? a.position : 0
-  const positionB = Number.isFinite(b.position) ? b.position : 0
-  if (positionA !== positionB) return positionA - positionB
-  if (a.completed !== b.completed) return a.completed ? 1 : -1
-  const dueA = a.due_at === null ? Number.POSITIVE_INFINITY : Date.parse(a.due_at)
-  const dueB = b.due_at === null ? Number.POSITIVE_INFINITY : Date.parse(b.due_at)
-  if (dueA !== dueB) return dueA - dueB
-  const createdA = Date.parse(a.created_at)
-  const createdB = Date.parse(b.created_at)
-  if (createdA !== createdB) return createdA - createdB
-  return a.title.localeCompare(b.title)
+/**
+ * Wie lange eine abgehakte Aufgabe unter „Aufgaben wiederherstellen“ auftaucht.
+ *
+ * Bewusste Entscheidung: Die Aufgabe verschwindet nach dem Abhaken sofort aus
+ * der Liste, bleibt aber eine Woche lang auffindbar. Danach ist sie nur noch
+ * über die Synchronisation erreichbar (sie ist nicht gelöscht, nur verborgen).
+ */
+/**
+ * Die selbst gemerkten Vorlaufzeiten für die Schnellauswahl.
+ *
+ * Bewusst nur lokal: Es ist eine Eingabehilfe, keine Angabe über eine Aufgabe.
+ * Sie liegt in der Datenbank des Benutzers (`prio-user-<id>`) und ist damit pro
+ * Konto getrennt, wandert aber nicht auf andere Geräte – dafür bräuchte es einen
+ * Sync-Pfad für Einstellungen, den es noch nicht gibt.
+ */
+const META_REMINDER_PRESETS = 'reminder_presets'
+
+/**
+ * Die Adressen, mit denen schon einmal eine Liste geteilt wurde.
+ *
+ * Ebenfalls bewusst nur lokal: eine Eingabehilfe für das Teilen-Formular. Sie
+ * enthält E-Mail-Adressen anderer Personen – die haben in der Cloud nichts zu
+ * suchen, solange sie dort keinen Zweck erfüllen.
+ */
+const META_SHARE_CONTACTS = 'share_contacts'
+
+export interface CreateTaskInput {
+  listId: string
+  /** Der Abschnitt der neuen Aufgabe; `null` oder weggelassen heißt „ohne". */
+  sectionId?: string | null
+  title: string
+  description?: string | null
+  dueAt?: string | null
+  recurrence?: string | null
+  /** Die Erinnerungen der Aufgabe. Fehlt das Feld, bleibt die bisherige Liste. */
+  reminders?: TaskReminder[]
+}
+
+export interface UpdateTaskInput {
+  title?: string
+  /** Der Abschnitt der Aufgabe; `null` heißt „ohne Bereich". */
+  sectionId?: string | null
+  description?: string | null
+  dueAt?: string | null
+  recurrence?: string | null
+  reminders?: TaskReminder[]
+}
+
+export interface Repositories {
+  // Listen
+  createList(name: string, ownerId: string): Promise<LocalList>
+  renameList(listId: string, name: string): Promise<LocalList>
+  /**
+   * Setzt das Symbol der Liste.
+   *
+   * `null` entfernt es. Die Kennung wird nicht geprüft – eine unbekannte
+   * Kennung zeigt die Oberfläche einfach als „kein Symbol“ an.
+   */
+  setListIcon(listId: string, icon: string | null): Promise<LocalList>
+  deleteList(listId: string): Promise<void>
+  getList(listId: string): Promise<LocalList | undefined>
+  listLists(): Promise<LocalList[]>
+
+  // Abschnitte einer Liste
+  /**
+   * Legt einen Abschnitt an und gibt seine Kennung zurück.
+   *
+   * `null`, wenn der Name leer ist oder die Liste schon `SECTIONS_MAX`
+   * Abschnitte hat – die Oberfläche sagt das dann.
+   */
+  addListSection(listId: string, name: string): Promise<string | null>
+  renameListSection(listId: string, sectionId: string, name: string): Promise<void>
+  /**
+   * Entfernt einen Abschnitt. Seine Aufgaben bleiben und fallen nach
+   * „ohne Bereich" – die Verweise werden dabei aufgeräumt.
+   */
+  deleteListSection(listId: string, sectionId: string): Promise<void>
+
+  // Aufgaben
+  createTask(input: CreateTaskInput): Promise<LocalTask>
+  updateTask(taskId: string, patch: UpdateTaskInput): Promise<LocalTask>
+  setTaskCompleted(taskId: string, completed: boolean): Promise<LocalTask>
+  /** Verschiebt eine Aufgabe in eine andere Liste (beide müssen zugänglich sein). */
+  moveTask(taskId: string, targetListId: string): Promise<LocalTask>
+  /**
+   * Setzt die Reihenfolge innerhalb einer Liste neu.
+   * `orderedTaskIds` enthält alle Aufgaben der Liste in der gewünschten
+   * Reihenfolge von oben nach unten.
+   */
+  reorderTasks(
+    listId: string,
+    orderedTaskIds: string[],
+    sectionOf?: Record<string, string | null>,
+  ): Promise<void>
+  deleteTask(taskId: string): Promise<void>
+  getTask(taskId: string): Promise<LocalTask | undefined>
+  /** Offene Aufgaben einer Liste, in der vom Benutzer bestimmten Reihenfolge. */
+  listTasks(listId: string): Promise<LocalTask[]>
+  /**
+   * Abgehakte Aufgaben aller Listen, die noch wiederhergestellt werden können –
+   * zuletzt abgehakte zuerst.
+   *
+   * Eine Regel für alle: `RESTORE_WINDOW_DAYS` Tage ab `completed_at`.
+   * Wiederkehrende Aufgaben sind nicht ausgenommen – die abgehakte Fassung
+   * bleibt auffindbar, während der Nachfolger offen in der Liste steht.
+   */
+  listRestorableTasks(): Promise<LocalTask[]>
+
+  /**
+   * Die selbst gemerkten Vorlaufzeiten für die Schnellauswahl, in der
+   * Reihenfolge des Hinzufügens.
+   *
+   * Eine Eingabehilfe, keine Angabe über eine Aufgabe – deshalb liegt sie in
+   * `meta` und wird nicht synchronisiert.
+   */
+  listReminderPresets(): Promise<number[]>
+  setReminderPresets(minutes: number[]): Promise<void>
+
+  /**
+   * Die Adressen, mit denen schon einmal eine Liste geteilt wurde – zuletzt
+   * verwendete zuerst.
+   *
+   * Wie die Vorlaufzeiten eine Eingabehilfe, deshalb in `meta` und ohne
+   * Synchronisation. Gefüllt wird sie nur aus dem, was der Benutzer selbst
+   * eingetragen hat.
+   */
+  listShareContacts(): Promise<ShareContact[]>
+  /**
+   * Merkt eine Adresse nach erfolgreichem Teilen.
+   *
+   * `userId` kommt aus der Antwort des Servers – nur dieses Paar wird gemerkt,
+   * es wird nichts nachgeschlagen.
+   */
+  rememberShareContact(email: string, userId: string): Promise<void>
+  /**
+   * Ergänzt Adressen aus dem Serverbestand: Personen, mit denen eine
+   * gemeinsame Liste besteht.
+   *
+   * Der Server gibt nur diesen Kreis heraus. Geschrieben wird nur, wenn sich
+   * wirklich etwas ändert – der Abgleich läuft oft und soll die Oberfläche
+   * nicht ohne Anlass neu zeichnen.
+   */
+  mergeShareContacts(
+    contacts: ReadonlyArray<{ userId: string; email: string }>,
+    at: string,
+  ): Promise<void>
+
+  // Mitgliedschaften
+  listMembers(listId: string): Promise<LocalListMember[]>
+  markListShared(listId: string): Promise<void>
+  removeMember(listId: string, userId: string): Promise<void>
+  /**
+   * Eine geteilte Liste selbst verlassen.
+   *
+   * Setzt – wie das Entfernen durch den Besitzer – `deleted_at` auf die eigene
+   * Mitgliedschaft. Der nächste Abgleich räumt die fremde Liste samt Aufgaben
+   * lokal weg (siehe `applyRemoteMembers`).
+   *
+   * Server-seitig erlaubt das die Richtlinie `list_members_leave_self`.
+   */
+  leaveList(listId: string, userId: string): Promise<void>
 }
 
 export function createRepositories(db: LocalDatabase, clock: Clock = systemClock): Repositories {
@@ -263,7 +412,7 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
   async function requireList(listId: string): Promise<LocalList> {
     const list = await db.lists.get(listId)
     if (!list || list.deleted_at !== null) {
-      throw new ValidationError('Diese Liste existiert nicht mehr.')
+      throw new ValidationError('not-found', 'Diese Liste existiert nicht mehr.')
     }
     return list
   }
@@ -271,7 +420,7 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
   async function requireTask(taskId: string): Promise<LocalTask> {
     const task = await db.tasks.get(taskId)
     if (!task || task.deleted_at !== null) {
-      throw new ValidationError('Diese Aufgabe existiert nicht mehr.')
+      throw new ValidationError('not-found', 'Diese Aufgabe existiert nicht mehr.')
     }
     return task
   }
@@ -381,7 +530,7 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
       return lists
         .filter((list) => list.deleted_at === null)
         .map(mitAbschnittsplan)
-        .sort((a, b) => a.name.localeCompare(b.name))
+        .sort(compareListsByName)
     },
 
     async createTask(input) {
@@ -598,9 +747,7 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
     },
 
     async listRestorableTasks() {
-      const grenze = new Date(
-        timeOf(clock.now()) - RESTORE_WINDOW_DAYS * 24 * 60 * 60 * 1000,
-      ).toISOString()
+      const grenze = restoreCutoff(timeOf(clock.now()))
 
       // Über den Index `completed_at`: Die Datenbank liefert nur die Aufgaben
       // seit der Grenze. Vorher las ein `toArray()` **alle** Aufgaben und
@@ -610,7 +757,7 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
         .filter((task) => task.deleted_at === null && task.completed)
         // Zuletzt abgehakt zuerst. Die Zeitstempel liegen alle im selben
         // ISO-Format vor, der Vergleich ist deshalb stabil.
-        .sort((a, b) => (b.completed_at ?? '').localeCompare(a.completed_at ?? ''))
+        .sort(compareRestorable)
     },
 
     async listReminderPresets() {
@@ -659,7 +806,7 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
       const members = await db.list_members.where('list_id').equals(listId).toArray()
       return members
         .filter((member) => member.deleted_at === null)
-        .sort((a, b) => a.user_id.localeCompare(b.user_id))
+        .sort(compareMembersById)
     },
 
     async markListShared(listId) {
@@ -678,7 +825,7 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
     async leaveList(listId, userId) {
       const existing = await db.list_members.get([listId, userId])
       if (!existing) {
-        throw new ValidationError('Diese Mitgliedschaft ist lokal nicht bekannt.')
+        throw new ValidationError('empty', 'Diese Mitgliedschaft ist lokal nicht bekannt.')
       }
       if (existing.deleted_at !== null) return
 
@@ -695,7 +842,7 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
     async removeMember(listId, userId) {
       const existing = await db.list_members.get([listId, userId])
       if (!existing) {
-        throw new ValidationError('Dieses Mitglied ist lokal nicht bekannt.')
+        throw new ValidationError('empty', 'Dieses Mitglied ist lokal nicht bekannt.')
       }
       const { updated_at } = stamp()
       const updated: LocalListMember = {

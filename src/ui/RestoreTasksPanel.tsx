@@ -1,6 +1,6 @@
 import { useLists, useRestorableTasks } from '../app/hooks'
 import { useWorkspace } from '../app/useWorkspace'
-import { RESTORE_WINDOW_DAYS } from '../db/repositories'
+import { RESTORE_WINDOW_DAYS } from '../domain/ordering'
 import { formatCompletedLabel } from './datetime'
 
 import { Button } from './components/Button'
