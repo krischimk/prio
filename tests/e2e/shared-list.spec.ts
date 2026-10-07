@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import {
   createList,
   createTask,
+  login,
   logout,
   register,
   resetServer,
@@ -130,6 +131,62 @@ test('E2E 4b: nach dem Entfernen sieht Benutzer B die gemeinsame Liste nicht meh
     // B synchronisiert und verliert den Zugriff.
     await pageB.getByRole('button', { name: 'Jetzt synchronisieren' }).click()
     await expect(pageB.getByText('Noch keine Liste vorhanden.')).toBeVisible()
+  } finally {
+    await contextA.close()
+    await contextB.close()
+  }
+})
+
+/**
+ * Der Abgleich darf sich nicht selbst anstoßen.
+ *
+ * Fehler, den dieser Test festhält: Die Vorschläge beim Teilen liegen lokal
+ * (Adressen aus gemeinsamen Listen) und werden nach jedem Abgleich
+ * aufgefrischt. Wurde das Schreiben dieser Eingabehilfe wie eine
+ * Datenänderung gezählt, löste es den nächsten Abgleich aus – die App
+ * synchronisierte im Sekundentakt, und die Anzeige blinkte grün und orange.
+ *
+ * Gemessen wird die Anzahl der Bestandsabrufe, nicht die Anzeige: Ein Test
+ * über Farben oder Texte würde den Fehler verpassen.
+ */
+test('E2E 5: der Abgleich läuft nicht in einer Schleife, wenn ein Kontakt bekannt ist', async ({
+  browser,
+}) => {
+  const emailA = uniqueEmail('e2e5-a')
+  const emailB = uniqueEmail('e2e5-b')
+
+  const contextA = await browser.newContext()
+  const contextB = await browser.newContext()
+
+  try {
+    const pageA = await contextA.newPage()
+    const pageB = await contextB.newPage()
+
+    await register(pageB, emailB)
+    await logout(pageB)
+
+    // A teilt eine Liste mit B: damit kennt B gleich einen Kontakt.
+    await register(pageA, emailA)
+    await createList(pageA, 'Gemeinsame Liste')
+    await pageA.getByRole('button', { name: 'Teilen', exact: true }).click()
+    await pageA.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(emailB)
+    await pageA.getByRole('button', { name: 'Freigeben' }).click()
+    await expect(pageA.getByRole('status')).toContainText(`Freigabe für ${emailB} gespeichert.`)
+
+    await login(pageB, emailB)
+    await expect(pageB.getByTestId('list-title')).toHaveText('Gemeinsame Liste')
+
+    let abrufe = 0
+    pageB.on('request', (anfrage) => {
+      if (anfrage.method() === 'GET' && anfrage.url().includes('/rest/v1/lists')) abrufe += 1
+    })
+
+    await expect
+      .poll(async () => {
+        await pageB.waitForTimeout(1000)
+        return abrufe
+      }, { timeout: 6000 })
+      .toBe(0)
   } finally {
     await contextA.close()
     await contextB.close()

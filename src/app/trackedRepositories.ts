@@ -11,13 +11,37 @@ import type { Repositories } from '../db/repositories'
  *
  * Bewusst explizit statt per Proxy: So ist beim Lesen sofort klar, welche
  * Operationen als Änderung gelten.
+ *
+ * Zwei Sorten von Änderung, und der Unterschied ist wichtig:
+ *
+ *  - `onChange` – es kann etwas zum Hochladen geben. Der Aufrufer stößt danach
+ *    einen Abgleich an.
+ *  - `onLocalOnlyChange` – nur lokale Eingabehilfen (vorgemerkte Vorlaufzeiten,
+ *    schon geteilte Adressen). Sie werden nie synchronisiert, ein Abgleich
+ *    brächte nichts. Zählt man sie wie Datenänderungen, löst jeder Abgleich
+ *    einen weiteren aus – der Abgleich läuft dann in einer Schleife.
+ *
+ * Beide werden auch dann gerufen, wenn die Operation nichts geschrieben hat:
+ * Der Zähler ist eine Aufforderung zum Neuladen, kein Änderungsprotokoll.
  */
-export function withChangeTracking(repositories: Repositories, onChange: () => void): Repositories {
+export function withChangeTracking(
+  repositories: Repositories,
+  onChange: () => void,
+  onLocalOnlyChange: () => void,
+): Repositories {
   const track =
     <A extends unknown[], R>(fn: (...args: A) => Promise<R>) =>
     async (...args: A): Promise<R> => {
       const result = await fn(...args)
       onChange()
+      return result
+    }
+
+  const trackLocalOnly =
+    <A extends unknown[], R>(fn: (...args: A) => Promise<R>) =>
+    async (...args: A): Promise<R> => {
+      const result = await fn(...args)
+      onLocalOnlyChange()
       return result
     }
 
@@ -35,9 +59,10 @@ export function withChangeTracking(repositories: Repositories, onChange: () => v
     markListShared: track(repositories.markListShared.bind(repositories)),
     removeMember: track(repositories.removeMember.bind(repositories)),
     leaveList: track(repositories.leaveList.bind(repositories)),
-    setReminderPresets: track(repositories.setReminderPresets.bind(repositories)),
-    rememberShareContact: track(repositories.rememberShareContact.bind(repositories)),
-    mergeShareContacts: track(repositories.mergeShareContacts.bind(repositories)),
+    // Eingabehilfen: nur lokal, ohne Abgleich (siehe oben).
+    setReminderPresets: trackLocalOnly(repositories.setReminderPresets.bind(repositories)),
+    rememberShareContact: trackLocalOnly(repositories.rememberShareContact.bind(repositories)),
+    mergeShareContacts: trackLocalOnly(repositories.mergeShareContacts.bind(repositories)),
 
     // Reine Lesezugriffe – hier darf nichts gezählt werden.
     getList: repositories.getList.bind(repositories),

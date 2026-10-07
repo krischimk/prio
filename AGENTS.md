@@ -145,6 +145,12 @@ nicht einmal je Änderung. Drei Stufen:
   Operation setzt `updated_at` und `dirty = 1` – sonst geht sie beim Sync
   verloren.
 * Gelöscht wird als Soft Delete (`deleted_at`), nie hart.
+* **Lokale Eingabehilfen lösen keinen Abgleich aus.** Vorgemerkte Vorlaufzeiten
+  und schon geteilte Adressen liegen nur lokal (`meta`) und werden nie
+  hochgeladen. Wer sie wie eine Datenänderung zählt, lässt den Abgleich sich
+  selbst anstoßen – die App synchronisiert dann im Sekundentakt. Deshalb hat
+  `withChangeTracking` zwei Rückrufe, und `tests/e2e/shared-list.spec.ts`
+  (E2E 5) zählt die Abrufe nach.
 * Die Sync-Engine und die Datenbankschicht müssen ohne Cloud und ohne
   Netzwerk testbar bleiben.
 

@@ -124,14 +124,27 @@ export function WorkspaceProvider({
     setLocalRevision((value) => value + 1)
   }, [])
 
+  /**
+   * Für lokale Eingabehilfen (vorgemerkte Vorlaufzeiten, schon geteilte
+   * Adressen): neu zeichnen, aber **keinen** Abgleich auslösen.
+   *
+   * Diese Daten kennt der Server nicht und braucht sie nicht. Zählte man sie
+   * wie Datenänderungen, löst der Abgleich, der sie auffrischt, gleich den
+   * nächsten aus – die App synchronisiert dann im Sekundentakt.
+   */
+  const notifyLocalOnlyChange = useCallback(() => {
+    if (!mountedRef.current) return
+    setDataVersion((value) => value + 1)
+  }, [])
+
   const repositories = useMemo(() => {
     if (!ready) return null
     // `withChangeTracking` speichert den Callback nur und ruft ihn ausschließlich
     // bei schreibenden Operationen auf – niemals während des Renderns. Der Lint
     // kann das nicht sehen und meldet deshalb pauschal "refs during render".
     // oxlint-disable-next-line react/refs
-    return withChangeTracking(createRepositories(ready.database), notifyLocalChange)
-  }, [ready, notifyLocalChange])
+    return withChangeTracking(createRepositories(ready.database), notifyLocalChange, notifyLocalOnlyChange)
+  }, [ready, notifyLocalChange, notifyLocalOnlyChange])
 
   const refreshDerivedState = useCallback(async () => {
     if (!ready) return
