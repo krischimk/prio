@@ -351,6 +351,17 @@ Konkret:
   was offen ist, gehört in `ViewProvider`/`useView` – nicht in beide Bäume.
   Sonst fällt die Auswahl beim Wechsel der Fensterbreite auf die erste Liste
   zurück, weil React den Baum austauscht (§15.3 Z3).
+* **Der Arbeitsbereich ist eine React-freie Laufzeit.** Datenbank, Abgleich,
+  Erinnerungen und Zeitgeber stecken in `createWorkspaceRuntime`
+  (`src/app/workspaceRuntime.ts`); `WorkspaceProvider` öffnet sie und abonniert
+  ihre Momentaufnahme (`useSyncExternalStore`). Eine Änderung an der Oberfläche
+  muss diese Datei nicht mehr anfassen, und die Laufzeit ist ohne React
+  prüfbar. Auslöser: `DESIGN.md` §15.4 B1.
+* **Anzeigetexte gehören in die Oberfläche.** `src/sync`, `src/reminders`,
+  `src/updates` und `src/auth` liefern Zustände (`kind`) und Daten – keine
+  Sätze. Die Formulierungen stehen in `src/ui/status/`. Vorher trug die
+  Sync-Engine die Offline-Meldung und die Statusmodule lagen in den
+  Fachschichten. Auslöser: `DESIGN.md` §15.4 B2.
 * **Textformate stehen in einer gemeinsamen Funktion.** Fälligkeit, Zähler,
   Statusmeldungen – wenn zwei Ansichten dieselbe Information zeigen, stammt der
   Text aus derselben Quelle (z. B. `formatDueLabel` in `src/ui/datetime.ts`).
