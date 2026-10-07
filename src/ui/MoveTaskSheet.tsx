@@ -1,15 +1,19 @@
 import { useState } from 'react'
-import { useBackLayer } from '../../app/useBackLayer'
-import { useWorkspace } from '../../app/useWorkspace'
-import type { LocalList, LocalTask } from '../../domain/types'
-import { errorMessage, ghostButton } from '../styles'
-import { CloseIcon } from '../icons'
+import { useBackLayer } from '../app/useBackLayer'
+import { useWorkspace } from '../app/useWorkspace'
+import type { LocalList, LocalTask } from '../domain/types'
+import { iconButton, errorMessage, ghostButton } from './styles'
+import { CloseIcon } from './icons'
 
 /**
  * Auswahl der Ziel-Liste beim Verschieben einer Aufgabe.
  *
- * Öffnet sich per Langdruck auf eine Aufgabe oder über die Detailansicht.
- * Die aktuelle Liste wird nicht angeboten.
+ * Zwei Wege hinein: In der breiten Ansicht aus der Aufgabenzeile („Verschieben“),
+ * auf dem Telefon aus der Detailansicht. Die aktuelle Liste wird nicht
+ * angeboten.
+ *
+ * Beide Ansichten benutzen dasselbe Blatt; es steht als Blatt unten an und
+ * erscheint ab der breiten Ansicht mittig – wie der Wiederherstellen-Dialog.
  */
 export function MoveTaskSheet({
   task,
@@ -42,21 +46,26 @@ export function MoveTaskSheet({
   }
 
   return (
-    <div className="fixed inset-0 z-60 flex flex-col justify-end" role="dialog" aria-modal="true" aria-label="Aufgabe verschieben">
+    <div
+      className="fixed inset-0 z-60 flex flex-col justify-end md:items-center md:justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Aufgabe verschieben"
+    >
       <div
         className="absolute inset-0 cursor-default bg-black/60"
         aria-hidden="true"
         onClick={onClose}
       />
 
-      <div className="safe-bottom relative max-h-[70%] overflow-y-auto rounded-t-2xl border-t border-neutral-800 bg-neutral-900">
+      <div className="safe-bottom relative max-h-[70%] overflow-y-auto rounded-t-2xl border-t border-neutral-800 bg-neutral-900 md:max-h-[85vh] md:w-full md:max-w-lg md:rounded-2xl md:border">
         <div className="flex items-center justify-between px-4 pt-4">
           <h2 className="text-sm font-medium text-neutral-100">Verschieben nach</h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Verschieben abbrechen"
-            className="rounded-md p-2 text-neutral-400 active:bg-neutral-800"
+            className={iconButton}
           >
             <CloseIcon />
           </button>

@@ -4,15 +4,16 @@ import { ListIcon } from './ListIcon'
 import { ListIconPicker } from './ListIconPicker'
 import { useTasks } from '../app/hooks'
 import { useBackLayer } from '../app/useBackLayer'
-import type { LocalList } from '../domain/types'
+import type { LocalList, LocalTask } from '../domain/types'
 import { groupTasks } from '../domain/sections'
 import { useCollapsedSections } from './collapsedSections'
 import { SectionHeader } from './SectionHeader'
 import { SectionsPanel } from './SectionsPanel'
 import { SharePanel } from './SharePanel'
+import { MoveTaskSheet } from './MoveTaskSheet'
 import { TaskComposer } from './TaskComposer'
 import { TaskItem } from './TaskItem'
-import { dangerButton, ghostButton, input, primaryButton, secondaryButton } from './styles'
+import { buttonClass, input, primaryButton, secondaryButton } from './styles'
 import { formatOpenTasks } from './taskCount'
 
 /**
@@ -21,7 +22,19 @@ import { formatOpenTasks } from './taskCount'
  * Alle Aktionen schreiben zuerst lokal und wirken sofort. Der Sync läuft
  * danach im Hintergrund (siehe `WorkspaceProvider`).
  */
-export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUserId: string }) {
+export function TaskPanel({
+  list,
+  currentUserId,
+  lists,
+}: {
+  list: LocalList
+  currentUserId: string
+  /**
+   * Alle Listen – für die Auswahl beim Verschieben einer Aufgabe. Auf dem
+   * Telefon steht dieselbe Aktion in der Detailansicht.
+   */
+  lists: LocalList[]
+}) {
   const { repositories } = useWorkspace()
   const tasks = useTasks(list.id)
   const [renaming, setRenaming] = useState(false)
@@ -30,6 +43,8 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
   const [iconOpen, setIconOpen] = useState(false)
   const [sectionsOpen, setSectionsOpen] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  /** `null` = geschlossen, sonst die Aufgabe, die verschoben werden soll. */
+  const [movingTask, setMovingTask] = useState<LocalTask | null>(null)
 
   // Die Zurück-Taste schließt zuerst das, was zuletzt geöffnet wurde.
   useBackLayer(renaming, () => setRenaming(false))
@@ -37,6 +52,8 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
   useBackLayer(sectionsOpen, () => setSectionsOpen(false))
   useBackLayer(confirmingDelete, () => setConfirmingDelete(false))
 
+  // Ohne zweite Liste gibt es nichts zu verschieben – dann entfällt der Knopf.
+  const kannVerschieben = lists.some((eintrag) => eintrag.id !== list.id)
   const openTasks = tasks.filter((task) => !task.completed).length
   const gruppen = groupTasks(tasks, list.sections)
   const { zugeklappt, umschalten } = useCollapsedSections(list.id)
@@ -91,19 +108,19 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
               ) : null}
             </div>
             <div className="flex flex-wrap gap-1">
-              <button type="button" className={`${ghostButton} px-2 py-1 text-xs`} onClick={startRenaming}>
+              <button type="button" className={buttonClass('ghost', 'sm')} onClick={startRenaming}>
                 Umbenennen
               </button>
               <button
                 type="button"
-                className={`${ghostButton} px-2 py-1 text-xs`}
+                className={buttonClass('ghost', 'sm')}
                 onClick={() => setIconOpen((offen) => !offen)}
               >
                 Symbol
               </button>
               <button
                 type="button"
-                className={`${ghostButton} px-2 py-1 text-xs`}
+                className={buttonClass('ghost', 'sm')}
                 aria-expanded={sectionsOpen}
                 onClick={() => setSectionsOpen((offen) => !offen)}
               >
@@ -111,7 +128,7 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
               </button>
               <button
                 type="button"
-                className={`${ghostButton} px-2 py-1 text-xs`}
+                className={buttonClass('ghost', 'sm')}
                 aria-expanded={shareOpen}
                 onClick={() => setShareOpen((open) => !open)}
               >
@@ -121,7 +138,7 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
                 <>
                   <button
                     type="button"
-                    className={`${dangerButton} px-2 py-1 text-xs`}
+                    className={buttonClass('danger', 'sm')}
                     onClick={() => {
                       void repositories.deleteList(list.id)
                     }}
@@ -130,7 +147,7 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
                   </button>
                   <button
                     type="button"
-                    className={`${ghostButton} px-2 py-1 text-xs`}
+                    className={buttonClass('ghost', 'sm')}
                     onClick={() => setConfirmingDelete(false)}
                   >
                     Abbrechen
@@ -139,7 +156,7 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
               ) : (
                 <button
                   type="button"
-                  className={`${dangerButton} px-2 py-1 text-xs`}
+                  className={buttonClass('danger', 'sm')}
                   onClick={() => setConfirmingDelete(true)}
                 >
                   Liste löschen
@@ -192,6 +209,7 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
                         listIsShared={list.is_shared}
                         currentUserId={currentUserId}
                         sections={list.sections}
+                        onRequestMove={kannVerschieben ? setMovingTask : undefined}
                       />
                     ))}
                   </ul>
@@ -208,11 +226,15 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
                 listIsShared={list.is_shared}
                 currentUserId={currentUserId}
                 sections={list.sections}
+                onRequestMove={kannVerschieben ? setMovingTask : undefined}
               />
             ))}
           </ul>
         )}
       </div>
+      {movingTask !== null ? (
+        <MoveTaskSheet task={movingTask} lists={lists} onClose={() => setMovingTask(null)} />
+      ) : null}
     </section>
   )
 }

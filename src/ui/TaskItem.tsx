@@ -12,7 +12,7 @@ import { ReminderList } from './ReminderList'
 import { SectionSelect } from './SectionSelect'
 import { TaskDescription } from './TaskDescription'
 import { describeReminders } from './reminder'
-import { dangerButton, dangerText, ghostButton, input, primaryButton, secondaryButton, attentionText } from './styles'
+import { buttonClass, dangerText, input, primaryButton, secondaryButton, attentionText } from './styles'
 
 /**
  * Eine Aufgabe in der Liste.
@@ -26,12 +26,19 @@ export function TaskItem({
   listIsShared,
   currentUserId,
   sections,
+  onRequestMove,
 }: {
   task: LocalTask
   listIsShared: boolean
   currentUserId: string
   /** Die Bereiche der Liste – leer heißt: keine Auswahl nötig. */
   sections: ListSection[]
+  /**
+   * Öffnet die Auswahl der Ziel-Liste. Fehlt der Rückruf, gibt es nichts zu
+   * verschieben – dann fehlt auch der Knopf. Auf dem Telefon sitzt dieselbe
+   * Aktion in der Detailansicht (`TaskDetailSheet`).
+   */
+  onRequestMove?: (task: LocalTask) => void
 }) {
   const { repositories } = useWorkspace()
   const { offerUndo } = useUndo()
@@ -200,12 +207,22 @@ export function TaskItem({
         ))}
       </div>
       <div className="flex shrink-0 gap-1">
-        <button type="button" className={`${ghostButton} px-2 py-1 text-xs`} onClick={startEditing}>
+        {onRequestMove ? (
+          <button
+            type="button"
+            className={buttonClass('ghost', 'sm')}
+            aria-label={`Aufgabe verschieben: ${task.title}`}
+            onClick={() => onRequestMove(task)}
+          >
+            Verschieben
+          </button>
+        ) : null}
+        <button type="button" className={buttonClass('ghost', 'sm')} onClick={startEditing}>
           Bearbeiten
         </button>
         <button
           type="button"
-          className={`${dangerButton} px-2 py-1 text-xs`}
+          className={buttonClass('danger', 'sm')}
           aria-label={`Aufgabe löschen: ${task.title}`}
           onClick={() => {
             void repositories.deleteTask(task.id)

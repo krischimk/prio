@@ -11,7 +11,7 @@ import { ReminderIndicator } from './ReminderIndicator'
 import { Sidebar } from './Sidebar'
 import { SyncIndicator } from './SyncIndicator'
 import { TaskPanel } from './TaskPanel'
-import { appBackground, attentionText, ghostButton } from './styles'
+import { buttonClass, appBackground } from './styles'
 
 /**
  * Wählt zwischen den beiden Oberflächen.
@@ -61,7 +61,7 @@ function DesktopWorkspace() {
             <SyncIndicator />
             <button
               type="button"
-              className={`${ghostButton} px-2 py-1 text-xs`}
+              className={buttonClass('ghost', 'sm')}
               onClick={() => setRestoreOpen(true)}
             >
               Wiederherstellen
@@ -75,9 +75,7 @@ function DesktopWorkspace() {
               type="button"
               data-testid="update-button"
               title={updateBeschreibung.text}
-              className={`${ghostButton} px-2 py-1 text-xs ${
-                updateVerfuegbar ? attentionText : ''
-              }`}
+              className={buttonClass(updateVerfuegbar ? 'attention' : 'ghost', 'sm')}
               disabled={installing || update.status === 'checking'}
               onClick={() => {
                 void (updateVerfuegbar ? install() : check())
@@ -91,7 +89,7 @@ function DesktopWorkspace() {
             </button>
             <button
               type="button"
-              className={`${ghostButton} px-2 py-1 text-xs`}
+              className={buttonClass('ghost', 'sm')}
               onClick={() => {
                 void signOut()
               }}
@@ -102,7 +100,7 @@ function DesktopWorkspace() {
         </header>
 
         {selected ? (
-          <TaskPanel list={selected} currentUserId={user?.id ?? ''} />
+          <TaskPanel list={selected} currentUserId={user?.id ?? ''} lists={lists} />
         ) : (
           <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-neutral-500">
             Lege links eine Liste an, um Aufgaben zu erfassen.

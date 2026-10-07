@@ -535,6 +535,60 @@ const funktionen: Funktion[] = [
       await expect(page.getByTestId('backend-label')).toHaveText(/Mock · 127\.0\.0\.1:/)
     },
   },
+  {
+    name: 'Aufgabe in eine andere Liste verschieben',
+    breit: async (page) => {
+      await breit.register(page, uniqueEmail('p-verschieben-b'))
+      // Zwei Listen: anlegen wechselt jeweils zur neuen, also zuletzt die,
+      // in der die Aufgabe entsteht.
+      await breit.createList(page, 'Arbeit')
+      await breit.createList(page, 'Haushalt')
+      await breit.createTask(page, 'Bericht')
+
+      await page.getByRole('button', { name: 'Aufgabe verschieben: Bericht' }).click()
+      const blatt = page.getByRole('dialog', { name: 'Aufgabe verschieben' })
+      await expect(blatt).toBeVisible()
+      // Die eigene Liste wird nicht angeboten.
+      await expect(blatt.getByRole('button', { name: 'Haushalt' })).toHaveCount(0)
+      await blatt.getByRole('button', { name: 'Arbeit' }).click()
+      await expect(blatt).toBeHidden()
+
+      // Aus der Quellliste ist sie verschwunden …
+      await expect(breit.taskItem(page, 'Bericht')).toHaveCount(0)
+
+      // … und in der Zielliste steht sie.
+      await page
+        .getByRole('complementary', { name: 'Listen' })
+        .getByRole('button', { name: 'Arbeit', exact: true })
+        .click()
+      await expect(page.getByTestId('list-title')).toHaveText('Arbeit')
+      await expect(breit.taskItem(page, 'Bericht')).toBeVisible()
+    },
+    telefon: async (page) => {
+      await telefon.register(page, uniqueEmail('p-verschieben-t'))
+      await telefon.createList(page, 'Arbeit')
+      await telefon.createList(page, 'Haushalt')
+      await telefon.createTask(page, 'Bericht')
+
+      await telefon.taskRow(page, 'Bericht').click()
+      await expect(page.getByRole('dialog', { name: 'Aufgabe' })).toBeVisible()
+      await page.getByRole('button', { name: 'In andere Liste verschieben' }).click()
+
+      const blatt = page.getByRole('dialog', { name: 'Aufgabe verschieben' })
+      await expect(blatt).toBeVisible()
+      await expect(blatt.getByRole('button', { name: 'Haushalt' })).toHaveCount(0)
+      await blatt.getByRole('button', { name: 'Arbeit' }).click()
+      await expect(blatt).toBeHidden()
+
+      // Die Detailansicht bleibt offen; geschlossen ist die Quellliste leer.
+      await page.getByRole('button', { name: 'Schließen' }).click()
+      await expect(page.getByText('Noch keine Aufgaben in dieser Liste.')).toBeVisible()
+
+      await telefon.openMenu(page)
+      await page.getByRole('button', { name: 'Arbeit', exact: true }).click()
+      await expect(telefon.taskRow(page, 'Bericht')).toBeVisible()
+    },
+  },
 ]
 
 test.beforeEach(async ({ request }) => {
