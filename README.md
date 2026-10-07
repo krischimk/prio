@@ -624,7 +624,8 @@ gebaute Ansicht. Ab 768 px bleibt die breite Ansicht mit Seitenleiste.
 ├──────────────────────────────┤
 │ 2 offene Aufgaben            │  ← zählt nur, was in der Liste steht
 │ ☐  Rechnung Strom bezahlen   │
-│    Abschlag Q2               │  ← Titel, darunter Beschreibung,
+│    Abschlag Q2                │  ← Titel, darunter Beschreibung,
+│    Mehr                       │    einzeilig, mit „Mehr" zum Aufklappen
 │    15.02.2027, 18:30         │    darunter Fälligkeit
 │ ☐  Wohnung saugen            │
 ├──────────────────────────────┤
@@ -781,7 +782,12 @@ zu rutschen.
 
 Die Reihenfolge steckt im Feld `position` der Aufgabe und wird mitsynchronisiert –
 sonst wäre sie nach dem nächsten Abgleich wieder weg. Neue Aufgaben bekommen die
-höchste Position und landen unten.
+kleinste Position − 1 und landen damit **oben**: Was man gerade eingetippt hat,
+steht dort, wo man hinsieht, statt am Ende einer langen Liste. Die Werte werden
+dabei negativ; das Hochzählen aller vorhandenen Zeilen wäre die Alternative,
+würde aber bei jeder neuen Aufgabe den halben Bestand als geändert markieren.
+Aufgaben aus der Zeit vor der Reihenfolge-Funktion stehen auf 0 und werden von
+einer neuen Aufgabe ebenfalls überholt.
 
 **Umsortieren:** Zeile gedrückt halten (rund 0,4 s), dann ziehen. Eine blaue
 Linie zeigt, wo die Aufgabe landen würde. Bewegt sich der Finger vorher um mehr
@@ -795,6 +801,21 @@ erneut hochgeladen.
 Datensätze aus der Zeit vor dieser Funktion haben die Position 0. Bei
 Gleichstand greifen die früheren Regeln (Erledigt-Status, Fälligkeit,
 Erstellzeit), damit eine bestehende Liste nach dem Update stabil bleibt.
+
+### Aufgabenbeschreibung in der Übersicht
+
+Eine Beschreibung steht in der Liste **einzeilig** – auch wenn Absätze darin
+stehen. Ein Absatzumbruch in einer Listenzeile macht die Liste unruhig und
+schiebt die nächste Aufgabe aus dem Blick. Ein Klick auf *Mehr* klappt sie auf,
+*Weniger* wieder zu; aufgeklappt ist die Höhe auf rund 15 Zeilen begrenzt,
+danach wird gescrollt. Eine sehr lange Beschreibung soll die Liste nicht in
+eine Textseite verwandeln.
+
+Der Schalter ist immer da, wenn es eine Beschreibung gibt – statt erst
+nachzumessen, ob der Text abgeschnitten wird: Eine Messung hinge an
+Schriftgröße und Fensterbreite und wäre nicht prüfbar. In der mobilen Zeile
+liegt er **neben** dem Knopf „Aufgabe öffnen" (ein Knopf kann keinen Knopf
+enthalten), damit das Aufklappen nicht die Detailansicht mit öffnet.
 
 **Systemleisten (Edge-to-Edge).** Android 15+ erzwingt Edge-to-Edge für Apps ab
 `targetSdk 35`. Die App aktiviert deshalb in `MainActivity.onCreate`

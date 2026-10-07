@@ -48,3 +48,15 @@ export async function createTask(page: Page, title: string, description?: string
 export function taskRow(page: Page, title: string) {
   return page.getByTestId('task-row').filter({ hasText: title })
 }
+
+/**
+ * Die ganze Zeile samt Beschreibung.
+ *
+ * Die Beschreibung liegt **neben** dem Knopf „Aufgabe öffnen" – ein Knopf kann
+ * keinen Knopf enthalten, und der Schalter „Mehr" darf die Detailansicht nicht
+ * mit öffnen. Für Zusicherungen über die Zeile als Ganzes (Titel *und*
+ * Beschreibung) ist deshalb das Listenelement richtig.
+ */
+export function taskZeile(page: Page, title: string) {
+  return page.locator('[data-task-row]').filter({ hasText: title })
+}

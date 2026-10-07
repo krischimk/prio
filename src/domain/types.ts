@@ -103,7 +103,9 @@ export interface LocalTask extends SyncableRow, LocalOnly {
   reminders: TaskReminder[]
   /**
    * Vom Benutzer bestimmte Reihenfolge innerhalb der Liste (kleiner = weiter
-   * oben). Neue Aufgaben bekommen die höchste Position und landen damit unten.
+   * oben). Neue Aufgaben bekommen die kleinste Position − 1 und landen damit
+   * **oben**; die Werte werden dabei negativ, was gleichbedeutend ist.
+   * Beim Umsortieren zählt die Oberfläche wieder von 1 an durch.
    *
    * Datensätze aus der Zeit vor dieser Funktion haben die Position 0. Bei
    * Gleichstand greifen die früheren Regeln (Erledigt-Status, Fälligkeit,

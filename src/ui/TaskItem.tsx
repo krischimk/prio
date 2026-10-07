@@ -9,6 +9,7 @@ import { BellIcon, BellOffIcon, RepeatIcon } from './icons'
 import { describeRecurrence } from './recurrence'
 import { RecurrenceSelect } from './RecurrenceSelect'
 import { ReminderList } from './ReminderList'
+import { TaskDescription } from './TaskDescription'
 import { describeReminders } from './reminder'
 import { dangerButton, dangerText, ghostButton, input, primaryButton, secondaryButton, attentionText } from './styles'
 
@@ -155,7 +156,7 @@ export function TaskItem({
           {task.title}
         </p>
         {task.description ? (
-          <p className="mt-1 whitespace-pre-wrap break-words text-xs text-neutral-400">{task.description}</p>
+          <TaskDescription text={task.description} className="mt-1" />
         ) : null}
         {due ? (
           <p className={`mt-1 text-xs ${due.overdue ? dangerText : 'text-neutral-500'}`}>{due.text}</p>

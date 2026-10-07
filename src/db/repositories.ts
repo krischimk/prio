@@ -304,19 +304,26 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
     async createTask(input) {
       await requireList(input.listId)
       const now = clock.now()
-      // Neue Aufgaben landen unten: Position = höchste vorhandene + 1.
-      const vorhandene = await db.tasks.where('list_id').equals(input.listId).toArray()
+      // Neue Aufgaben landen oben: Position = kleinste vorhandene − 1.
+      //
+      // Die Positionen dürfen dabei negativ werden. Das Hochzählen aller
+      // vorhandenen Zeilen wäre die Alternative – sie würde bei jeder neuen
+      // Aufgabe jede Zeile als geändert markieren und damit den halben Bestand
+      // hochladen.
+      //
       // `Number.isFinite` ist hier entscheidend: Aufgaben aus der Zeit vor der
-      // Reihenfolge-Funktion haben kein `position`. `Math.max(0, undefined)`
-      // ergäbe `NaN`, und `NaN` wird beim Senden zu `null` – die Spalte ist
-      // aber `not null`. Genau daran scheiterte der Sync.
-      const hoechste = vorhandene.reduce(
-        (max, task) =>
-          task.deleted_at === null && Number.isFinite(task.position)
-            ? Math.max(max, task.position)
-            : max,
-        0,
-      )
+      // Reihenfolge-Funktion haben kein `position`. `Math.min(Infinity, undefined)`
+      // ergäbe `NaN`, und `NaN` wird beim Senden zu `null` – die Spalte ist aber
+      // `not null`. Genau daran scheiterte der Sync schon einmal.
+      const vorhandene = await db.tasks.where('list_id').equals(input.listId).toArray()
+      const positionen = vorhandene
+        .filter((task) => task.deleted_at === null && Number.isFinite(task.position))
+        .map((task) => task.position)
+      // Ohne Bestand beginnt es bei 0 (die erste Aufgabe), sonst bei 0 als
+      // Obergrenze: Aufgaben aus der Zeit vor der Reihenfolge-Funktion stehen
+      // auf 0 und müssen von der neuen Aufgabe überholt werden.
+      const startwert = vorhandene.length === 0 ? 1 : 0
+      const kleinste = Math.min(startwert, ...positionen)
       const task: LocalTask = {
         id: newId(),
         list_id: input.listId,
@@ -335,7 +342,7 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
         completed: false,
         completed_at: null,
         successor_id: null,
-        position: hoechste + 1,
+        position: kleinste - 1,
         created_at: now,
         updated_at: now,
         deleted_at: null,

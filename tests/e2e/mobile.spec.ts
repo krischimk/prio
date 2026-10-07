@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { createAccount, resetServer, uniqueEmail } from './support/helpers'
-import { createList, createTask, openMenu, register, taskRow } from './support/mobile'
+import { createList, createTask, openMenu, register, taskRow, taskZeile } from './support/mobile'
 
 /**
  * E2E-Tests der mobilen Oberfläche.
@@ -52,7 +52,7 @@ test('legt über das Menü eine Liste und über den Plus-Knopf eine Aufgabe an',
 
   await createTask(page, 'Milch kaufen', 'Samstagmorgen')
   await expect(taskRow(page, 'Milch kaufen')).toBeVisible()
-  await expect(taskRow(page, 'Milch kaufen')).toContainText('Samstagmorgen')
+  await expect(taskZeile(page, 'Milch kaufen')).toContainText('Samstagmorgen')
   await expect(page.getByText('1 offene Aufgabe')).toBeVisible()
 
   // Die Liste selbst zeigt keine Bearbeiten-/Löschen-Knöpfe.
@@ -117,7 +117,7 @@ test('öffnet per Antippen die Detailansicht und ändert den Titel', async ({ pa
 
   await expect(page.getByRole('dialog', { name: 'Aufgabe' })).toBeHidden()
   await expect(taskRow(page, 'Neuer Titel')).toBeVisible()
-  await expect(taskRow(page, 'Neuer Titel')).toContainText('Mit Notiz')
+  await expect(taskZeile(page, 'Neuer Titel')).toContainText('Mit Notiz')
 })
 
 test('löscht eine Aufgabe in der Detailansicht', async ({ page }) => {
@@ -184,17 +184,18 @@ test('sortiert eine Aufgabe per Langdruck und Ziehen um', async ({ page }) => {
   await createTask(page, 'Zweite')
   await createTask(page, 'Dritte')
 
-  expect(await taskTitles(page)).toEqual(['Erste', 'Zweite', 'Dritte'])
+  // Neue Aufgaben landen oben: die zuletzt angelegte steht zuoberst.
+  expect(await taskTitles(page)).toEqual(['Dritte', 'Zweite', 'Erste'])
 
-  // Erste Zeile aufnehmen und unter die dritte ziehen.
-  await dragRowDown(page, 'Erste', 150)
+  // Die oberste Zeile aufnehmen und unter die letzte ziehen.
+  await dragRowDown(page, 'Dritte', 150)
 
-  expect(await taskTitles(page)).toEqual(['Zweite', 'Dritte', 'Erste'])
+  expect(await taskTitles(page)).toEqual(['Zweite', 'Erste', 'Dritte'])
 
   // Die Reihenfolge ist gespeichert, nicht nur Anzeige.
   await page.reload()
   await expect(page.getByTestId('app-bar-title')).toHaveText('Reihenfolge')
-  expect(await taskTitles(page)).toEqual(['Zweite', 'Dritte', 'Erste'])
+  expect(await taskTitles(page)).toEqual(['Zweite', 'Erste', 'Dritte'])
 })
 
 test('sortiert bei kurzem Wischen nicht um', async ({ page }) => {
@@ -203,8 +204,11 @@ test('sortiert bei kurzem Wischen nicht um', async ({ page }) => {
   await createTask(page, 'Erste')
   await createTask(page, 'Zweite')
 
+  // Zuletzt angelegt steht oben.
+  expect(await taskTitles(page)).toEqual(['Zweite', 'Erste'])
+
   // Zu kurz für den Langdruck – das ist ein Scrollversuch.
-  const box = await taskRow(page, 'Erste').boundingBox()
+  const box = await taskRow(page, 'Zweite').boundingBox()
   if (box) {
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
     await page.mouse.down()
@@ -213,7 +217,7 @@ test('sortiert bei kurzem Wischen nicht um', async ({ page }) => {
     await page.waitForTimeout(200)
   }
 
-  expect(await taskTitles(page)).toEqual(['Erste', 'Zweite'])
+  expect(await taskTitles(page)).toEqual(['Zweite', 'Erste'])
 })
 
 test('benennt eine Liste über die App-Leiste um', async ({ page }) => {

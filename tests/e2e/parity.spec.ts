@@ -170,7 +170,9 @@ const funktionen: Funktion[] = [
 
       const neu = telefon.taskRow(page, 'Neuer Titel')
       await expect(neu).toBeVisible()
-      await expect(neu).toContainText('Mit Notiz')
+      // Die Beschreibung liegt neben dem Knopf „Aufgabe öffnen" – siehe
+      // taskZeile in support/mobile.ts.
+      await expect(telefon.taskZeile(page, 'Neuer Titel')).toContainText('Mit Notiz')
     },
   },
   {
@@ -372,6 +374,44 @@ const funktionen: Funktion[] = [
       await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
       await expect(telefon.taskRow(page, 'Müll rausbringen').getByText('für mich stumm')).toHaveCount(1)
+    },
+  },
+  {
+    name: 'Beschreibung in der Übersicht auf- und zuklappen',
+    breit: async (page) => {
+      await breit.register(page, uniqueEmail('p-beschreibung-b'))
+      await breit.createList(page, 'Haushalt')
+      await breit.createTask(page, 'Einkauf')
+
+      await breit.taskItem(page, 'Einkauf').getByRole('button', { name: 'Bearbeiten' }).click()
+      const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
+      await formular
+        .getByLabel('Beschreibung (optional)', { exact: true })
+        .fill('Erster Absatz.\n\nZweiter Absatz.')
+      await formular.getByRole('button', { name: 'Speichern' }).click()
+
+      // Zugeklappt: eine Zeile. Aufgeklappt: der ganze Text.
+      await page.getByRole('button', { name: 'Mehr' }).click()
+      await expect(page.getByRole('button', { name: 'Weniger' })).toBeVisible()
+      await expect(page.getByTestId('task-description')).toContainText('Zweiter Absatz.')
+
+      await page.getByRole('button', { name: 'Weniger' }).click()
+      await expect(page.getByRole('button', { name: 'Mehr' })).toBeVisible()
+    },
+    telefon: async (page) => {
+      await telefon.register(page, uniqueEmail('p-beschreibung-t'))
+      await telefon.createList(page, 'Haushalt')
+      await telefon.createTask(page, 'Einkauf', 'Erster Absatz.\n\nZweiter Absatz.')
+
+      await page.getByRole('button', { name: 'Mehr' }).click()
+      await expect(page.getByRole('button', { name: 'Weniger' })).toBeVisible()
+      await expect(page.getByTestId('task-description')).toContainText('Zweiter Absatz.')
+
+      // Das Aufklappen darf die Detailansicht nicht mit öffnen.
+      await expect(page.getByRole('dialog', { name: 'Aufgabe' })).toHaveCount(0)
+
+      await page.getByRole('button', { name: 'Weniger' }).click()
+      await expect(page.getByRole('button', { name: 'Mehr' })).toBeVisible()
     },
   },
   {

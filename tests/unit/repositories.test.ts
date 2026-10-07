@@ -175,17 +175,36 @@ describe('Repositories (lokale Geschäftslogik)', () => {
       expect(await device.repositories.getTask(task.id)).toBeUndefined()
     })
 
-    it('hängt neue Aufgaben unten an', async () => {
+    it('legt neue Aufgaben oben ab', async () => {
       const listId = await newList()
       const erste = await device.repositories.createTask({ listId, title: 'Erste' })
       const zweite = await device.repositories.createTask({ listId, title: 'Zweite' })
       const dritte = await device.repositories.createTask({ listId, title: 'Dritte' })
 
-      expect([erste.position, zweite.position, dritte.position]).toEqual([1, 2, 3])
+      // Jede neue Aufgabe bekommt die kleinste Position − 1; die Werte werden
+      // dabei negativ, die Reihenfolge bleibt eindeutig.
+      expect([erste.position, zweite.position, dritte.position]).toEqual([0, -1, -2])
       expect((await device.repositories.listTasks(listId)).map((task) => task.title)).toEqual([
-        'Erste',
-        'Zweite',
         'Dritte',
+        'Zweite',
+        'Erste',
+      ])
+    })
+
+    it('legt auch in einer Liste aus alter Zeit oben ab', async () => {
+      // Aufgaben aus der Zeit vor der Reihenfolge-Funktion haben die Position 0
+      // – oder gar keine. Beides darf eine neue Aufgabe nicht nach unten
+      // sortieren.
+      const listId = await newList()
+      const alt = await device.repositories.createTask({ listId, title: 'Alt' })
+      await device.db.tasks.update(alt.id, { position: undefined as unknown as number })
+
+      const neu = await device.repositories.createTask({ listId, title: 'Neu' })
+
+      expect(neu.position).toBeLessThan(0)
+      expect((await device.repositories.listTasks(listId)).map((task) => task.title)).toEqual([
+        'Neu',
+        'Alt',
       ])
     })
 
@@ -269,6 +288,10 @@ describe('Repositories (lokale Geschäftslogik)', () => {
       const a = await device.repositories.createTask({ listId, title: 'A' })
       const b = await device.repositories.createTask({ listId, title: 'B' })
       const c = await device.repositories.createTask({ listId, title: 'C' })
+
+      // Einmal in die Ausgangsreihenfolge bringen: Neue Aufgaben landen oben,
+      // hier sollen sie in Anlege-Reihenfolge stehen (Positionen 1, 2, 3).
+      await device.repositories.reorderTasks(listId, [a.id, b.id, c.id])
       await device.engine.sync()
       expect(await countDirty(device.db)).toBe(0)
 
@@ -437,9 +460,10 @@ describe('Repositories (lokale Geschäftslogik)', () => {
 
     it('behält den Platz in der Liste', async () => {
       const listId = await newList()
-      await device.repositories.createTask({ listId, title: 'Davor' })
-      const { task } = await neueWiederholung(listId)
+      // Neue Aufgaben stehen oben – deshalb von unten nach oben anlegen.
       await device.repositories.createTask({ listId, title: 'Danach' })
+      const { task } = await neueWiederholung(listId)
+      await device.repositories.createTask({ listId, title: 'Davor' })
 
       const erledigt = await device.repositories.setTaskCompleted(task.id, true)
       const nachfolger = await device.repositories.getTask(erledigt.successor_id!)
@@ -707,8 +731,8 @@ describe('Repositories (lokale Geschäftslogik)', () => {
     })
 
     it('vergibt eine gültige Position, auch wenn ältere Aufgaben keine haben', async () => {
-      // Der gemeldete Fehler: `Math.max(0, undefined)` ergibt `NaN`, und `NaN`
-      // wird beim Senden zu `null`. Der Server lehnt das ab.
+      // Der gemeldete Fehler: Aus einer fehlenden Position entstand `NaN`, und
+      // `NaN` wird beim Senden zu `null`. Der Server lehnt das ab.
       const listId = await newList()
       await device.db.tasks.put({
         id: 'alt',
@@ -732,7 +756,12 @@ describe('Repositories (lokale Geschäftslogik)', () => {
       const neu = await device.repositories.createTask({ listId, title: 'Neu' })
 
       expect(Number.isFinite(neu.position)).toBe(true)
-      expect(neu.position).toBe(1)
+      // Oben, nicht unten: Die Altaufgabe steht auf 0, die neue muss davor.
+      expect(neu.position).toBeLessThan(0)
+      expect((await device.repositories.listTasks(listId)).map((t) => t.title)).toEqual([
+        'Neu',
+        'Aus alter Zeit',
+      ])
     })
 
     it('setzt und entfernt das Symbol einer Liste', async () => {
