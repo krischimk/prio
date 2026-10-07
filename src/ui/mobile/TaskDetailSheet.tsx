@@ -104,7 +104,13 @@ export function TaskDetailSheet({
 
   return (
     <div className={`fixed inset-0 z-50 flex flex-col ${appBackground}`} role="dialog" aria-modal="true" aria-label={isNew ? 'Neue Aufgabe' : 'Aufgabe'}>
-      <header className="safe-top flex h-14 shrink-0 items-center gap-1 border-b border-neutral-800 px-2">
+      {/*
+        Die Kopfleiste trägt alles, was die Aufgabe abschließt: schließen,
+        speichern, löschen. Vorher stand „Speichern" ganz unten – nach einer
+        langen Beschreibung weit weg vom Blick. Hier oben ist es klein, aber
+        immer erreichbar; das Löschen fragt weiterhin nach.
+      */}
+      <header className="safe-top flex min-h-16 shrink-0 items-center gap-2 border-b border-neutral-800 px-2 py-1">
         <button
           type="button"
           onClick={onClose}
@@ -113,10 +119,52 @@ export function TaskDetailSheet({
         >
           <CloseIcon />
         </button>
-        <h2 className="flex-1 truncate text-center text-base font-medium text-neutral-100">
+        <h2 className="min-w-0 flex-1 truncate text-base font-medium text-neutral-100">
           {isNew ? 'Neue Aufgabe' : 'Aufgabe'}
         </h2>
-        <span className="w-9" aria-hidden="true" />
+
+        {confirmingDelete ? (
+          <>
+            <button
+              type="button"
+              className={`${dangerButton} px-3 py-2 text-xs`}
+              onClick={() => {
+                void remove()
+              }}
+              disabled={busy}
+            >
+              Wirklich löschen
+            </button>
+            <button
+              type="button"
+              className={`${secondaryButton} px-3 py-2 text-xs`}
+              onClick={() => setConfirmingDelete(false)}
+            >
+              Abbrechen
+            </button>
+          </>
+        ) : (
+          <>
+            {isNew ? null : (
+              <button
+                type="button"
+                aria-label="Aufgabe löschen"
+                className={`${dangerButton} px-3 py-2`}
+                onClick={() => setConfirmingDelete(true)}
+              >
+                <TrashIcon className="h-4 w-4" />
+              </button>
+            )}
+            <button
+              type="submit"
+              form="task-detail-form"
+              className={`${primaryButton} px-3 py-2 text-xs`}
+              disabled={busy || title.trim().length === 0}
+            >
+              Speichern
+            </button>
+          </>
+        )}
       </header>
 
       <form id="task-detail-form" onSubmit={save} className="scroll-area safe-bottom flex-1 overflow-y-auto">
@@ -199,17 +247,8 @@ export function TaskDetailSheet({
           ) : null}
         </div>
 
-        <div className="space-y-2 border-t border-neutral-800 px-4 py-4">
-          <button
-            type="submit"
-            form="task-detail-form"
-            className={`${primaryButton} w-full py-3`}
-            disabled={busy || title.trim().length === 0}
-          >
-            Speichern
-          </button>
-
-          {canMove ? (
+        {canMove ? (
+          <div className="space-y-2 border-t border-neutral-800 px-4 py-4">
             <button
               type="button"
               className={`${secondaryButton} flex w-full items-center justify-center gap-2 py-3`}
@@ -220,41 +259,8 @@ export function TaskDetailSheet({
               <MoveIcon className="h-4 w-4" />
               In andere Liste verschieben
             </button>
-          ) : null}
-
-          {!isNew ? (
-            confirmingDelete ? (
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  className={`${dangerButton} flex-1 py-3`}
-                  onClick={() => {
-                    void remove()
-                  }}
-                  disabled={busy}
-                >
-                  Wirklich löschen
-                </button>
-                <button
-                  type="button"
-                  className={`${secondaryButton} flex-1 py-3`}
-                  onClick={() => setConfirmingDelete(false)}
-                >
-                  Abbrechen
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                className={`${dangerButton} flex w-full items-center justify-center gap-2 py-3`}
-                onClick={() => setConfirmingDelete(true)}
-              >
-                <TrashIcon className="h-4 w-4" />
-                Aufgabe löschen
-              </button>
-            )
-          ) : null}
-        </div>
+          </div>
+        ) : null}
       </form>
     </div>
   )

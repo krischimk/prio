@@ -1,4 +1,5 @@
 import { useUpdate } from './useUpdate'
+import { Markdown } from './Markdown'
 import { describeUpdateState, type UpdateTone } from '../updates/updateStatus'
 import { attentionText, dangerText, ghostButton, mutedText, primaryButton, secondaryButton, statusTone } from './styles'
 
@@ -47,9 +48,9 @@ export function UpdateEntry() {
               <summary className="cursor-pointer text-xs text-neutral-400">
                 Was ist neu?
               </summary>
-              <p className="mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap break-words rounded-md border border-neutral-800 bg-neutral-950/60 p-2 text-xs text-neutral-400">
-                {state.release.notes}
-              </p>
+              <div className="scroll-flaeche mt-2 max-h-40 overflow-y-auto rounded-md border border-neutral-800 bg-neutral-950/60 p-2">
+                <Markdown text={state.release.notes} className="break-words text-neutral-400" />
+              </div>
             </details>
           ) : null}
 

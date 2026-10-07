@@ -117,17 +117,29 @@ function MobileTaskRow({
         unter dem Knopf „Aufgabe öffnen", in einem eigenen Bereich. Sonst würde
         der Schalter „Mehr" die Detailansicht mit öffnen.
       */}
-      <div className="flex min-w-0 flex-1 flex-col">
+      {/*
+        Die Zieh-Griffe und der Klick zum Öffnen liegen auf dem ganzen Bereich
+        rechts vom Kästchen – nicht nur auf Titel und Angaben. Mit Beschreibung
+        war die Fläche sonst klein, und ein langer Druck daneben markierte Text
+        statt die Aufgabe aufzunehmen.
+      */}
+      <div
+        {...handlers}
+        onClick={() => {
+          // Nach einem Ziehen folgt trotzdem ein Klick – der darf die
+          // Detailansicht nicht zusätzlich öffnen.
+          if (drag.wasDragging()) return
+          onOpen(task)
+        }}
+        className="flex min-w-0 flex-1 flex-col touch-manipulation select-none text-left"
+      >
         <button
           type="button"
-          {...handlers}
           onClick={() => {
-            // Nach einem Ziehen folgt trotzdem ein Klick – der darf die
-            // Detailansicht nicht zusätzlich öffnen.
             if (drag.wasDragging()) return
             onOpen(task)
           }}
-          className="min-w-0 touch-manipulation text-left select-none"
+          className="min-w-0 text-left select-none"
           data-testid="task-row"
         >
           <span

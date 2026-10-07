@@ -33,9 +33,40 @@ button {
   color: inherit;
 }
 
+/*
+ * Sichtbare Scrollleiste für aufgeklappte Beschreibungen.
+ *
+ * Ohne sie sieht man nicht, dass es weitergeht: Der Text endet dann einfach an
+ * der Höhengrenze. Beide Schreibweisen, damit es in Chromium (WebView) und in
+ * Firefox gleich aussieht.
+ */
+.scroll-flaeche {
+  scrollbar-width: thin;
+  scrollbar-color: #525252 transparent; /* neutral-600 */
+}
+
+.scroll-flaeche::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scroll-flaeche::-webkit-scrollbar-thumb {
+  background-color: #525252; /* neutral-600 */
+  border-radius: 3px;
+}
+
+.scroll-flaeche::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+/*
+ * Das Kalender-Symbol nativer Datumsfelder.
+ *
+ * `color-scheme: dark` (oben) sorgt dafür, dass Chromium das Symbol hell
+ * zeichnet. Ein zusätzliches `filter: invert(1)` hat es deshalb wieder dunkel
+ * gemacht – auf dunklem Grund war es kaum zu sehen.
+ */
 input[type='datetime-local']::-webkit-calendar-picker-indicator {
-  filter: invert(1);
-  opacity: 0.6;
+  opacity: 0.8;
 }
 
 /*
