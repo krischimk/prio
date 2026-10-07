@@ -220,7 +220,7 @@ Arbeitsvorrat, kein Wunschzettel. Aufwand: **S** ein Nachmittag, **M** ein Tag,
 | F3 | Angehängte Klassen an Knöpfen bewirken nichts, der „kompakte" Knopf existiert nicht | `src/ui/TaskPanel.tsx:94` u. a. | im gebauten CSS steht `.px-3` **hinter** `.px-2`, `.py-2` hinter `.py-1` – 22 Stellen wirkungslos | S | erledigt |
 | F4 | `db:check` nennt falsche Migrationsdateien | `scripts/db-apply.mjs:115` | `tasks.position` → 0009 (richtig 0005), `lists.icon` → 0007 (richtig 0008) | S | erledigt |
 | F5 | Toter Code | `src/domain/merge.ts:28`, `src/app/WorkspaceProvider.tsx:69` | `needsPush` wird nur von Tests gelesen, `lastSyncedAt` hat keinen Verbraucher | S | erledigt |
-| F6 | Der Paritätstest prüft nur, was jemand eingetragen hat | `tests/e2e/parity.spec.ts:39` | eine handgepflegte Tabelle; F1 ist genau deshalb unbemerkt geblieben | M | offen |
+| F6 | Der Paritätstest prüft nur, was jemand eingetragen hat | `tests/e2e/parity.spec.ts:39` | eine handgepflegte Tabelle; F1 ist genau deshalb unbemerkt geblieben | M | erledigt: `tests/unit/parityCoverage.test.ts` geht von den **schreibenden Operationen** aus – je Operation ein Eintrag (Vollständigkeit erzwingt der Typ `Record<…>`), jeder genannte Eintrag muss in der Paritätstabelle vorkommen. `null` nur mit Begründung |
 
 ### 15.2 Fundament – Voraussetzung für jeden Umbau
 
@@ -240,7 +240,7 @@ Arbeitsvorrat, kein Wunschzettel. Aufwand: **S** ein Nachmittag, **M** ein Tag,
 | Z1 | Aufgabenzeile und Aufgabenformular sind zweimal gebaut | `TaskItem.tsx:71-155` und `mobile/TaskDetailSheet.tsx:176-254`, `TaskComposer.tsx` | Zeileninhalt wörtlich doppelt, **drei** Formulare; Anlegen kann mobil mehr als breit | M–L | erledigt: `useTaskForm` (Zustand, Umwandlungen, Prüfung, Sperre), `TaskFields` (die Felder, in allen drei Formularen), `TaskFacts` (Zeileninhalt beider Ansichten) |
 | Z2 | Zwei Modusschalter mit verschiedenen Schwellen | `src/app/useIsDesktop.ts:18` gegen `md:` | JS entscheidet bei 1024 px, `md:` bei 768 px; 9 `md:`-Stellen in 7 Dateien | S | erledigt: **eine** Schwelle (`useIsDesktop`) – auch für die Form des Blattes; die immer wahren `md:`-Reste in den Desktop-Dateien und die CSS-Medienabfrage der Rückgängig-Leiste sind weg. Inhaltsraster (Symbolauswahl, Küchenseite) richten sich weiter nach der Breite: das ist Layout, nicht die Ansicht |
 | Z3 | Ansichtszustand liegt in beiden Bäumen | `WorkspaceScreen.tsx:32-33`, `mobile/MobileWorkspace.tsx:34-37` | `useSelectedListId` und `restoreOpen` je zweimal → Auswahlverlust beim Breitewechsel | M | erledigt: `ViewProvider` über der Verzweigung; `useSelectedListId` ist darin aufgegangen. `tests/e2e/lists.spec.ts` prüft, dass die gewählte Liste den Breitenwechsel überlebt – mit simuliertem Altverhalten ist der Test rot |
-| Z4 | Navigation ist kein Modell | 10 `useBackLayer`-Aufrufe in 7 Dateien | „was ist offen" nur als Boolean je Komponente | M | teils: Ebenen sind **benannt** (`backLayer(…, 'aufgabe-bearbeiten')`, `backStack.top()/names()`), die Reihenfolge liegt zentral, 3 neue Tests. Offen bleibt ein Router, der an die Namen Adressen aufhängt |
+| Z4 | Navigation ist kein Modell | 10 `useBackLayer`-Aufrufe in 7 Dateien | „was ist offen" nur als Boolean je Komponente | M | teils: Ebenen sind **benannt** (`backLayer(…, 'aufgabe-bearbeiten')`, `backStack.top()/names()`), die Reihenfolge liegt zentral, 3 neue Tests. **Bewusst nicht weiterverfolgt:** ein Router, der an die Namen Adressen aufhängt, wäre eine neue Funktion (teilbare Links), kein Aufräumen – die Namen und die zentrale Reihenfolge sind die Voraussetzung dafür und stehen |
 
 ### 15.4 Zustands- und Anwendungsschicht
 
@@ -272,7 +272,7 @@ Arbeitsvorrat, kein Wunschzettel. Aufwand: **S** ein Nachmittag, **M** ein Tag,
 | --- | --- | --- | --- | --- | --- |
 | P1 | Der Architekturtest liest nur `src/ui` | `tests/unit/uiConventions.test.ts:30` | `src/App.tsx` (11 rohe Farbklassen) und `WorkspaceProvider` werden nie geprüft | S | erledigt: der Test liest ganz `src` (fand dabei „offene Aufgabe“ in einem Kommentar – Regel auf Zeichenketten eingegrenzt) |
 | P2 | Nichts prüft Rollen, Token, angehängte Klassen oder den toten `card` | dito | die Regeln aus 15.2 sind heute reine Disziplin | S | erledigt: 10 Regeln im Test (Palette, Schriftgrößen, Anhängsel, Bausteine, `layout`) plus `tests/unit/components.test.tsx` |
-| P3 | Kein Test für die Klassifikation in `trackedRepositories` | `tests/` | 27 Zuordnungen, 3 Kategorien, 0 Prüfungen (B3) | S | offen |
+| P3 | Kein Test für die Klassifikation in `trackedRepositories` | `tests/` | 27 Zuordnungen, 3 Kategorien, 0 Prüfungen (B3) | S | erledigt: `tests/unit/trackedRepositories.test.ts` (Deckung, Disjunktheit, Verhalten; nachgemessen rot, wenn eine Methode fehlt) – siehe B3 |
 
 ## Quellen
 
