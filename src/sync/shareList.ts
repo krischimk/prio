@@ -1,6 +1,6 @@
 import { ValidationError } from '../db/validation'
 import type { Repositories } from '../db/repositories'
-import type { RemoteGateway } from './remoteGateway'
+import type { ShareDirectory } from './remoteGateway'
 
 /**
  * Freigabe einer Liste per E-Mail-Adresse.
@@ -19,14 +19,14 @@ import type { RemoteGateway } from './remoteGateway'
  *   4. Sync anstoßen, damit die neue Mitgliedschaft lokal ankommt.
  */
 export function createShareListAction(deps: {
-  gateway: RemoteGateway
+  gateway: ShareDirectory
   repositories: Repositories
   sync: () => Promise<unknown>
 }): (listId: string, email: string) => Promise<{ userId: string }> {
   return async (listId, email) => {
     const trimmed = email.trim()
     if (trimmed.length === 0) {
-      throw new ValidationError('Bitte eine E-Mail-Adresse angeben.')
+      throw new ValidationError('email', 'Bitte eine E-Mail-Adresse angeben.')
     }
 
     await deps.sync()

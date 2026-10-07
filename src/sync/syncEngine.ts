@@ -3,7 +3,7 @@ import { isEmptyPayload, toPushPayload } from '../domain/mapping'
 import type { IsoDateTime } from '../domain/types'
 import type { LocalDatabase } from '../db/localDb'
 import { applyRemoteLists, applyRemoteMembers, applyRemoteTasks } from './applyRemote'
-import { classifyRemoteError, type RemoteError, type RemoteGateway } from './remoteGateway'
+import { classifyRemoteError, type RemoteError, type SyncTransport } from './remoteGateway'
 import { collectDirty, markPushed, META_LAST_SYNC_AT, writeMeta } from './syncStore'
 
 /**
@@ -48,7 +48,7 @@ export interface SyncResult {
 
 export interface SyncEngineOptions {
   db: LocalDatabase
-  gateway: RemoteGateway
+  gateway: SyncTransport
   /** Benutzer-ID der angemeldeten Person (für "wurde aus Liste entfernt"). */
   currentUserId: string
   clock?: Clock

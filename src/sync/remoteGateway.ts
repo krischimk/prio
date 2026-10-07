@@ -26,11 +26,26 @@ export class RemoteError extends Error {
   }
 }
 
-export interface RemoteGateway {
+/**
+ * Der Transport: das, was die Sync-Engine braucht – und **nur** das.
+ *
+ * Die Engine lädt und schickt Daten; sie teilt keine Listen und fragt keine
+ * Adressen ab. Vorher verlangte ihr Interface all das zusammen, also musste
+ * jede Attrappe alles nachbauen. Wer nur synchronisieren will, implementiert
+ * jetzt `SyncTransport`.
+ */
+export interface SyncTransport {
   /** Lädt den kompletten sichtbaren Serverbestand. */
   pull(): Promise<RemoteSnapshot>
   /** Lädt lokale Änderungen hoch (idempotent über Upsert). */
   push(payload: PushPayload): Promise<void>
+}
+
+/**
+ * Das Verzeichnis: die beiden Aufrufe, die nur der Server beantworten kann
+ * (E-Mail → Benutzer-ID, wer mit wem teilt).
+ */
+export interface ShareDirectory {
   /**
    * Teilt eine Liste über die E-Mail-Adresse eines registrierten Nutzers.
    *
@@ -48,6 +63,14 @@ export interface RemoteGateway {
    */
   coMemberContacts(): Promise<CoMemberContact[]>
 }
+
+/**
+ * Beides zusammen – das ist, was die App als „Gateway“ zusammensetzt.
+ *
+ * Die Summe bleibt bequem (eine Implementierung für beides), aber niemand muss
+ * mehr verlangen, als er benutzt.
+ */
+export interface RemoteGateway extends SyncTransport, ShareDirectory {}
 
 /** Eine Person, mit der eine Liste geteilt wird. */
 export interface CoMemberContact {
