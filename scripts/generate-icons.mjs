@@ -25,6 +25,21 @@ const OUT_DIR = join(ROOT, 'public', 'icons')
 const ANDROID_RES = join(ROOT, 'android', 'app', 'src', 'main', 'res')
 
 /**
+ * Wie groß das Motiv je Variante ist.
+ *
+ * Die runde Maske des Startbildschirms schneidet alles außerhalb des
+ * einbeschriebenen Kreises weg, beim adaptiven Symbol ist sogar nur der innere
+ * Teil sichtbar (die sichtbare Fläche ist etwa 72 von 108 Einheiten). Ein
+ * Motiv, das die Fläche füllt, wird deshalb an den Rändern abgeschnitten –
+ * gerechnet wird hier über die halbe Diagonale des Motivs:
+ *
+ *   adaptiv 0,70 → 0,26 von 0,33 sichtbaren Einheiten (Rand bleibt frei)
+ *   rund    0,75 → 0,28 von 0,50
+ *   Kachel  0,85 → 0,31 von 0,44 (die Kachel ist abgerundet)
+ */
+const SKALA = { kachel: 0.85, rund: 0.75, adaptiv: 0.7 }
+
+/**
  * Android-Bildschirmdichten.
  *
  * `kachel` ist die Größe des klassischen Symbols, `adaptiv` die des
@@ -183,18 +198,18 @@ function writeAndroidIcons() {
       radius: kachel * 0.22,
       color: BACKGROUND,
     })
-    drawMark(quadrat, kachel, 1)
+    drawMark(quadrat, kachel, SKALA.kachel)
     writePng(join(ziel, 'ic_launcher.png'), kachel, quadrat)
 
     const rund = createCanvas(kachel, [0, 0, 0, 0])
     fillCircle(rund, kachel, BACKGROUND)
-    drawMark(rund, kachel, 1)
+    drawMark(rund, kachel, SKALA.rund)
     writePng(join(ziel, 'ic_launcher_round.png'), kachel, rund)
 
     // Adaptiver Vordergrund: ohne Hintergrund, das System legt seine Form
-    // darüber. Das Motiv bleibt in der sicheren Zone.
+    // darüber. Das Motiv bleibt deutlich innerhalb der sichtbaren Fläche.
     const vordergrund = createCanvas(adaptiv, [0, 0, 0, 0])
-    drawMark(vordergrund, adaptiv, 1)
+    drawMark(vordergrund, adaptiv, SKALA.adaptiv)
     writePng(join(ziel, 'ic_launcher_foreground.png'), adaptiv, vordergrund)
   }
 }
