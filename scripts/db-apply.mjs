@@ -111,13 +111,19 @@ const base = ['-X', '-v', 'ON_ERROR_STOP=1', '-d', dbUrl]
  * passiert, als `lists.sections` geschrieben, aber Migration 0013 nie
  * eingespielt wurde. Deshalb prüft `db:check` nicht nur, was da ist, sondern
  * auch, was fehlt: Die Liste gehört gepflegt, wenn eine Spalte dazukommt.
+ *
+ * Die Nummer ist die Migration, die die Spalte **anlegt** – sie steht in der
+ * Fehlermeldung, damit man weiß, was fehlt. Zwei Einträge zeigten hier auf die
+ * falsche Datei (`position` → 0009, `icon` → 0007); `tests/unit/dbExpectations
+ * .test.ts` prüft jetzt nach, dass die genannte Migration Tabelle und Spalte
+ * wirklich nennt.
  */
 const ERWARTET = [
   ['lists', 'sections', '0013'],
   ['tasks', 'section_id', '0013'],
   ['tasks', 'reminders', '0011'],
-  ['tasks', 'position', '0009'],
-  ['lists', 'icon', '0007'],
+  ['tasks', 'position', '0005'],
+  ['lists', 'icon', '0008'],
 ]
 
 if (checkOnly) {
