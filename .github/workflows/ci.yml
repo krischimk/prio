@@ -161,3 +161,25 @@ jobs:
       - if: steps.zugang.outputs.bereit == 'true'
         name: Hochladen
         run: npx --yes wrangler@4 pages deploy dist --project-name=prio-krischi --branch="${{ github.ref_name }}"
+
+      # Die veröffentlichte Fassung prüft sich selbst: anmelden, Liste und
+      # Aufgabe anlegen, Abgleich abwarten. Damit fällt auf, was nur beim
+      # Nutzer sichtbar wird – ein Bündel, das nicht startet, eine fehlende
+      # Spalte (PGRST204), eine verletzte Zugriffsregel.
+      #
+      # Nur für die Produktion und nur, wenn die Secrets liegen; sonst ein
+      # Hinweis statt eines roten Laufs (wie beim Cloudflare-Zugang).
+      - if: |
+          steps.zugang.outputs.bereit == 'true' &&
+          github.ref == 'refs/heads/main'
+        name: Veröffentlichte Fassung rauchen
+        env:
+          PRIO_TEST_A_EMAIL: ${{ secrets.PRIO_TEST_A_EMAIL }}
+          PRIO_TEST_A_PASSWORT: ${{ secrets.PRIO_TEST_A_PASSWORT }}
+        run: |
+          if [ -z "$PRIO_TEST_A_EMAIL" ] || [ -z "$PRIO_TEST_A_PASSWORT" ]; then
+            echo "::notice::Kein Testkonto hinterlegt (PRIO_TEST_A_EMAIL/PASSWORT) – die Rauchprüfung entfällt."
+            exit 0
+          fi
+          npx playwright install --with-deps chromium
+          npm run smoke:live

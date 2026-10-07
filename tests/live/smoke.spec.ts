@@ -18,6 +18,15 @@ import { join } from 'node:path'
  * aufgefallen, **bevor** ihn jemand meldet.
  */
 function konto(): { email: string; passwort: string } | null {
+  // Im CI kommen die Werte aus Secrets (Umgebungsvariablen), lokal aus der
+  // privaten Ablage. Derselbe Weg wie bei der Datenbank-Verbindung.
+  const ausUmgebung = {
+    email: process.env.PRIO_TEST_A_EMAIL,
+    passwort: process.env.PRIO_TEST_A_PASSWORT,
+  }
+  if (ausUmgebung.email && ausUmgebung.passwort) {
+    return { email: ausUmgebung.email, passwort: ausUmgebung.passwort }
+  }
   try {
     const inhalt = readFileSync(join(homedir(), '.prio-android', 'testkonten.env'), 'utf8')
     const werte: Record<string, string> = {}
@@ -34,7 +43,10 @@ function konto(): { email: string; passwort: string } | null {
 
 test('die veröffentlichte Fassung startet, meldet sich an und gleicht ab', async ({ page }) => {
   const zugang = konto()
-  test.skip(zugang === null, 'Ohne Testkonto (~/.prio-android/testkonten.env) nicht prüfbar.')
+  test.skip(
+    zugang === null,
+    'Ohne Testkonto (PRIO_TEST_A_EMAIL/PASSWORT oder ~/.prio-android/testkonten.env) nicht prüfbar.',
+  )
 
   const fehler: string[] = []
   page.on('pageerror', (e) => fehler.push(e.message))

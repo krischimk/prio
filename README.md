@@ -1510,6 +1510,13 @@ Drei Dinge lassen sich mit dem Mock nicht prüfen und haben eigene Wege:
 | `npm run db:rls-check` | die Zugriffsregeln: A legt eine Liste an, B sieht sie nicht, nach dem Teilen sieht er sie und ihre Aufgaben – löschen darf er sie nicht | zwei Testkonten |
 | `npm run smoke:live` | die **veröffentlichte** Fassung: startet sie, meldet sie sich an, gleicht sie ab? | Testkonto |
 
+`smoke:live` läuft zusätzlich **im CI**, direkt nachdem `main` veröffentlicht
+wurde – dann prüft sich die Veröffentlichung selbst, statt auf jemanden zu
+warten, der daran denkt. Dafür liegen im Repository zwei Secrets:
+`PRIO_TEST_A_EMAIL` und `PRIO_TEST_A_PASSWORT`. Fehlen sie, wird der Schritt mit
+einem Hinweis übersprungen (wie beim Cloudflare-Zugang) – das Repository soll
+nicht bei jedem Push meckern.
+
 Die beiden Testkonten liegen als `PRIO_TEST_A_*` / `PRIO_TEST_B_*` in
 `~/.prio-android/testkonten.env` (außerhalb des Repositories, Rechte 600). Sie
 sind im echten Projekt angelegt und per SQL bestätigt; `db:rls-check` räumt
