@@ -180,6 +180,17 @@ nicht einmal je Änderung. Drei Stufen:
   „warten“. Vorher war der Upload alles-oder-nichts: eine abgelehnte Zeile hielt
   den ganzen Bestand zurück, und der Zähler wurde nie leer. Auslöser:
   `DESIGN.md` §15.5 C1.
+* **Jede Zeile geht durch den Leserand.** Neue Felder erreichen nicht alle
+  Zeilen gleichzeitig (alte lokale Zeilen, ältere Geräte, fehlende Migration).
+  `src/domain/normalize.ts` macht eine Zeile vollständig – beim Anwenden einer
+  Serverantwort **und** beim Lesen aus der Datenbank. Wer danach `task.reminders`
+  oder `list.sections` anfasst, braucht keine eigene Vorsicht mehr. Auslöser: der
+  schwarze Bildschirm von 0.18.0 (`DESIGN.md` §15.5 C4).
+* **Neue Felder stehen im Katalog.** `src/domain/fields.ts` führt die Felder je
+  Entität; zur Übersetzungszeit ist die Vollständigkeit erzwungen, im Test die
+  Übereinstimmung mit der Server-Umwandlung und den Migrationen. Vergisst man
+  die Migration, scheitert jeder Abgleich mit `PGRST204`. Auslöser:
+  `DESIGN.md` §15.5 C2.
 * **Der Schlüssel-Wert-Speicher ist neutral, die Schlüssel gehören ihrem
   Schreiber.** Zugriffe über `src/db/metaStore.ts`; welche Schlüssel es gibt,
   weiß `repositories`, `reminderService` bzw. `syncStore`. Vorher lagen sie alle

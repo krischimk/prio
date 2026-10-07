@@ -1,6 +1,6 @@
 import { normalizeIso } from './clock'
+import { normalisiereAufgabe, normalisiereListe, normalisiereMitglied } from './normalize'
 import { parseSections } from './sections'
-import { parseReminders } from './reminder'
 import type {
   LocalList,
   LocalListMember,
@@ -35,20 +35,9 @@ export function toRemoteList(local: LocalList): RemoteList {
   }
 }
 
-export function fromRemoteList(remote: RemoteList): LocalList {
-  return {
-    id: remote.id,
-    name: remote.name,
-    owner_id: remote.owner_id,
-    is_shared: remote.is_shared,
-    // Ältere Zeilen kennen die Felder noch nicht.
-    icon: remote.icon ?? null,
-    sections: parseSections(remote.sections),
-    created_at: normalizeIso(remote.created_at),
-    updated_at: normalizeIso(remote.updated_at),
-    deleted_at: normalizeIso(remote.deleted_at),
-    dirty: 0,
-  }
+export function fromRemoteList(remote: RemoteList) {
+  // Der Leserand ergänzt, was ältere Zeilen nicht kennen.
+  return normalisiereListe(remote)
 }
 
 export function toRemoteTask(local: LocalTask): RemoteTask {
@@ -74,29 +63,9 @@ export function toRemoteTask(local: LocalTask): RemoteTask {
   }
 }
 
-export function fromRemoteTask(remote: RemoteTask): LocalTask {
-  return {
-    id: remote.id,
-    list_id: remote.list_id,
-    title: remote.title,
-    description: remote.description,
-    due_at: normalizeIso(remote.due_at),
-    completed: remote.completed,
-    // Ältere Zeilen kennen die Felder noch nicht – null ist der richtige Rückfall.
-    completed_at: normalizeIso(remote.completed_at ?? null),
-    recurrence: remote.recurrence ?? null,
-    successor_id: remote.successor_id ?? null,
-    // Ältere Zeilen kennen das Feld noch nicht. `parseReminders` kommt mit
-    // allem zurecht und lässt Unbrauchbares still fallen – eine verbogene
-    // Zeile darf die Aufgabe nicht unlesbar machen.
-    reminders: parseReminders(remote.reminders),
-    section_id: remote.section_id ?? null,
-    position: remote.position ?? 0,
-    created_at: normalizeIso(remote.created_at),
-    updated_at: normalizeIso(remote.updated_at),
-    deleted_at: normalizeIso(remote.deleted_at),
-    dirty: 0,
-  }
+export function fromRemoteTask(remote: RemoteTask) {
+  // Der Leserand ergänzt, was ältere Zeilen nicht kennen.
+  return normalisiereAufgabe(remote)
 }
 
 export function toRemoteMember(local: LocalListMember): RemoteListMember {
@@ -109,15 +78,9 @@ export function toRemoteMember(local: LocalListMember): RemoteListMember {
   }
 }
 
-export function fromRemoteMember(remote: RemoteListMember): LocalListMember {
-  return {
-    list_id: remote.list_id,
-    user_id: remote.user_id,
-    created_at: normalizeIso(remote.created_at),
-    updated_at: normalizeIso(remote.updated_at),
-    deleted_at: normalizeIso(remote.deleted_at),
-    dirty: 0,
-  }
+export function fromRemoteMember(remote: RemoteListMember) {
+  // Der Leserand ergänzt, was ältere Zeilen nicht kennen.
+  return normalisiereMitglied(remote)
 }
 
 export function toPushPayload(

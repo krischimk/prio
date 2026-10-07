@@ -9,6 +9,11 @@ import {
 import { alignReminders, isPlausibleOffset, type TaskReminder } from '../domain/reminder'
 import { newId } from '../domain/ids'
 import {
+  normalisiereAufgabe,
+  normalisiereListe,
+  normalisiereMitglied,
+} from '../domain/normalize'
+import {
   compareListsByName,
   compareMembersById,
   compareRestorable,
@@ -368,8 +373,14 @@ export function createRepositories(db: LocalDatabase, clock: Clock = systemClock
    * Geschrieben wird dabei nichts: Der Wert entsteht beim nächsten echten
    * Schreiben von selbst.
    */
+  /**
+   * Der Leserand für Listen.
+   *
+   * Heißt weiterhin so, weil die Abschnitte das Feld waren, das ihn nötig
+   * machte – jetzt läuft die ganze Zeile durch `normalisiereListe`.
+   */
   function mitAbschnittsplan(list: LocalList): LocalList {
-    return { ...list, sections: parseSections(list.sections) }
+    return normalisiereListe(list)
   }
 
   function stamp(): { updated_at: string; dirty: 1 } {
@@ -734,7 +745,7 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
 
     async getTask(taskId) {
       const task = await db.tasks.get(taskId)
-      return task && task.deleted_at === null ? task : undefined
+      return task && task.deleted_at === null ? normalisiereAufgabe(task) : undefined
     },
 
     async listTasks(listId) {
@@ -743,6 +754,7 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
       // Einstellungen noch eine Weile zu finden.
       return tasks
         .filter((task) => task.deleted_at === null && !task.completed)
+        .map(normalisiereAufgabe)
         .sort(compareTasks)
     },
 
@@ -755,6 +767,7 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
       const tasks = await db.tasks.where('completed_at').aboveOrEqual(grenze).toArray()
       return tasks
         .filter((task) => task.deleted_at === null && task.completed)
+        .map(normalisiereAufgabe)
         // Zuletzt abgehakt zuerst. Die Zeitstempel liegen alle im selben
         // ISO-Format vor, der Vergleich ist deshalb stabil.
         .sort(compareRestorable)
@@ -806,6 +819,7 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
       const members = await db.list_members.where('list_id').equals(listId).toArray()
       return members
         .filter((member) => member.deleted_at === null)
+        .map(normalisiereMitglied)
         .sort(compareMembersById)
     },
 

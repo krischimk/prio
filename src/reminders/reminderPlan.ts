@@ -1,5 +1,5 @@
 import { normalizeIso } from '../domain/clock'
-import { isMutedFor, parseReminders, reminderTimeOf } from '../domain/reminder'
+import { isMutedFor, reminderTimeOf } from '../domain/reminder'
 import type { LocalList, LocalTask } from '../domain/types'
 
 /**
@@ -42,10 +42,9 @@ export interface ReminderCandidate {
  * genau die Art Abweichung, die man erst im Betrieb merkt.
  */
 export function reminderTimesFor(task: LocalTask, viewerId: string | null = null): string[] {
-  // `parseReminders` statt direktem Zugriff: Eine Zeile aus einer älteren
-  // Fassung hat das Feld womöglich gar nicht, und ein `undefined` darf die
-  // Aufgabe nicht unlesbar machen.
-  return parseReminders(task.reminders)
+  // Die Zeile kommt vom Leserand (`normalize.ts`), `reminders` ist also eine
+  // Liste – auch bei einer Aufgabe aus einer älteren Fassung.
+  return task.reminders
     // Wer stummgeschaltet hat, wird nicht geweckt. Ohne Kennung (Tests, alte
     // Aufrufer) gilt jede Erinnerung als gewünscht.
     .filter((reminder) => viewerId === null || !isMutedFor(reminder, viewerId))
