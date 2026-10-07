@@ -13,7 +13,7 @@ import { RestoreTasksPanel } from '../RestoreTasksPanel'
 import { TaskDetailSheet } from './TaskDetailSheet'
 import { PlusIcon } from '../icons'
 import { formatOpenTasks } from '../taskCount'
-import { layer, appBackground } from '../styles'
+import { layer, appBackground, numeric } from '../styles'
 
 /**
  * Mobile Oberfläche der App.
@@ -59,7 +59,7 @@ export function MobileWorkspace() {
           </p>
         ) : (
           <>
-            <div className="px-4 pb-1 pt-3 text-meta text-ink-faint">
+            <div className={`px-4 pb-1 pt-3 text-meta text-ink-faint ${numeric}`}>
               <span>{formatOpenTasks(openCount)}</span>
             </div>
             <MobileTaskList

@@ -4,6 +4,7 @@ import { useUndo } from '../useUndo'
 import type { ListSection, LocalTask } from '../../domain/types'
 import { flattenGroups, groupTasks } from '../../domain/sections'
 import { appBackground, layer } from '../styles'
+import { leerAufgaben } from '../emptyTexts'
 import { TaskDescription } from '../TaskDescription'
 import { TaskFacts } from '../TaskFacts'
 import { SectionHeader } from '../SectionHeader'
@@ -58,7 +59,7 @@ export function MobileTaskList({
   if (tasks.length === 0) {
     return (
       <p className="px-4 py-10 text-center text-body text-ink-faint" data-testid="empty-tasks">
-        Noch keine Aufgaben in dieser Liste.
+        {leerAufgaben('mobil')}
       </p>
     )
   }

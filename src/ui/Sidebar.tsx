@@ -4,6 +4,7 @@ import type { LocalList } from '../domain/types'
 import { ListIcon } from './ListIcon'
 import { errorMessage, input } from './styles'
 import { appBackground } from './styles'
+import { leerListen } from './emptyTexts'
 import { Button } from './components/Button'
 
 /**
@@ -81,7 +82,7 @@ export function Sidebar({
           )
         })}
         {lists.length === 0 ? (
-          <li className="px-2 py-1 text-body text-ink-faint">Noch keine Liste vorhanden.</li>
+          <li className="px-2 py-1 text-body text-ink-faint">{leerListen('breit')}</li>
         ) : null}
       </ul>
 

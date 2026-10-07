@@ -9,7 +9,8 @@ import { BackendLabel } from '../BackendLabel'
 import { ListIcon } from '../ListIcon'
 import { UpdateEntry } from '../UpdateEntry'
 import { CloseIcon } from '../icons'
-import { appBackground } from '../styles'
+import { appBackground, numeric } from '../styles'
+import { leerListen } from '../emptyTexts'
 import { IconButton } from '../components/IconButton'
 import { Button } from '../components/Button'
 import { useDialog } from '../components/useDialog'
@@ -150,7 +151,7 @@ export function MobileDrawer({
               )
             })}
             {lists.length === 0 ? (
-              <li className="px-3 py-1 text-body text-ink-faint">Noch keine Liste vorhanden.</li>
+              <li className="px-3 py-1 text-body text-ink-faint">{leerListen('mobil')}</li>
             ) : null}
           </ul>
 
@@ -184,7 +185,7 @@ export function MobileDrawer({
           <h2 className="mb-2 text-meta font-semibold uppercase tracking-wide text-ink-faint">
             Synchronisation
           </h2>
-          <p className="text-meta text-ink-muted" data-testid="drawer-sync">
+          <p className={`text-meta text-ink-muted ${numeric}`} data-testid="drawer-sync">
             {sync.text}
           </p>
           <Button

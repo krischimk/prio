@@ -200,6 +200,23 @@ describe('UI-Konventionen', () => {
     ).toEqual([])
   })
 
+  it('setzt wechselnde Zahlen über die gemeinsame Konstante in feste Breite', () => {
+    // P19: Ein Zähler oder ein Datum springt, wenn die Ziffern unterschiedlich
+    // breit sind. `tabular-nums` gehört deshalb in eine Konstante, nicht in
+    // jede Komponente einzeln – sonst hat die Regel so viele Fassungen wie
+    // Aufrufer.
+    const treffer = findMatches(
+      sourceFiles.filter((file) => file !== STYLES_FILE),
+      /tabular-nums/,
+    )
+
+    expect(
+      treffer,
+      'Zahlen in fester Breite kommen aus `numeric` (src/ui/styles.ts), nicht als Klasse in die Komponente.',
+    ).toEqual([])
+    expect(readFileSync(STYLES_FILE, 'utf8')).toContain("export const numeric = 'tabular-nums'")
+  })
+
   it('zählt offene Aufgaben nur an einer Stelle', () => {
     // Nur **Text in der Oberfläche** zählt, also ein Zeichenketten-Literal.
     // Ein Satz in einem Kommentar („eine offene Aufgabe verstummt …“) ist keine

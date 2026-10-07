@@ -1,6 +1,6 @@
 import { useWorkspace } from '../app/useWorkspace'
 import { describeSyncState } from './status/syncStatus'
-import { statusTone } from './styles'
+import { numeric, statusTone } from './styles'
 import { Button } from './components/Button'
 
 /**
@@ -24,7 +24,7 @@ export function SyncIndicator() {
       */}
       <span className="flex min-w-0 items-center gap-2">
         <span className={`h-2 w-2 shrink-0 rounded-full ${farben.dot}`} aria-hidden="true" />
-        <span data-testid="sync-status" className={`min-w-0 break-words ${farben.text}`}>
+        <span data-testid="sync-status" className={`min-w-0 break-words ${numeric} ${farben.text}`}>
           {text}
         </span>
       </span>

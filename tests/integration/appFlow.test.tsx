@@ -48,7 +48,7 @@ describe('App-Integration', () => {
     await user.type(screen.getByLabelText('Passwort'), 'geheim123')
     await user.click(screen.getByRole('button', { name: 'Konto erstellen' }))
 
-    expect(await screen.findByText('Noch keine Liste vorhanden.')).toBeInTheDocument()
+    expect(await screen.findByText(/Noch keine Liste vorhanden\./)).toBeInTheDocument()
     expect(screen.getByTestId('current-user')).toHaveTextContent('test@example.com')
 
     // --- Liste anlegen -------------------------------------------------------
@@ -137,7 +137,7 @@ describe('App-Integration', () => {
     await user.type(screen.getByLabelText('E-Mail'), 'offline@example.com')
     await user.type(screen.getByLabelText('Passwort'), 'geheim123')
     await user.click(screen.getByRole('button', { name: 'Konto erstellen' }))
-    await screen.findByText('Noch keine Liste vorhanden.')
+    await screen.findByText(/Noch keine Liste vorhanden\./)
 
     // Netzwerk abschalten …
     network.setOnline(false)

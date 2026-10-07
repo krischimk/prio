@@ -13,7 +13,8 @@ import { SharePanel } from './SharePanel'
 import { MoveTaskSheet } from './MoveTaskSheet'
 import { TaskComposer } from './TaskComposer'
 import { TaskItem } from './TaskItem'
-import { card, emptyState, input } from './styles'
+import { card, emptyState, input, numeric } from './styles'
+import { leerAufgaben } from './emptyTexts'
 import { formatOpenTasks } from './taskCount'
 import { Button } from './components/Button'
 
@@ -74,7 +75,10 @@ export function TaskPanel({
   }
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col gap-4 p-6" aria-label="Aufgaben">
+    <section
+      className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4 p-6"
+      aria-label="Aufgaben"
+    >
       <header className="space-y-3">
         {renaming ? (
           <form onSubmit={saveName} className="flex flex-wrap gap-2" aria-label="Liste umbenennen">
@@ -99,7 +103,10 @@ export function TaskPanel({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2">
               <ListIcon icon={list.icon} className="h-6 w-6 shrink-0 text-ink-soft" />
-              <h1 className="truncate text-heading font-semibold text-ink-strong" data-testid="list-title">
+              <h1
+              className="truncate text-heading font-semibold text-ink-strong"
+              title={list.name}
+              data-testid="list-title">
                 {list.name}
               </h1>
               {list.is_shared ? (
@@ -173,12 +180,12 @@ export function TaskPanel({
       <TaskComposer listId={list.id} />
 
       <div className="min-h-0 flex-1">
-        <div className="mb-2 text-meta text-ink-faint">
+        <div className={`mb-2 text-meta text-ink-faint ${numeric}`}>
           <span>{formatOpenTasks(openTasks)}</span>
         </div>
         {tasks.length === 0 ? (
           <p className={emptyState}>
-            Noch keine Aufgaben in dieser Liste.
+            {leerAufgaben('breit')}
           </p>
         ) : mitBereichen ? (
           <div className="space-y-4" data-testid="task-list">

@@ -3,6 +3,7 @@ import { useWorkspace } from '../app/useWorkspace'
 import { parseSections, SECTIONS_MAX, SECTION_NAME_MAX } from '../domain/sections'
 import type { LocalList } from '../domain/types'
 import { errorMessage, input, mutedText } from './styles'
+import { LEER_BEREICHE } from './emptyTexts'
 import { Button } from './components/Button'
 
 /**
@@ -66,7 +67,7 @@ export function SectionsPanel({ list }: { list: LocalList }) {
       </p>
 
       {sections.length === 0 ? (
-        <p className={`text-meta ${mutedText}`}>Noch keine Bereiche.</p>
+        <p className={`text-meta ${mutedText}`}>{LEER_BEREICHE}</p>
       ) : (
         <ul className="space-y-1">
           {sections.map((section) => (

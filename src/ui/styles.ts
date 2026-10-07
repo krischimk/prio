@@ -48,13 +48,13 @@ const buttonBase = `inline-flex items-center justify-center gap-2 rounded-contro
 
 const buttonSizes = {
   /** Der Standardknopf. */
-  md: 'px-3 py-2 text-body',
+  md: 'px-3 py-2.5 text-body',
   /** Kompakt – Kopfzeilen, dichte Bereiche. */
   sm: 'px-2 py-1 text-meta',
   /** Blockknopf: gleiche Schrift, mehr Höhe für die Trefferfläche. */
   block: 'px-3 py-3 text-body',
   /** Nur ein Symbol (rundum gleiche Polsterung). */
-  icon: 'p-2',
+  icon: 'h-11 w-11',
 } as const
 
 const buttonVariants = {
@@ -209,3 +209,14 @@ export const mutedText = 'text-ink-faint'
  * (emerald/amber/red) ab; für alles andere ist diese Datei die Absprache.
  */
 export const activeIcon = 'text-brand-soft'
+
+/**
+ * Zahlen, die sich ändern, in fester Breite (`DESIGN.md` P19).
+ *
+ * Zähler („3 Änderungen warten") und Datumsangaben springen sonst beim Wechsel:
+ * Eine 1 ist schmaler als eine 8, und der Text dahinter rutscht mit.
+ * `tabular-nums` gibt jeder Ziffer dieselbe Breite. Als Konstante, damit die
+ * Regel an einer Stelle steht und `tests/unit/uiConventions.test.ts` sie
+ * durchsetzen kann.
+ */
+export const numeric = 'tabular-nums'

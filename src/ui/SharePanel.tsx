@@ -4,6 +4,7 @@ import { useMembers, useShareContacts } from '../app/hooks'
 import { suggestShareContacts } from '../domain/shareContacts'
 import type { LocalList } from '../domain/types'
 import { cardSoft, errorMessage, input, successMessage } from './styles'
+import { LEER_MITGLIEDER } from './emptyTexts'
 import { Button } from './components/Button'
 
 /**
@@ -124,7 +125,7 @@ export function SharePanel({ list, currentUserId }: { list: LocalList; currentUs
           Mitglieder
         </h3>
         {members.length === 0 ? (
-          <p className="text-meta text-ink-faint">Noch keine Mitglieder.</p>
+          <p className="text-meta text-ink-faint">{LEER_MITGLIEDER}</p>
         ) : (
           <ul className="space-y-1">
             {members.map((member) => (

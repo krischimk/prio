@@ -1,6 +1,6 @@
 import { useWorkspace } from '../../app/useWorkspace'
 import { describeSyncState } from '../status/syncStatus'
-import { layer, appBackground, attentionDot, statusTone } from '../styles'
+import { layer, appBackground, attentionDot, numeric, statusTone } from '../styles'
 import { useUpdate } from '../useUpdate'
 import { MenuIcon } from '../icons'
 import { ListIcon } from '../ListIcon'
@@ -28,6 +28,11 @@ export function MobileAppBar({
 }) {
   const { syncStatus, pendingCount, rejectedCount, syncing, runSync } = useWorkspace()
   const { tone, text } = describeSyncState(syncStatus, pendingCount, syncing, rejectedCount)
+  /**
+   * Was neben dem Punkt steht: die Zahl der wartenden Änderungen oder ein
+   * Ausrufezeichen. `null` heißt „nichts zu sagen" – dann bleibt nur der Punkt.
+   */
+  const zeichen = tone === 'error' ? '!' : pendingCount > 0 ? String(pendingCount) : null
   const farben = statusTone[tone]
   const { state: update } = useUpdate()
   const updateVerfuegbar = update.status === 'available'
@@ -84,7 +89,22 @@ export function MobileAppBar({
           title={text}
           className="rounded-control p-3 active:bg-raised"
         >
-          <span className={`block h-2.5 w-2.5 rounded-full ${farben.dot}`} />
+          {/*
+            Neben der Farbe trägt auch eine Form die Aussage (P14): der Punkt
+            allein sagt einem farbenblinden Auge nichts. Deshalb die Zahl der
+            wartenden Änderungen bzw. ein Ausrufezeichen im Fehlerfall.
+          */}
+          <span className="flex items-center gap-1">
+            {zeichen !== null ? (
+              <span
+                aria-hidden="true"
+                className={`text-label font-semibold ${numeric} ${farben.text}`}
+              >
+                {zeichen}
+              </span>
+            ) : null}
+            <span className={`block h-2.5 w-2.5 rounded-full ${farben.dot}`} />
+          </span>
         </button>
       </div>
     </header>

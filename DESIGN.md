@@ -60,7 +60,7 @@ Drei Quellen, mit unterschiedlicher Belastbarkeit:
 | P11 | Zwei Flächen, die sich zu ähnlich sind, werden auseinandergezogen. | Morphe: `CardSeparation = 0.15f`. Vordergrund, der auf dem Hintergrund „fast" liegt, wirkt unsauber statt dezent. | Test | gilt nicht – `page`/`surface`/`raised` liegen nah beieinander, kein Test zieht sie auseinander (§15.7 D5) |
 | P12 | Akzentfarben werden nicht satt auf Flächen gelegt, sondern abgetönt. | Morphe: Deckkraft `0,35`/`0,55` im Dunkeln, `0,6`/`0,72` im Hellen – je nach Auswahlzustand. | Review | entfällt – keine getönten Auswahlflächen |
 | P13 | Dunkel und hell werden über Variablen gebaut, nie über `dark:`-Klassen. | `prio` ist heute bewusst nur dunkel (`src/index.css`). Variablen kosten jetzt fast nichts und machen den zweiten Modus später zu einer Datei statt zu einem Rewrite jeder Klasse. | Test | gilt – **0** `dark:`-Klassen in `src`, alles über Variablen |
-| P14 | Farbe ist nie der einzige Träger einer Information. | Zustand braucht zusätzlich Form, Symbol oder Text – sonst ist er für rund jeden Zwölften nicht vorhanden. | Review | gilt – Zustand trägt immer Text oder Form (Sync-Anzeige nennt ihn, Erinnerungen haben Symbol und Text) |
+| P14 | Farbe ist nie der einzige Träger einer Information. | Zustand braucht zusätzlich Form, Symbol oder Text – sonst ist er für rund jeden Zwölften nicht vorhanden. | Review | gilt – die Sync-Anzeige nennt den Zustand; seit D1/D2 trägt der Punkt in der App-Leiste zusätzlich die Zahl der wartenden Änderungen bzw. ein „!“ |
 
 ## 3 Typografie
 
@@ -70,8 +70,8 @@ Drei Quellen, mit unterschiedlicher Belastbarkeit:
 | P16 | Rollen statt Pixel: `label`, `body`, `title`, `heading`. | Bauteile sollen „Titel" sagen, nicht „20 px". Dann ist eine Skalenänderung eine Änderung an einer Stelle. | Test | gilt – Test |
 | P17 | Zeilenhöhe skaliert mit der Größe; Fließtext bekommt 1,4–1,6. | Morphe pinnt 24 sp bei 16 sp, also 1,5. | Review | gilt – Zeilenhöhen 1,4–1,5 aus `--text-*--line-height` |
 | P18 | Hierarchie entsteht aus Gewicht, Größe und Dämpfung – nicht aus Farbe allein. | Wer Hierarchie nur über Farbe macht, verliert sie im Monochrommodus und bei Farbsehschwäche. | Review | gilt – Größe, Gewicht und Dämpfung (`ink-strong`…`ink-dim`) statt Farbe allein |
-| P19 | Zahlen, die sich ändern, stehen in fester Breite. | Zähler, Zeiten und Datum springen sonst beim Umschalten. `font-variant-numeric: tabular-nums`. | Review | gilt nicht – **0** `tabular-nums`; Zähler und Datum springen beim Wechsel (§15.7 D2) |
-| P20 | Zeilenlänge wird begrenzt. | Zu breite Textspalten liest niemand gern; auf dem Tablet betrifft das `prio` direkt. | Review | gilt nicht – Textspalten haben in der breiten Ansicht keinen Deckel (§15.7 D8) |
+| P19 | Zahlen, die sich ändern, stehen in fester Breite. | Zähler, Zeiten und Datum springen sonst beim Umschalten. `font-variant-numeric: tabular-nums`. | Review | gilt – `numeric` aus `styles.ts` an allen sechs Stellen, die Zahlen zeigen (§15.7 D2) |
+| P20 | Zeilenlänge wird begrenzt. | Zu breite Textspalten liest niemand gern; auf dem Tablet betrifft das `prio` direkt. | Review | gilt – der Aufgabenbereich ist auf `max-w-2xl` gedeckelt (§15.7 D8) |
 | P21 | Text skaliert mit den Systemeinstellungen. | `rem` statt `px`. Morphe behandelt das ausführlich (`theme/UiScale.kt`, 0,75–1,25 in 0,05-Schritten) – inklusive des Falls, dass die nichtlineare Schriftskalierung ab Android 14 erhalten bleiben muss. | Test | gilt – `rem` durchgehend, **0** px-Klassen; Test gegen px-Schrift |
 
 ## 4 Raum und Layout
@@ -79,10 +79,10 @@ Drei Quellen, mit unterschiedlicher Belastbarkeit:
 | # | Prinzip | Begründung | Durchsetzung | Stand |
 | --- | --- | --- | --- | --- |
 | P22 | Abstände kommen aus einem Raster, meist 4 oder 8 px. | Ein Raster ist der billigste Weg zu „das sieht aufgeräumt aus". | Test | gilt – nur Tailwinds Raster, **0** willkürliche px/rem-Werte |
-| P23 | Der Inhalt hat eine Maximalbreite. | Morphe: `ContentMaxWidth = 560.dp` – „so a bar under one lines up with its cards". Ohne Deckel zerfällt eine Liste auf einem breiten Bildschirm. | Review | gilt nicht – kein Inhaltsdeckel in der breiten Ansicht; alle `max-w-*` sitzen in Blättern und der Anmeldung (§15.7 D8) |
+| P23 | Der Inhalt hat eine Maximalbreite. | Morphe: `ContentMaxWidth = 560.dp` – „so a bar under one lines up with its cards". Ohne Deckel zerfällt eine Liste auf einem breiten Bildschirm. | Review | gilt – `max-w-2xl` (672 px) und zentriert; Sichtprüfung bei 1600 px (§15.7 D8) |
 | P24 | Nähe gruppiert: Zusammengehöriges steht enger beieinander als Getrenntes. | Abstand ist die stärkste Gruppierung – stärker als jede Trennlinie, weil er nichts kostet. | Review | gilt – Gruppierung über Abstand (`space-y-*`, `gap-*`), Trennlinien nur an einer Stelle |
 | P25 | Im Zweifel mehr Luft. | Großzügigkeit wirkt hochwertig und ist die billigste Politur. Enge wirkt nach Fehler. | Review | gilt – großzügige Polsterungen (`card`, `emptyState`) |
-| P26 | Trefferflächen sind mindestens 24 × 24 CSS px, Ziel sind 44–48. | WCAG 2.2, 2.5.8 verlangt 24 × 24 (AA). Morphe setzt `MinTouchTarget = 48.dp` und `TallTouchTarget = 52.dp` für Zeilen, „that carry an action rather than merely allow one". | Test | gilt nicht – Ziel 44–48 px verfehlt: `md` und `icon` sind rund 36 px hoch (AA mit 24 px erfüllt) – §15.7 D4 |
+| P26 | Trefferflächen sind mindestens 24 × 24 CSS px, Ziel sind 44–48. | WCAG 2.2, 2.5.8 verlangt 24 × 24 (AA). Morphe setzt `MinTouchTarget = 48.dp` und `TallTouchTarget = 52.dp` für Zeilen, „that carry an action rather than merely allow one". | Test | gilt – `icon` 44 px, Blockknopf 44, Zeilen 44–48, `md` 40; `sm` bewusst 32 für dichte Kopfzeilen (AA überall) – §15.7 D4 |
 | P27 | Die Trefferfläche ist nicht die sichtbare Fläche. | Ein kleines Symbol darf ein großes Ziel haben; das ist Polsterung, kein Layout. | Review | gilt – Symbolknöpfe tragen Polsterung (`p-2`), das Ziel ist größer als das Zeichen |
 
 ## 5 Form, Tiefe, Material
@@ -102,7 +102,7 @@ Drei Quellen, mit unterschiedlicher Belastbarkeit:
 | --- | --- | --- | --- | --- |
 | P34 | Jeder Bildschirm hat vier Zustände: leer, lädt, Fehler, voll. Alle vier werden entworfen. | Der Ruhezustand mit Daten ist der einzige, den ein Screenshot zeigt – und der einzige, der selten schiefgeht. | Review | gilt nicht – vier Zustände sind da, aber „lädt" ist eine Textzeile, und die Leerzustände laden nicht ein (P36) – §15.7 D6 |
 | P35 | Skelette tragen die Geometrie des echten Inhalts. | Morphe baut die Platzhalterzeilen auf dieselben Höhen wie Titel und Statuszeile, „so the card does not jump". Ein Skelett anderer Größe verursacht genau das Springen, das es verhindern soll. | Review | gilt nicht – **0** Skelette (§15.7 D6) |
-| P36 | Der Leerzustand sagt, was zu tun ist. | „Keine Aufgaben" ist eine Feststellung, „Tippe auf +, um die erste Aufgabe anzulegen" ist eine Einladung. | Review | gilt nicht – alle sechs Leerzustände sind Feststellungen („Noch keine Aufgaben in dieser Liste.") – §15.7 D1 |
+| P36 | Der Leerzustand sagt, was zu tun ist. | „Keine Aufgaben" ist eine Feststellung, „Tippe auf +, um die erste Aufgabe anzulegen" ist eine Einladung. | Review | gilt – `src/ui/emptyTexts.ts`, jede der sechs Stellen endet mit dem nächsten Schritt (§15.7 D1) |
 | P37 | Der Fehlerzustand sagt, was zu tun ist – nicht, was schiefging. | Technische Ursachen gehören ins Log, nicht in die Oberfläche. | Review | gilt – Meldungen nennen den nächsten Schritt („Bitte eine E-Mail-Adresse angeben.", „Bitte neu anmelden.") |
 | P38 | Deaktiviert ist eine Deckkraft, kein Grauton. | Morphe nutzt `0.38` – Materials Wert für „vorhanden, aber außer Reichweite". Ein handgewähltes Grau bricht den Kontrast zur Umgebung. | Test | gilt – `disabled:opacity-50` in `buttonBase`: eine Deckkraft, kein Grauton |
 | P39 | Zerstörung fragt nach – oder ist rückgängig zu machen. | `prio` hat beides (`UndoProvider`, Soft Delete). Rückgängig ist die bessere Hälfte, weil es den Fluss nicht unterbricht. | Test | gilt – Rückgängig-Leiste und Bestätigungsdialoge, E2E-geprüft |
@@ -143,11 +143,11 @@ Drei Quellen, mit unterschiedlicher Belastbarkeit:
 
 | # | Prinzip | Begründung | Durchsetzung | Stand |
 | --- | --- | --- | --- | --- |
-| P57 | Eine Information, eine Formulierung, eine Quelle. | Steht so in `AGENTS.md`; `prio` löst es mit gemeinsamen Formatierungsfunktionen (`formatDueLabel` in `src/ui/datetime.ts`). | Test | gilt nicht – gemeinsame Formatierer ja, aber zwei Leerzustandstexte stehen wörtlich doppelt – §15.7 D1 |
+| P57 | Eine Information, eine Formulierung, eine Quelle. | Steht so in `AGENTS.md`; `prio` löst es mit gemeinsamen Formatierungsfunktionen (`formatDueLabel` in `src/ui/datetime.ts`). | Test | gilt – die Leerzustände kommen aus `emptyTexts.ts`; der gemeinsame Satz ist in beiden Ansichten derselbe, geprüft (§15.7 D1) |
 | P58 | Knöpfe benennen die Handlung. | „Liste löschen" statt „OK". Der Nutzer soll den Knopf nicht lesen müssen, um zu wissen, was er tut. | Review | gilt – kein „OK/Ja/Abbrechen"; jeder Knopf benennt die Handlung |
 | P59 | Ein Platzhalter ist kein Label. | Er verschwindet, sobald getippt wird – genau dann, wenn die Information gebraucht wird. | Review | gilt – Platzhalter ergänzen, nie ersetzen; jedes Feld hat eine Beschriftung, notfalls `sr-only` |
 | P60 | Fehlermeldungen sind sachlich und enden mit einem Schritt. | Wer schimpft, wird nicht gelesen. | Review | gilt – Meldungen sind sachlich und enden mit einem Schritt |
-| P61 | Text wird nicht abgeschnitten, ohne dass der volle Text erreichbar ist. | Morphe kürzt lange App-Namen mit Auslassung und legt den vollen Namen in den Dialog. | Review | gilt nicht – 14-mal `truncate`; der Untertitel im Blatt ist gekürzt und nirgends vollständig erreichbar – §15.7 D8 |
+| P61 | Text wird nicht abgeschnitten, ohne dass der volle Text erreichbar ist. | Morphe kürzt lange App-Namen mit Auslassung und legt den vollen Namen in den Dialog. | Review | gilt – Blatt-Untertitel und Listentitel tragen den vollen Text als `title`; Aufgaben und Listen öffnen ihre Detailansicht (§15.7 D8) |
 
 ## 11 Zwei Ansichten (prio-spezifisch)
 
@@ -297,20 +297,22 @@ offene Befunde** ergeben; sie stehen als D1–D8 und sind der nächste Arbeitsvo
 
 Die Prinzipien aus §1–14 wurden am 07.10.2026 gegen den heutigen Code geprüft –
 jedes einzelne, mit nachgemessenen Zahlen (Spalte **Stand** in den Tabellen
-oben). Ergebnis: **39 von 65 gelten**, 8 entfallen (die App
-animiert kaum, hat keine Nutzerfarben und keine Verläufe), **18 gelten
-nicht**. Sie stehen hier als Befunde; die übrigen sind damit abgehakt.
+oben). Ergebnis: 39 von 65 galten sofort, 8 entfallen (die App animiert kaum,
+hat keine Nutzerfarben und keine Verläufe), 18 galten nicht. Die 18 stehen
+hier als Befunde – **die ersten vier sind inzwischen erledigt** (D1, D2, D4,
+D8), dazu trägt die Statusanzeige in der App-Leiste ihre Aussage jetzt auch in
+Form und Zahl statt nur in Farbe (P14).
 
 | # | Befund | Ort | Beleg | Aufwand | Stand |
 | --- | --- | --- | --- | --- | --- |
-| D1 | Leerzustände laden nicht ein – und stehen doppelt | `TaskPanel.tsx:181`, `mobile/MobileTaskList.tsx:61`, `Sidebar.tsx:84`, `mobile/MobileDrawer.tsx:153`, `SectionsPanel.tsx:69`, `SharePanel.tsx:127` | sechs Feststellungen („Noch keine …") statt einer Einladung; zwei davon wörtlich zweimal (P36, P57) | S | offen |
-| D2 | Zahlen mit wechselnder Breite | Zähler „N Änderungen warten", Fälligkeitsdatum | **0** `tabular-nums` im ganzen Projekt; Zähler und Datum springen beim Wechsel (P19) | S | offen |
+| D1 | Leerzustände laden nicht ein – und stehen doppelt | `src/ui/emptyTexts.ts` | **erledigt:** eine Quelle für beide Ansichten (`leerAufgaben`, `leerListen`, `LEER_BEREICHE`, `LEER_MITGLIEDER`), jede endet mit dem nächsten Schritt; `tests/unit/emptyTexts.test.ts` prüft Einladung und gemeinsamen Satz | S | erledigt |
+| D2 | Zahlen mit wechselnder Breite | `src/ui/styles.ts` (`numeric`) | **erledigt:** `numeric` als Konstante, angewandt an sechs Stellen (Sync-Anzeige breit und im Menü, Zähler breit und mobil, Fälligkeit, Erinnerungen); `uiConventions` hält fest, dass `tabular-nums` nur von dort kommt | S | erledigt |
 | D3 | 13 handgebaute Knöpfe umgehen die Bausteine | `Sidebar`, `mobile/MobileAppBar` (2), `mobile/MobileDrawer`, `mobile/MobileTaskList`, `mobile/MobileWorkspace`, `SectionHeader`, `TaskDescription`, `MoveTaskSheet`, `ListIconPicker`, `AuthScreen` | sie tragen weder `focusRing` noch die Größenskala; `IconButton` erzwingt `aria-label`, hier gilt das nicht (P4, P52, P53) | M | offen |
-| D4 | Bedienziele unter der Zielgröße | `buttonSizes` in `src/ui/styles.ts` | `md` und `icon` sind rund 36 px hoch; Ziel 44–48, AA mit 24 px erfüllt (P26) | S | offen |
+| D4 | Bedienziele unter der Zielgröße | `buttonSizes` in `src/ui/styles.ts` | erledigt/entschieden: `icon` 36 → **44 px**, `md` 36 → 40 px, Blockknopf 44, Zeilen 44–48; `sm` bleibt **bewusst** 32 px für dichte Kopfzeilen (AA mit 24 px überall erfüllt) | S | entschieden |
 | D5 | Kontrast wird nirgends gerechnet | `src/index.css` (`@theme`), `tests/` | kein Kontrastrechner und keine Zusicherung über 4,5:1 / 3:1; `page`, `surface` und `raised` liegen nah beieinander (P9, P10, P11) | M | offen |
 | D6 | Die vier Zustände sind nur halb entworfen | kein Skelett (`animate-pulse` **0**), Ladezustand ist eine Textzeile | P34, P35 | S | offen |
 | D7 | Bewegungsreduktion und Haptik fehlen | `prefers-reduced-motion` **0**, Haptik **0** | zwei Farbübergänge, also geringe Wirkung; auf Android ganz ohne haptische Rückmeldung (P46, P48, P56) | S | offen |
-| D8 | Kein Inhaltsdeckel, gekürzter Text ohne Zugang | breite Ansicht (kein `max-w-*` im Inhalt), `src/ui/components/Sheet.tsx:96` | Textspalten laufen auf einem breiten Schirm durch; der Untertitel im Blatt ist gekürzt und nirgends vollständig erreichbar (P20, P23, P61) | S | offen |
+| D8 | Kein Inhaltsdeckel, gekürzter Text ohne Zugang | `src/ui/TaskPanel.tsx`, `src/ui/components/Sheet.tsx` | **erledigt:** der Aufgabenbereich ist auf `max-w-2xl` gedeckelt und zentriert; Blatt-Untertitel und Listentitel tragen den vollen Text als `title` | S | erledigt |
 
 ## Quellen
 

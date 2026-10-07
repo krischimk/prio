@@ -93,7 +93,14 @@ export function Sheet({
             {leading}
             <div className="min-w-0">
               <h2 className="break-words text-body font-medium text-ink">{title}</h2>
-              {subtitle ? <p className="truncate text-meta text-ink-faint">{subtitle}</p> : null}
+              {subtitle ? (
+                <p
+                  className="truncate text-meta text-ink-faint"
+                  title={typeof subtitle === 'string' ? subtitle : undefined}
+                >
+                  {subtitle}
+                </p>
+              ) : null}
             </div>
           </div>
           <IconButton aria-label={closeLabel ?? 'Schließen'} onClick={onClose} layout="shrink-0">

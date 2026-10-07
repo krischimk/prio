@@ -3,7 +3,7 @@ import { formatDueLabel } from './datetime'
 import { BellIcon, BellOffIcon, RepeatIcon } from './icons'
 import { describeRecurrence } from './recurrence'
 import { describeReminders } from './reminder'
-import { attentionText, dangerText, mutedText } from './styles'
+import { attentionText, dangerText, mutedText, numeric } from './styles'
 
 export interface TaskFactsProps {
   task: LocalTask
@@ -44,7 +44,7 @@ export function TaskFacts({ task, currentUserId, dichte = 'breit' }: TaskFactsPr
       </span>
 
       {due ? (
-        <span className={`${abstand} block text-meta ${due.overdue ? dangerText : mutedText}`}>
+        <span className={`${abstand} block text-meta ${numeric} ${due.overdue ? dangerText : mutedText}`}>
           {due.text}
         </span>
       ) : null}
@@ -59,7 +59,7 @@ export function TaskFacts({ task, currentUserId, dichte = 'breit' }: TaskFactsPr
       {erinnerungen.map((erinnerung, index) => (
         <span
           key={index}
-          className={`${abstand} flex items-center gap-1 text-meta ${
+          className={`${abstand} flex items-center gap-1 text-meta ${numeric} ${
             erinnerung.afterDue && !erinnerung.muted ? attentionText : mutedText
           }`}
         >
