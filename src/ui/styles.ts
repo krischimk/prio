@@ -89,16 +89,10 @@ export function buttonClass(
   return [buttonBase, buttonSizes[size], buttonVariants[variant], extra].filter(Boolean).join(' ')
 }
 
-export const primaryButton = buttonClass('primary')
 
-export const secondaryButton = buttonClass('secondary')
 
-export const ghostButton = buttonClass('ghost')
 
-export const dangerButton = buttonClass('danger')
 
-/** Symbolknopf: Schließen, Menü, Synchronisation. */
-export const iconButton = buttonClass('icon', 'icon')
 
 export const input = `w-full rounded-control border border-line-strong bg-surface px-3 py-2 text-body text-ink placeholder:text-ink-faint ${focusRing}`
 

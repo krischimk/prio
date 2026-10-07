@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
 import type { LocalTask } from '../domain/types'
-import { buttonClass } from './styles'
+
 import { UndoContext, UNDO_VISIBLE_MS, type UndoContextValue } from './undoContext'
+import { Button } from './components/Button'
 
 /**
  * Zeigt nach dem Abhaken kurz eine Leiste mit „Rückgängig“.
@@ -68,15 +69,15 @@ export function UndoProvider({ children }: { children: ReactNode }) {
             <span className="min-w-0 flex-1 truncate text-body text-ink">
               „{offer.title}“ erledigt
             </span>
-            <button
-              type="button"
-              className={buttonClass('primary', 'sm', 'shrink-0')}
+            <Button
+             
+              variant="primary" size="sm" layout="shrink-0"
               onClick={() => {
                 void undo()
               }}
             >
               Rückgängig
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}

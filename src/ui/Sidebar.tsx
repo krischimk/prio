@@ -2,8 +2,9 @@ import { useState, type FormEvent } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
 import type { LocalList } from '../domain/types'
 import { ListIcon } from './ListIcon'
-import { errorMessage, input, primaryButton } from './styles'
+import { errorMessage, input } from './styles'
 import { appBackground } from './styles'
+import { Button } from './components/Button'
 
 /**
  * Seitenleiste mit allen sichtbaren Listen.
@@ -95,9 +96,9 @@ export function Sidebar({
           placeholder="Neue Liste"
           className={input}
         />
-        <button type="submit" className={`${primaryButton} w-full`} disabled={creating || name.trim().length === 0}>
+        <Button type="submit" variant="primary" layout="w-full" disabled={creating || name.trim().length === 0}>
           Liste anlegen
-        </button>
+        </Button>
         {error ? (
           <p role="alert" className={errorMessage}>
             {error}

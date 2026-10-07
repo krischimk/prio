@@ -2,7 +2,8 @@ import { useState, type FormEvent } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
 import { parseSections, SECTIONS_MAX, SECTION_NAME_MAX } from '../domain/sections'
 import type { LocalList } from '../domain/types'
-import { buttonClass, errorMessage, input, primaryButton, mutedText } from './styles'
+import { errorMessage, input, mutedText } from './styles'
+import { Button } from './components/Button'
 
 /**
  * Bereiche einer Liste verwalten: anlegen, umbenennen, löschen.
@@ -86,43 +87,43 @@ export function SectionsPanel({ list }: { list: LocalList }) {
                     aria-label="Neuer Name des Bereichs"
                     className={`${input} min-w-40 flex-1`}
                   />
-                  <button type="submit" className={buttonClass('primary', 'sm')}>
+                  <Button type="submit" variant="primary" size="sm">
                     Speichern
-                  </button>
-                  <button
-                    type="button"
-                    className={buttonClass('ghost', 'sm')}
+                  </Button>
+                  <Button
+                   
+                    variant="ghost" size="sm"
                     onClick={() => setUmbenennen(null)}
                   >
                     Abbrechen
-                  </button>
+                  </Button>
                 </form>
               ) : (
                 <>
                   <span className="min-w-0 flex-1 truncate text-body text-ink">
                     {section.name}
                   </span>
-                  <button
-                    type="button"
-                    className={buttonClass('ghost', 'sm')}
+                  <Button
+                   
+                    variant="ghost" size="sm"
                     onClick={() => {
                       setUmbenennen(section.id)
                       setNeuerName(section.name)
                     }}
                   >
                     Umbenennen
-                  </button>
-                  <button
-                    type="button"
+                  </Button>
+                  <Button
+                   
                     // Der Name steht im Knopf, damit klar ist, was verschwindet.
                     aria-label={`Bereich löschen: ${section.name}`}
-                    className={buttonClass('danger', 'sm')}
+                    variant="danger" size="sm"
                     onClick={() => {
                       void repositories.deleteListSection(list.id, section.id)
                     }}
                   >
                     Löschen
-                  </button>
+                  </Button>
                 </>
               )}
             </li>
@@ -139,9 +140,9 @@ export function SectionsPanel({ list }: { list: LocalList }) {
           aria-label="Neuer Bereich"
           className={`${input} min-w-40 flex-1`}
         />
-        <button type="submit" className={primaryButton} disabled={speichert}>
+        <Button type="submit" variant="primary" disabled={speichert}>
           Bereich anlegen
-        </button>
+        </Button>
       </form>
 
       {fehler !== null ? <p role="alert" className={errorMessage}>{fehler}</p> : null}

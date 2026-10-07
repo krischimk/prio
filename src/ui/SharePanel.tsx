@@ -3,7 +3,8 @@ import { useWorkspace } from '../app/useWorkspace'
 import { useMembers, useShareContacts } from '../app/hooks'
 import { suggestShareContacts } from '../domain/shareContacts'
 import type { LocalList } from '../domain/types'
-import { cardSoft, buttonClass, errorMessage, input, primaryButton, successMessage } from './styles'
+import { cardSoft, errorMessage, input, successMessage } from './styles'
+import { Button } from './components/Button'
 
 /**
  * Teilen einer Liste über die E-Mail-Adresse eines registrierten Nutzers.
@@ -77,9 +78,9 @@ export function SharePanel({ list, currentUserId }: { list: LocalList; currentUs
           required
           className={`${input} flex-1 min-w-48`}
         />
-        <button type="submit" className={primaryButton} disabled={busy}>
+        <Button type="submit" variant="primary" disabled={busy}>
           Freigeben
-        </button>
+        </Button>
       </form>
 
       {vorschlaege.length > 0 ? (
@@ -95,13 +96,13 @@ export function SharePanel({ list, currentUserId }: { list: LocalList; currentUs
                   Ein zweiter Klick auf „Freigeben" bestätigt. So kann ein
                   versehentlicher Tipp niemandem Zugriff geben.
                 */}
-                <button
-                  type="button"
-                  className={buttonClass('ghost', 'sm')}
+                <Button
+                 
+                  variant="ghost" size="sm"
                   onClick={() => setEmail(contact.email)}
                 >
                   {contact.email}
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
@@ -132,15 +133,15 @@ export function SharePanel({ list, currentUserId }: { list: LocalList; currentUs
                 <span className="truncate font-mono text-ink-soft" title={member.user_id}>
                   Mitglied {member.user_id.slice(0, 8)}
                 </span>
-                <button
-                  type="button"
-                  className={buttonClass('danger', 'sm')}
+                <Button
+                 
+                  variant="danger" size="sm"
                   onClick={() => {
                     void repositories.removeMember(list.id, member.user_id)
                   }}
                 >
                   Entfernen
-                </button>
+                </Button>
               </li>
             ))}
           </ul>

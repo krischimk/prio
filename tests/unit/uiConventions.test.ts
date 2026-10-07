@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { join, relative } from 'node:path'
+import { join, relative, sep } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 /**
@@ -155,25 +155,37 @@ describe('UI-Konventionen', () => {
    * (`buttonClass('ghost', 'sm')`), nicht angehängt. `extra` bleibt für Layout
    * da – Breite, Außenabstand, Ausrichtung –, und das ist hier erlaubt.
    */
-  it('hängt Knopfgrößen und -farben nicht an eine fertige Konstante', () => {
-    const namen =
-      'button|primaryButton|secondaryButton|ghostButton|ghostButtonMuted|dangerButton|iconButton|iconButtonMuted'
-    const verboten =
-      '(?:p|px|py|pt|pb|pl|pr)-[0-9.]|rounded(?:-[a-z0-9]+)?|text-(?:xs|sm|base|lg|xl|2xl)|bg-[a-z]+-[0-9]|text-(?:neutral|indigo|red|emerald|amber|white)-[0-9]|border-[a-z]+-[0-9]'
+  it('baut Knöpfe nur in den Bausteinen zusammen', () => {
+    // `buttonClass` ist die Werkbank der Bausteine (`src/ui/components/`). In
+    // einer Komponente heißt es `<Button variant="ghost" size="sm">`; die
+    // Zeichenkette dort wieder zusammenzusetzen war genau der Fehler, der 22
+    // „kompakte" Knöpfe ohne Wirkung erzeugt hat.
     const treffer = findMatches(
-      sourceFiles.filter((file) => file !== STYLES_FILE),
-      new RegExp('\\$\\{(?:' + namen + ')\\}\\s+[^`"\']*?(?:' + verboten + ')'),
+      sourceFiles.filter((file) => !file.includes(`${sep}components${sep}`) && file !== STYLES_FILE),
+      /buttonClass\s*\(/,
     )
 
     expect(
       treffer,
-      'Größe und Art kommen aus `buttonClass(variante, groesse)` – angehängte Klassen wirken nicht (siehe styles.ts).',
+      'In Komponenten den Baustein benutzen (src/ui/components/Button, IconButton); `buttonClass` gehört in die Bausteine.',
+    ).toEqual([])
+  })
+
+  it('nutzt `layout` nur für Layout, nicht für Größe oder Farbe', () => {
+    const treffer = findMatches(
+      sourceFiles,
+      /layout="[^"]*(?:(?:p|px|py|pt|pb|pl|pr)-[0-9.]|rounded(?:-[a-z0-9]+)?|text-(?:xs|sm|base|lg|xl)|bg-[a-z]+-[0-9]|text-[a-z]+-[0-9]|border-[a-z]+-[0-9])/,
+    )
+
+    expect(
+      treffer,
+      'Größe und Art kommen aus `variant`/`size`; `layout` ist für Breite, Außenabstand und Ausrichtung da.',
     ).toEqual([])
   })
 
   /**
    * `text-[11px]` skaliert nicht mit der Systemschrift – es ist ein Pixelwert.
-   * Elf Pixel gab es an vier Stellen (Abschnittskopf, „Mehr“, Code-Chip, mobiler
+   * Elf Pixel gab es an vier Stellen (Abschnittskopf, „Mehr", Code-Chip, mobiler
    * Aufgabentitel); sie gehen in `text-label` bzw. `text-title` auf.
    */
   it('nutzt für Schriftgrößen die Rollen statt willkürlicher Werte', () => {

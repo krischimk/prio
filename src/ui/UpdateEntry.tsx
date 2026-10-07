@@ -1,7 +1,8 @@
 import { useUpdate } from './useUpdate'
 import { Markdown } from './Markdown'
 import { describeUpdateState, type UpdateTone } from '../updates/updateStatus'
-import { buttonClass, attentionText, dangerText, mutedText, primaryButton, secondaryButton, statusTone } from './styles'
+import { attentionText, dangerText, mutedText, statusTone } from './styles'
+import { Button } from './components/Button'
 
 /**
  * Update-Status mit passender Aktion – ohne eigenes Fenster.
@@ -54,16 +55,16 @@ export function UpdateEntry() {
             </details>
           ) : null}
 
-          <button
-            type="button"
-            className={`${primaryButton} mt-3 w-full`}
+          <Button
+           
+            variant="primary" layout="mt-3 w-full"
             onClick={() => {
               void install()
             }}
             disabled={installing}
           >
             {installing ? 'Wird geladen …' : canInstall ? 'Installieren' : 'Herunterladen'}
-          </button>
+          </Button>
 
           {!canInstall ? (
             <p className="mt-2 text-meta text-ink-faint">
@@ -72,16 +73,16 @@ export function UpdateEntry() {
           ) : null}
         </>
       ) : (
-        <button
-          type="button"
-          className={`${secondaryButton} mt-3 w-full`}
+        <Button
+         
+          variant="secondary" layout="mt-3 w-full"
           onClick={() => {
             void check()
           }}
           disabled={state.status === 'checking'}
         >
           Nach Updates suchen
-        </button>
+        </Button>
       )}
 
       {installError ? (
@@ -92,15 +93,15 @@ export function UpdateEntry() {
 
       {/* Unsichtbar für die Oberfläche, aber im Fehlerfall hilfreich. */}
       {state.status === 'failed' ? (
-        <button
-          type="button"
-          className={buttonClass('ghost', 'sm', 'mt-2 w-full')}
+        <Button
+         
+          variant="ghost" size="sm" layout="mt-2 w-full"
           onClick={() => {
             void check()
           }}
         >
           Erneut versuchen
-        </button>
+        </Button>
       ) : null}
     </div>
   )

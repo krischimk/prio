@@ -43,7 +43,7 @@ Drei Quellen, mit unterschiedlicher Belastbarkeit:
 | # | Prinzip | Begründung | Durchsetzung |
 | --- | --- | --- | --- |
 | P1 | Jeder visuelle Wert ist benannt und liegt an genau einer Stelle. | S | erledigt: der Test liest ganz `src` (fand dabei „offene Aufgabe“ in einem Kommentar – Regel auf Zeichenketten eingegrenzt) |
-| P2 | Skalen statt Einzelwerte: Abstand, Radius, Höhe, Dauer. | S | erledigt: Paletten-, Anhängsel- und Schriftgrößen-Regel, 9 Regeln im Test |
+| P2 | Skalen statt Einzelwerte: Abstand, Radius, Höhe, Dauer. | S | erledigt: 10 Regeln im Test (Palette, Schriftgrößen, Anhängsel, Bausteine, `layout`) plus `tests/unit/components.test.tsx` |
 | P3 | Die Größe eines Elements kodiert sein Gewicht. | Morphe begründet seine Knopfhöhen im Kommentar: Pille `36/40` sitzt in einer Kartenzeile, Glas-Tab `48` ist eine Registerkarte, Dialog-Knopf `52` ist der Grund, warum es den Dialog gibt. | Review |
 | P4 | Bauteile verzweigen nicht auf einen Modus; dazwischen liegt eine Vermittlerschicht. | Morphe: „Component code routes through here instead of branching on `LocalThemeTraits` so that a new override lands in a single place." `outlines = false` nimmt jeden Rahmen der App auf einmal weg. | Test |
 | P5 | Jeder Wert trägt seine Begründung im Code. | Ein Kommentar, der den Code wiederholt, ist Rauschen; einer, der das Warum festhält, ist das Design-Dokument. Morphe erklärt die 8er-Deckelung, die vier Rahmenstopps, die eine Blend-Schicht. Deckt sich mit „welcher Fehler war das?" aus `AGENTS.md`. | Review |
@@ -226,7 +226,7 @@ Arbeitsvorrat, kein Wunschzettel. Aufwand: **S** ein Nachmittag, **M** ein Tag,
 
 | # | Befund | Ort | Maß | Aufwand | Stand |
 | --- | --- | --- | --- | --- | --- |
-| A1 | Keine Bausteine, nur Klassenketten | `src/ui/styles.ts:6` | 82 `<button>`, 228 Verwendungen der Knopf-Konstante, drei konkurrierende „kleiner Knopf"-Rezepte | M | teils: `buttonClass(variante, groesse)` steht, die Bauteile fehlen noch |
+| A1 | Keine Bausteine, nur Klassenketten | `src/ui/styles.ts:6` | 82 `<button>`, 228 Verwendungen der Knopf-Konstante, drei konkurrierende „kleiner Knopf"-Rezepte | M | erledigt: `Button`/`IconButton` in `src/ui/components/`; `buttonClass` nur noch dort, Größe/Art als Eigenschaft, Layout über `layout` (63 + 9 Aufrufe umgestellt, 6 Tests). Die übrigen `<button>` sind eigenständige Flächen (Zeilen, Kacheln, Plus-Knopf) |
 | A2 | Keine Farb-, Raum- und Typo-Tokens | `src/index.css`, `src/ui/styles.ts` | **234** rohe Farbklassen in **26** Dateien; 7 Schriftgrößen (5 in `px`), 8 Polster-, 6 Radius-, 9 Abstandswerte | L | erledigt für Farbe, Schrift und Radius (Rollen in `@theme`, 321 Stellen umgestellt); Abstände bleiben Tailwinds 4-px-Skala, Rollen dafür kommen mit den Bausteinen |
 | A3 | Kartenfläche siebenfach statt einmal | `src/ui/styles.ts:56` (`card` – **unbenutzt**) | 7 Ausprägungen in 5 Dateien, zwei Deckkräfte, drei Polsterungen | S | erledigt: `card`, `cardSoft`, `emptyState` – der tote Token ist benutzt |
 | A4 | Dialoge sind fünfmal von Hand gebaut | `RestoreTasksPanel`, `ListSettingsSheet`, `MoveTaskSheet`, `TaskDetailSheet`, `MobileDrawer` | 4 Rahmen, 4 Schleier, 9 unbenannte Z-Ebenen, 1 von 4 mit Escape, keine Fokusführung | M | offen |
@@ -271,7 +271,7 @@ Arbeitsvorrat, kein Wunschzettel. Aufwand: **S** ein Nachmittag, **M** ein Tag,
 | # | Befund | Ort | Maß | Aufwand | Stand |
 | --- | --- | --- | --- | --- | --- |
 | P1 | Der Architekturtest liest nur `src/ui` | `tests/unit/uiConventions.test.ts:30` | `src/App.tsx` (11 rohe Farbklassen) und `WorkspaceProvider` werden nie geprüft | S | erledigt: der Test liest ganz `src` (fand dabei „offene Aufgabe“ in einem Kommentar – Regel auf Zeichenketten eingegrenzt) |
-| P2 | Nichts prüft Rollen, Token, angehängte Klassen oder den toten `card` | dito | die Regeln aus 15.2 sind heute reine Disziplin | S | erledigt: Paletten-, Anhängsel- und Schriftgrößen-Regel, 9 Regeln im Test |
+| P2 | Nichts prüft Rollen, Token, angehängte Klassen oder den toten `card` | dito | die Regeln aus 15.2 sind heute reine Disziplin | S | erledigt: 10 Regeln im Test (Palette, Schriftgrößen, Anhängsel, Bausteine, `layout`) plus `tests/unit/components.test.tsx` |
 | P3 | Kein Test für die Klassifikation in `trackedRepositories` | `tests/` | 27 Zuordnungen, 3 Kategorien, 0 Prüfungen (B3) | S | offen |
 
 ## Quellen

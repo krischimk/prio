@@ -7,8 +7,10 @@ import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../datetime'
 import { RecurrenceSelect } from '../RecurrenceSelect'
 import { SectionSelect } from '../SectionSelect'
 import { ReminderList } from '../ReminderList'
-import { iconButton, buttonClass, appBackground, dangerButton, input, secondaryButton } from '../styles'
+import { appBackground, input } from '../styles'
 import { CloseIcon, MoveIcon, TrashIcon } from '../icons'
+import { Button } from '../components/Button'
+import { IconButton } from '../components/IconButton'
 
 /**
  * Detail- und Bearbeitungsansicht einer Aufgabe.
@@ -117,58 +119,58 @@ export function TaskDetailSheet({
         immer erreichbar; das Löschen fragt weiterhin nach.
       */}
       <header className="safe-top flex min-h-16 shrink-0 items-center gap-2 border-b border-line px-2 py-1">
-        <button
-          type="button"
+        <IconButton
+         
           onClick={onClose}
           aria-label="Schließen"
-          className={iconButton}
+          variant="icon"
         >
           <CloseIcon />
-        </button>
+        </IconButton>
         <h2 className="min-w-0 flex-1 truncate text-title font-medium text-ink">
           {isNew ? 'Neue Aufgabe' : 'Aufgabe'}
         </h2>
 
         {confirmingDelete ? (
           <>
-            <button
-              type="button"
-              className={buttonClass('danger', 'sm')}
+            <Button
+             
+              variant="danger" size="sm"
               onClick={() => {
                 void remove()
               }}
               disabled={busy}
             >
               Wirklich löschen
-            </button>
-            <button
-              type="button"
-              className={buttonClass('secondary', 'sm')}
+            </Button>
+            <Button
+             
+              variant="secondary" size="sm"
               onClick={() => setConfirmingDelete(false)}
             >
               Abbrechen
-            </button>
+            </Button>
           </>
         ) : (
           <>
             {isNew ? null : (
-              <button
-                type="button"
+              <Button
+               
                 aria-label="Aufgabe löschen"
-                className={dangerButton}
+                variant="danger"
                 onClick={() => setConfirmingDelete(true)}
               >
                 <TrashIcon className="h-4 w-4" />
-              </button>
+              </Button>
             )}
-            <button
+            <Button
               type="submit"
               form="task-detail-form"
-              className={buttonClass('primary', 'sm')}
+              variant="primary" size="sm"
               disabled={busy || title.trim().length === 0}
             >
               Speichern
-            </button>
+            </Button>
           </>
         )}
       </header>
@@ -254,31 +256,31 @@ export function TaskDetailSheet({
           />
 
           {task !== null ? (
-            <button
-              type="button"
+            <Button
+             
               onClick={() => {
                 void toggleCompleted()
               }}
               disabled={busy}
-              className={`${secondaryButton} w-full`}
+              variant="secondary" layout="w-full"
             >
               {completed ? 'Als offen markieren' : 'Als erledigt markieren'}
-            </button>
+            </Button>
           ) : null}
         </div>
 
         {canMove ? (
           <div className="space-y-2 border-t border-line px-4 py-4">
-            <button
-              type="button"
-              className={buttonClass('secondary', 'block', 'w-full')}
+            <Button
+             
+              variant="secondary" size="block" layout="w-full"
               onClick={() => {
                 if (task !== null) onRequestMove(task)
               }}
             >
               <MoveIcon className="h-4 w-4" />
               In andere Liste verschieben
-            </button>
+            </Button>
           </div>
         ) : null}
       </form>

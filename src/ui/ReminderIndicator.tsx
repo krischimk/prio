@@ -1,6 +1,7 @@
 import { useWorkspace } from '../app/useWorkspace'
 import { describeReminderState } from '../reminders/reminderStatus'
-import { buttonClass, mutedText, statusTone } from './styles'
+import { mutedText, statusTone } from './styles'
+import { Button } from './components/Button'
 
 /**
  * Zeigt an, ob und wie viele Erinnerungen geplant sind, und bietet das
@@ -15,15 +16,15 @@ export function ReminderIndicator() {
 
   if (canEnable) {
     return (
-      <button
-        type="button"
-        className={buttonClass('primary', 'sm')}
+      <Button
+       
+        variant="primary" size="sm"
         onClick={() => {
           void enableReminders()
         }}
       >
         Erinnerungen aktivieren
-      </button>
+      </Button>
     )
   }
 

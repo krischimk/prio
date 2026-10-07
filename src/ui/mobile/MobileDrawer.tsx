@@ -5,12 +5,14 @@ import { useWorkspace } from '../../app/useWorkspace'
 import { describeReminderState } from '../../reminders/reminderStatus'
 import { describeSyncState } from '../../sync/syncStatus'
 import type { LocalList } from '../../domain/types'
-import { iconButton, errorMessage, input, primaryButton, secondaryButton } from '../styles'
+import { errorMessage, input } from '../styles'
 import { BackendLabel } from '../BackendLabel'
 import { ListIcon } from '../ListIcon'
 import { UpdateEntry } from '../UpdateEntry'
 import { CloseIcon } from '../icons'
 import { appBackground } from '../styles'
+import { IconButton } from '../components/IconButton'
+import { Button } from '../components/Button'
 
 /**
  * Ausklappbares Menü der mobilen Ansicht.
@@ -88,14 +90,14 @@ export function MobileDrawer({
       <aside className={`safe-top safe-bottom absolute inset-y-0 left-0 flex w-80 max-w-[85%] flex-col overflow-y-auto border-r border-line ${appBackground}`}>
         <div className="flex items-center justify-between px-4 pt-3">
           <span className="text-heading font-semibold tracking-tight text-ink-strong">Prio</span>
-          <button
-            type="button"
+          <IconButton
+           
             onClick={onClose}
             aria-label="Menü schließen"
-            className={iconButton}
+            variant="icon"
           >
             <CloseIcon />
-          </button>
+          </IconButton>
         </div>
         <div className="px-4 pb-4">
           <p className="truncate text-meta text-ink-faint" data-testid="drawer-user">
@@ -147,13 +149,13 @@ export function MobileDrawer({
               placeholder="Neue Liste"
               className={input}
             />
-            <button
+            <Button
               type="submit"
-              className={`${primaryButton} w-full`}
+              variant="primary" layout="w-full"
               disabled={creating || name.trim().length === 0}
             >
               Liste anlegen
-            </button>
+            </Button>
             {error ? (
               <p role="alert" className={errorMessage}>
                 {error}
@@ -169,16 +171,16 @@ export function MobileDrawer({
           <p className="text-meta text-ink-muted" data-testid="drawer-sync">
             {sync.text}
           </p>
-          <button
-            type="button"
-            className={`${secondaryButton} mt-2 w-full`}
+          <Button
+           
+            variant="secondary" layout="mt-2 w-full"
             onClick={() => {
               void runSync()
             }}
             disabled={syncing}
           >
             Jetzt synchronisieren
-          </button>
+          </Button>
         </section>
 
         <section className="border-t border-line px-4 py-4" aria-label="Einstellungen">
@@ -187,27 +189,27 @@ export function MobileDrawer({
           </h2>
           {reminders.text ? <p className="mb-2 text-meta text-ink-muted">{reminders.text}</p> : null}
           {reminders.canEnable ? (
-            <button
-              type="button"
-              className={`${secondaryButton} w-full`}
+            <Button
+             
+              variant="secondary" layout="w-full"
               onClick={() => {
                 void enableReminders()
               }}
             >
               Erinnerungen aktivieren
-            </button>
+            </Button>
           ) : null}
           {!reminders.available ? (
             <p className="text-meta text-ink-faint">Erinnerungen sind auf diesem Gerät nicht verfügbar.</p>
           ) : null}
 
-          <button
-            type="button"
-            className={`${secondaryButton} mt-3 w-full`}
+          <Button
+           
+            variant="secondary" layout="mt-3 w-full"
             onClick={onOpenRestore}
           >
             Aufgaben wiederherstellen
-          </button>
+          </Button>
         </section>
 
         <section className="border-t border-line px-4 py-4" aria-label="Updates">
@@ -216,15 +218,15 @@ export function MobileDrawer({
         </section>
 
         <div className="mt-auto border-t border-line px-4 py-4">
-          <button
-            type="button"
-            className={`${secondaryButton} w-full`}
+          <Button
+           
+            variant="secondary" layout="w-full"
             onClick={() => {
               void signOut()
             }}
           >
             Abmelden
-          </button>
+          </Button>
         </div>
       </aside>
     </div>

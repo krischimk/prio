@@ -11,7 +11,8 @@ import { ReminderIndicator } from './ReminderIndicator'
 import { Sidebar } from './Sidebar'
 import { SyncIndicator } from './SyncIndicator'
 import { TaskPanel } from './TaskPanel'
-import { buttonClass, appBackground } from './styles'
+import { appBackground } from './styles'
+import { Button } from './components/Button'
 
 /**
  * Wählt zwischen den beiden Oberflächen.
@@ -59,23 +60,23 @@ function DesktopWorkspace() {
           <div className="flex flex-wrap items-center gap-3">
             <ReminderIndicator />
             <SyncIndicator />
-            <button
-              type="button"
-              className={buttonClass('ghost', 'sm')}
+            <Button
+             
+              variant="ghost" size="sm"
               onClick={() => setRestoreOpen(true)}
             >
               Wiederherstellen
-            </button>
+            </Button>
             {/*
               Ein Knopf statt eines eigenen Fensters: Ist eine Fassung
               verfügbar, wird sie von hier aus gleich installiert. Der Zustand
               steht als Titel bereit (Vorleseprogramme, Mauszeiger).
             */}
-            <button
-              type="button"
+            <Button
+             
               data-testid="update-button"
               title={updateBeschreibung.text}
-              className={buttonClass(updateVerfuegbar ? 'attention' : 'ghost', 'sm')}
+              variant={updateVerfuegbar ? 'attention' : 'ghost'} size="sm"
               disabled={installing || update.status === 'checking'}
               onClick={() => {
                 void (updateVerfuegbar ? install() : check())
@@ -86,16 +87,16 @@ function DesktopWorkspace() {
                 : update.status === 'checking'
                   ? 'Suche …'
                   : 'Nach Updates suchen'}
-            </button>
-            <button
-              type="button"
-              className={buttonClass('ghost', 'sm')}
+            </Button>
+            <Button
+             
+              variant="ghost" size="sm"
               onClick={() => {
                 void signOut()
               }}
             >
               Abmelden
-            </button>
+            </Button>
           </div>
         </header>
 

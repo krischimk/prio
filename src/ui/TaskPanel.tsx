@@ -13,8 +13,9 @@ import { SharePanel } from './SharePanel'
 import { MoveTaskSheet } from './MoveTaskSheet'
 import { TaskComposer } from './TaskComposer'
 import { TaskItem } from './TaskItem'
-import { card, emptyState, buttonClass, input, primaryButton, secondaryButton } from './styles'
+import { card, emptyState, input } from './styles'
 import { formatOpenTasks } from './taskCount'
+import { Button } from './components/Button'
 
 /**
  * Hauptbereich: Aufgaben der ausgewählten Liste.
@@ -87,12 +88,12 @@ export function TaskPanel({
               required
               className={`${input} flex-1 min-w-48`}
             />
-            <button type="submit" className={primaryButton}>
+            <Button type="submit" variant="primary">
               Speichern
-            </button>
-            <button type="button" className={secondaryButton} onClick={() => setRenaming(false)}>
+            </Button>
+            <Button variant="secondary" onClick={() => setRenaming(false)}>
               Abbrechen
-            </button>
+            </Button>
           </form>
         ) : (
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -108,59 +109,59 @@ export function TaskPanel({
               ) : null}
             </div>
             <div className="flex flex-wrap gap-1">
-              <button type="button" className={buttonClass('ghost', 'sm')} onClick={startRenaming}>
+              <Button variant="ghost" size="sm" onClick={startRenaming}>
                 Umbenennen
-              </button>
-              <button
-                type="button"
-                className={buttonClass('ghost', 'sm')}
+              </Button>
+              <Button
+               
+                variant="ghost" size="sm"
                 onClick={() => setIconOpen((offen) => !offen)}
               >
                 Symbol
-              </button>
-              <button
-                type="button"
-                className={buttonClass('ghost', 'sm')}
+              </Button>
+              <Button
+               
+                variant="ghost" size="sm"
                 aria-expanded={sectionsOpen}
                 onClick={() => setSectionsOpen((offen) => !offen)}
               >
                 Bereiche
-              </button>
-              <button
-                type="button"
-                className={buttonClass('ghost', 'sm')}
+              </Button>
+              <Button
+               
+                variant="ghost" size="sm"
                 aria-expanded={shareOpen}
                 onClick={() => setShareOpen((open) => !open)}
               >
                 Teilen
-              </button>
+              </Button>
               {confirmingDelete ? (
                 <>
-                  <button
-                    type="button"
-                    className={buttonClass('danger', 'sm')}
+                  <Button
+                   
+                    variant="danger" size="sm"
                     onClick={() => {
                       void repositories.deleteList(list.id)
                     }}
                   >
                     Wirklich löschen
-                  </button>
-                  <button
-                    type="button"
-                    className={buttonClass('ghost', 'sm')}
+                  </Button>
+                  <Button
+                   
+                    variant="ghost" size="sm"
                     onClick={() => setConfirmingDelete(false)}
                   >
                     Abbrechen
-                  </button>
+                  </Button>
                 </>
               ) : (
-                <button
-                  type="button"
-                  className={buttonClass('danger', 'sm')}
+                <Button
+                 
+                  variant="danger" size="sm"
                   onClick={() => setConfirmingDelete(true)}
                 >
                   Liste löschen
-                </button>
+                </Button>
               )}
             </div>
           </div>

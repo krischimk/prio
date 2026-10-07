@@ -2,7 +2,8 @@ import { useWorkspace } from '../app/useWorkspace'
 import type { LocalList } from '../domain/types'
 import { groupListIcons } from './listIcons'
 import { ListIcon } from './ListIcon'
-import { cardSoft, secondaryButton } from './styles'
+import { cardSoft } from './styles'
+import { Button } from './components/Button'
 
 /**
  * Auswahl des Listensymbols.
@@ -80,9 +81,9 @@ export function ListIconPicker({
       </div>
 
       {list.icon !== null ? (
-        <button type="button" className={secondaryButton} onClick={() => setzen(null)}>
+        <Button variant="secondary" onClick={() => setzen(null)}>
           Symbol entfernen
-        </button>
+        </Button>
       ) : null}
 
       <p className="text-meta text-ink-dim">

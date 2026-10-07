@@ -1,6 +1,7 @@
 import { useWorkspace } from '../app/useWorkspace'
 import { describeSyncState } from '../sync/syncStatus'
-import { buttonClass, statusTone } from './styles'
+import { statusTone } from './styles'
+import { Button } from './components/Button'
 
 /**
  * Statusanzeige der Synchronisation.
@@ -27,16 +28,16 @@ export function SyncIndicator() {
           {text}
         </span>
       </span>
-      <button
-        type="button"
-        className={buttonClass('ghost', 'sm')}
+      <Button
+       
+        variant="ghost" size="sm"
         onClick={() => {
           void runSync()
         }}
         disabled={syncing}
       >
         Jetzt synchronisieren
-      </button>
+      </Button>
     </div>
   )
 }

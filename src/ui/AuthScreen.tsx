@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { useAuth } from '../auth/useAuth'
-import { errorBox, input, link, primaryButton, successBox } from './styles'
+import { errorBox, input, link, successBox } from './styles'
 import { appBackground } from './styles'
+import { Button } from './components/Button'
 
 /**
  * Anmeldung und Registrierung.
@@ -86,9 +87,9 @@ export function AuthScreen() {
             </p>
           ) : null}
 
-          <button type="submit" className={`${primaryButton} w-full`} disabled={busy}>
+          <Button type="submit" variant="primary" layout="w-full" disabled={busy}>
             {mode === 'signin' ? 'Anmelden' : 'Konto erstellen'}
-          </button>
+          </Button>
         </form>
 
         <p className="mt-4 text-body text-ink-muted">

@@ -23,7 +23,9 @@ import {
   formatReminderOffset,
   reminderSuggestion,
 } from './reminder'
-import { buttonClass, input, mutedText, numberInput } from './styles'
+import { input, mutedText, numberInput } from './styles'
+import { Button } from './components/Button'
+import { IconButton } from './components/IconButton'
 
 /**
  * Erinnerungen einer Aufgabe – in beiden Ansichten dieselbe Komponente.
@@ -132,8 +134,8 @@ export function ReminderList({
                   )}
                 </div>
                 {listIsShared && viewerId !== undefined ? (
-                  <button
-                    type="button"
+                  <IconButton
+                   
                     onClick={() =>
                       onChange(
                         reminders.map((eintrag, i) =>
@@ -148,20 +150,20 @@ export function ReminderList({
                         : `Erinnerung ${index + 1} für mich stummschalten`
                     }
                     title={stumm ? 'Wieder für mich einschalten' : 'Nur für mich stummschalten'}
-                    className={buttonClass(stumm ? 'iconMuted' : 'icon', 'icon', 'shrink-0')}
+                    variant={stumm ? 'iconMuted' : 'icon'} layout="shrink-0"
                   >
                     {stumm ? <BellOffIcon className="h-4 w-4" /> : <BellIcon className="h-4 w-4" />}
-                  </button>
+                  </IconButton>
                 ) : null}
-                <button
-                  type="button"
+                <IconButton
+                 
                   onClick={() => entfernen(index)}
                   aria-label={`Erinnerung ${index + 1} entfernen`}
                   title="Erinnerung entfernen"
-                  className={buttonClass('icon', 'icon', 'shrink-0')}
+                  variant="icon" layout="shrink-0"
                 >
                   <TrashIcon className="h-4 w-4" />
-                </button>
+                </IconButton>
               </div>
             </li>
             )
@@ -170,10 +172,10 @@ export function ReminderList({
       )}
 
       {reminders.length < MAX_REMINDERS ? (
-        <button type="button" onClick={hinzufuegen} className={buttonClass('secondary', 'sm')}>
+        <Button onClick={hinzufuegen} variant="secondary" size="sm">
           <PlusIcon className="h-4 w-4" />
           Weitere Erinnerung
-        </button>
+        </Button>
       ) : (
         <p className={`text-meta ${mutedText}`}>
           Mehr als {MAX_REMINDERS} Erinnerungen je Aufgabe sind nicht vorgesehen.
@@ -391,18 +393,18 @@ function CustomOffset({
             <option value="nachher">nachher</option>
           </select>
         </div>
-        <button
-          type="button"
+        <IconButton
+         
           onClick={onRemember}
           aria-pressed={remembered}
           aria-label={
             remembered ? 'Aus der Schnellauswahl entfernen' : 'In die Schnellauswahl aufnehmen'
           }
           title={remembered ? 'Aus der Schnellauswahl entfernen' : 'In der Schnellauswahl behalten'}
-          className={buttonClass(remembered ? 'iconActive' : 'iconMuted', 'icon', 'shrink-0')}
+          variant={remembered ? 'iconActive' : 'iconMuted'} layout="shrink-0"
         >
           <StarIcon filled={remembered} />
-        </button>
+        </IconButton>
       </div>
 
       <div className="flex items-end gap-2">

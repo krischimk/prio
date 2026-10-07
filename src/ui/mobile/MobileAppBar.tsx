@@ -1,9 +1,10 @@
 import { useWorkspace } from '../../app/useWorkspace'
 import { describeSyncState } from '../../sync/syncStatus'
-import { buttonClass, appBackground, attentionDot, statusTone } from '../styles'
+import { appBackground, attentionDot, statusTone } from '../styles'
 import { useUpdate } from '../useUpdate'
 import { MenuIcon } from '../icons'
 import { ListIcon } from '../ListIcon'
+import { IconButton } from '../components/IconButton'
 
 /**
  * Obere Leiste der mobilen Ansicht.
@@ -34,11 +35,11 @@ export function MobileAppBar({
   return (
     <header className={`safe-top fixed inset-x-0 top-0 z-30 border-b border-line ${appBackground}`}>
       <div className="flex h-app-bar items-center gap-1 px-2">
-        <button
-          type="button"
+        <IconButton
+         
           onClick={onOpenMenu}
           aria-label={updateVerfuegbar ? 'Menü öffnen – neue Version verfügbar' : 'Menü öffnen'}
-          className={buttonClass('iconBright', 'icon', 'relative')}
+          variant="iconBright" layout="relative"
         >
           <MenuIcon />
           {/* Kleiner Hinweis, damit eine neue Fassung auffällt, ohne das Menü zu öffnen. */}
@@ -49,7 +50,7 @@ export function MobileAppBar({
               aria-hidden="true"
             />
           ) : null}
-        </button>
+        </IconButton>
 
         {listName === null ? (
           <span

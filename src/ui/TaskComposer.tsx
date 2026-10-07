@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
 import { fromDateTimeLocalValue } from './datetime'
-import { cardSoft, buttonClass, input, primaryButton } from './styles'
+import { cardSoft, input } from './styles'
+import { Button } from './components/Button'
 
 /**
  * Eingabezeile für neue Aufgaben.
@@ -55,9 +56,9 @@ export function TaskComposer({ listId }: { listId: string }) {
           placeholder="Neue Aufgabe…"
           className={input}
         />
-        <button type="submit" className={primaryButton} disabled={busy || title.trim().length === 0}>
+        <Button type="submit" variant="primary" disabled={busy || title.trim().length === 0}>
           Hinzufügen
-        </button>
+        </Button>
       </div>
 
       {detailsOpen ? (
@@ -89,14 +90,14 @@ export function TaskComposer({ listId }: { listId: string }) {
         </div>
       ) : null}
 
-      <button
-        type="button"
-        className={buttonClass('secondary', 'sm')}
+      <Button
+       
+        variant="secondary" size="sm"
         aria-expanded={detailsOpen}
         onClick={() => setDetailsOpen((open) => !open)}
       >
         {detailsOpen ? 'Weniger Details' : 'Details hinzufügen'}
-      </button>
+      </Button>
     </form>
   )
 }

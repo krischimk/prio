@@ -12,7 +12,8 @@ import { ReminderList } from './ReminderList'
 import { SectionSelect } from './SectionSelect'
 import { TaskDescription } from './TaskDescription'
 import { describeReminders } from './reminder'
-import { cardSoft, buttonClass, dangerText, input, primaryButton, secondaryButton, attentionText } from './styles'
+import { cardSoft, dangerText, input, attentionText } from './styles'
+import { Button } from './components/Button'
 
 /**
  * Eine Aufgabe in der Liste.
@@ -149,12 +150,12 @@ export function TaskItem({
             onChange={setErinnerungen}
           />
           <div className="flex gap-2">
-            <button type="submit" className={primaryButton}>
+            <Button type="submit" variant="primary">
               Speichern
-            </button>
-            <button type="button" className={secondaryButton} onClick={() => setEditing(false)}>
+            </Button>
+            <Button variant="secondary" onClick={() => setEditing(false)}>
               Abbrechen
-            </button>
+            </Button>
           </div>
         </form>
       </li>
@@ -208,28 +209,28 @@ export function TaskItem({
       </div>
       <div className="flex shrink-0 gap-1">
         {onRequestMove ? (
-          <button
-            type="button"
-            className={buttonClass('ghost', 'sm')}
+          <Button
+           
+            variant="ghost" size="sm"
             aria-label={`Aufgabe verschieben: ${task.title}`}
             onClick={() => onRequestMove(task)}
           >
             Verschieben
-          </button>
+          </Button>
         ) : null}
-        <button type="button" className={buttonClass('ghost', 'sm')} onClick={startEditing}>
+        <Button variant="ghost" size="sm" onClick={startEditing}>
           Bearbeiten
-        </button>
-        <button
-          type="button"
-          className={buttonClass('danger', 'sm')}
+        </Button>
+        <Button
+         
+          variant="danger" size="sm"
           aria-label={`Aufgabe löschen: ${task.title}`}
           onClick={() => {
             void repositories.deleteTask(task.id)
           }}
         >
           Löschen
-        </button>
+        </Button>
       </div>
     </li>
   )

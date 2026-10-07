@@ -4,7 +4,9 @@ import { useWorkspace } from '../app/useWorkspace'
 import { RESTORE_WINDOW_DAYS } from '../db/repositories'
 import { formatCompletedLabel } from './datetime'
 import { CloseIcon } from './icons'
-import { iconButton, buttonClass } from './styles'
+import { Button } from './components/Button'
+import { IconButton } from './components/IconButton'
+
 
 /**
  * „Aufgaben wiederherstellen“ in den Einstellungen.
@@ -51,14 +53,14 @@ export function RestoreTasksPanel({ open, onClose }: { open: boolean; onClose: (
             Zurück-Taste schließen bereits. Ein zweiter Knopf mit demselben
             Namen wäre auch für Vorleseprogramme mehrdeutig.
           */}
-          <button
-            type="button"
+          <IconButton
+           
             onClick={onClose}
             aria-label="Schließen"
-            className={iconButton}
+            variant="icon"
           >
             <CloseIcon />
-          </button>
+          </IconButton>
         </header>
 
         <div className="scroll-area flex-1 overflow-y-auto">
@@ -80,15 +82,15 @@ export function RestoreTasksPanel({ open, onClose }: { open: boolean; onClose: (
                       {task.completed_at ? ` · ${formatCompletedLabel(task.completed_at)}` : ''}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    className={buttonClass('primary', 'sm', 'shrink-0')}
+                  <Button
+                   
+                    variant="primary" size="sm" layout="shrink-0"
                     onClick={() => {
                       void repositories.setTaskCompleted(task.id, false)
                     }}
                   >
                     Wiederherstellen
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>

@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { useBackLayer } from '../app/useBackLayer'
 import { useWorkspace } from '../app/useWorkspace'
 import type { LocalList, LocalTask } from '../domain/types'
-import { iconButton, errorMessage, ghostButton } from './styles'
+import { errorMessage } from './styles'
 import { CloseIcon } from './icons'
+import { IconButton } from './components/IconButton'
+import { Button } from './components/Button'
 
 /**
  * Auswahl der Ziel-Liste beim Verschieben einer Aufgabe.
@@ -61,14 +63,14 @@ export function MoveTaskSheet({
       <div className="safe-bottom relative max-h-[70%] overflow-y-auto rounded-t-sheet border-t border-line bg-surface md:max-h-[85vh] md:w-full md:max-w-lg md:rounded-sheet md:border">
         <div className="flex items-center justify-between px-4 pt-4">
           <h2 className="text-body font-medium text-ink">Verschieben nach</h2>
-          <button
-            type="button"
+          <IconButton
+           
             onClick={onClose}
             aria-label="Verschieben abbrechen"
-            className={iconButton}
+            variant="icon"
           >
             <CloseIcon />
-          </button>
+          </IconButton>
         </div>
         <p className="truncate px-4 pb-3 text-meta text-ink-faint">{task.title}</p>
 
@@ -101,9 +103,9 @@ export function MoveTaskSheet({
         ) : null}
 
         <div className="px-4 pb-2">
-          <button type="button" className={`${ghostButton} w-full`} onClick={onClose}>
+          <Button variant="ghost" layout="w-full" onClick={onClose}>
             Abbrechen
-          </button>
+          </Button>
         </div>
       </div>
     </div>

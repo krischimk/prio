@@ -6,8 +6,10 @@ import { ListIcon } from '../ListIcon'
 import { ListIconPicker } from '../ListIconPicker'
 import { SharePanel } from '../SharePanel'
 import { SectionsPanel } from '../SectionsPanel'
-import { iconButton, dangerButton, errorMessage, input, primaryButton, secondaryButton } from '../styles'
+import { errorMessage, input } from '../styles'
 import { CloseIcon } from '../icons'
+import { IconButton } from '../components/IconButton'
+import { Button } from '../components/Button'
 
 /**
  * Verwaltung der aktuellen Liste – umbenennen, teilen, löschen oder verlassen.
@@ -87,14 +89,14 @@ export function ListSettingsSheet({
               </p>
             </div>
           </div>
-          <button
-            type="button"
+          <IconButton
+           
             onClick={onClose}
             aria-label="Schließen"
-            className={iconButton}
+            variant="icon"
           >
             <CloseIcon />
-          </button>
+          </IconButton>
         </header>
 
         <div className="scroll-area flex-1 overflow-y-auto px-4 py-4">
@@ -102,50 +104,50 @@ export function ListSettingsSheet({
             <div className="space-y-2">
               {istBesitzer ? (
                 <>
-                  <button
-                    type="button"
-                    className={`${secondaryButton} w-full`}
+                  <Button
+                   
+                    variant="secondary" layout="w-full"
                     onClick={() => setModus('umbenennen')}
                   >
                     Umbenennen
-                  </button>
-                  <button
-                    type="button"
-                    className={`${secondaryButton} w-full`}
+                  </Button>
+                  <Button
+                   
+                    variant="secondary" layout="w-full"
                     onClick={() => setModus('symbol')}
                   >
                     Symbol ändern
-                  </button>
-                  <button
-                    type="button"
-                    className={`${secondaryButton} w-full`}
+                  </Button>
+                  <Button
+                   
+                    variant="secondary" layout="w-full"
                     onClick={() => setModus('bereiche')}
                   >
                     Bereiche
-                  </button>
-                  <button
-                    type="button"
-                    className={`${secondaryButton} w-full`}
+                  </Button>
+                  <Button
+                   
+                    variant="secondary" layout="w-full"
                     onClick={() => setModus('teilen')}
                   >
                     Teilen
-                  </button>
-                  <button
-                    type="button"
-                    className={`${dangerButton} w-full`}
+                  </Button>
+                  <Button
+                   
+                    variant="danger" layout="w-full"
                     onClick={() => setModus('loeschen')}
                   >
                     Liste löschen
-                  </button>
+                  </Button>
                 </>
               ) : (
-                <button
-                  type="button"
-                  className={`${dangerButton} w-full`}
+                <Button
+                 
+                  variant="danger" layout="w-full"
                   onClick={() => setModus('verlassen')}
                 >
                   Liste verlassen
-                </button>
+                </Button>
               )}
             </div>
           ) : null}
@@ -163,16 +165,16 @@ export function ListSettingsSheet({
                 className={input}
               />
               <div className="flex gap-2">
-                <button type="submit" className={`${primaryButton} flex-1`} disabled={busy}>
+                <Button type="submit" variant="primary" layout="flex-1" disabled={busy}>
                   Speichern
-                </button>
-                <button
-                  type="button"
-                  className={`${secondaryButton} flex-1`}
+                </Button>
+                <Button
+                 
+                  variant="secondary" layout="flex-1"
                   onClick={() => setModus('menue')}
                 >
                   Abbrechen
-                </button>
+                </Button>
               </div>
             </form>
           ) : null}
@@ -187,34 +189,34 @@ export function ListSettingsSheet({
                 Die Liste und alle ihre Aufgaben werden gelöscht. Rückgängig machen lässt sich das
                 nicht.
               </p>
-              <button
-                type="button"
-                className={`${dangerButton} w-full`}
+              <Button
+               
+                variant="danger" layout="w-full"
                 disabled={busy}
                 onClick={() => void ausfuehren(() => repositories.deleteList(list.id))}
               >
                 Wirklich löschen
-              </button>
-              <button
-                type="button"
-                className={`${secondaryButton} w-full`}
+              </Button>
+              <Button
+               
+                variant="secondary" layout="w-full"
                 onClick={() => setModus('menue')}
               >
                 Abbrechen
-              </button>
+              </Button>
             </div>
           ) : null}
 
           {modus === 'bereiche' ? (
             <div className="space-y-3">
               <SectionsPanel list={list} />
-              <button
-                type="button"
-                className={`${secondaryButton} w-full`}
+              <Button
+               
+                variant="secondary" layout="w-full"
                 onClick={() => setModus('menue')}
               >
                 Zurück
-              </button>
+              </Button>
             </div>
           ) : null}
 
@@ -223,21 +225,21 @@ export function ListSettingsSheet({
               <p className="text-body text-ink-soft">
                 Die Liste verschwindet aus deiner Ansicht. Die Aufgaben bleiben beim Besitzer.
               </p>
-              <button
-                type="button"
-                className={`${dangerButton} w-full`}
+              <Button
+               
+                variant="danger" layout="w-full"
                 disabled={busy}
                 onClick={() => void ausfuehren(() => repositories.leaveList(list.id, currentUserId))}
               >
                 Wirklich verlassen
-              </button>
-              <button
-                type="button"
-                className={`${secondaryButton} w-full`}
+              </Button>
+              <Button
+               
+                variant="secondary" layout="w-full"
                 onClick={() => setModus('menue')}
               >
                 Abbrechen
-              </button>
+              </Button>
             </div>
           ) : null}
 
