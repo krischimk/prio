@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { describeReminderState } from '../../src/reminders/reminderStatus'
+import { describeReminderState } from '../../src/ui/status/reminderStatus'
 import type { ReminderStatus } from '../../src/reminders/reminderService'
 
 function status(

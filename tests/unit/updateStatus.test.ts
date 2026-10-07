@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { describeUpdateState, type UpdateState } from '../../src/updates/updateStatus'
+import { describeUpdateState, type UpdateState } from '../../src/ui/status/updateStatus'
 
 const veroeffentlichung = {
   version: '0.6.1',

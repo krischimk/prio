@@ -9,7 +9,7 @@ import {
   writeCachedCheck,
 } from '../updates/updateCache'
 import { createUpdateInstaller } from '../updates/updateInstaller'
-import type { UpdateState } from '../updates/updateStatus'
+import type { UpdateState } from './status/updateStatus'
 import { UpdateContext, type UpdateContextValue } from './updateContext'
 
 /**

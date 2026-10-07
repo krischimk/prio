@@ -1,6 +1,6 @@
 import { useUpdate } from './useUpdate'
 import { Markdown } from './Markdown'
-import { describeUpdateState, type UpdateTone } from '../updates/updateStatus'
+import { describeUpdateState, type UpdateTone } from './status/updateStatus'
 import { attentionText, dangerText, mutedText, statusTone } from './styles'
 import { Button } from './components/Button'
 

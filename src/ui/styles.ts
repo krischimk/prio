@@ -1,4 +1,4 @@
-import type { SyncTone } from '../sync/syncStatus'
+import type { SyncTone } from './status/syncStatus'
 
 /**
  * Gemeinsame Tailwind-Klassen und die semantischen Farben der Oberfläche.

@@ -1,5 +1,5 @@
 import { createContext } from 'react'
-import type { UpdateState } from '../updates/updateStatus'
+import type { UpdateState } from './status/updateStatus'
 
 export type { UpdateState }
 

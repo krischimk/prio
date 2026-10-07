@@ -1,5 +1,5 @@
 import { useWorkspace } from '../app/useWorkspace'
-import { describeReminderState } from '../reminders/reminderStatus'
+import { describeReminderState } from './status/reminderStatus'
 import { mutedText, statusTone } from './styles'
 import { Button } from './components/Button'
 

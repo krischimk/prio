@@ -39,7 +39,10 @@ describe('Sync-Szenarien', () => {
     const result = await device.engine.sync()
 
     expect(result.kind).toBe('offline')
-    expect(result.message).toBe('Offline – Änderungen werden später synchronisiert.')
+    // Der Text steht in der Oberfläche (`src/ui/status/syncStatus.ts`), nicht
+    // mehr in der Engine: Die kennt den **Zustand**, die Worte gehören zur
+    // Anzeige. Dass sie den Offline-Fall benennt, prüft `syncStatus.test.ts`.
+    expect(result.message).toBeNull()
 
     const localTasks = await device.repositories.listTasks(list.id)
     expect(localTasks.map((row) => row.title)).toEqual(['Offline erstellt'])

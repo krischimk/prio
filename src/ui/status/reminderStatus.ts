@@ -1,4 +1,4 @@
-import type { ReminderStatus } from './reminderService'
+import type { ReminderStatus } from '../../reminders/reminderService'
 
 /**
  * Übersetzt den Zustand der Erinnerungen in einen Text für die Oberfläche.

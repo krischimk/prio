@@ -1,4 +1,4 @@
-import type { UpdateCheckResult } from './updateCheck'
+import type { UpdateCheckResult } from '../../updates/updateCheck'
 
 /**
  * Der Zustand der Update-Prüfung, wie ihn die Oberfläche kennt.

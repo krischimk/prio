@@ -1,5 +1,5 @@
 import { useWorkspace } from '../app/useWorkspace'
-import { describeSyncState } from '../sync/syncStatus'
+import { describeSyncState } from './status/syncStatus'
 import { statusTone } from './styles'
 import { Button } from './components/Button'
 

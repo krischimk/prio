@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { OFFLINE_MESSAGE, type SyncResult } from '../../src/sync/syncEngine'
-import { describeSyncState } from '../../src/sync/syncStatus'
+import type { SyncResult } from '../../src/sync/syncEngine'
+import { OFFLINE_TEXT, describeSyncState } from '../../src/ui/status/syncStatus'
 
 function status(kind: SyncResult['kind'], message: string | null = null): SyncResult {
   return { kind, pushed: 0, pulled: 0, message, at: '2026-01-01T00:00:00.000Z' }
@@ -10,7 +10,7 @@ describe('Statusanzeige der Synchronisation', () => {
   it('zeigt bei fehlender Verbindung genau die geforderte Offline-Meldung', () => {
     const description = describeSyncState(status('offline'), 1, false)
     expect(description.text).toBe('Offline – Änderungen werden später synchronisiert.')
-    expect(description.text).toBe(OFFLINE_MESSAGE)
+    expect(description.text).toBe(OFFLINE_TEXT)
     expect(description.tone).toBe('pending')
   })
 

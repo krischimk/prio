@@ -1,5 +1,5 @@
 import { useWorkspace } from '../../app/useWorkspace'
-import { describeSyncState } from '../../sync/syncStatus'
+import { describeSyncState } from '../status/syncStatus'
 import { layer, appBackground, attentionDot, statusTone } from '../styles'
 import { useUpdate } from '../useUpdate'
 import { MenuIcon } from '../icons'

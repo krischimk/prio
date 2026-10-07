@@ -64,8 +64,6 @@ export interface SyncEngine {
   isBusy(): boolean
 }
 
-export const OFFLINE_MESSAGE = 'Offline – Änderungen werden später synchronisiert.'
-
 export function createSyncEngine(options: SyncEngineOptions): SyncEngine {
   const clock = options.clock ?? systemClock
   const isOnline = options.isOnline ?? (() => true)
@@ -83,7 +81,7 @@ export function createSyncEngine(options: SyncEngineOptions): SyncEngine {
     })
 
     if (!isOnline()) {
-      return result('offline', OFFLINE_MESSAGE)
+      return result('offline', null)
     }
 
     const dirty = await collectDirty(options.db)
@@ -105,7 +103,7 @@ export function createSyncEngine(options: SyncEngineOptions): SyncEngine {
 
     if (pushError && (pushError.kind === 'offline' || pushError.kind === 'auth')) {
       const kind: SyncStatusKind = pushError.kind
-      return result(kind, kind === 'offline' ? OFFLINE_MESSAGE : pushError.message)
+      return result(kind, kind === 'offline' ? null : pushError.message)
     }
 
     let pulled = 0
@@ -132,10 +130,10 @@ export function createSyncEngine(options: SyncEngineOptions): SyncEngine {
             : pushError && pullError
               ? 'error'
               : 'partial'
-      const message =
-        kind === 'offline'
-          ? OFFLINE_MESSAGE
-          : (pushError?.message ?? pullError?.message ?? 'Synchronisation fehlgeschlagen.')
+      // Kein Text aus der Fachschicht: Die Engine kennt den **Zustand**, die
+      // Formulierung steht in `src/ui/status/syncStatus.ts`. Der Serverfehler
+      // wird durchgereicht, weil er die Ursache benennt.
+      const message = pushError?.message ?? pullError?.message ?? null
       return { kind, pushed, pulled, message, at }
     }
 

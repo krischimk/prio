@@ -1,11 +1,18 @@
-import { OFFLINE_MESSAGE, type SyncResult } from './syncEngine'
+import type { SyncResult } from '../../sync/syncEngine'
 
 /**
  * Übersetzt den Sync-Zustand in einen Text für die Oberfläche.
  *
  * Bewusst getrennt von der React-Komponente, damit die Formulierungen – gerade
- * die Offline-Meldung – automatisiert geprüft werden können.
+ * die Offline-Meldung – automatisiert geprüft werden können. Sie liegt in der
+ * Oberfläche (`src/ui/status/`), nicht in der Sync-Engine: Die kennt den
+ * **Zustand** (`kind: 'offline'`), die Formulierung gehört hierher. Vorher stand
+ * `OFFLINE_MESSAGE` in `src/sync/syncEngine.ts` – die Fachschicht trug die
+ * Worte der Oberfläche mit.
  */
+
+/** Der Text für den Offline-Zustand. */
+export const OFFLINE_TEXT = 'Offline – Änderungen werden später synchronisiert.'
 
 export type SyncTone = 'ok' | 'pending' | 'error'
 
@@ -28,7 +35,7 @@ export function describeSyncState(
 
   switch (status.kind) {
     case 'offline':
-      return { text: OFFLINE_MESSAGE, tone: 'pending' }
+      return { text: OFFLINE_TEXT, tone: 'pending' }
     case 'auth':
       return { text: 'Anmeldung abgelaufen – bitte neu anmelden.', tone: 'error' }
     case 'error':
