@@ -122,3 +122,21 @@ export function StarIcon({
     </svg>
   )
 }
+
+/** Pfeil an einem Abschnittskopf – zeigt, ob der Abschnitt offen ist. */
+export function ChevronIcon({ offen, className = 'h-4 w-4' }: { offen: boolean; className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={`${className} transition-transform ${offen ? 'rotate-90' : ''}`}
+    >
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  )
+}

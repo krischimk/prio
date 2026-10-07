@@ -141,6 +141,52 @@ const funktionen: Funktion[] = [
     },
   },
   {
+    name: 'Bereich anlegen und eine Aufgabe zuordnen',
+    breit: async (page) => {
+      await breit.register(page, uniqueEmail('p-bereich-b'))
+      await breit.createList(page, 'Einkauf')
+      await breit.createTask(page, 'Äpfel')
+
+      await page.getByRole('button', { name: 'Bereiche' }).click()
+      await page.getByLabel('Neuer Bereich').fill('Obst')
+      await page.getByRole('button', { name: 'Bereich anlegen' }).click()
+
+      // Der Kopf steht sofort da – ein leerer Bereich wäre sonst unsichtbar.
+      await expect(bereichsKopf(page, 'Obst')).toBeVisible()
+
+      await breit.taskItem(page, 'Äpfel').getByRole('button', { name: 'Bearbeiten' }).click()
+      const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
+      await formular.getByLabel('Bereich').selectOption({ label: 'Obst' })
+      await formular.getByRole('button', { name: 'Speichern' }).click()
+
+      await expect(bereichsKopf(page, 'Obst')).toBeVisible()
+      await expect(breit.taskItem(page, 'Äpfel')).toBeVisible()
+    },
+    telefon: async (page) => {
+      await telefon.register(page, uniqueEmail('p-bereich-t'))
+      await telefon.createList(page, 'Einkauf')
+      await telefon.createTask(page, 'Äpfel')
+
+      // Bereiche stehen in den Listeneinstellungen – ein Tippen auf den
+      // Listennamen öffnet sie.
+      await page.getByTestId('app-bar-title').click()
+      await page.getByRole('button', { name: 'Bereiche' }).click()
+      await page.getByLabel('Neuer Bereich').fill('Obst')
+      await page.getByRole('button', { name: 'Bereich anlegen' }).click()
+      await page.getByRole('button', { name: 'Zurück' }).click()
+      await page.getByRole('button', { name: 'Schließen' }).click()
+
+      await expect(bereichsKopf(page, 'Obst')).toBeVisible()
+
+      await telefon.taskRow(page, 'Äpfel').click()
+      await page.getByLabel('Bereich').selectOption({ label: 'Obst' })
+      await page.getByRole('button', { name: 'Speichern', exact: true }).click()
+
+      await expect(bereichsKopf(page, 'Obst')).toBeVisible()
+      await expect(telefon.taskRow(page, 'Äpfel')).toBeVisible()
+    },
+  },
+  {
     name: 'Aufgabe bearbeiten: Titel und Beschreibung',
     breit: async (page) => {
       await breit.register(page, uniqueEmail('p-bearbeiten-b'))
@@ -514,3 +560,13 @@ test.describe('Telefon', () => {
     })
   }
 })
+
+/**
+ * Der Kopf **eines** Bereichs.
+ *
+ * Es gibt immer mindestens zwei Köpfe – „Ohne Bereich" und die angelegten –
+ * deshalb muss die Zusicherung den Namen mitprüfen.
+ */
+function bereichsKopf(page: Page, name: string) {
+  return page.getByTestId('section-header').filter({ hasText: name })
+}

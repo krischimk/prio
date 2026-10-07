@@ -2,9 +2,10 @@ import { useState, type FormEvent } from 'react'
 import { useBackLayer } from '../../app/useBackLayer'
 import { useWorkspace } from '../../app/useWorkspace'
 import type { TaskReminder } from '../../domain/reminder'
-import type { LocalList, LocalTask } from '../../domain/types'
+import type { ListSection, LocalList, LocalTask } from '../../domain/types'
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../datetime'
 import { RecurrenceSelect } from '../RecurrenceSelect'
+import { SectionSelect } from '../SectionSelect'
 import { ReminderList } from '../ReminderList'
 import { appBackground, dangerButton, input, primaryButton, secondaryButton } from '../styles'
 import { CloseIcon, MoveIcon, TrashIcon } from '../icons'
@@ -20,6 +21,7 @@ export function TaskDetailSheet({
   task,
   listId,
   lists,
+  sections,
   currentUserId,
   onClose,
   onRequestMove,
@@ -28,6 +30,7 @@ export function TaskDetailSheet({
   task: LocalTask | null
   listId: string
   lists: LocalList[]
+  sections: ListSection[]
   currentUserId: string
   onClose: () => void
   onRequestMove: (task: LocalTask) => void
@@ -40,6 +43,7 @@ export function TaskDetailSheet({
   const [dueAt, setDueAt] = useState(toDateTimeLocalValue(task?.due_at ?? null))
   const [recurrence, setRecurrence] = useState(task?.recurrence ?? '')
   const [erinnerungen, setErinnerungen] = useState<TaskReminder[]>(task?.reminders ?? [])
+  const [bereich, setBereich] = useState<string | null>(task?.section_id ?? null)
   // Eigener Zustand statt `task.completed`: Die übergebene Aufgabe ist eine
   // Momentaufnahme und würde nach dem Umschalten nicht nachziehen.
   const [completed, setCompleted] = useState(task?.completed ?? false)
@@ -61,6 +65,7 @@ export function TaskDetailSheet({
           dueAt: fromDateTimeLocalValue(dueAt),
           recurrence: recurrence === '' ? null : recurrence,
           reminders: erinnerungen,
+          sectionId: bereich,
         })
       } else {
         await repositories.updateTask(task.id, {
@@ -69,6 +74,7 @@ export function TaskDetailSheet({
           dueAt: fromDateTimeLocalValue(dueAt),
           recurrence: recurrence === '' ? null : recurrence,
           reminders: erinnerungen,
+          sectionId: bereich,
         })
       }
       onClose()
@@ -215,6 +221,20 @@ export function TaskDetailSheet({
               className={input}
             />
           </div>
+
+          {sections.length > 0 ? (
+            <div>
+              <label htmlFor="detail-section" className="mb-1 block text-xs text-neutral-400">
+                Bereich
+              </label>
+              <SectionSelect
+                id="detail-section"
+                sections={sections}
+                value={bereich}
+                onChange={setBereich}
+              />
+            </div>
+          ) : null}
 
           <RecurrenceSelect
             id="detail-recurrence"

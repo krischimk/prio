@@ -5,6 +5,10 @@ import { ListIconPicker } from './ListIconPicker'
 import { useTasks } from '../app/hooks'
 import { useBackLayer } from '../app/useBackLayer'
 import type { LocalList } from '../domain/types'
+import { groupTasks } from '../domain/sections'
+import { useCollapsedSections } from './collapsedSections'
+import { SectionHeader } from './SectionHeader'
+import { SectionsPanel } from './SectionsPanel'
 import { SharePanel } from './SharePanel'
 import { TaskComposer } from './TaskComposer'
 import { TaskItem } from './TaskItem'
@@ -24,14 +28,21 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
   const [name, setName] = useState(list.name)
   const [shareOpen, setShareOpen] = useState(false)
   const [iconOpen, setIconOpen] = useState(false)
+  const [sectionsOpen, setSectionsOpen] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   // Die Zurück-Taste schließt zuerst das, was zuletzt geöffnet wurde.
   useBackLayer(renaming, () => setRenaming(false))
   useBackLayer(shareOpen, () => setShareOpen(false))
+  useBackLayer(sectionsOpen, () => setSectionsOpen(false))
   useBackLayer(confirmingDelete, () => setConfirmingDelete(false))
 
   const openTasks = tasks.filter((task) => !task.completed).length
+  const gruppen = groupTasks(tasks, list.sections)
+  const { zugeklappt, umschalten } = useCollapsedSections(list.id)
+  // Ohne Bereiche bleibt die Liste flach: Ein Kopf „OHNE BEREICH" über allen
+  // Aufgaben wäre nur Lärm.
+  const mitBereichen = list.sections.length > 0
 
   const startRenaming = () => {
     setName(list.name)
@@ -93,6 +104,14 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
               <button
                 type="button"
                 className={`${ghostButton} px-2 py-1 text-xs`}
+                aria-expanded={sectionsOpen}
+                onClick={() => setSectionsOpen((offen) => !offen)}
+              >
+                Bereiche
+              </button>
+              <button
+                type="button"
+                className={`${ghostButton} px-2 py-1 text-xs`}
                 aria-expanded={shareOpen}
                 onClick={() => setShareOpen((open) => !open)}
               >
@@ -131,6 +150,11 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
         )}
 
         {iconOpen ? <ListIconPicker list={list} /> : null}
+        {sectionsOpen ? (
+          <div className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-3">
+            <SectionsPanel list={list} />
+          </div>
+        ) : null}
         {shareOpen ? <SharePanel list={list} currentUserId={currentUserId} /> : null}
       </header>
 
@@ -144,6 +168,32 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
           <p className="rounded-lg border border-dashed border-neutral-800 px-3 py-6 text-center text-sm text-neutral-500">
             Noch keine Aufgaben in dieser Liste.
           </p>
+        ) : mitBereichen ? (
+          <div className="space-y-4" data-testid="task-list">
+            {gruppen.map((gruppe) => (
+              <div key={gruppe.id}>
+                <SectionHeader
+                  name={gruppe.section?.name ?? 'Ohne Bereich'}
+                  anzahl={gruppe.tasks.length}
+                  offen={!zugeklappt.has(gruppe.id)}
+                  onToggle={() => umschalten(gruppe.id)}
+                />
+                {zugeklappt.has(gruppe.id) ? null : (
+                  <ul className="space-y-2">
+                    {gruppe.tasks.map((task) => (
+                      <TaskItem
+                        key={task.id}
+                        task={task}
+                        listIsShared={list.is_shared}
+                        currentUserId={currentUserId}
+                        sections={list.sections}
+                      />
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </div>
         ) : (
           <ul className="space-y-2" data-testid="task-list">
             {tasks.map((task) => (
@@ -152,6 +202,7 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
                 task={task}
                 listIsShared={list.is_shared}
                 currentUserId={currentUserId}
+                sections={list.sections}
               />
             ))}
           </ul>

@@ -1,4 +1,5 @@
 import { normalizeIso } from './clock'
+import { parseSections } from './sections'
 import { parseReminders } from './reminder'
 import type {
   LocalList,
@@ -27,6 +28,7 @@ export function toRemoteList(local: LocalList): RemoteList {
     owner_id: local.owner_id,
     is_shared: local.is_shared,
     icon: local.icon,
+    sections: parseSections(local.sections),
     created_at: normalizeIso(local.created_at),
     updated_at: normalizeIso(local.updated_at),
     deleted_at: normalizeIso(local.deleted_at),
@@ -39,8 +41,9 @@ export function fromRemoteList(remote: RemoteList): LocalList {
     name: remote.name,
     owner_id: remote.owner_id,
     is_shared: remote.is_shared,
-    // Ältere Zeilen kennen das Feld noch nicht.
+    // Ältere Zeilen kennen die Felder noch nicht.
     icon: remote.icon ?? null,
+    sections: parseSections(remote.sections),
     created_at: normalizeIso(remote.created_at),
     updated_at: normalizeIso(remote.updated_at),
     deleted_at: normalizeIso(remote.deleted_at),
@@ -60,6 +63,7 @@ export function toRemoteTask(local: LocalTask): RemoteTask {
     recurrence: local.recurrence,
     successor_id: local.successor_id,
     reminders: local.reminders,
+    section_id: local.section_id,
     // Letzte Absicherung an der Grenze: `NaN` würde beim Senden zu `null`, und
     // die Spalte ist `not null`. Ein ungültiger Wert darf das Hochladen nicht
     // für die gesamte Charge scheitern lassen.
@@ -86,6 +90,7 @@ export function fromRemoteTask(remote: RemoteTask): LocalTask {
     // allem zurecht und lässt Unbrauchbares still fallen – eine verbogene
     // Zeile darf die Aufgabe nicht unlesbar machen.
     reminders: parseReminders(remote.reminders),
+    section_id: remote.section_id ?? null,
     position: remote.position ?? 0,
     created_at: normalizeIso(remote.created_at),
     updated_at: normalizeIso(remote.updated_at),

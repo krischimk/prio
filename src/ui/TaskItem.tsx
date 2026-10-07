@@ -3,12 +3,13 @@ import { useWorkspace } from '../app/useWorkspace'
 import { useBackLayer } from '../app/useBackLayer'
 import { useUndo } from './useUndo'
 import type { TaskReminder } from '../domain/reminder'
-import type { LocalTask } from '../domain/types'
+import type { ListSection, LocalTask } from '../domain/types'
 import { formatDueLabel, fromDateTimeLocalValue, toDateTimeLocalValue } from './datetime'
 import { BellIcon, BellOffIcon, RepeatIcon } from './icons'
 import { describeRecurrence } from './recurrence'
 import { RecurrenceSelect } from './RecurrenceSelect'
 import { ReminderList } from './ReminderList'
+import { SectionSelect } from './SectionSelect'
 import { TaskDescription } from './TaskDescription'
 import { describeReminders } from './reminder'
 import { dangerButton, dangerText, ghostButton, input, primaryButton, secondaryButton, attentionText } from './styles'
@@ -24,10 +25,13 @@ export function TaskItem({
   task,
   listIsShared,
   currentUserId,
+  sections,
 }: {
   task: LocalTask
   listIsShared: boolean
   currentUserId: string
+  /** Die Bereiche der Liste – leer heißt: keine Auswahl nötig. */
+  sections: ListSection[]
 }) {
   const { repositories } = useWorkspace()
   const { offerUndo } = useUndo()
@@ -39,6 +43,7 @@ export function TaskItem({
   const [dueAt, setDueAt] = useState('')
   const [recurrence, setRecurrence] = useState('')
   const [erinnerungenEingabe, setErinnerungen] = useState<TaskReminder[]>([])
+  const [bereich, setBereich] = useState<string | null>(null)
 
   const startEditing = () => {
     setTitle(task.title)
@@ -46,6 +51,7 @@ export function TaskItem({
     setDueAt(toDateTimeLocalValue(task.due_at))
     setRecurrence(task.recurrence ?? '')
     setErinnerungen(task.reminders)
+    setBereich(task.section_id)
     setEditing(true)
   }
 
@@ -57,6 +63,7 @@ export function TaskItem({
       dueAt: fromDateTimeLocalValue(dueAt),
       recurrence: recurrence === '' ? null : recurrence,
       reminders: erinnerungenEingabe,
+      sectionId: bereich,
     })
     setEditing(false)
   }
@@ -106,6 +113,19 @@ export function TaskItem({
               className={input}
             />
           </div>
+          {sections.length > 0 ? (
+            <div>
+              <label htmlFor={`section-${task.id}`} className="mb-1 block text-xs text-neutral-400">
+                Bereich
+              </label>
+              <SectionSelect
+                id={`section-${task.id}`}
+                sections={sections}
+                value={bereich}
+                onChange={setBereich}
+              />
+            </div>
+          ) : null}
           <RecurrenceSelect
             id={`recurrence-${task.id}`}
             value={recurrence}

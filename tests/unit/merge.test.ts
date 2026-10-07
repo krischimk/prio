@@ -1,7 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import { resolveMerge } from '../../src/domain/merge'
 import type { LocalTask } from '../../src/domain/types'
+import { fromRemoteTask } from '../../src/domain/mapping'
 import { localTask, remoteTask, T0, T1 } from '../support/factories'
+
+/**
+ * Eine Aufgabenzeile, wie der Abgleich sie sieht.
+ *
+ * `resolveMerge` arbeitet mit dem **umgewandelten** Gegenstück aus der Ferne –
+ * dort sind fehlende Spalten bereits zu `null` geworden (siehe
+ * `fromRemoteTask`). Genau diesen Schritt bildet `vomServer` ab, statt die
+ * Zeile direkt durchzureichen: Die entfernten Typen lassen Felder offen, die
+ * eine ältere Datenbank nicht schickt.
+ */
+function vomServer(werte: Partial<ReturnType<typeof localTask>> = {}) {
+  return fromRemoteTask(remoteTask(werte))
+}
 
 /**
  * Last-Write-Wins-Konfliktlogik (unit).
@@ -11,7 +25,7 @@ import { localTask, remoteTask, T0, T1 } from '../support/factories'
  */
 describe('resolveMerge (Last Write Wins)', () => {
   it('übernimmt die Serverversion, wenn lokal nichts existiert', () => {
-    const result = resolveMerge<LocalTask>(undefined, remoteTask({ title: 'vom Server' }))
+    const result = resolveMerge<LocalTask>(undefined, vomServer({ title: 'vom Server' }))
     expect(result.outcome).toBe('inserted')
     expect(result.row.title).toBe('vom Server')
     expect(result.row.dirty).toBe(0)
@@ -20,7 +34,7 @@ describe('resolveMerge (Last Write Wins)', () => {
 
   it('behält die lokale Version, wenn sie jünger ist, und lädt sie hoch', () => {
     const local = localTask({ title: 'lokal', updated_at: T1, dirty: 0 })
-    const remote = remoteTask({ title: 'server', updated_at: T0 })
+    const remote = vomServer({ title: 'server', updated_at: T0 })
 
     const result = resolveMerge(local, remote)
 
@@ -32,7 +46,7 @@ describe('resolveMerge (Last Write Wins)', () => {
 
   it('übernimmt die Serverversion, wenn sie jünger ist', () => {
     const local = localTask({ title: 'lokal', updated_at: T0, dirty: 1 })
-    const remote = remoteTask({ title: 'server', updated_at: T1 })
+    const remote = vomServer({ title: 'server', updated_at: T1 })
 
     const result = resolveMerge(local, remote)
 
@@ -44,7 +58,7 @@ describe('resolveMerge (Last Write Wins)', () => {
 
   it('behält bei gleichem Zeitstempel die noch nicht hochgeladene lokale Änderung', () => {
     const local = localTask({ title: 'lokal', updated_at: T0, dirty: 1 })
-    const remote = remoteTask({ title: 'server', updated_at: T0 })
+    const remote = vomServer({ title: 'server', updated_at: T0 })
 
     const result = resolveMerge(local, remote)
 
@@ -55,7 +69,7 @@ describe('resolveMerge (Last Write Wins)', () => {
 
   it('übernimmt bei gleichem Zeitstempel die Serverversion, wenn lokal sauber ist', () => {
     const local = localTask({ title: 'lokal', updated_at: T0, dirty: 0 })
-    const remote = remoteTask({ title: 'server', updated_at: T0 })
+    const remote = vomServer({ title: 'server', updated_at: T0 })
 
     const result = resolveMerge(local, remote)
 
@@ -66,7 +80,7 @@ describe('resolveMerge (Last Write Wins)', () => {
 
   it('überträgt einen neueren Soft Delete vom Server', () => {
     const local = localTask({ updated_at: T0, dirty: 0 })
-    const remote = remoteTask({ updated_at: T1, deleted_at: T1 })
+    const remote = vomServer({ updated_at: T1, deleted_at: T1 })
 
     const result = resolveMerge(local, remote)
 
@@ -76,7 +90,7 @@ describe('resolveMerge (Last Write Wins)', () => {
 
   it('überträgt einen neueren lokalen Soft Delete zum Server', () => {
     const local = localTask({ updated_at: T1, deleted_at: T1, dirty: 1 })
-    const remote = remoteTask({ updated_at: T0, deleted_at: null })
+    const remote = vomServer({ updated_at: T0, deleted_at: null })
 
     const result = resolveMerge(local, remote)
 

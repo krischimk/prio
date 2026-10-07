@@ -802,6 +802,44 @@ Datensätze aus der Zeit vor dieser Funktion haben die Position 0. Bei
 Gleichstand greifen die früheren Regeln (Erledigt-Status, Fälligkeit,
 Erstellzeit), damit eine bestehende Liste nach dem Update stabil bleibt.
 
+### Bereiche innerhalb einer Liste
+
+Eine Einkaufsliste bekommt Bereiche wie „Obst" und „Getränke". Aufgaben ohne
+Bereich stehen **oben**, darunter die Bereiche in ihrer Reihenfolge. Ein
+Bereichskopf lässt sich zuklappen; die Zahl daneben bleibt sichtbar, damit man
+sieht, ob sich das Aufklappen lohnt.
+
+**Wie es gespeichert wird.** Der Abschnittsplan steht als Array an der Liste
+(`lists.sections`), die Zugehörigkeit einer Aufgabe als Feld an der Aufgabe
+(`tasks.section_id`). Bewusst keine eigene Tabelle: Ein Abschnitt besteht nur
+aus Name und Stelle in der Reihenfolge, und eine eigene Tabelle bräuchte eigene
+Policies, eigene Grants und einen eigenen Abgleichsweg. Der Preis steht
+ausdrücklich dabei: Der Plan einer Liste wird als Ganzes abgeglichen (Last
+Write Wins). Zwei Personen, die gleichzeitig Bereiche derselben Liste ändern,
+sehen am Ende den Stand des späteren Schreibens – bei einem Handvoll Namen
+vertretbar, bei Hunderten nicht.
+
+Der Verweis einer Aufgabe ist kein Fremdschlüssel (der Abschnitt lebt in einem
+JSON-Array). Ein Verweis ins Leere wird wie „ohne Bereich" angezeigt; beim
+Löschen eines Bereichs räumt die App die Verweise ihrer Aufgaben selbst weg –
+die Aufgaben bleiben und fallen nach „ohne Bereich".
+
+**Bedienung.** Angelegt, umbenannt und gelöscht werden Bereiche in der breiten
+Ansicht über den Knopf *Bereiche* im Kopfbereich, auf dem Telefon in den
+Listeneinstellungen (Tippen auf den Listennamen). Zugeordnet wird eine Aufgabe
+im Bearbeiten-Formular bzw. in der Detailansicht; auf dem Telefon geht es auch
+durch **Ziehen**: Die Aufgabe landet in dem Bereich, in dem ihre neue
+Nachbarzeile steht.
+
+> **Eine Einschränkung, ehrlich benannt:** In einen **leeren** Bereich lässt
+> sich nichts ziehen – es gibt keine Nachbarzeile, an der sich der Bereich
+> erkennen ließe. Die erste Aufgabe kommt deshalb über das Formular hinein;
+> danach geht auch dorthin das Ziehen. Ein Ablegen auf dem Bereichskopf selbst
+> wäre die nächste Ausbaustufe.
+
+Zugeklappt oder offen ist **Ansichtssache je Gerät**: Das steht in
+`localStorage` und wird nicht abgeglichen.
+
 ### Aufgabenbeschreibung in der Übersicht
 
 Eine Beschreibung steht in der Liste **einzeilig** – auch wenn Absätze darin

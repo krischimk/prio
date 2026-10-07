@@ -66,10 +66,11 @@ export function MobileWorkspace() {
             </div>
             <MobileTaskList
               tasks={tasks}
+              sections={selected.sections}
               currentUserId={userId}
               onOpenTask={(task) => setDetail({ task })}
-              onReorder={(orderedTaskIds) => {
-                void repositories.reorderTasks(selected.id, orderedTaskIds)
+              onReorder={(orderedTaskIds, sectionOf) => {
+                void repositories.reorderTasks(selected.id, orderedTaskIds, sectionOf)
               }}
             />
           </>
@@ -117,6 +118,7 @@ export function MobileWorkspace() {
           task={detail.task}
           listId={selected.id}
           lists={lists}
+          sections={selected.sections}
           currentUserId={userId}
           onClose={() => setDetail(null)}
           onRequestMove={(task) => setMovingTask(task)}

@@ -690,6 +690,124 @@ describe('Repositories (lokale Geschäftslogik)', () => {
     })
   })
 
+  describe('Abschnitte einer Liste', () => {
+    it('legt einen Abschnitt an und merkt die Liste als geändert', async () => {
+      const list = await device.repositories.createList('Einkauf', userId)
+      expect(list.sections).toEqual([])
+
+      device.clock.advance(1000)
+      const id = await device.repositories.addListSection(list.id, 'Obst')
+
+      const gespeichert = await device.repositories.getList(list.id)
+      expect(gespeichert?.sections).toEqual([{ id, name: 'Obst' }])
+      expect(gespeichert?.dirty).toBe(1)
+      expect(gespeichert!.updated_at > list.updated_at).toBe(true)
+    })
+
+    it('lehnt einen leeren Namen ab', async () => {
+      const list = await device.repositories.createList('Einkauf', userId)
+      expect(await device.repositories.addListSection(list.id, '   ')).toBeNull()
+      expect((await device.repositories.getList(list.id))?.dirty).toBe(1)
+    })
+
+    it('benennt einen Abschnitt um', async () => {
+      const list = await device.repositories.createList('Einkauf', userId)
+      const id = (await device.repositories.addListSection(list.id, 'Obst'))!
+
+      await device.repositories.renameListSection(list.id, id, 'Frisches')
+
+      expect((await device.repositories.getList(list.id))?.sections).toEqual([
+        { id, name: 'Frisches' },
+      ])
+    })
+
+    it('löscht einen Abschnitt und holt seine Aufgaben nach „ohne Bereich"', async () => {
+      const list = await device.repositories.createList('Einkauf', userId)
+      const obst = (await device.repositories.addListSection(list.id, 'Obst'))!
+      const getraenke = (await device.repositories.addListSection(list.id, 'Getränke'))!
+      const apfel = await device.repositories.createTask({
+        listId: list.id,
+        title: 'Äpfel',
+        sectionId: obst,
+      })
+      const saft = await device.repositories.createTask({
+        listId: list.id,
+        title: 'Saft',
+        sectionId: getraenke,
+      })
+
+      device.clock.advance(1000)
+      await device.repositories.deleteListSection(list.id, obst)
+
+      const gespeichert = await device.repositories.getList(list.id)
+      expect(gespeichert?.sections).toEqual([{ id: getraenke, name: 'Getränke' }])
+
+      // Die Aufgabe bleibt, nur ihr Verweis ist weg.
+      expect((await device.repositories.getTask(apfel.id))?.section_id).toBeNull()
+      expect((await device.repositories.getTask(apfel.id))?.deleted_at).toBeNull()
+      expect((await device.repositories.getTask(saft.id))?.section_id).toBe(getraenke)
+    })
+
+    it('überträgt den Abschnitt beim Anlegen und beim Bearbeiten', async () => {
+      const list = await device.repositories.createList('Einkauf', userId)
+      const obst = (await device.repositories.addListSection(list.id, 'Obst'))!
+      const task = await device.repositories.createTask({
+        listId: list.id,
+        title: 'Äpfel',
+        sectionId: obst,
+      })
+      expect(task.section_id).toBe(obst)
+
+      await device.repositories.updateTask(task.id, { sectionId: null })
+      expect((await device.repositories.getTask(task.id))?.section_id).toBeNull()
+    })
+
+    it('schiebt eine Aufgabe beim Umsortieren in einen anderen Abschnitt', async () => {
+      const list = await device.repositories.createList('Einkauf', userId)
+      const obst = (await device.repositories.addListSection(list.id, 'Obst'))!
+      const a = await device.repositories.createTask({ listId: list.id, title: 'A' })
+      const b = await device.repositories.createTask({ listId: list.id, title: 'B' })
+
+      device.clock.advance(1000)
+      await device.repositories.reorderTasks(list.id, [b.id, a.id], { [b.id]: obst })
+
+      const nachher = await device.repositories.listTasks(list.id)
+      expect(nachher.map((task) => task.title)).toEqual(['B', 'A'])
+      expect(nachher[0].section_id).toBe(obst)
+      expect(nachher[0].position).toBe(1)
+    })
+
+    it('lädt Abschnittsplan und Zugehörigkeit mit dem Abgleich hoch und wieder herunter', async () => {
+      const list = await device.repositories.createList('Einkauf', userId)
+      const obst = (await device.repositories.addListSection(list.id, 'Obst'))!
+      const apfel = await device.repositories.createTask({
+        listId: list.id,
+        title: 'Äpfel',
+        sectionId: obst,
+      })
+
+      await device.engine.sync()
+
+      expect(server.listById(list.id)?.sections).toEqual([{ id: obst, name: 'Obst' }])
+      expect(server.taskById(apfel.id)?.section_id).toBe(obst)
+
+      // Ein frisches Gerät holt beides wieder herunter.
+      const frisch = await createDevice({ userId, gateway: server.gatewayFor(userId) })
+      try {
+        await frisch.engine.sync()
+
+        const geladen = await frisch.repositories.listLists()
+        expect(geladen[0].sections).toEqual([{ id: obst, name: 'Obst' }])
+
+        const aufgaben = await frisch.repositories.listTasks(list.id)
+        expect(aufgaben).toHaveLength(1)
+        expect(aufgaben[0].section_id).toBe(obst)
+      } finally {
+        await frisch.dispose()
+      }
+    })
+  })
+
   describe('Listen', () => {
     it('erstellt eine private Liste', async () => {
       const list = await device.repositories.createList('Privat', userId)
@@ -737,6 +855,7 @@ describe('Repositories (lokale Geschäftslogik)', () => {
       await device.db.tasks.put({
         id: 'alt',
         list_id: listId,
+        section_id: null,
         title: 'Aus alter Zeit',
         description: null,
         due_at: null,

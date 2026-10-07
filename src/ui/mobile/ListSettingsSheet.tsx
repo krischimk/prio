@@ -5,6 +5,7 @@ import type { LocalList } from '../../domain/types'
 import { ListIcon } from '../ListIcon'
 import { ListIconPicker } from '../ListIconPicker'
 import { SharePanel } from '../SharePanel'
+import { SectionsPanel } from '../SectionsPanel'
 import { dangerButton, errorMessage, input, primaryButton, secondaryButton } from '../styles'
 import { CloseIcon } from '../icons'
 
@@ -20,7 +21,7 @@ import { CloseIcon } from '../icons'
  * teilen und löschen. Wer nur Mitglied ist, kann die Liste verlassen.
  */
 
-type Modus = 'menue' | 'umbenennen' | 'symbol' | 'teilen' | 'loeschen' | 'verlassen'
+type Modus = 'menue' | 'umbenennen' | 'symbol' | 'bereiche' | 'teilen' | 'loeschen' | 'verlassen'
 
 export function ListSettingsSheet({
   list,
@@ -118,6 +119,13 @@ export function ListSettingsSheet({
                   <button
                     type="button"
                     className={`${secondaryButton} w-full`}
+                    onClick={() => setModus('bereiche')}
+                  >
+                    Bereiche
+                  </button>
+                  <button
+                    type="button"
+                    className={`${secondaryButton} w-full`}
                     onClick={() => setModus('teilen')}
                   >
                     Teilen
@@ -193,6 +201,19 @@ export function ListSettingsSheet({
                 onClick={() => setModus('menue')}
               >
                 Abbrechen
+              </button>
+            </div>
+          ) : null}
+
+          {modus === 'bereiche' ? (
+            <div className="space-y-3">
+              <SectionsPanel list={list} />
+              <button
+                type="button"
+                className={`${secondaryButton} w-full`}
+                onClick={() => setModus('menue')}
+              >
+                Zurück
               </button>
             </div>
           ) : null}

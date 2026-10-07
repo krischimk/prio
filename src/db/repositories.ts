@@ -1,5 +1,11 @@
 import { systemClock, timeOf, type Clock } from '../domain/clock'
 import { isRecurrence, nextOccurrence, successorId } from '../domain/recurrence'
+import {
+  parseSections,
+  withNewSection,
+  withRenamedSection,
+  withoutSection,
+} from '../domain/sections'
 import { alignReminders, isPlausibleOffset, type TaskReminder } from '../domain/reminder'
 import { newId } from '../domain/ids'
 import type { LocalList, LocalListMember, LocalTask, ShareContact } from '../domain/types'
@@ -42,6 +48,8 @@ export const RESTORE_WINDOW_DAYS = 7
 
 export interface CreateTaskInput {
   listId: string
+  /** Der Abschnitt der neuen Aufgabe; `null` oder weggelassen heißt „ohne". */
+  sectionId?: string | null
   title: string
   description?: string | null
   dueAt?: string | null
@@ -52,6 +60,8 @@ export interface CreateTaskInput {
 
 export interface UpdateTaskInput {
   title?: string
+  /** Der Abschnitt der Aufgabe; `null` heißt „ohne Bereich". */
+  sectionId?: string | null
   description?: string | null
   dueAt?: string | null
   recurrence?: string | null
@@ -73,6 +83,21 @@ export interface Repositories {
   getList(listId: string): Promise<LocalList | undefined>
   listLists(): Promise<LocalList[]>
 
+  // Abschnitte einer Liste
+  /**
+   * Legt einen Abschnitt an und gibt seine Kennung zurück.
+   *
+   * `null`, wenn der Name leer ist oder die Liste schon `SECTIONS_MAX`
+   * Abschnitte hat – die Oberfläche sagt das dann.
+   */
+  addListSection(listId: string, name: string): Promise<string | null>
+  renameListSection(listId: string, sectionId: string, name: string): Promise<void>
+  /**
+   * Entfernt einen Abschnitt. Seine Aufgaben bleiben und fallen nach
+   * „ohne Bereich" – die Verweise werden dabei aufgeräumt.
+   */
+  deleteListSection(listId: string, sectionId: string): Promise<void>
+
   // Aufgaben
   createTask(input: CreateTaskInput): Promise<LocalTask>
   updateTask(taskId: string, patch: UpdateTaskInput): Promise<LocalTask>
@@ -84,7 +109,11 @@ export interface Repositories {
    * `orderedTaskIds` enthält alle Aufgaben der Liste in der gewünschten
    * Reihenfolge von oben nach unten.
    */
-  reorderTasks(listId: string, orderedTaskIds: string[]): Promise<void>
+  reorderTasks(
+    listId: string,
+    orderedTaskIds: string[],
+    sectionOf?: Record<string, string | null>,
+  ): Promise<void>
   deleteTask(taskId: string): Promise<void>
   getTask(taskId: string): Promise<LocalTask | undefined>
   /** Offene Aufgaben einer Liste, in der vom Benutzer bestimmten Reihenfolge. */
@@ -238,6 +267,9 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
     async createList(name, ownerId) {
       const now = clock.now()
       const list: LocalList = {
+        // Noch keine Abschnitte – der Plan ist von Anfang an da, nicht erst
+        // nach dem ersten Anlegen.
+        sections: [],
         id: newId(),
         name: requireText(name, 'Der Listenname'),
         owner_id: ownerId,
@@ -274,6 +306,43 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
      * nicht angefasst: Ohne die Liste sind sie über die Server-Policies
      * ohnehin nicht mehr erreichbar.
      */
+    async addListSection(listId, name) {
+      const list = await requireList(listId)
+      const neu = withNewSection(parseSections(list.sections), name)
+      if (neu === null) return null
+      await db.lists.put({ ...list, sections: neu.sections, ...stamp() })
+      return neu.id
+    },
+
+    async renameListSection(listId, sectionId, name) {
+      const list = await requireList(listId)
+      const sections = withRenamedSection(parseSections(list.sections), sectionId, name)
+      if (sections === parseSections(list.sections)) return
+      await db.lists.put({ ...list, sections, ...stamp() })
+    },
+
+    async deleteListSection(listId, sectionId) {
+      const list = await requireList(listId)
+      const sections = withoutSection(parseSections(list.sections), sectionId)
+      const { updated_at } = stamp()
+
+      // Zwei Schreibungen, ein Vorgang: Der Abschnitt verschwindet aus dem Plan,
+      // und seine Aufgaben fallen nach „ohne Bereich". Bliebe der Verweis
+      // stehen, zeigte er ins Leere – angezeigt würde die Aufgabe wie „ohne
+      // Bereich", aber die Daten wären irreführend.
+      await db.transaction('rw', db.lists, db.tasks, async () => {
+        await db.lists.put({ ...list, sections, updated_at, dirty: 1 })
+
+        const aufgaben = await db.tasks.where('list_id').equals(listId).toArray()
+        const betroffen: LocalTask[] = aufgaben
+          .filter((task) => task.deleted_at === null && task.section_id === sectionId)
+          .map((task) => ({ ...task, section_id: null, updated_at, dirty: 1 }))
+        if (betroffen.length > 0) {
+          await db.tasks.bulkPut(betroffen)
+        }
+      })
+    },
+
     async deleteList(listId) {
       const list = await requireList(listId)
       await db.transaction('rw', db.lists, db.tasks, async () => {
@@ -327,6 +396,7 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
       const task: LocalTask = {
         id: newId(),
         list_id: input.listId,
+        section_id: input.sectionId ?? null,
         title: requireText(input.title, 'Der Titel'),
         description: optionalText(input.description),
         // `undefined` heißt „nicht mitgeschickt" – siehe `ReminderTarget`.
@@ -359,6 +429,7 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
         title: patch.title === undefined ? task.title : requireText(patch.title, 'Der Titel'),
         description:
           patch.description === undefined ? task.description : optionalText(patch.description),
+        section_id: patch.sectionId === undefined ? task.section_id : patch.sectionId,
         // Fälligkeit, Wiederholung und Erinnerung hängen zusammen und werden
         // deshalb gemeinsam ausgerichtet – siehe `alignReminder`.
         ...alignReminders(
@@ -467,7 +538,7 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
      * erneut hochgeladen. Die Positionen laufen danach lückenlos von 1 bis n;
      * damit kann keine Genauigkeit verloren gehen.
      */
-    async reorderTasks(listId, orderedTaskIds) {
+    async reorderTasks(listId, orderedTaskIds, sectionOf = {}) {
       await requireList(listId)
       const tasks = await db.tasks.where('list_id').equals(listId).toArray()
       const byId = new Map(tasks.filter((task) => task.deleted_at === null).map((task) => [task.id, task]))
@@ -478,8 +549,13 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
         const task = byId.get(taskId)
         if (!task) return
         const position = index + 1
-        if (task.position === position) return
-        geaendert.push({ ...task, position, updated_at, dirty: 1 })
+        // Der Zielabschnitt kommt beim Ziehen mit: Eine Aufgabe wechselt dabei
+        // unter Umständen den Bereich, und beides gehört in dieselbe Schreibung.
+        const section_id = Object.prototype.hasOwnProperty.call(sectionOf, taskId)
+          ? sectionOf[taskId]
+          : task.section_id
+        if (task.position === position && task.section_id === section_id) return
+        geaendert.push({ ...task, position, section_id, updated_at, dirty: 1 })
       })
 
       if (geaendert.length > 0) {

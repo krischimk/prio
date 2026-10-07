@@ -1,13 +1,16 @@
 import { Fragment, useRef } from 'react'
 import { useWorkspace } from '../../app/useWorkspace'
 import { useUndo } from '../useUndo'
-import type { LocalTask } from '../../domain/types'
+import type { ListSection, LocalTask } from '../../domain/types'
+import { flattenGroups, groupTasks } from '../../domain/sections'
 import { formatDueLabel } from '../datetime'
 import { BellIcon, BellOffIcon, RepeatIcon } from '../icons'
 import { describeRecurrence } from '../recurrence'
 import { describeReminders } from '../reminder'
 import { TaskDescription } from '../TaskDescription'
 import { appBackground, attentionText, dangerText } from '../styles'
+import { useCollapsedSections } from '../collapsedSections'
+import { SectionHeader } from '../SectionHeader'
 import { useReorderDrag, type ReorderDrag } from './useReorderDrag'
 
 /**
@@ -23,19 +26,35 @@ import { useReorderDrag, type ReorderDrag } from './useReorderDrag'
  */
 export function MobileTaskList({
   tasks,
+  sections,
   currentUserId,
   onOpenTask,
   onReorder,
 }: {
   tasks: LocalTask[]
+  /** Die Bereiche der Liste – leer heißt: eine flache Liste. */
+  sections: ListSection[]
   onOpenTask: (task: LocalTask) => void
-  onReorder: (orderedTaskIds: string[]) => void
+  /**
+   * Die neue Reihenfolge **und** der Bereich, in den die gezogene Aufgabe
+   * gehört: Beim Ziehen wechselt sie unter Umständen den Bereich.
+   */
+  onReorder: (orderedTaskIds: string[], sectionOf: Record<string, string | null>) => void
   currentUserId: string
 }) {
-  const listRef = useRef<HTMLUListElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+  const gruppen = groupTasks(tasks, sections)
+  const flach = flattenGroups(gruppen)
+  const mitBereichen = sections.length > 0
+  // Zugeklappt wird je Liste gemerkt – nicht je Abschnitt, damit der Schlüssel
+  // auch dann stimmt, wenn es (noch) keine Bereiche gibt.
+  const { zugeklappt, umschalten } = useCollapsedSections(tasks[0]?.list_id ?? '')
+
   const drag = useReorderDrag({
-    itemIds: tasks.map((task) => task.id),
-    onReorder,
+    itemIds: flach.map((task) => task.id),
+    onReorder: (orderedTaskIds, draggedId) => {
+      onReorder(orderedTaskIds, zielAbschnitt(orderedTaskIds, flach, draggedId))
+    },
     containerRef: listRef,
   })
 
@@ -47,24 +66,89 @@ export function MobileTaskList({
     )
   }
 
+  let index = -1
+
   return (
-    <ul ref={listRef} data-testid="task-list">
-      {tasks.map((task, index) => (
-        <Fragment key={task.id}>
-          {drag.draggingId !== null && drag.dropIndex === index ? <DropIndicator /> : null}
-          <MobileTaskRow
-            task={task}
-            index={index}
-            drag={drag}
-            onOpen={onOpenTask}
-            isDragging={drag.draggingId === task.id}
-            currentUserId={currentUserId}
-          />
-        </Fragment>
-      ))}
-      {drag.draggingId !== null && drag.dropIndex === tasks.length ? <DropIndicator /> : null}
-    </ul>
+    <div ref={listRef} data-testid="task-list">
+      {mitBereichen
+        ? gruppen.map((gruppe) => {
+            const offen = !zugeklappt.has(gruppe.id)
+            return (
+              <div key={gruppe.id}>
+                <SectionHeader
+                  name={gruppe.section?.name ?? 'Ohne Bereich'}
+                  anzahl={gruppe.tasks.length}
+                  offen={offen}
+                  onToggle={() => umschalten(gruppe.id)}
+                  className="px-4 pt-3"
+                />
+                {offen
+                  ? gruppe.tasks.map((task) => {
+                      index += 1
+                      return (
+                        <Fragment key={task.id}>
+                          {drag.draggingId !== null && drag.dropIndex === index ? <DropIndicator /> : null}
+                          <MobileTaskRow
+                            task={task}
+                            index={index}
+                            drag={drag}
+                            onOpen={onOpenTask}
+                            isDragging={drag.draggingId === task.id}
+                            currentUserId={currentUserId}
+                          />
+                        </Fragment>
+                      )
+                    })
+                  : null}
+              </div>
+            )
+          })
+        : flach.map((task) => {
+            index += 1
+            return (
+              <Fragment key={task.id}>
+                {drag.draggingId !== null && drag.dropIndex === index ? <DropIndicator /> : null}
+                <MobileTaskRow
+                  task={task}
+                  index={index}
+                  drag={drag}
+                  onOpen={onOpenTask}
+                  isDragging={drag.draggingId === task.id}
+                  currentUserId={currentUserId}
+                />
+              </Fragment>
+            )
+          })}
+      {drag.draggingId !== null && drag.dropIndex === flach.length ? <DropIndicator /> : null}
+    </div>
   )
+}
+
+/**
+ * In welchen Bereich gehört die gezogene Aufgabe nach dem Ziehen?
+ *
+ * Ihr Ziel ergibt sich aus den Nachbarn an der neuen Stelle: Steht sie vor
+ * einer Aufgabe, gilt deren Bereich; steht sie am Ende, der Bereich der
+ * Aufgabe davor. Ohne Bereiche bleibt es `null`.
+ *
+ * Ein **leerer** Bereich lässt sich so nicht befüllen – es gibt keine
+ * Nachbarzeile, an der er zu erkennen wäre. Die erste Aufgabe kommt deshalb
+ * über das Formular hinein; danach geht Ziehen auch dorthin.
+ */
+function zielAbschnitt(
+  orderedTaskIds: string[],
+  flach: LocalTask[],
+  draggedId: string | null,
+): Record<string, string | null> {
+  if (draggedId === null) return {}
+  const bereichVon = new Map(flach.map((task) => [task.id, task.section_id]))
+  const stelle = orderedTaskIds.indexOf(draggedId)
+  if (stelle < 0) return {}
+
+  const nachbar =
+    orderedTaskIds[stelle + 1] ?? (stelle > 0 ? orderedTaskIds[stelle - 1] : undefined)
+  const ziel = nachbar === undefined ? (bereichVon.get(draggedId) ?? null) : (bereichVon.get(nachbar) ?? null)
+  return { [draggedId]: ziel }
 }
 
 function DropIndicator() {

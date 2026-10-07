@@ -11,6 +11,7 @@ export function localTask(overrides: Partial<LocalTask> = {}): LocalTask {
   return {
     id: 'task-1',
     list_id: 'list-1',
+    section_id: null,
     title: 'Aufgabe',
     description: null,
     due_at: null,
@@ -40,6 +41,7 @@ export function localList(overrides: Partial<LocalList> = {}): LocalList {
     owner_id: 'user-1',
     is_shared: false,
     icon: null,
+    sections: [],
     created_at: T0,
     updated_at: T0,
     deleted_at: null,

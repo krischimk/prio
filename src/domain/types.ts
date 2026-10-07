@@ -45,6 +45,17 @@ export interface ShareContact {
   last_used_at: IsoDateTime
 }
 
+/**
+ * Ein Abschnitt innerhalb einer Liste („Obst", „Getränke").
+ *
+ * Nur Kennung und Name: Die Stelle in der Reihenfolge steckt in der Reihenfolge
+ * des Arrays, die Zugehörigkeit einer Aufgabe in `LocalTask.section_id`.
+ */
+export interface ListSection {
+  id: string
+  name: string
+}
+
 export interface LocalList extends SyncableRow, LocalOnly {
   id: string
   name: string
@@ -58,12 +69,25 @@ export interface LocalList extends SyncableRow, LocalOnly {
    * Sache der App und lässt sich ändern, ohne Daten umzuschreiben.
    */
   icon: string | null
+  /**
+   * Die Abschnitte der Liste in Anzeigereihenfolge.
+   *
+   * Zugeklappt oder offen ist dagegen **nicht** Teil der Liste: Das ist eine
+   * Ansichtssache je Gerät und wird nicht abgeglichen.
+   */
+  sections: ListSection[]
   created_at: IsoDateTime
 }
 
 export interface LocalTask extends SyncableRow, LocalOnly {
   id: string
   list_id: string
+  /**
+   * Der Abschnitt der Aufgabe innerhalb ihrer Liste; `null` heißt „ohne
+   * Bereich". Ein Verweis auf einen nicht (mehr) vorhandenen Abschnitt wird
+   * wie „ohne Bereich" angezeigt.
+   */
+  section_id: string | null
   title: string
   description: string | null
   due_at: IsoDateTime | null
@@ -163,8 +187,22 @@ export interface LocalReminder {
 }
 
 /** Zeile ohne `dirty` – die Form, die in Supabase liegt. */
-export type RemoteList = Omit<LocalList, 'dirty'>
-export type RemoteTask = Omit<LocalTask, 'dirty'>
+/**
+ * Eine Listenzeile, wie sie vom Server kommt.
+ *
+ * `sections` steht hier ausdrücklich optional: Die Spalte gibt es erst seit
+ * Migration 0013. Eine ältere Datenbank schickt sie nicht, und ein Feld, das
+ * angeblich immer da ist, würde beim Lesen zu einer Lüge – genau dafür steht
+ * `parseSections` bereit.
+ */
+export type RemoteList = Omit<LocalList, 'dirty' | 'sections'> & {
+  sections?: ListSection[] | null
+}
+
+/** Eine Aufgabenzeile vom Server; `section_id` fehlt vor Migration 0013. */
+export type RemoteTask = Omit<LocalTask, 'dirty' | 'section_id'> & {
+  section_id?: string | null
+}
 export type RemoteListMember = Omit<LocalListMember, 'dirty'>
 
 export type RemoteTable = 'lists' | 'list_members' | 'tasks'

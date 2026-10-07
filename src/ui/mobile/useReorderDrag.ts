@@ -46,7 +46,11 @@ const MOVE_TOLERANCE_PX = 10
 
 export function useReorderDrag(options: {
   itemIds: string[]
-  onReorder: (orderedIds: string[]) => void
+  /**
+   * Die neue Reihenfolge und die Kennung der gezogenen Aufgabe – der Aufrufer
+   * braucht sie, um den Zielabschnitt zu bestimmen.
+   */
+  onReorder: (orderedIds: string[], draggedId: string) => void
   containerRef: RefObject<HTMLElement | null>
   longPressMs?: number
 }): ReorderDrag {
@@ -144,7 +148,7 @@ export function useReorderDrag(options: {
         const next = [...itemIdsRef.current]
         next.splice(current.index, 1)
         next.splice(target, 0, current.id)
-        onReorderRef.current(next)
+        onReorderRef.current(next, current.id)
       }
 
       reset()

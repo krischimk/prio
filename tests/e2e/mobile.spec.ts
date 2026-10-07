@@ -518,3 +518,63 @@ test('schaltet eine Erinnerung auf dem Telefon nur für sich stumm', async ({ pa
 
   await expect(taskRow(page, 'Müll rausbringen').getByText('für mich stumm')).toHaveCount(1)
 })
+
+/**
+ * E2E 6: Bereiche.
+ *
+ * Sie ordnen die Aufgaben innerhalb einer Liste, stehen unter „Ohne Bereich"
+ * und lassen sich zuklappen. Das Zuordnen per Ziehen setzt voraus, dass im
+ * Zielbereich schon eine Aufgabe steht – sonst gäbe es keine Nachbarzeile, an
+ * der sich der Bereich erkennen ließe; die erste kommt über das Formular hinein.
+ */
+test('E2E 6: Bereiche ordnen Aufgaben, nehmen sie beim Ziehen auf und klappen zu', async ({
+  page,
+  request,
+}) => {
+  await resetServer(request)
+  await register(page, uniqueEmail('m-bereiche'))
+  await createList(page, 'Einkauf')
+
+  await page.getByTestId('app-bar-title').click()
+  await page.getByRole('button', { name: 'Bereiche' }).click()
+  for (const name of ['Obst', 'Getränke']) {
+    await page.getByLabel('Neuer Bereich').fill(name)
+    await page.getByRole('button', { name: 'Bereich anlegen' }).click()
+  }
+  await page.getByRole('button', { name: 'Zurück' }).click()
+  await page.getByRole('button', { name: 'Schließen' }).click()
+
+  await createTask(page, 'Äpfel')
+  await createTask(page, 'Saft')
+  await createTask(page, 'Milch')
+
+  // Die erste Aufgabe kommt über das Formular in ihren Bereich.
+  await taskRow(page, 'Äpfel').click()
+  await page.getByLabel('Bereich').selectOption({ label: 'Obst' })
+  await page.getByRole('button', { name: 'Speichern', exact: true }).click()
+
+  const kopf = (name: string) => page.getByTestId('section-header').filter({ hasText: name })
+  await expect(kopf('Ohne Bereich')).toBeVisible()
+  await expect(kopf('Obst')).toContainText('1')
+  // „Ohne Bereich" steht oben, darunter die Bereiche in ihrer Reihenfolge.
+  // Der Kopf wird groß dargestellt; verglichen wird deshalb kleingeschrieben.
+  const koepfe = (await page.getByTestId('section-header').allInnerTexts()).map((text) =>
+    text.toLowerCase(),
+  )
+  expect(koepfe[0]).toContain('ohne bereich')
+  expect(koepfe[1]).toContain('obst')
+  expect(koepfe[2]).toContain('getränke')
+
+  // „Saft" unter „Äpfel" ziehen – damit landet sie im Bereich „Obst".
+  await dragRowDown(page, 'Saft', 120)
+
+  await expect(kopf('Obst')).toContainText('2')
+  expect(await taskTitles(page)).toEqual(['Milch', 'Äpfel', 'Saft'])
+
+  // Zuklappen: Die Aufgaben verschwinden, die Zahl bleibt.
+  await kopf('Obst').click()
+  await expect(kopf('Obst')).toContainText('2')
+  await expect(taskRow(page, 'Äpfel')).toHaveCount(0)
+  await expect(taskRow(page, 'Saft')).toHaveCount(0)
+  await expect(taskRow(page, 'Milch')).toBeVisible()
+})

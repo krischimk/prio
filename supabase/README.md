@@ -18,6 +18,7 @@ App. Sie sind so geschrieben, dass sie sich gefahrlos erneut ausführen lassen
 | `0010_task_reminder.sql` | Spalten `remind_at` und `reminder_offset_minutes`; trennt die Erinnerung von der Fälligkeit |
 | `0011_task_reminders.sql` | Spalte `reminders` (jsonb) – mehrere Erinnerungen je Aufgabe. Zieht die Einzelwerte aus 0010 einmalig um und entfernt die alten Spalten |
 | `0012_co_member_contacts.sql` | Funktion `co_member_contacts()` – Adressen der Personen, mit denen man eine Liste teilt (für Vorschläge beim Teilen). Gibt nur diesen Kreis heraus, ohne Parameter |
+| `0013_list_sections.sql` | Spalte `lists.sections` (jsonb, Abschnitte in Anzeigereihenfolge) und `tasks.section_id` (Abschnitt innerhalb der Liste; `null` = ohne Bereich). Keine neuen Policies nötig – die Rechte hängen an den bestehenden Tabellen |
 
 ## Anwenden
 
