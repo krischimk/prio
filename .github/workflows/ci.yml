@@ -5,6 +5,12 @@ name: CI
 # Wichtig: Die Pipeline benötigt KEINE Supabase-Secrets. Alle Tests laufen mit
 # Fakes bzw. gegen einen lokalen Mock-Server (tests/mock-supabase), und der
 # Produktionsbuild kommt ohne Zugangsdaten aus.
+#
+# Der Job `deploy` veröffentlicht zusätzlich die Web-Fassung nach Cloudflare
+# Pages – aber nur auf `main` und nur nach grünen Tests. Fehlt der Zugang
+# (Secret `CLOUDFLARE_API_TOKEN`, Variable `CLOUDFLARE_ACCOUNT_ID`), wird er
+# übersprungen statt rot: Das Repository soll nicht bei jedem Push meckern,
+# solange Cloudflare noch nicht eingerichtet ist.
 
 on:
   push:
@@ -79,3 +85,60 @@ jobs:
             playwright-report/
             test-results/
           retention-days: 7
+
+  # Die Web-Fassung. Anders als beim Bauen in Cloudflare selbst läuft sie erst
+  # nach den Tests – eine ungeprüfte Fassung kann so nicht online gehen.
+  # Der veröffentlichte Stand ist genau das Bundle, das hier gebaut und geprüft
+  # wurde.
+  deploy:
+    name: Web-Fassung zu Cloudflare Pages
+    needs: [quality, e2e]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+    steps:
+      - name: Zugang prüfen
+        id: zugang
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "bereit=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Kein Cloudflare-Zugang hinterlegt – die Web-Fassung wird nicht veröffentlicht."
+          else
+            echo "bereit=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.zugang.outputs.bereit == 'true'
+        uses: actions/checkout@v7
+
+      - if: steps.zugang.outputs.bereit == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - if: steps.zugang.outputs.bereit == 'true'
+        name: Abhängigkeiten installieren
+        run: npm ci
+
+      - if: steps.zugang.outputs.bereit == 'true'
+        name: Web-Bundle bauen
+        run: |
+          test -n "$VITE_SUPABASE_URL" || { echo "::error::Repository-Variable VITE_SUPABASE_URL fehlt."; exit 1; }
+          test -n "$VITE_SUPABASE_PUBLISHABLE_KEY" || { echo "::error::Repository-Variable VITE_SUPABASE_PUBLISHABLE_KEY fehlt."; exit 1; }
+          npm run build
+          # Sicherheitsnetz wie im Release: Lieber nichts veröffentlichen als
+          # eine Fassung, die nicht synchronisieren kann.
+          grep -q "$VITE_SUPABASE_URL" dist/assets/*.js \
+            || { echo "::error::Die Supabase-URL steckt nicht im Web-Bundle."; exit 1; }
+
+      - if: steps.zugang.outputs.bereit == 'true'
+        name: Projekt anlegen (beim ersten Mal)
+        run: npx --yes wrangler@4 pages project create prio --production-branch=main || true
+
+      - if: steps.zugang.outputs.bereit == 'true'
+        name: Hochladen
+        run: npx --yes wrangler@4 pages deploy dist --project-name=prio --branch=main
