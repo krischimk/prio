@@ -29,7 +29,17 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : [['list']],
+  /*
+   * Im CI zusätzlich der GitHub-Bericht.
+   *
+   * Er trägt gescheiterte Tests als **Prüf-Vermerk** ein – und die sind im
+   * Gegensatz zum Job-Log ohne Zugangsschlüssel lesbar. Ohne ihn bleibt von
+   * einem roten Lauf nur „Process completed with exit code 1" übrig, und die
+   * Ursache muss lokal nachgestellt werden.
+   */
+  reporter: process.env.CI
+    ? [['list'], ['html', { open: 'never' }], ['github']]
+    : [['list']],
   use: {
     baseURL: APP_URL,
     viewport: { width: 1280, height: 800 },
