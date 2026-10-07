@@ -37,8 +37,30 @@ export class RemoteError extends Error {
 export interface SyncTransport {
   /** Lädt den kompletten sichtbaren Serverbestand. */
   pull(): Promise<RemoteSnapshot>
-  /** Lädt lokale Änderungen hoch (idempotent über Upsert). */
-  push(payload: PushPayload): Promise<void>
+  /**
+   * Lädt lokale Änderungen hoch (idempotent über Upsert).
+   *
+   * **Je Tabelle getrennt.** Vorher war der Upload alles-oder-nichts: Lehnte
+   * der Server eine einzige Zeile ab, ging gar nichts durch, alles blieb
+   * `dirty` und der Zähler „N Änderungen warten“ wurde nie leer. Jetzt sagt das
+   * Ergebnis, welche Tabellen angekommen sind – der Rest darf weiterlaufen.
+   */
+  push(payload: PushPayload): Promise<PushErgebnis>
+}
+
+/** Die drei Tabellen, die hochgeladen werden – in dieser Reihenfolge (Fremdschlüssel). */
+export type PushTabelle = 'lists' | 'members' | 'tasks'
+
+/** Was ein Upload geschafft hat und was nicht. */
+export interface PushErgebnis {
+  /** Die Zeilen, die tatsächlich angekommen sind. */
+  hochgeladen: PushPayload
+  /** Die gescheiterten Tabellen mit ihrem Fehler – alles darin bleibt `dirty`. */
+  fehler: Array<{ tabelle: PushTabelle; error: RemoteError }>
+}
+
+export function leeresPushErgebnis(): PushErgebnis {
+  return { hochgeladen: { lists: [], members: [], tasks: [] }, fehler: [] }
 }
 
 /**

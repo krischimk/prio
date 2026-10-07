@@ -173,6 +173,13 @@ nicht einmal je Änderung. Drei Stufen:
   Operation setzt `updated_at` und `dirty = 1` – sonst geht sie beim Sync
   verloren.
 * Gelöscht wird als Soft Delete (`deleted_at`), nie hart.
+* **Der Upload ist je Tabelle, und abgelehnte Zeilen blockieren nichts.**
+  `SyncTransport.push` gibt ein Ergebnis je Tabelle zurück; nur was angekommen
+  ist, wird als hochgeladen markiert. Was der Server dauerhaft ablehnt, wandert
+  nach ein paar Anläufen in ein Ablagefach (`syncStore`) und zählt nicht mehr als
+  „warten“. Vorher war der Upload alles-oder-nichts: eine abgelehnte Zeile hielt
+  den ganzen Bestand zurück, und der Zähler wurde nie leer. Auslöser:
+  `DESIGN.md` §15.5 C1.
 * **Der Schlüssel-Wert-Speicher ist neutral, die Schlüssel gehören ihrem
   Schreiber.** Zugriffe über `src/db/metaStore.ts`; welche Schlüssel es gibt,
   weiß `repositories`, `reminderService` bzw. `syncStore`. Vorher lagen sie alle

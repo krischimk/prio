@@ -3,8 +3,20 @@ import { isEmptyPayload, toPushPayload } from '../domain/mapping'
 import type { IsoDateTime } from '../domain/types'
 import type { LocalDatabase } from '../db/localDb'
 import { applyRemoteLists, applyRemoteMembers, applyRemoteTasks } from './applyRemote'
-import { classifyRemoteError, type RemoteError, type SyncTransport } from './remoteGateway'
-import { collectDirty, markPushed, META_LAST_SYNC_AT, writeMeta } from './syncStore'
+import {
+  classifyRemoteError,
+  type PushTabelle,
+  type RemoteError,
+  type SyncTransport,
+} from './remoteGateway'
+import {
+  collectDirty,
+  markPushed,
+  merkeAbgelehnt,
+  META_LAST_SYNC_AT,
+  vergissAbgelehnt,
+  writeMeta,
+} from './syncStore'
 
 /**
  * Sync-Engine.
@@ -86,17 +98,64 @@ export function createSyncEngine(options: SyncEngineOptions): SyncEngine {
 
     const dirty = await collectDirty(options.db)
     const payload = toPushPayload(dirty.lists, dirty.members, dirty.tasks)
-    const pushCount = payload.lists.length + payload.members.length + payload.tasks.length
 
     let pushed = 0
     let pushError: RemoteError | null = null
 
     if (!isEmptyPayload(payload)) {
+      // Für das Ablagefach: welche Zeilen steckten in welcher Tabelle?
+      const kennungen: Record<PushTabelle, Array<{ tabelle: PushTabelle; id: string; updated_at: IsoDateTime }>> = {
+        lists: payload.lists.map((zeile) => ({
+          tabelle: 'lists',
+          id: zeile.id,
+          updated_at: zeile.updated_at,
+        })),
+        members: payload.members.map((zeile) => ({
+          tabelle: 'members',
+          id: `${zeile.list_id}:${zeile.user_id}`,
+          updated_at: zeile.updated_at,
+        })),
+        tasks: payload.tasks.map((zeile) => ({
+          tabelle: 'tasks',
+          id: zeile.id,
+          updated_at: zeile.updated_at,
+        })),
+      }
+
       try {
-        await options.gateway.push(payload)
-        await markPushed(options.db, payload)
-        pushed = pushCount
+        const ergebnis = await options.gateway.push(payload)
+
+        // Nur markieren, was wirklich angekommen ist – der Rest bleibt dirty.
+        await markPushed(options.db, ergebnis.hochgeladen)
+        await vergissAbgelehnt(options.db, ergebnis.hochgeladen)
+        pushed =
+          ergebnis.hochgeladen.lists.length +
+          ergebnis.hochgeladen.members.length +
+          ergebnis.hochgeladen.tasks.length
+
+        if (ergebnis.fehler.length > 0) {
+          const offline = ergebnis.fehler.find((eintrag) => eintrag.error.kind === 'offline')
+          const auth = ergebnis.fehler.find((eintrag) => eintrag.error.kind === 'auth')
+          if (offline || auth) {
+            // Kein Netz oder Sitzung abgelaufen: Alles bleibt liegen, und es
+            // wird **nicht** gezählt – der nächste Versuch kommt von selbst.
+            pushError = offline?.error ?? auth!.error
+          } else {
+            /*
+             * Der Server hat abgelehnt. Fehlversuche werden gezählt: Erst nach
+             * ein paar Anläufen wandert eine Zeile ins Ablagefach und blockiert
+             * dann nichts mehr. Ein einzelner Serverfehler soll sie nicht aus
+             * dem Abgleich nehmen.
+             */
+            for (const { tabelle, error } of ergebnis.fehler) {
+              await merkeAbgelehnt(options.db, kennungen[tabelle], error.message, at)
+            }
+            pushError = ergebnis.fehler[0].error
+          }
+        }
       } catch (error) {
+        // Eine Implementierung, die wirft (etwa „gar kein Netz“), gilt als
+        // vollständiger Fehlschlag – alles bleibt dirty.
         pushError = classifyRemoteError(error)
       }
     }

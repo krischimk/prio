@@ -1,6 +1,6 @@
 import { createRepositories, type Repositories } from '../db/repositories'
 import { openLocalDatabase } from '../db/localDb'
-import { countDirty } from '../sync/syncStore'
+import { countAbgelehnt, countDirty } from '../sync/syncStore'
 import { createSyncEngine, type SyncResult } from '../sync/syncEngine'
 import { createShareListAction } from '../sync/shareList'
 import { createCapacitorNotificationsPort } from '../reminders/capacitorNotifications'
@@ -28,7 +28,10 @@ export interface WorkspaceZustand {
   datenVersion: number
   syncStatus: SyncResult | null
   syncing: boolean
+  /** Offene Änderungen, die noch übertragen werden können. */
   pendingCount: number
+  /** Änderungen, die der Server dauerhaft ablehnt (Ablagefach). */
+  rejectedCount: number
   reminderStatus: ReminderStatus | null
 }
 
@@ -90,6 +93,7 @@ export async function createWorkspaceRuntime({
     syncStatus: null,
     syncing: false,
     pendingCount: 0,
+    rejectedCount: 0,
     reminderStatus: null,
   }
   const hoerer = new Set<() => void>()
@@ -137,8 +141,11 @@ export async function createWorkspaceRuntime({
   }
 
   async function offeneAenderungenZaehlen() {
-    const pending = await countDirty(database)
-    if (!geschlossen) melde({ pendingCount: pending })
+    const [pending, abgelehnt] = await Promise.all([
+      countDirty(database),
+      countAbgelehnt(database),
+    ])
+    if (!geschlossen) melde({ pendingCount: pending, rejectedCount: abgelehnt })
   }
 
   async function erinnerungenAuffrischen() {

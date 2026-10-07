@@ -8,8 +8,11 @@ import type {
 } from '../domain/types'
 import {
   classifyRemoteError,
+  leeresPushErgebnis,
   RemoteError,
   type CoMemberContact,
+  type PushErgebnis,
+  type PushTabelle,
   type RemoteGateway,
 } from './remoteGateway'
 
@@ -52,22 +55,37 @@ export function createSupabaseGateway(client: SupabaseClient): RemoteGateway {
       }
     },
 
-    async push(payload: PushPayload): Promise<void> {
+    async push(payload: PushPayload): Promise<PushErgebnis> {
+      const ergebnis = leeresPushErgebnis()
+
+      const hochladen = async (
+        tabelle: PushTabelle,
+        anfrage: () => PromiseLike<{ error: unknown }>,
+      ) => {
+        if (payload[tabelle].length === 0) return
+        const { error } = await anfrage()
+        if (error) {
+          ergebnis.fehler.push({ tabelle, error: classifyRemoteError(error) })
+          return
+        }
+        // Die Zeilen sind angekommen – markiert werden sie in der Sync-Engine.
+        ergebnis.hochgeladen[tabelle] = payload[tabelle] as never
+      }
+
       // Reihenfolge ist durch Fremdschlüssel vorgegeben: Listen → Mitglieder → Aufgaben.
-      if (payload.lists.length > 0) {
-        const { error } = await client.from('lists').upsert(payload.lists, { onConflict: 'id' })
-        throwIfError(error, 'Listen konnten nicht hochgeladen werden.')
+      await hochladen('lists', () =>
+        client.from('lists').upsert(payload.lists, { onConflict: 'id' }),
+      )
+      if (ergebnis.fehler.some((eintrag) => eintrag.tabelle === 'lists')) {
+        // Ohne Liste scheitern Mitglieder und Aufgaben ohnehin; sie bleiben dirty.
+        return ergebnis
       }
-      if (payload.members.length > 0) {
-        const { error } = await client
-          .from('list_members')
-          .upsert(payload.members, { onConflict: 'list_id,user_id' })
-        throwIfError(error, 'Mitgliedschaften konnten nicht hochgeladen werden.')
-      }
-      if (payload.tasks.length > 0) {
-        const { error } = await client.from('tasks').upsert(payload.tasks, { onConflict: 'id' })
-        throwIfError(error, 'Aufgaben konnten nicht hochgeladen werden.')
-      }
+      await hochladen('members', () =>
+        client.from('list_members').upsert(payload.members, { onConflict: 'list_id,user_id' }),
+      )
+      await hochladen('tasks', () => client.from('tasks').upsert(payload.tasks, { onConflict: 'id' }))
+
+      return ergebnis
     },
 
     async shareListByEmail(listId: string, email: string): Promise<{ userId: string }> {

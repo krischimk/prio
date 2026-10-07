@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
 import { createSupabaseGateway } from '../../src/sync/supabaseGateway'
 import { classifyRemoteError, RemoteError } from '../../src/sync/remoteGateway'
-import { localMember, localTask, remoteList } from '../support/factories'
+import { localList, localMember, localTask, remoteList } from '../support/factories'
 
 /**
  * Supabase-Gateway (unit) – mit vollständig gemocktem Supabase-Client.
@@ -95,14 +95,23 @@ describe('Supabase-Gateway', () => {
     await expect(createSupabaseGateway(client).pull()).rejects.toMatchObject({ kind: 'auth' })
   })
 
-  it('meldet eine abgelehnte Schreiboperation als Serverfehler', async () => {
+  it('meldet eine abgelehnte Schreiboperation als Serverfehler – und nur für ihre Tabelle', async () => {
     const { client } = createMockClient({
       upsert: () => ({ error: { message: 'new row violates row-level security policy', code: '42501' } }),
     })
 
-    await expect(
-      createSupabaseGateway(client).push({ lists: [], members: [], tasks: [localTask()] }),
-    ).rejects.toMatchObject({ kind: 'server' })
+    const ergebnis = await createSupabaseGateway(client).push({
+      lists: [localList()],
+      members: [],
+      tasks: [localTask()],
+    })
+
+    // Die Ablehnung wird gemeldet, statt geworfen zu werden: Der Aufrufer
+    // (die Sync-Engine) markiert dann nur das als hochgeladen, was durchging.
+    expect(ergebnis.fehler).toHaveLength(1)
+    expect(ergebnis.fehler[0].tabelle).toBe('lists')
+    expect(ergebnis.fehler[0].error.kind).toBe('server')
+    expect(ergebnis.hochgeladen.tasks).toEqual([])
   })
 
   it('gibt beim Teilen die Benutzer-ID zurück', async () => {

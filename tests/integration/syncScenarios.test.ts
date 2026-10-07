@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { RemoteError } from '../../src/sync/remoteGateway'
-import { collectDirty, countDirty } from '../../src/sync/syncStore'
+import {
+  ABGELEHNT_AB_VERSUCHEN,
+  collectDirty,
+  countAbgelehnt,
+  countDirty,
+} from '../../src/sync/syncStore'
+import { createFixedClock } from '../../src/domain/clock'
 import { createFakeServer, type FakeServer } from '../support/fakeGateway'
 import { createDevice, createTestUserId, type DeviceHarness } from '../support/harness'
 import { T2 } from '../support/factories'
@@ -174,5 +180,89 @@ describe('Sync-Szenarien', () => {
     expect((await device.repositories.getList('fremde-liste'))?.name).toBe('Vom Server')
     // Die abgelehnte lokale Änderung bleibt in der Queue.
     expect(await countDirty(device.db)).toBe(1)
+  })
+
+  /**
+   * Ein abgelehnter Datensatz darf die anderen nicht blockieren.
+   *
+   * Anlass: Der Upload war alles-oder-nichts. Lehnte der Server eine Zeile ab,
+   * ging gar nichts durch, alles blieb `dirty`, und der Zähler „N Änderungen
+   * warten“ wurde nie leer – alle 30 Sekunden derselbe Datenberg.
+   */
+  it('lädt hoch, was geht, und meldet nur die abgelehnte Tabelle', async () => {
+    // Eine Liste, die dem Benutzer nicht gehört: Der Server weist die Tabelle
+    // „lists“ ab (RLS). Die Aufgaben hängen aber an einer Liste, die ohne die
+    // abgelehnte Liste nicht existiert – sie können deshalb (noch) nicht gehen,
+    // und genau das sagt das Ergebnis.
+    await device.repositories.createList('Fremde Liste', 'user-andere')
+    const eigene = await device.repositories.createList('Eigene Liste', userId)
+    await device.repositories.createTask({ listId: eigene.id, title: 'Geht durch' })
+
+    const result = await device.engine.sync()
+
+    expect(result.pushed).toBe(0)
+    expect([...server.lists.values()]).toEqual([])
+    // Nichts ist verloren: Beide Listen und die Aufgabe bleiben vorgemerkt.
+    expect(await countDirty(device.db)).toBe(3)
+    expect(await countAbgelehnt(device.db)).toBe(0)
+  })
+
+  it('legt eine dauerhaft abgelehnte Zeile nach ein paar Versuchen beiseite', async () => {
+    /*
+     * Eigene Uhr, die bei jedem Lesen weiterläuft.
+     *
+     * Der Stand einer Zeile (`updated_at`) ist die Kennung dafür, ob sie sich
+     * geändert hat. Mit einer festen Testuhr trüge eine Umbenennung denselben
+     * Zeitstempel wie der abgelehnte Stand – die Zeile bliebe beiseite, obwohl
+     * sie neu ist. Zwei Änderungen in derselben Millisekunde sind auch in
+     * Wirklichkeit derselbe Stand; dann hilft der nächste Sync nach einer
+     * späteren Änderung.
+     */
+    const uhr = createFixedClock()
+    const eigenes = await createDevice({
+      userId,
+      gateway: server.gatewayFor(userId),
+      isOnline: () => online,
+      clock: uhr,
+    })
+    device = eigenes
+
+    const liste = await eigenes.repositories.createList('Haushalt', userId)
+    server.failPushWith = new RemoteError('server', 'RLS: abgelehnt')
+
+    // Ein einzelner Fehlversuch nimmt die Zeile noch nicht aus dem Abgleich.
+    await device.engine.sync()
+    expect(await countDirty(device.db)).toBe(1)
+    expect(await countAbgelehnt(device.db)).toBe(0)
+
+    for (let versuch = 1; versuch < ABGELEHNT_AB_VERSUCHEN; versuch += 1) {
+      await device.engine.sync()
+    }
+
+    // Jetzt liegt sie beiseite: Der Zähler ist leer, die Zeile bleibt lokal.
+    expect(await countAbgelehnt(device.db)).toBe(1)
+    expect(await countDirty(device.db)).toBe(0)
+    expect((await device.repositories.getList(liste.id))?.name).toBe('Haushalt')
+
+    // Und eine neue lokale Änderung wird wieder versucht – die Uhr läuft
+    // dabei weiter, sonst trüge sie denselben Stand wie der abgelehnte.
+    server.failPushWith = null
+    uhr.advance(1000)
+    await device.repositories.renameList(liste.id, 'Haushalt neu')
+    await device.engine.sync()
+    expect(await countAbgelehnt(device.db)).toBe(0)
+    expect([...server.lists.values()].map((zeile) => zeile.name)).toContain('Haushalt neu')
+  })
+
+  it('zählt einen abgelehnten Bestand nicht als „warten“', async () => {
+    await device.repositories.createList('Haushalt', userId)
+    server.failPushWith = new RemoteError('server', 'RLS: abgelehnt')
+    for (let versuch = 0; versuch < ABGELEHNT_AB_VERSUCHEN; versuch += 1) {
+      await device.engine.sync()
+    }
+
+    const rest = await collectDirty(device.db)
+    expect(rest.lists).toEqual([])
+    expect(await countDirty(device.db)).toBe(0)
   })
 })

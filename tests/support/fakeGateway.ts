@@ -5,7 +5,14 @@ import type {
   RemoteSnapshot,
   RemoteTask,
 } from '../../src/domain/types'
-import { RemoteError, type RemoteGateway } from '../../src/sync/remoteGateway'
+import {
+  classifyRemoteError,
+  leeresPushErgebnis,
+  RemoteError,
+  type PushErgebnis,
+  type PushTabelle,
+  type RemoteGateway,
+} from '../../src/sync/remoteGateway'
 
 /**
  * In-Memory-Ersatz für Supabase.
@@ -93,39 +100,77 @@ export class FakeGateway implements RemoteGateway {
     }
   }
 
-  async push(payload: PushPayload): Promise<void> {
+  async push(payload: PushPayload): Promise<PushErgebnis> {
     this.server.pushCalls += 1
-    if (this.server.failPushWith) throw this.server.failPushWith
+    const ergebnis = leeresPushErgebnis()
 
-    // Dieselben Regeln wie die RLS-Policies in supabase/migrations/0002_rls.sql.
-    // Nur so verhalten sich Tests wie der echte Server.
-    for (const list of payload.lists) {
-      if (list.owner_id !== this.userId) {
-        throw new RemoteError('server', 'RLS: Nur der Besitzer darf eine Liste ändern.')
-      }
-      const existing = this.server.lists.get(list.id)
-      if (existing && existing.owner_id !== this.userId) {
-        throw new RemoteError('server', 'RLS: Diese Liste gehört einem anderen Benutzer.')
-      }
-      this.server.lists.set(list.id, list)
+    const scheitern = (tabelle: PushTabelle, error: unknown) => {
+      ergebnis.fehler.push({ tabelle, error: classifyRemoteError(error) })
     }
 
-    for (const member of payload.members) {
-      const list = this.server.lists.get(member.list_id)
-      if (!list) throw new RemoteError('server', 'RLS: Liste nicht gefunden.')
-      if (list.owner_id !== this.userId) {
-        throw new RemoteError('server', 'RLS: Nur der Besitzer verwaltet Mitglieder.')
+    if (this.server.failPushWith) {
+      for (const tabelle of ['lists', 'members', 'tasks'] as const) {
+        if (payload[tabelle].length > 0) scheitern(tabelle, this.server.failPushWith)
       }
-      this.server.members.set(memberKey(member), member)
+      return ergebnis
     }
 
-    for (const task of payload.tasks) {
-      const list = this.server.lists.get(task.list_id)
-      if (!list || !this.server.isVisibleList(list, this.userId)) {
-        throw new RemoteError('server', 'RLS: Kein Zugriff auf diese Liste.')
+    /*
+     * Dieselben Regeln wie die RLS-Policies in supabase/migrations/0002_rls.sql.
+     * Nur so verhalten sich Tests wie der echte Server.
+     *
+     * Wichtig: **zwei Durchgänge** – erst prüfen, dann schreiben. PostgREST
+     * führt ein `upsert` über ein Array als eine Anweisung aus: Wird eine Zeile
+     * abgelehnt, ist keine geschrieben. Ein zeilenweises Schreiben mit Abbruch
+     * hätte die halbe Tabelle hinterlassen.
+     */
+    try {
+      for (const list of payload.lists) {
+        if (list.owner_id !== this.userId) {
+          throw new RemoteError('server', 'RLS: Nur der Besitzer darf eine Liste ändern.')
+        }
+        const existing = this.server.lists.get(list.id)
+        if (existing && existing.owner_id !== this.userId) {
+          throw new RemoteError('server', 'RLS: Diese Liste gehört einem anderen Benutzer.')
+        }
       }
-      this.server.tasks.set(task.id, task)
+      for (const list of payload.lists) this.server.lists.set(list.id, list)
+      ergebnis.hochgeladen.lists = payload.lists
+    } catch (error) {
+      scheitern('lists', error)
     }
+    if (ergebnis.fehler.some((eintrag: { tabelle: PushTabelle }) => eintrag.tabelle === 'lists')) {
+      return ergebnis
+    }
+
+    try {
+      for (const member of payload.members) {
+        const list = this.server.lists.get(member.list_id)
+        if (!list) throw new RemoteError('server', 'RLS: Liste nicht gefunden.')
+        if (list.owner_id !== this.userId) {
+          throw new RemoteError('server', 'RLS: Nur der Besitzer verwaltet Mitglieder.')
+        }
+      }
+      for (const member of payload.members) this.server.members.set(memberKey(member), member)
+      ergebnis.hochgeladen.members = payload.members
+    } catch (error) {
+      scheitern('members', error)
+    }
+
+    try {
+      for (const task of payload.tasks) {
+        const list = this.server.lists.get(task.list_id)
+        if (!list || !this.server.isVisibleList(list, this.userId)) {
+          throw new RemoteError('server', 'RLS: Kein Zugriff auf diese Liste.')
+        }
+      }
+      for (const task of payload.tasks) this.server.tasks.set(task.id, task)
+      ergebnis.hochgeladen.tasks = payload.tasks
+    } catch (error) {
+      scheitern('tasks', error)
+    }
+
+    return ergebnis
   }
 
   async shareListByEmail(listId: string, email: string): Promise<{ userId: string }> {
@@ -206,9 +251,19 @@ export class OfflineGateway implements RemoteGateway {
     throw new RemoteError('offline', 'Netzwerk nicht erreichbar.')
   }
 
-  async push(): Promise<void> {
+  async push(payload: PushPayload): Promise<PushErgebnis> {
     this.calls += 1
-    throw new RemoteError('offline', 'Netzwerk nicht erreichbar.')
+    // Kein Netz: nichts geht durch, alles bleibt liegen.
+    const ergebnis = leeresPushErgebnis()
+    for (const tabelle of ['lists', 'members', 'tasks'] as const) {
+      if (payload[tabelle].length > 0) {
+        ergebnis.fehler.push({
+          tabelle,
+          error: new RemoteError('offline', 'Netzwerk nicht erreichbar.'),
+        })
+      }
+    }
+    return ergebnis
   }
 
   async shareListByEmail(): Promise<{ userId: string }> {

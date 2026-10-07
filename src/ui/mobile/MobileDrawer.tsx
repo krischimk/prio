@@ -39,8 +39,16 @@ export function MobileDrawer({
   onOpenRestore: () => void
 }) {
   const { state, signOut } = useAuth()
-  const { repositories, syncStatus, pendingCount, syncing, runSync, reminderStatus, enableReminders } =
-    useWorkspace()
+  const {
+    repositories,
+    syncStatus,
+    pendingCount,
+    rejectedCount,
+    syncing,
+    runSync,
+    reminderStatus,
+    enableReminders,
+  } = useWorkspace()
 
   const [name, setName] = useState('')
   const [creating, setCreating] = useState(false)
@@ -54,7 +62,7 @@ export function MobileDrawer({
   if (!open) return null
 
   const email = state.status === 'authenticated' ? state.user.email : ''
-  const sync = describeSyncState(syncStatus, pendingCount, syncing)
+  const sync = describeSyncState(syncStatus, pendingCount, syncing, rejectedCount)
   const reminders = describeReminderState(reminderStatus)
 
   const createList = async (event: FormEvent) => {

@@ -10,8 +10,8 @@ import { Button } from './components/Button'
  * das ist die wichtigste Information, wenn Supabase gerade nicht erreichbar ist.
  */
 export function SyncIndicator() {
-  const { syncStatus, pendingCount, syncing, runSync } = useWorkspace()
-  const { text, tone } = describeSyncState(syncStatus, pendingCount, syncing)
+  const { syncStatus, pendingCount, rejectedCount, syncing, runSync } = useWorkspace()
+  const { text, tone } = describeSyncState(syncStatus, pendingCount, syncing, rejectedCount)
   const farben = statusTone[tone]
 
   return (

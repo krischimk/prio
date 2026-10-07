@@ -69,6 +69,7 @@ function Bereit({ runtime, children }: { runtime: WorkspaceRuntime; children: Re
       dataVersion: zustand.datenVersion,
       syncStatus: zustand.syncStatus,
       pendingCount: zustand.pendingCount,
+      rejectedCount: zustand.rejectedCount,
       syncing: zustand.syncing,
       reminderStatus: zustand.reminderStatus,
       runSync: runtime.synchronisieren,

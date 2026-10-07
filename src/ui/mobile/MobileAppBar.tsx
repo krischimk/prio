@@ -26,8 +26,8 @@ export function MobileAppBar({
   /** Öffnet die Verwaltung der aktuellen Liste. Nur sinnvoll mit Auswahl. */
   onOpenList: () => void
 }) {
-  const { syncStatus, pendingCount, syncing, runSync } = useWorkspace()
-  const { tone, text } = describeSyncState(syncStatus, pendingCount, syncing)
+  const { syncStatus, pendingCount, rejectedCount, syncing, runSync } = useWorkspace()
+  const { tone, text } = describeSyncState(syncStatus, pendingCount, syncing, rejectedCount)
   const farben = statusTone[tone]
   const { state: update } = useUpdate()
   const updateVerfuegbar = update.status === 'available'

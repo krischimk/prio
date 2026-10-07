@@ -20,6 +20,8 @@ export interface WorkspaceValue {
   syncStatus: SyncResult | null
   /** Anzahl noch nicht hochgeladener lokaler Änderungen. */
   pendingCount: number
+  /** Änderungen, die der Server dauerhaft ablehnt (Ablagefach). */
+  rejectedCount: number
   /** `true`, solange ein Sync läuft. */
   syncing: boolean
   /** Zeitpunkt des letzten erfolgreichen Syncs (aus der lokalen Meta-Tabelle). */

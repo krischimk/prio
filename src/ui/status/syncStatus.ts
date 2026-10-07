@@ -25,6 +25,8 @@ export function describeSyncState(
   status: SyncResult | null,
   pendingCount: number,
   syncing: boolean,
+  /** Änderungen, die der Server dauerhaft ablehnt (Ablagefach). */
+  rejectedCount = 0,
 ): SyncDescription {
   if (syncing) {
     return { text: 'Synchronisiere…', tone: 'pending' }
@@ -46,6 +48,14 @@ export function describeSyncState(
         tone: 'pending',
       }
     case 'ok':
+      // Abgelehnte Änderungen sind kein „warten“: Sie gehen nicht von selbst
+      // durch. Deshalb stehen sie hier und nicht im Zähler daneben.
+      if (rejectedCount > 0) {
+        return {
+          text: `${rejectedCount} ${rejectedCount === 1 ? 'Änderung wurde' : 'Änderungen wurden'} vom Server abgelehnt.`,
+          tone: 'error',
+        }
+      }
       return pendingCount > 0
         ? {
             text: `${pendingCount} ${pendingCount === 1 ? 'Änderung wartet' : 'Änderungen warten'} auf Übertragung.`,

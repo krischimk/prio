@@ -39,3 +39,36 @@ describe('Statusanzeige der Synchronisation', () => {
     expect(describeSyncState(null, 0, false).text).toBe('Noch nicht synchronisiert.')
   })
 })
+
+/**
+ * Abgelehnte Änderungen sind kein „warten“.
+ *
+ * Anlass: Der Upload war alles-oder-nichts. Eine dauerhaft abgelehnte Zeile
+ * blieb `dirty`, und die Anzeige sagte für immer „N Änderungen warten“ – obwohl
+ * nichts mehr von selbst durchgeht. Sie liegen jetzt in einem Ablagefach und
+ * werden hier benannt.
+ */
+describe('Abgelehnte Änderungen', () => {
+  const ok: SyncResult = {
+    kind: 'ok',
+    pushed: 1,
+    pulled: 0,
+    message: null,
+    at: '2026-01-01T00:00:00.000Z',
+  }
+
+  it('benennt sie mit Fehlerton statt als „warten“', () => {
+    const description = describeSyncState(ok, 0, false, 2)
+
+    expect(description.tone).toBe('error')
+    expect(description.text).toContain('2 Änderungen wurden')
+  })
+
+  it('nennt eine einzelne im Singular', () => {
+    expect(describeSyncState(ok, 0, false, 1).text).toContain('1 Änderung wurde')
+  })
+
+  it('bleibt beim Üblichen, wenn nichts abgelehnt ist', () => {
+    expect(describeSyncState(ok, 0, false, 0)).toEqual({ text: 'Alles synchronisiert.', tone: 'ok' })
+  })
+})
