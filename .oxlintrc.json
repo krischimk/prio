@@ -1,16 +1,38 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
+  "plugins": [
+    "react",
+    "typescript",
+    "oxc"
+  ],
   "rules": {
     "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }],
-    "react/set-state-in-effect": "off"
+    "react/only-export-components": [
+      "warn",
+      {
+        "allowConstantExport": true
+      }
+    ],
+    "react/set-state-in-effect": "error"
   },
   "overrides": [
     {
-      "files": ["tests/**", "e2e/**"],
+      "files": [
+        "tests/**",
+        "e2e/**"
+      ],
       "rules": {
         "react/only-export-components": "off"
+      }
+    },
+    {
+      "files": [
+        "src/app/WorkspaceProvider.tsx",
+        "src/auth/AuthProvider.tsx",
+        "src/ui/UpdateProvider.tsx"
+      ],
+      "rules": {
+        "react/set-state-in-effect": "off"
       }
     }
   ]

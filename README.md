@@ -958,10 +958,14 @@ jeweiligen Stelle kommentiert.
    Anfragen an die eigene Herkunft. Würde er Supabase-Antworten cachen, käme
    veralteter Cloud-Zustand zurück – genau das würde die Sync-Logik brechen.
 
-10. **`react/set-state-in-effect` ist abgeschaltet** (`.oxlintrc.json`). Die
-    Effekte in `WorkspaceProvider` und `AuthProvider` spiegeln den Zustand
-    externer Systeme (IndexedDB, Netzwerk, Auth) nach React – ein legitimer
-    Einsatz von Effekten, den die Regel pauschal meldet.
+10. **`react/set-state-in-effect` gilt, mit drei benannten Ausnahmen.** Die
+    Effekte in `src/app/WorkspaceProvider.tsx`, `src/auth/AuthProvider.tsx` und
+    `src/ui/UpdateProvider.tsx` spiegeln den Zustand externer Systeme nach React
+    (IndexedDB, Netzwerk, Auth, Update-Abfrage) – ein legitimer Einsatz von
+    Effekten, den die Regel pauschal meldet. Sie steht in `.oxlintrc.json` für
+    **genau diese drei Dateien** abgeschaltet (`overrides`), nicht mehr global:
+    Vorher war sie überall aus, und damit auch die Frühwarnung für jede neue
+    Komponente. Auslöser: `DESIGN.md` §15.4 B6.
 
 11. **Bekannte Kleinigkeiten:** Die Datenbankverbindung bleibt beim Abmelden
     geöffnet (die Daten bleiben lokal erhalten, das ist gewollt). Das
