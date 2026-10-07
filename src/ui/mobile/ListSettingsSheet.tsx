@@ -1,5 +1,4 @@
 import { useState, type FormEvent } from 'react'
-import { useBackLayer } from '../../app/useBackLayer'
 import { useWorkspace } from '../../app/useWorkspace'
 import type { LocalList } from '../../domain/types'
 import { ListIcon } from '../ListIcon'
@@ -7,9 +6,9 @@ import { ListIconPicker } from '../ListIconPicker'
 import { SharePanel } from '../SharePanel'
 import { SectionsPanel } from '../SectionsPanel'
 import { errorMessage, input } from '../styles'
-import { CloseIcon } from '../icons'
-import { IconButton } from '../components/IconButton'
+
 import { Button } from '../components/Button'
+import { Sheet } from '../components/Sheet'
 
 /**
  * Verwaltung der aktuellen Liste – umbenennen, teilen, löschen oder verlassen.
@@ -42,11 +41,12 @@ export function ListSettingsSheet({
 
   const istBesitzer = list.owner_id === currentUserId
 
-  // Die Zurück-Taste schließt zuerst das Unterformular, dann die Ansicht.
-  useBackLayer(true, () => {
+  // Zurück-Taste und Escape schließen zuerst das Unterformular, dann die
+  // Ansicht – dieselbe Regel wie im Menü.
+  const schliessen = () => {
     if (modus === 'menue') onClose()
     else setModus('menue')
-  })
+  }
 
   /** Führt eine Aktion aus und schließt danach – Fehler bleiben sichtbar. */
   const ausfuehren = async (aktion: () => Promise<unknown>) => {
@@ -68,38 +68,15 @@ export function ListSettingsSheet({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Liste verwalten"
+    <Sheet
+      label="Liste verwalten"
+      title={<span data-testid="list-sheet-title">{list.name}</span>}
+      subtitle={istBesitzer ? 'Deine Liste' : 'Von jemand anderem geteilt'}
+      leading={<ListIcon icon={list.icon} className="h-5 w-5 shrink-0 text-ink-soft" />}
+      onClose={onClose}
+      onBack={schliessen}
     >
-      <div className="absolute inset-0 bg-page/60" aria-hidden="true" onClick={onClose} />
-
-      <div className="safe-bottom relative flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-sheet border-t border-line bg-surface md:max-w-lg md:rounded-sheet md:border">
-        <header className="flex items-start justify-between gap-2 border-b border-line px-4 py-3">
-          <div className="flex min-w-0 items-center gap-2">
-            <ListIcon icon={list.icon} className="h-5 w-5 shrink-0 text-ink-soft" />
-            <div className="min-w-0">
-              <h2 className="break-words text-body font-medium text-ink" data-testid="list-sheet-title">
-                {list.name}
-              </h2>
-              <p className="text-meta text-ink-faint">
-                {istBesitzer ? 'Deine Liste' : 'Von jemand anderem geteilt'}
-              </p>
-            </div>
-          </div>
-          <IconButton
-           
-            onClick={onClose}
-            aria-label="Schließen"
-            variant="icon"
-          >
-            <CloseIcon />
-          </IconButton>
-        </header>
-
-        <div className="scroll-area flex-1 overflow-y-auto px-4 py-4">
+      <div className="px-4 py-4">
           {modus === 'menue' ? (
             <div className="space-y-2">
               {istBesitzer ? (
@@ -248,8 +225,7 @@ export function ListSettingsSheet({
               {error}
             </p>
           ) : null}
-        </div>
       </div>
-    </div>
+    </Sheet>
   )
 }

@@ -1,11 +1,10 @@
 import { useState } from 'react'
-import { useBackLayer } from '../app/useBackLayer'
 import { useWorkspace } from '../app/useWorkspace'
 import type { LocalList, LocalTask } from '../domain/types'
 import { errorMessage } from './styles'
-import { CloseIcon } from './icons'
-import { IconButton } from './components/IconButton'
+
 import { Button } from './components/Button'
+import { Sheet } from './components/Sheet'
 
 /**
  * Auswahl der Ziel-Liste beim Verschieben einer Aufgabe.
@@ -30,8 +29,6 @@ export function MoveTaskSheet({
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useBackLayer(true, onClose)
-
   const targets = lists.filter((list) => list.id !== task.list_id)
 
   const move = async (targetListId: string) => {
@@ -48,31 +45,18 @@ export function MoveTaskSheet({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-60 flex flex-col justify-end md:items-center md:justify-center"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Aufgabe verschieben"
+    <Sheet
+      label="Aufgabe verschieben"
+      title="Verschieben nach"
+      subtitle={task.title}
+      closeLabel="Verschieben abbrechen"
+      onClose={onClose}
+      footer={
+        <Button variant="ghost" layout="w-full" onClick={onClose}>
+          Abbrechen
+        </Button>
+      }
     >
-      <div
-        className="absolute inset-0 cursor-default bg-page/60"
-        aria-hidden="true"
-        onClick={onClose}
-      />
-
-      <div className="safe-bottom relative max-h-[70%] overflow-y-auto rounded-t-sheet border-t border-line bg-surface md:max-h-[85vh] md:w-full md:max-w-lg md:rounded-sheet md:border">
-        <div className="flex items-center justify-between px-4 pt-4">
-          <h2 className="text-body font-medium text-ink">Verschieben nach</h2>
-          <IconButton
-           
-            onClick={onClose}
-            aria-label="Verschieben abbrechen"
-            variant="icon"
-          >
-            <CloseIcon />
-          </IconButton>
-        </div>
-        <p className="truncate px-4 pb-3 text-meta text-ink-faint">{task.title}</p>
 
         <ul className="pb-4" data-testid="move-targets">
           {targets.map((list) => (
@@ -102,12 +86,6 @@ export function MoveTaskSheet({
           </p>
         ) : null}
 
-        <div className="px-4 pb-2">
-          <Button variant="ghost" layout="w-full" onClick={onClose}>
-            Abbrechen
-          </Button>
-        </div>
-      </div>
-    </div>
+    </Sheet>
   )
 }

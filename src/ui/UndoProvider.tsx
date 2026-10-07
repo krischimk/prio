@@ -4,6 +4,7 @@ import type { LocalTask } from '../domain/types'
 
 import { UndoContext, UNDO_VISIBLE_MS, type UndoContextValue } from './undoContext'
 import { Button } from './components/Button'
+import { layer } from './styles'
 
 /**
  * Zeigt nach dem Abhaken kurz eine Leiste mit „Rückgängig“.
@@ -54,7 +55,7 @@ export function UndoProvider({ children }: { children: ReactNode }) {
     <UndoContext.Provider value={value}>
       {children}
       {offer ? (
-        <div className="safe-bottom pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-4">
+        <div className={`safe-bottom pointer-events-none fixed inset-x-0 bottom-0 ${layer.raised} flex justify-center px-4`}>
           {/*
             `fab-clearance` hält Abstand zum runden Plus-Knopf; die Klasse
             rechnet aus der Gerätegeometrie in `index.css` und schaltet für die

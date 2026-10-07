@@ -12,7 +12,7 @@ import { RestoreTasksPanel } from '../RestoreTasksPanel'
 import { TaskDetailSheet } from './TaskDetailSheet'
 import { PlusIcon } from '../icons'
 import { formatOpenTasks } from '../taskCount'
-import { appBackground } from '../styles'
+import { layer, appBackground } from '../styles'
 
 /**
  * Mobile Oberfläche der App.
@@ -78,7 +78,7 @@ export function MobileWorkspace() {
       </main>
 
       {selected !== null ? (
-        <div className="safe-bottom pointer-events-none fixed inset-x-0 bottom-0 z-20 flex justify-center">
+        <div className={`safe-bottom pointer-events-none fixed inset-x-0 bottom-0 ${layer.fab} flex justify-center`}>
           <button
             type="button"
             onClick={() => setDetail({ task: null })}

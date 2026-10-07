@@ -1,12 +1,10 @@
-import { useBackLayer } from '../app/useBackLayer'
 import { useLists, useRestorableTasks } from '../app/hooks'
 import { useWorkspace } from '../app/useWorkspace'
 import { RESTORE_WINDOW_DAYS } from '../db/repositories'
 import { formatCompletedLabel } from './datetime'
-import { CloseIcon } from './icons'
-import { Button } from './components/Button'
-import { IconButton } from './components/IconButton'
 
+import { Button } from './components/Button'
+import { Sheet } from './components/Sheet'
 
 /**
  * „Aufgaben wiederherstellen“ in den Einstellungen.
@@ -25,45 +23,16 @@ export function RestoreTasksPanel({ open, onClose }: { open: boolean; onClose: (
   const tasks = useRestorableTasks()
   const lists = useLists()
 
-  useBackLayer(open, onClose)
-
   if (!open) return null
 
   const listNames = new Map(lists.map((list) => [list.id, list.name]))
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center md:items-center"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Aufgaben wiederherstellen"
+    <Sheet
+      title="Aufgaben wiederherstellen"
+      subtitle={`Abgehakt in den letzten ${RESTORE_WINDOW_DAYS} Tagen`}
+      onClose={onClose}
     >
-      <div className="absolute inset-0 bg-page/60" aria-hidden="true" onClick={onClose} />
-
-      <div className="safe-bottom relative flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-sheet border-t border-line bg-surface md:max-w-lg md:rounded-sheet md:border">
-        <header className="flex items-start justify-between gap-2 border-b border-line px-4 py-3">
-          <div className="min-w-0">
-            <h2 className="text-body font-medium text-ink">Aufgaben wiederherstellen</h2>
-            <p className="text-meta text-ink-faint">
-              Abgehakt in den letzten {RESTORE_WINDOW_DAYS} Tagen
-            </p>
-          </div>
-          {/*
-            Bewusst nur EIN Schließen-Bedienelement: X, Escape und die
-            Zurück-Taste schließen bereits. Ein zweiter Knopf mit demselben
-            Namen wäre auch für Vorleseprogramme mehrdeutig.
-          */}
-          <IconButton
-           
-            onClick={onClose}
-            aria-label="Schließen"
-            variant="icon"
-          >
-            <CloseIcon />
-          </IconButton>
-        </header>
-
-        <div className="scroll-area flex-1 overflow-y-auto">
           {tasks.length === 0 ? (
             <p className="px-4 py-8 text-center text-body text-ink-faint" data-testid="restore-empty">
               In diesem Zeitraum wurde nichts abgehakt.
@@ -95,8 +64,6 @@ export function RestoreTasksPanel({ open, onClose }: { open: boolean; onClose: (
               ))}
             </ul>
           )}
-        </div>
-      </div>
-    </div>
+    </Sheet>
   )
 }

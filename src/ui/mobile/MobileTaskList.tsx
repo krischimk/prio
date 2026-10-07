@@ -8,7 +8,7 @@ import { BellIcon, BellOffIcon, RepeatIcon } from '../icons'
 import { describeRecurrence } from '../recurrence'
 import { describeReminders } from '../reminder'
 import { TaskDescription } from '../TaskDescription'
-import { appBackground, attentionText, dangerText } from '../styles'
+import { layer, appBackground, attentionText, dangerText } from '../styles'
 import { useCollapsedSections } from '../collapsedSections'
 import { SectionHeader } from '../SectionHeader'
 import { useReorderDrag, type ReorderDrag } from './useReorderDrag'
@@ -183,7 +183,7 @@ function MobileTaskRow({
     <li
       data-task-row
       className={`flex items-start gap-3 border-b border-line-soft ${appBackground} px-4 py-3 ${
-        isDragging ? 'relative z-10 shadow-lg shadow-page/50' : ''
+        isDragging ? 'relative ' + layer.row + ' shadow-lg shadow-page/50' : ''
       }`}
       style={isDragging ? { transform: `translateY(${drag.offsetY}px)` } : undefined}
     >

@@ -5,7 +5,7 @@ import { useWorkspace } from '../../app/useWorkspace'
 import { describeReminderState } from '../../reminders/reminderStatus'
 import { describeSyncState } from '../../sync/syncStatus'
 import type { LocalList } from '../../domain/types'
-import { errorMessage, input } from '../styles'
+import { layer, errorMessage, input } from '../styles'
 import { BackendLabel } from '../BackendLabel'
 import { ListIcon } from '../ListIcon'
 import { UpdateEntry } from '../UpdateEntry'
@@ -74,7 +74,7 @@ export function MobileDrawer({
   }
 
   return (
-    <div className="fixed inset-0 z-40" role="dialog" aria-modal="true" aria-label="Menü">
+    <div className={`fixed inset-0 ${layer.raised}`} role="dialog" aria-modal="true" aria-label="Menü">
       {/*
         Der Hintergrund schließt das Menü, ist aber kein Bedienelement:
         Er ist dekorativ (aria-hidden) und nicht per Tastatur erreichbar.

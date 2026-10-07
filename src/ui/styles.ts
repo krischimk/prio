@@ -106,6 +106,28 @@ export const input = `w-full rounded-control border border-line-strong bg-surfac
  */
 export const numberInput = `w-full rounded-control border border-line-strong bg-surface px-2 py-1 text-body text-ink ${focusRing}`
 
+/**
+ * Die Ebenen übereinander.
+ *
+ * Eine Zahl zu wählen ist eine Entscheidung über Reihenfolge – sie gehört
+ * benannt. Vorher standen sieben Werte an neun Stellen ohne Bezug zueinander;
+ * niemand konnte sagen, warum das Menü bei 40 und das Blatt bei 50 liegt.
+ */
+export const layer = {
+  /** Eine Zeile, die gerade gezogen wird. */
+  row: 'z-10',
+  /** Der runde Plus-Knopf. */
+  fab: 'z-20',
+  /** Die App-Leiste. */
+  appBar: 'z-30',
+  /** Schwebende Leisten und das Menü. */
+  raised: 'z-40',
+  /** Blätter und Dialoge. */
+  screen: 'z-50',
+  /** Ein Dialog über einem Dialog – die Ziel-Auswahl beim Verschieben. */
+  top: 'z-60',
+} as const
+
 /** Der Grund hinter allem: reines Schwarz, kein Grau. */
 export const appBackground = 'bg-page'
 

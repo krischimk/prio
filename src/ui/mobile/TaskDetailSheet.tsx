@@ -7,7 +7,7 @@ import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../datetime'
 import { RecurrenceSelect } from '../RecurrenceSelect'
 import { SectionSelect } from '../SectionSelect'
 import { ReminderList } from '../ReminderList'
-import { appBackground, input } from '../styles'
+import { layer, appBackground, input } from '../styles'
 import { CloseIcon, MoveIcon, TrashIcon } from '../icons'
 import { Button } from '../components/Button'
 import { IconButton } from '../components/IconButton'
@@ -111,7 +111,7 @@ export function TaskDetailSheet({
   const canMove = !isNew && lists.length > 1
 
   return (
-    <div className={`fixed inset-0 z-50 flex flex-col ${appBackground}`} role="dialog" aria-modal="true" aria-label={isNew ? 'Neue Aufgabe' : 'Aufgabe'}>
+    <div className={`fixed inset-0 ${layer.screen} flex flex-col ${appBackground}`} role="dialog" aria-modal="true" aria-label={isNew ? 'Neue Aufgabe' : 'Aufgabe'}>
       {/*
         Die Kopfleiste trägt alles, was die Aufgabe abschließt: schließen,
         speichern, löschen. Vorher stand „Speichern" ganz unten – nach einer
