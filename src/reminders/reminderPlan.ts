@@ -75,7 +75,7 @@ export function planReminders(
       candidates.push({
         taskId: task.id,
         title: task.title,
-        body: listNames.get(task.list_id) ?? 'prio',
+        body: listNames.get(task.list_id) ?? 'PRIO',
         at: normalizeIso(at),
       })
     }

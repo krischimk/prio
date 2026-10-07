@@ -1,6 +1,11 @@
-# prio
+# PRIO
 
 **Offline-first To-do-App – technischer Prototyp.**
+
+> Der Name wird in der Oberfläche und als App-Name groß geschrieben (PRIO).
+> Technische Kennungen bleiben klein: Paketname (`de.krischi.prio`),
+> Datenbanknamen, Speicherschlüssel und Adressen – sie umzubenennen würde
+> Daten und Verweise brechen.
 
 Die jeweilige Fassung steht in `package.json` und in den Git-Tags; jeder Tag
 trägt seinen Changelog als Text (siehe [APK-Releases über
