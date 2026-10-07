@@ -10,10 +10,16 @@ const veroeffentlichung = {
 }
 
 /** Antwort eines Servers nachstellen. */
-function antwort(payload: unknown, ok = true, status = 200): typeof fetch {
+function antwort(
+  payload: unknown,
+  ok = true,
+  status = 200,
+  headers: Record<string, string> = {},
+): typeof fetch {
   return (async () => ({
     ok,
     status,
+    headers: { get: (name: string) => headers[name.toLowerCase()] ?? null },
     json: async () => payload,
   })) as unknown as typeof fetch
 }
@@ -69,5 +75,42 @@ describe('Nach Updates suchen', () => {
     }) as unknown as typeof fetch
     const ergebnis = await checkForUpdate('0.5.0', kaputt)
     expect(ergebnis).toEqual({ status: 'failed', message: 'Netzwerk weg' })
+  })
+})
+
+describe('Fehlschläge erklären', () => {
+  it('nennt die Stundengrenze statt eines Statuscodes', async () => {
+    const ergebnis = await checkForUpdate('0.15.0', antwort({}, false, 403))
+
+    expect(ergebnis.status).toBe('failed')
+    if (ergebnis.status !== 'failed') return
+    expect(ergebnis.message).toContain('begrenzt gerade die Abfragen')
+    expect(ergebnis.message).toContain('60 je Stunde')
+  })
+
+  it('rechnet die Wartezeit aus, wenn GitHub sie mitteilt', async () => {
+    const inZehnMinuten = Math.floor(Date.now() / 1000) + 600
+    const ergebnis = await checkForUpdate(
+      '0.15.0',
+      antwort({}, false, 403, { 'x-ratelimit-reset': String(inZehnMinuten) }),
+    )
+
+    expect(ergebnis.status).toBe('failed')
+    if (ergebnis.status !== 'failed') return
+    expect(ergebnis.message).toMatch(/In etwa (10|11) Minuten/)
+  })
+
+  it('erklärt ein fehlendes Repository', async () => {
+    const ergebnis = await checkForUpdate('0.15.0', antwort({}, false, 404))
+
+    expect(ergebnis.status).toBe('failed')
+    if (ergebnis.status !== 'failed') return
+    expect(ergebnis.message).toContain('öffentlich')
+  })
+
+  it('nennt andere Fehler weiterhin mit Statuscode', async () => {
+    const ergebnis = await checkForUpdate('0.15.0', antwort({}, false, 503))
+
+    expect(ergebnis).toEqual({ status: 'failed', message: 'Abfrage fehlgeschlagen (503).' })
   })
 })

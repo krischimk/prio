@@ -1104,9 +1104,20 @@ Veröffentlichung des eigenen Repositories
 mit der **installierten** Version (`App.getInfo()`, nicht der eingebauten – sonst
 hielte sich eine ältere Fassung für aktuell).
 
-* **Automatisch** wird nur in der App gesucht, und zwar beim Start. Ein kleines
-  gelbes Zeichen am Menü-Knopf zeigt an, dass etwas vorliegt; im Menü unter
-  *Updates* steht die Version, und dort lässt sie sich auch installieren.
+* **Automatisch** wird nur in der App gesucht, und zwar beim Start – höchstens
+  aber alle sechs Stunden. Ein kleines gelbes Zeichen am Menü-Knopf zeigt an,
+  dass etwas vorliegt; im Menü unter *Updates* steht die Version, und dort lässt
+  sie sich auch installieren.
+* **Warum die Bremse:** GitHub erlaubt ohne Anmeldung 60 Abfragen pro Stunde
+  **und IP**. Diese Zahl teilen sich Adresse, Emulator, Web-Fassung und jedes
+  Skript am selben Anschluss. Eine Prüfung je App-Start macht die Grenze allein
+  erreichbar – und wer die App ein paar Mal öffnet, sieht dann eine
+  Grenzmeldung statt einer Antwort. Der Knopf *Nach Updates suchen* prüft
+  weiterhin sofort; ein zu altes oder zu einer anderen Version gehörendes
+  Ergebnis wird verworfen (siehe `src/updates/updateCache.ts`).
+* **Fehlschläge werden erklärt, nicht beziffert:** statt „403" steht dort
+  „GitHub begrenzt gerade die Abfragen (60 je Stunde). In etwa 8 Minuten wieder
+  möglich." – mit der Wartezeit, wenn GitHub sie mitteilt.
 * **Kein eigenes Fenster:** Die Suche läuft an Ort und Stelle, das Ergebnis
   erscheint direkt unter der Überschrift. Eine Abfrage, die eine Sekunde
   dauert, braucht keinen Dialog. Ist eine Fassung verfügbar, tritt an die Stelle

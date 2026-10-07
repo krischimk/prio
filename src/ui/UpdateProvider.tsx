@@ -2,6 +2,7 @@ import { Capacitor } from '@capacitor/core'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { currentVersion } from '../updates/currentVersion'
 import { checkForUpdate } from '../updates/updateCheck'
+import { isCachedCheckUsable, readCachedCheck, writeCachedCheck } from '../updates/updateCache'
 import { createUpdateInstaller } from '../updates/updateInstaller'
 import type { UpdateState } from '../updates/updateStatus'
 import { UpdateContext, type UpdateContextValue } from './updateContext'
@@ -24,19 +25,35 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
   const installer = useMemo(() => createUpdateInstaller(), [])
   const laeuft = useRef(false)
 
-  const check = useCallback(async () => {
+  /**
+   * `force` prüft sofort; ohne `force` wird ein Ergebnis verwendet, das noch
+   * frisch ist (siehe `updateCache.ts`). Der Knopf in der Oberfläche fragt
+   * ausdrücklich und prüft deshalb immer.
+   */
+  const check = useCallback(async ({ force = true }: { force?: boolean } = {}) => {
     if (laeuft.current) return
     laeuft.current = true
+
+    const version = await currentVersion()
+    const gemerkt = readCachedCheck()
+    if (!force && isCachedCheckUsable(gemerkt, version, Date.now()) && gemerkt !== null) {
+      setState(gemerkt.result)
+      laeuft.current = false
+      return
+    }
+
     setState({ status: 'checking' })
     try {
-      setState(await checkForUpdate(await currentVersion()))
+      const ergebnis = await checkForUpdate(version)
+      writeCachedCheck({ at: Date.now(), current: version, result: ergebnis })
+      setState(ergebnis)
     } finally {
       laeuft.current = false
     }
   }, [])
 
   useEffect(() => {
-    if (Capacitor.isNativePlatform()) void check()
+    if (Capacitor.isNativePlatform()) void check({ force: false })
   }, [check])
 
   // Der System-Downloader meldet das Ergebnis später – ein Fehlschlag darf

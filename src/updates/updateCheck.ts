@@ -63,6 +63,30 @@ export function parseRelease(payload: unknown): ReleaseInfo | null {
 }
 
 /**
+ * Sagt, was schiefging – in Worten statt in einem Statuscode.
+ *
+ * Der häufigste Fehler ist keine Störung, sondern eine Grenze: GitHub erlaubt
+ * **60 Abfragen pro Stunde und IP** ohne Anmeldung. Adresse, Emulator, die
+ * Web-Fassung und jedes Skript auf demselben Anschluss teilen sich diese Zahl;
+ * die App selbst braucht eine Abfrage je Start. Ein „403" sagt davon nichts.
+ */
+export function describeFailure(antwort: Response): string {
+  if (antwort.status === 403 || antwort.status === 429) {
+    const reset = antwort.headers.get('x-ratelimit-reset')
+    const sekunden = reset === null ? null : Number(reset) - Math.floor(Date.now() / 1000)
+    if (sekunden !== null && Number.isFinite(sekunden) && sekunden > 0) {
+      const minuten = Math.max(1, Math.ceil(sekunden / 60))
+      return `GitHub begrenzt gerade die Abfragen (60 je Stunde). In etwa ${minuten} Minuten wieder möglich.`
+    }
+    return 'GitHub begrenzt gerade die Abfragen (60 je Stunde). Bitte später erneut versuchen.'
+  }
+  if (antwort.status === 404) {
+    return 'Keine Veröffentlichung gefunden. Ist das Repository öffentlich?'
+  }
+  return `Abfrage fehlgeschlagen (${antwort.status}).`
+}
+
+/**
  * Ergebnis der Prüfung.
  *
  * Dieselbe Form wie der Zustand in der Oberfläche (`UpdateState`), damit das
@@ -89,7 +113,7 @@ export async function checkForUpdate(
       headers: { accept: 'application/vnd.github+json' },
     })
     if (!antwort.ok) {
-      return { status: 'failed', message: `Abfrage fehlgeschlagen (${antwort.status}).` }
+      return { status: 'failed', message: describeFailure(antwort) }
     }
 
     const release = parseRelease(await antwort.json())
