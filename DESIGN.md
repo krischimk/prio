@@ -231,7 +231,7 @@ Arbeitsvorrat, kein Wunschzettel. Aufwand: **S** ein Nachmittag, **M** ein Tag,
 | A3 | Kartenfläche siebenfach statt einmal | `src/ui/styles.ts:56` (`card` – **unbenutzt**) | 7 Ausprägungen in 5 Dateien, zwei Deckkräfte, drei Polsterungen | S | erledigt: `card`, `cardSoft`, `emptyState` – der tote Token ist benutzt |
 | A4 | Dialoge sind fünfmal von Hand gebaut | `RestoreTasksPanel`, `ListSettingsSheet`, `MoveTaskSheet`, `TaskDetailSheet`, `MobileDrawer` | 4 Rahmen, 4 Schleier, 9 unbenannte Z-Ebenen, 1 von 4 mit Escape, keine Fokusführung | M | erledigt: Verhalten einmal in `useDialog` (Rolle, Name, Escape, Zurück-Taste, Fokus); `Sheet` für die drei Blätter, `Screen` für die Detailansicht, das Menü nutzt dieselbe Mechanik mit eigenem Rahmen. Ebenen als `layer.*`, 9 Dialogtests |
 | A5 | Gerätegeometrie als verstreute Zahlen | `MobileAppBar.tsx:36`, `index.css:139`, `MobileWorkspace.tsx:57`, `UndoProvider.tsx:58` | vier voneinander abhängige Werte (`h-14`, `3.5rem`, `pb-28`, `mb-24`) ohne Beziehung im Code | S | erledigt: `--spacing-app-bar`, `--spacing-fab`, `--spacing-fab-gap` und die Klassen `.app-bar-offset`, `.fab-offset`, `.fab-clearance` |
-| A6 | Kein Ort, an dem man ein Bauteil in allen Zuständen sieht | – | `DESIGN.md` §12 nennt die „Küchenseite" als Prüfmittel; sie fehlt | S | offen |
+| A6 | Kein Ort, an dem man ein Bauteil in allen Zuständen sieht | – | `DESIGN.md` §12 nennt die „Küchenseite" als Prüfmittel; sie fehlt | S | erledigt: `src/ui/dev/Kitchen.tsx` unter `?kueche=1` (nur Entwicklungslauf, hinter `import.meta.env.DEV`), mit `tests/e2e/kitchen.spec.ts`. Dazu das fehlende Bauteil `Field` |
 
 ### 15.3 Zwei Ansichten
 

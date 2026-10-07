@@ -35,6 +35,12 @@ npm run test:e2e    # echter Browser gegen den Mock-Server
 Beides muss grün sein. Bei Oberflächenänderungen zusätzlich in Telefongröße
 rendern und die Screenshots **anschauen** (siehe Tests).
 
+**Bauteile ansehen statt raten:** `npm run dev`, dann
+<http://localhost:5173/?kueche=1> – die Übersicht in `src/ui/dev/Kitchen.tsx`
+zeigt jeden Knopf, jedes Feld, jede Fläche und beide Dialogformen in allen
+Zuständen. Sie läuft nur im Entwicklungslauf. `tests/e2e/kitchen.spec.ts` hält
+sie am Leben.
+
 Die billigen Tore hält der Git-Haken `.githooks/pre-commit`: Bei jedem Commit
 laufen Typecheck, Lint und Vitest, und bei einem Fehlschlag entsteht kein
 Commit. Er wird einmal je Arbeitskopie eingerichtet
