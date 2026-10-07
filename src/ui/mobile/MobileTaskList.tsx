@@ -6,7 +6,7 @@ import { formatDueLabel } from '../datetime'
 import { BellIcon, BellOffIcon, RepeatIcon } from '../icons'
 import { describeRecurrence } from '../recurrence'
 import { describeReminders } from '../reminder'
-import { attentionText, dangerText } from '../styles'
+import { appBackground, attentionText, dangerText } from '../styles'
 import { useReorderDrag, type ReorderDrag } from './useReorderDrag'
 
 /**
@@ -95,7 +95,7 @@ function MobileTaskRow({
   return (
     <li
       data-task-row
-      className={`flex items-start gap-3 border-b border-neutral-900 bg-neutral-950 px-4 py-3 ${
+      className={`flex items-start gap-3 border-b border-neutral-900 ${appBackground} px-4 py-3 ${
         isDragging ? 'relative z-10 shadow-lg shadow-black/50' : ''
       }`}
       style={isDragging ? { transform: `translateY(${drag.offsetY}px)` } : undefined}

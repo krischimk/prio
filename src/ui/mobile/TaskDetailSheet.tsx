@@ -6,7 +6,7 @@ import type { LocalList, LocalTask } from '../../domain/types'
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../datetime'
 import { RecurrenceSelect } from '../RecurrenceSelect'
 import { ReminderList } from '../ReminderList'
-import { dangerButton, input, primaryButton, secondaryButton } from '../styles'
+import { appBackground, dangerButton, input, primaryButton, secondaryButton } from '../styles'
 import { CloseIcon, MoveIcon, TrashIcon } from '../icons'
 
 /**
@@ -103,7 +103,7 @@ export function TaskDetailSheet({
   const canMove = !isNew && lists.length > 1
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-neutral-950" role="dialog" aria-modal="true" aria-label={isNew ? 'Neue Aufgabe' : 'Aufgabe'}>
+    <div className={`fixed inset-0 z-50 flex flex-col ${appBackground}`} role="dialog" aria-modal="true" aria-label={isNew ? 'Neue Aufgabe' : 'Aufgabe'}>
       <header className="safe-top flex h-14 shrink-0 items-center gap-1 border-b border-neutral-800 px-2">
         <button
           type="button"

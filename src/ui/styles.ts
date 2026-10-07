@@ -50,6 +50,9 @@ export const input = `w-full rounded-md border border-neutral-700 bg-neutral-900
  */
 export const numberInput = `w-full rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm text-neutral-100 ${focusRing}`
 
+/** Der Grund hinter allem: reines Schwarz, kein Grau. */
+export const appBackground = 'bg-black'
+
 export const card = 'rounded-lg border border-neutral-800 bg-neutral-900/60 p-4'
 
 export const link = `rounded text-indigo-400 underline-offset-2 hover:underline ${focusRing}`

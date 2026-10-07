@@ -1,14 +1,14 @@
 {
-  "name": "prio – offlinefähige Aufgaben",
-  "short_name": "prio",
+  "name": "PRIO – offlinefähige Aufgaben",
+  "short_name": "PRIO",
   "description": "Offline-first To-do-App mit Listen, gemeinsamen Listen und Cloud-Synchronisation.",
   "lang": "de",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "icons": [
     {
       "src": "/icons/icon-192.png",

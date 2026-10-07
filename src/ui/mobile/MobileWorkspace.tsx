@@ -12,6 +12,7 @@ import { RestoreTasksPanel } from '../RestoreTasksPanel'
 import { TaskDetailSheet } from './TaskDetailSheet'
 import { PlusIcon } from '../icons'
 import { formatOpenTasks } from '../taskCount'
+import { appBackground } from '../styles'
 
 /**
  * Mobile Oberfläche der App.
@@ -45,7 +46,7 @@ export function MobileWorkspace() {
   const openCount = tasks.filter((task) => !task.completed).length
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100">
+    <div className={`min-h-screen ${appBackground} text-neutral-100`}>
       <MobileAppBar
         listName={selected?.name ?? null}
         listIcon={selected?.icon ?? null}

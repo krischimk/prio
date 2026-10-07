@@ -11,7 +11,7 @@ import { ReminderIndicator } from './ReminderIndicator'
 import { Sidebar } from './Sidebar'
 import { SyncIndicator } from './SyncIndicator'
 import { TaskPanel } from './TaskPanel'
-import { attentionText, ghostButton } from './styles'
+import { appBackground, attentionText, ghostButton } from './styles'
 
 /**
  * Wählt zwischen den beiden Oberflächen.
@@ -39,7 +39,7 @@ function DesktopWorkspace() {
   const selected = lists.find((list) => list.id === selectedListId) ?? null
 
   return (
-    <div className="flex min-h-screen flex-col bg-neutral-950 text-neutral-100 md:h-screen md:flex-row">
+    <div className={`flex min-h-screen flex-col ${appBackground} text-neutral-100 md:h-screen md:flex-row`}>
       <Sidebar
         lists={lists}
         selectedListId={selectedListId}
@@ -50,7 +50,7 @@ function DesktopWorkspace() {
       <div className="flex min-h-0 flex-1 flex-col">
         <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-neutral-800 px-4 py-3">
           <div className="flex items-baseline gap-2">
-            <span className="font-semibold tracking-tight">prio</span>
+            <span className="font-semibold tracking-tight">PRIO</span>
             <span className="text-xs text-neutral-500" data-testid="current-user">
               {user?.email}
             </span>

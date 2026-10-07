@@ -3,6 +3,7 @@ import { useWorkspace } from '../app/useWorkspace'
 import type { LocalList } from '../domain/types'
 import { ListIcon } from './ListIcon'
 import { errorMessage, input, primaryButton } from './styles'
+import { appBackground } from './styles'
 
 /**
  * Seitenleiste mit allen sichtbaren Listen.
@@ -45,7 +46,7 @@ export function Sidebar({
 
   return (
     <aside
-      className="shrink-0 border-b border-neutral-800 bg-neutral-950 p-4 md:h-screen md:w-72 md:overflow-y-auto md:border-b-0 md:border-r"
+      className={`shrink-0 border-b border-neutral-800 ${appBackground} p-4 md:h-screen md:w-72 md:overflow-y-auto md:border-b-0 md:border-r`}
       aria-label="Listen"
     >
       <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Listen</h2>

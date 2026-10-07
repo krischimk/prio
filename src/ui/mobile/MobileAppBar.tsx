@@ -1,6 +1,6 @@
 import { useWorkspace } from '../../app/useWorkspace'
 import { describeSyncState } from '../../sync/syncStatus'
-import { attentionDot, statusTone } from '../styles'
+import { appBackground, attentionDot, statusTone } from '../styles'
 import { useUpdate } from '../useUpdate'
 import { MenuIcon } from '../icons'
 import { ListIcon } from '../ListIcon'
@@ -32,7 +32,7 @@ export function MobileAppBar({
   const updateVerfuegbar = update.status === 'available'
 
   return (
-    <header className="safe-top fixed inset-x-0 top-0 z-30 border-b border-neutral-800 bg-neutral-950">
+    <header className={`safe-top fixed inset-x-0 top-0 z-30 border-b border-neutral-800 ${appBackground}`}>
       <div className="flex h-14 items-center gap-1 px-2">
         <button
           type="button"

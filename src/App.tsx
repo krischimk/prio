@@ -7,6 +7,7 @@ import { AuthScreen } from './ui/AuthScreen'
 import { UndoProvider } from './ui/UndoProvider'
 import { UpdateProvider } from './ui/UpdateProvider'
 import { WorkspaceScreen } from './ui/WorkspaceScreen'
+import { appBackground } from './ui/styles'
 
 /**
  * Wurzelkomponente.
@@ -49,7 +50,7 @@ function AuthenticatedArea({ services }: { services: AppServices }) {
 
 function FullScreenNotice({ text }: { text: string }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-950 px-4 text-neutral-400">
+    <div className={`flex min-h-screen items-center justify-center ${appBackground} px-4 text-neutral-400`}>
       {text}
     </div>
   )
@@ -57,7 +58,7 @@ function FullScreenNotice({ text }: { text: string }) {
 
 function MissingConfiguration() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-950 px-4">
+    <div className={`flex min-h-screen items-center justify-center ${appBackground} px-4`}>
       <div className="max-w-md space-y-3">
         <h1 className="text-xl font-semibold text-neutral-50">Supabase ist nicht konfiguriert</h1>
         <p className="text-sm text-neutral-400">

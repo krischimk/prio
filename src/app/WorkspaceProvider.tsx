@@ -10,6 +10,7 @@ import type { NetworkMonitor } from '../sync/network'
 import type { RemoteGateway } from '../sync/remoteGateway'
 import { withChangeTracking } from './trackedRepositories'
 import { WorkspaceContext, type WorkspaceValue } from './workspaceContext'
+import { appBackground } from '../ui/styles'
 
 /**
  * Arbeitsbereich eines angemeldeten Benutzers.
@@ -287,7 +288,7 @@ export function WorkspaceProvider({
 
 function WorkspaceLoading() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-950 text-neutral-400">
+    <div className={`flex min-h-screen items-center justify-center ${appBackground} text-neutral-400`}>
       Lokale Daten werden geladen…
     </div>
   )
