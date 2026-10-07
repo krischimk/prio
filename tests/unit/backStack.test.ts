@@ -97,3 +97,42 @@ describe('Back-Stack', () => {
     expect(stack.handle()).toBe(false)
   })
 })
+
+/**
+ * Die Ebenen sind benannt.
+ *
+ * Das ändert nichts am Ablauf, macht den Zustand aber lesbar: „was ist offen?“
+ * beantwortet `top()` bzw. `names()` – vorher waren es sieben Booleans in
+ * sieben Dateien und anonyme Rückrufe im Stapel. Ein späterer Router kann an
+ * diesen Namen seine Adressen aufhängen.
+ */
+describe('Back-Stack mit Namen', () => {
+  it('nennt die oberste Ebene', () => {
+    const stack = createBackStack()
+    expect(stack.top()).toBeNull()
+
+    stack.push(() => {}, 'aufgabe-bearbeiten')
+    expect(stack.top()).toBe('aufgabe-bearbeiten')
+
+    stack.push(() => {}, 'liste-verwalten')
+    expect(stack.top()).toBe('liste-verwalten')
+  })
+
+  it('zählt die Ebenen von unten nach oben auf', () => {
+    const stack = createBackStack()
+    stack.push(() => {}, 'aufgabe-detail')
+    stack.push(() => {}, 'aufgabe-verschieben')
+
+    expect(stack.names()).toEqual(['aufgabe-detail', 'aufgabe-verschieben'])
+
+    stack.handle()
+    expect(stack.names()).toEqual(['aufgabe-detail'])
+  })
+
+  it('kommt ohne Namen aus', () => {
+    const stack = createBackStack()
+    stack.push(() => {})
+    expect(stack.top()).toBeNull()
+    expect(stack.names()).toEqual(['(ohne Namen)'])
+  })
+})

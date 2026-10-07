@@ -29,6 +29,7 @@ export function RestoreTasksPanel({ open, onClose }: { open: boolean; onClose: (
 
   return (
     <Sheet
+      name="aufgaben-wiederherstellen"
       title="Aufgaben wiederherstellen"
       subtitle={`Abgehakt in den letzten ${RESTORE_WINDOW_DAYS} Tagen`}
       onClose={onClose}

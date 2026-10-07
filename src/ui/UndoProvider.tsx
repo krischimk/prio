@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useIsDesktop } from '../app/useIsDesktop'
 import { useWorkspace } from '../app/useWorkspace'
 import type { LocalTask } from '../domain/types'
 
@@ -51,21 +52,25 @@ export function UndoProvider({ children }: { children: ReactNode }) {
     await repositories.setTaskCompleted(offer.taskId, false)
   }
 
+  // Auf der breiten Ansicht gibt es keinen Plus-Knopf; die Schwelle kommt aus
+  // derselben Entscheidung wie die Ansicht selbst.
+  const isDesktop = useIsDesktop()
+
   return (
     <UndoContext.Provider value={value}>
       {children}
       {offer ? (
         <div className={`safe-bottom pointer-events-none fixed inset-x-0 bottom-0 ${layer.raised} flex justify-center px-4`}>
           {/*
-            `fab-clearance` hält Abstand zum runden Plus-Knopf; die Klasse
-            rechnet aus der Gerätegeometrie in `index.css` und schaltet für die
-            breite Ansicht selbst um – hier standen vorher zwei Zahlen, die zu
-            einem Knopf in einer anderen Datei passen mussten.
+            `fab-clearance` hält Abstand zum runden Plus-Knopf und rechnet aus
+            der Gerätegeometrie in `index.css`; die breite Ansicht nimmt den
+            schmalen Abstand. Vorher standen hier zwei Zahlen und eine
+            CSS-Medienabfrage – eine zweite Schwelle neben `useIsDesktop`.
           */}
           <div
             role="status"
             data-testid="undo-bar"
-            className="fab-clearance pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-card border border-line-strong bg-raised px-4 py-3 shadow-lg shadow-page/40"
+            className={`${isDesktop ? 'mb-4' : 'fab-clearance'} pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-card border border-line-strong bg-raised px-4 py-3 shadow-lg shadow-page/40`}
           >
             <span className="min-w-0 flex-1 truncate text-body text-ink">
               „{offer.title}“ erledigt

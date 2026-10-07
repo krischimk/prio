@@ -245,17 +245,13 @@ input[type='datetime-local']::-webkit-calendar-picker-indicator {
 /*
  * Abstand eines schwebenden Elements (Rückgängig-Leiste) über dem Plus-Knopf.
  *
- * Auf der breiten Ansicht gibt es keinen Plus-Knopf; dort bleibt der schmale
- * Abstand. Die Umschaltung steht hier, weil sie zur Geometrie gehört.
+ * Nur für die mobile Ansicht: Auf der breiten gibt es keinen Plus-Knopf, und
+ * dort setzt die Komponente den schmalen Abstand. Bewusst **keine**
+ * CSS-Medienabfrage – sie wäre eine zweite Schwelle neben `useIsDesktop`
+ * (768 px gegen 1024 px in der App).
  */
 .fab-clearance {
   margin-bottom: calc(var(--spacing-fab) + var(--spacing-fab-gap) + 0.25rem);
-}
-
-@media (min-width: 768px) {
-  .fab-clearance {
-    margin-bottom: 1rem;
-  }
 }
 
 /*

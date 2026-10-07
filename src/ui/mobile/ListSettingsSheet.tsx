@@ -69,6 +69,7 @@ export function ListSettingsSheet({
 
   return (
     <Sheet
+      name="liste-verwalten"
       label="Liste verwalten"
       title={<span data-testid="list-sheet-title">{list.name}</span>}
       subtitle={istBesitzer ? 'Deine Liste' : 'Von jemand anderem geteilt'}

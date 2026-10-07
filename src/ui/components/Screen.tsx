@@ -7,6 +7,8 @@ export interface ScreenProps {
   label: string
   onClose: () => void
   onBack?: () => void
+  /** Name der Ebene im Zurück-Stapel. */
+  name?: string
   /**
    * Die eigene Kopfleiste. Anders als beim Blatt trägt sie hier alles, was den
    * Bildschirm abschließt (Schließen, Speichern, Löschen) – sie ist der
@@ -24,8 +26,8 @@ export interface ScreenProps {
  * Kopfleiste trägt Speichern und Löschen. Das **Verhalten** ist dasselbe wie
  * beim Blatt (`useDialog`): Escape, Zurück-Taste, Fokus, Rolle und Name.
  */
-export function Screen({ label, onClose, onBack, header, children }: ScreenProps) {
-  const { panel, onKeyDown } = useDialog<HTMLDivElement>({ onClose, onBack })
+export function Screen({ label, onClose, onBack, name = 'flaeche', header, children }: ScreenProps) {
+  const { panel, onKeyDown } = useDialog<HTMLDivElement>({ onClose, onBack, name })
 
   return (
     <div

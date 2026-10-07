@@ -272,3 +272,37 @@ test('schaltet eine Erinnerung in der breiten Ansicht nur für sich stumm', asyn
   await expect(zeile.getByText('für mich stumm')).toHaveCount(1)
   await expect(zeile.getByText('Erinnert:')).toHaveCount(2)
 })
+
+/**
+ * Der Ansichtszustand überlebt den Wechsel der Fensterbreite.
+ *
+ * Anlass: Die gewählte Liste lag in **beiden** Ansichten – jede hielt ihre
+ * eigene Kopie. Beim Überschreiten der Grenze tauscht React den Baum aus, die
+ * Kopie war neu initialisiert, und die Anzeige fiel auf die erste Liste zurück.
+ * Deshalb liegt der Zustand jetzt über der Verzweigung (`ViewProvider`).
+ *
+ * Geprüft wird mit der **zweiten** Liste: Ein Rückfall auf die erste fiele
+ * damit auf.
+ */
+test('behält die gewählte Liste beim Wechsel der Fensterbreite', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await register(page, uniqueEmail('l-ansicht'))
+  await createList(page, 'Erste')
+  await createList(page, 'Zweite')
+
+  // Bewusst die **zweite** Liste wählen: Ein Rückfall nach dem Umbau landete
+  // auf der ersten, und der Test fiele auf.
+  await page
+    .getByRole('complementary', { name: 'Listen' })
+    .getByRole('button', { name: 'Zweite', exact: true })
+    .click()
+  await expect(page.getByTestId('list-title')).toHaveText('Zweite')
+
+  // Schmal: die mobile Ansicht übernimmt.
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(page.getByTestId('app-bar-title')).toHaveText('Zweite')
+
+  // Und zurück.
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await expect(page.getByTestId('list-title')).toHaveText('Zweite')
+})

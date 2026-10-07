@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useAuth } from '../../auth/useAuth'
 import { useWorkspace } from '../../app/useWorkspace'
-import { useLists, useSelectedListId, useTasks } from '../../app/hooks'
+import { useView } from '../useView'
+import { useTasks } from '../../app/hooks'
 import type { LocalTask } from '../../domain/types'
 import { MobileAppBar } from './MobileAppBar'
 import { MobileDrawer } from './MobileDrawer'
@@ -30,18 +31,15 @@ import { layer, appBackground } from '../styles'
 export function MobileWorkspace() {
   const { state } = useAuth()
   const { repositories } = useWorkspace()
-  const lists = useLists()
-  const [selectedListId, selectList] = useSelectedListId(lists)
+  const { lists, selected, selectedListId, selectList, restoreOpen, setRestoreOpen } = useView()
 
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [restoreOpen, setRestoreOpen] = useState(false)
   const [listSettingsOpen, setListSettingsOpen] = useState(false)
   /** `null` = geschlossen, sonst die Aufgabe (`task: null` legt eine neue an). */
   const [detail, setDetail] = useState<{ task: LocalTask | null } | null>(null)
   const [movingTask, setMovingTask] = useState<LocalTask | null>(null)
 
   const tasks = useTasks(selectedListId)
-  const selected = lists.find((list) => list.id === selectedListId) ?? null
   const userId = state.status === 'authenticated' ? state.user.id : ''
   const openCount = tasks.filter((task) => !task.completed).length
 

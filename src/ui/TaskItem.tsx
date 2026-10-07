@@ -41,7 +41,7 @@ export function TaskItem({
   const { offerUndo } = useUndo()
   const [editing, setEditing] = useState(false)
   // Die Zurück-Taste schließt zuerst das Bearbeitungsformular.
-  useBackLayer(editing, () => setEditing(false))
+  useBackLayer(editing, () => setEditing(false), 'aufgabe-bearbeiten')
 
   if (editing) {
     return (

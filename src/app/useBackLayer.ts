@@ -8,12 +8,16 @@ import { BackLayerContext } from './backLayerContext'
  * dann soll die Zurück-Taste genau das schließen, statt die App zu beenden.
  *
  * ```tsx
- * useBackLayer(editing, () => setEditing(false))
+ * useBackLayer(editing, () => setEditing(false), 'aufgabe-bearbeiten')
  * ```
  *
  * Die zuletzt geöffnete Ebene wird zuerst geschlossen.
+ *
+ * `name` ist freiwillig, macht den Zustand aber lesbar: `backStack.top()` sagt
+ * dann „liste-verwalten“ statt nur „irgendetwas ist offen“. Für einen späteren
+ * Router ist das der Anknüpfungspunkt.
  */
-export function useBackLayer(active: boolean, onBack: () => void): void {
+export function useBackLayer(active: boolean, onBack: () => void, name?: string): void {
   const stack = useContext(BackLayerContext)
 
   // Der Handler wird in einem Effekt aktualisiert und nicht während des
@@ -27,6 +31,6 @@ export function useBackLayer(active: boolean, onBack: () => void): void {
     if (!stack || !active) return
     return stack.push(() => {
       handlerRef.current()
-    })
-  }, [stack, active])
+    }, name)
+  }, [stack, active, name])
 }

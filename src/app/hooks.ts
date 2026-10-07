@@ -99,16 +99,3 @@ export function useMembers(listId: string | null): LocalListMember[] {  const { 
   )
   return members
 }
-
-/**
- * Hält die aktuell ausgewählte Liste.
- *
- * Die Auswahl wird beim Rendern abgeleitet, nicht in einem Effekt korrigiert:
- * Existiert die gewünschte Liste nicht mehr (gelöscht oder Zugriff entzogen),
- * fällt die Anzeige automatisch auf die erste verfügbare Liste zurück.
- */
-export function useSelectedListId(lists: LocalList[]): [string | null, (id: string | null) => void] {
-  const [preferred, setPreferred] = useState<string | null>(null)
-  const selected = lists.some((list) => list.id === preferred) ? preferred : (lists[0]?.id ?? null)
-  return [selected, setPreferred]
-}

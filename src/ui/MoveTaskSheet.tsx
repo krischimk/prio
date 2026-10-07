@@ -46,6 +46,7 @@ export function MoveTaskSheet({
 
   return (
     <Sheet
+      name="aufgabe-verschieben"
       label="Aufgabe verschieben"
       title="Verschieben nach"
       subtitle={task.title}

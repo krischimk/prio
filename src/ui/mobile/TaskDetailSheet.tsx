@@ -76,6 +76,7 @@ export function TaskDetailSheet({
    */
   return (
     <Screen
+      name="aufgabe-detail"
       label={isNew ? 'Neue Aufgabe' : 'Aufgabe'}
       onClose={onClose}
       header={

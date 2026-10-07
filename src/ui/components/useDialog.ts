@@ -12,6 +12,8 @@ export interface DialogOptions {
   onClose: () => void
   /** Geht **eine Stufe** zurück (Escape, Zurück-Taste); Standard ist `onClose`. */
   onBack?: () => void
+  /** Name der Ebene im Zurück-Stapel (`blatt`, `flaeche`, `aufgabe-verschieben`). */
+  name?: string
 }
 
 export interface DialogVerhalten<T extends HTMLElement> {
@@ -38,10 +40,11 @@ export function useDialog<T extends HTMLElement = HTMLDivElement>({
   active = true,
   onClose,
   onBack,
+  name,
 }: DialogOptions): DialogVerhalten<T> {
   const panel = useRef<T>(null)
 
-  useBackLayer(active, onBack ?? onClose)
+  useBackLayer(active, onBack ?? onClose, name)
 
   useEffect(() => {
     if (!active) return

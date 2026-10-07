@@ -47,7 +47,7 @@ export function Sidebar({
 
   return (
     <aside
-      className={`shrink-0 border-b border-line ${appBackground} p-4 md:h-screen md:w-72 md:overflow-y-auto md:border-b-0 md:border-r`}
+      className={`h-screen w-72 shrink-0 overflow-y-auto border-r border-line ${appBackground} p-4`}
       aria-label="Listen"
     >
       <h2 className="mb-3 text-meta font-semibold uppercase tracking-wide text-ink-faint">Listen</h2>

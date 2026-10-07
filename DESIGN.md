@@ -238,9 +238,9 @@ Arbeitsvorrat, kein Wunschzettel. Aufwand: **S** ein Nachmittag, **M** ein Tag,
 | # | Befund | Ort | Maß | Aufwand | Stand |
 | --- | --- | --- | --- | --- | --- |
 | Z1 | Aufgabenzeile und Aufgabenformular sind zweimal gebaut | `TaskItem.tsx:71-155` und `mobile/TaskDetailSheet.tsx:176-254`, `TaskComposer.tsx` | Zeileninhalt wörtlich doppelt, **drei** Formulare; Anlegen kann mobil mehr als breit | M–L | erledigt: `useTaskForm` (Zustand, Umwandlungen, Prüfung, Sperre), `TaskFields` (die Felder, in allen drei Formularen), `TaskFacts` (Zeileninhalt beider Ansichten) |
-| Z2 | Zwei Modusschalter mit verschiedenen Schwellen | `src/app/useIsDesktop.ts:18` gegen `md:` | JS entscheidet bei 1024 px, `md:` bei 768 px; 9 `md:`-Stellen in 7 Dateien | S | offen |
-| Z3 | Ansichtszustand liegt in beiden Bäumen | `WorkspaceScreen.tsx:32-33`, `mobile/MobileWorkspace.tsx:34-37` | `useSelectedListId` und `restoreOpen` je zweimal → Auswahlverlust beim Breitewechsel | M | offen |
-| Z4 | Navigation ist kein Modell | 10 `useBackLayer`-Aufrufe in 7 Dateien | „was ist offen" nur als Boolean je Komponente | M | offen |
+| Z2 | Zwei Modusschalter mit verschiedenen Schwellen | `src/app/useIsDesktop.ts:18` gegen `md:` | JS entscheidet bei 1024 px, `md:` bei 768 px; 9 `md:`-Stellen in 7 Dateien | S | erledigt: **eine** Schwelle (`useIsDesktop`) – auch für die Form des Blattes; die immer wahren `md:`-Reste in den Desktop-Dateien und die CSS-Medienabfrage der Rückgängig-Leiste sind weg. Inhaltsraster (Symbolauswahl, Küchenseite) richten sich weiter nach der Breite: das ist Layout, nicht die Ansicht |
+| Z3 | Ansichtszustand liegt in beiden Bäumen | `WorkspaceScreen.tsx:32-33`, `mobile/MobileWorkspace.tsx:34-37` | `useSelectedListId` und `restoreOpen` je zweimal → Auswahlverlust beim Breitewechsel | M | erledigt: `ViewProvider` über der Verzweigung; `useSelectedListId` ist darin aufgegangen. `tests/e2e/lists.spec.ts` prüft, dass die gewählte Liste den Breitenwechsel überlebt – mit simuliertem Altverhalten ist der Test rot |
+| Z4 | Navigation ist kein Modell | 10 `useBackLayer`-Aufrufe in 7 Dateien | „was ist offen" nur als Boolean je Komponente | M | teils: Ebenen sind **benannt** (`backLayer(…, 'aufgabe-bearbeiten')`, `backStack.top()/names()`), die Reihenfolge liegt zentral, 3 neue Tests. Offen bleibt ein Router, der an die Namen Adressen aufhängt |
 
 ### 15.4 Zustands- und Anwendungsschicht
 

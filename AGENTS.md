@@ -341,6 +341,16 @@ Konkret:
   Rahmen viermal von Hand geschrieben – eine Fassung hatte 70 % Höhe statt
   85 vh, eine keinen Namen für Vorleseprogramme, und Escape kannte nur einer.
   Auslöser: `DESIGN.md` §15.2 A4.
+* **Die Ansicht entscheidet `useIsDesktop`, nicht `md:`.** Ein `md:` wäre eine
+  zweite Schwelle (768 px), während die App die breite Ansicht erst ab 1024 px
+  nimmt – ein Telefon im Querformat bekäme die mobile Ansicht mit
+  Desktop-Klassen. Inhaltsraster (wie viele Kacheln nebeneinander passen) dürfen
+  sich weiter nach der Breite richten; die **Ansicht** nicht. Auslöser:
+  `DESIGN.md` §15.3 Z2.
+* **Ansichtszustand liegt über der Verzweigung.** Welche Liste gewählt ist und
+  was offen ist, gehört in `ViewProvider`/`useView` – nicht in beide Bäume.
+  Sonst fällt die Auswahl beim Wechsel der Fensterbreite auf die erste Liste
+  zurück, weil React den Baum austauscht (§15.3 Z3).
 * **Textformate stehen in einer gemeinsamen Funktion.** Fälligkeit, Zähler,
   Statusmeldungen – wenn zwei Ansichten dieselbe Information zeigen, stammt der
   Text aus derselben Quelle (z. B. `formatDueLabel` in `src/ui/datetime.ts`).

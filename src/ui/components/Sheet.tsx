@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useIsDesktop } from '../../app/useIsDesktop'
 import { layer } from '../styles'
 import { CloseIcon } from '../icons'
 import { IconButton } from './IconButton'
@@ -14,6 +15,8 @@ export interface SheetProps {
   leading?: ReactNode
   /** Eigene Beschriftung des Schließen-Knopfs (Standard: „Schließen"). */
   closeLabel?: string
+  /** Name der Ebene im Zurück-Stapel – etwa `aufgabe-verschieben`. */
+  name?: string
   onClose: () => void
   /**
    * Der Weg **eine Stufe** zurück – für Escape und die Zurück-Taste.
@@ -50,15 +53,28 @@ export function Sheet({
   subtitle,
   leading,
   closeLabel,
+  name = 'blatt',
   onClose,
   onBack,
   footer,
   children,
 }: SheetProps) {
-  const { panel, onKeyDown } = useDialog<HTMLDivElement>({ onClose, onBack })
+  const { panel, onKeyDown } = useDialog<HTMLDivElement>({ onClose, onBack, name })
+  /*
+   * Die Form folgt **einer** Entscheidung: derselben, die auch die Ansicht
+   * wählt (`useIsDesktop`). Vorher stand hier `md:` – eine zweite Schwelle
+   * (768 px), während die App die breite Ansicht erst ab 1024 px nimmt. Ein
+   * Telefon im Querformat bekam damit die mobile Ansicht mit einem mittig
+   * stehenden „Blatt“.
+   */
+  const isDesktop = useIsDesktop()
 
   return (
-    <div className={`fixed inset-0 ${layer.screen} flex items-end justify-center md:items-center`}>
+    <div
+      className={`fixed inset-0 ${layer.screen} flex justify-center ${
+        isDesktop ? 'items-center' : 'items-end'
+      }`}
+    >
       <div className="absolute inset-0 bg-page/60" aria-hidden="true" onClick={onClose} />
 
       <div
@@ -68,7 +84,9 @@ export function Sheet({
         aria-label={label ?? (typeof title === 'string' ? title : undefined)}
         tabIndex={-1}
         onKeyDown={onKeyDown}
-        className="safe-bottom relative flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-sheet border-t border-line bg-surface outline-none md:max-w-lg md:rounded-sheet md:border"
+        className={`safe-bottom relative flex max-h-[85vh] w-full flex-col overflow-hidden bg-surface outline-none ${
+          isDesktop ? 'max-w-lg rounded-sheet border border-line' : 'rounded-t-sheet border-t border-line'
+        }`}
       >
         <header className="flex items-start justify-between gap-2 border-b border-line px-4 py-3">
           <div className="flex min-w-0 items-center gap-2">

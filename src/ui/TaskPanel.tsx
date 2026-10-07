@@ -48,10 +48,10 @@ export function TaskPanel({
   const [movingTask, setMovingTask] = useState<LocalTask | null>(null)
 
   // Die Zurück-Taste schließt zuerst das, was zuletzt geöffnet wurde.
-  useBackLayer(renaming, () => setRenaming(false))
-  useBackLayer(shareOpen, () => setShareOpen(false))
-  useBackLayer(sectionsOpen, () => setSectionsOpen(false))
-  useBackLayer(confirmingDelete, () => setConfirmingDelete(false))
+  useBackLayer(renaming, () => setRenaming(false), 'liste-umbenennen')
+  useBackLayer(shareOpen, () => setShareOpen(false), 'liste-teilen')
+  useBackLayer(sectionsOpen, () => setSectionsOpen(false), 'liste-bereiche')
+  useBackLayer(confirmingDelete, () => setConfirmingDelete(false), 'liste-loeschen')
 
   // Ohne zweite Liste gibt es nichts zu verschieben – dann entfällt der Knopf.
   const kannVerschieben = lists.some((eintrag) => eintrag.id !== list.id)
@@ -74,7 +74,7 @@ export function TaskPanel({
   }
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col gap-4 p-4 md:p-6" aria-label="Aufgaben">
+    <section className="flex min-h-0 flex-1 flex-col gap-4 p-6" aria-label="Aufgaben">
       <header className="space-y-3">
         {renaming ? (
           <form onSubmit={saveName} className="flex flex-wrap gap-2" aria-label="Liste umbenennen">

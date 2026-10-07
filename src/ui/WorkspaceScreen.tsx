@@ -1,7 +1,7 @@
-import { useState } from 'react'
 import { useAuth } from '../auth/useAuth'
-import { useLists, useSelectedListId } from '../app/hooks'
 import { useIsDesktop } from '../app/useIsDesktop'
+import { ViewProvider } from './ViewProvider'
+import { useView } from './useView'
 import { MobileWorkspace } from './mobile/MobileWorkspace'
 import { BackendLabel } from './BackendLabel'
 import { RestoreTasksPanel } from './RestoreTasksPanel'
@@ -23,24 +23,26 @@ import { Button } from './components/Button'
  */
 export function WorkspaceScreen() {
   const isDesktop = useIsDesktop()
-  return isDesktop ? <DesktopWorkspace /> : <MobileWorkspace />
+  // Der Ansichtszustand liegt **über** der Verzweigung: Beim Wechsel der Breite
+  // tauscht React den Baum aus, und ohne diese Ebene fiele die gewählte Liste
+  // auf die erste zurück.
+  return (
+    <ViewProvider>{isDesktop ? <DesktopWorkspace /> : <MobileWorkspace />}</ViewProvider>
+  )
 }
 
 /** Breite Ansicht: Listen links, Aufgaben rechts. */
 function DesktopWorkspace() {
   const { state, signOut } = useAuth()
-  const lists = useLists()
-  const [selectedListId, selectList] = useSelectedListId(lists)
-  const [restoreOpen, setRestoreOpen] = useState(false)
+  const { lists, selected, selectedListId, selectList, restoreOpen, setRestoreOpen } = useView()
   const { state: update, check, install, installing } = useUpdate()
   const updateBeschreibung = describeUpdateState(update)
   const updateVerfuegbar = update.status === 'available'
 
   const user = state.status === 'authenticated' ? state.user : null
-  const selected = lists.find((list) => list.id === selectedListId) ?? null
 
   return (
-    <div className={`flex min-h-screen flex-col ${appBackground} text-ink md:h-screen md:flex-row`}>
+    <div className={`flex h-screen flex-row ${appBackground} text-ink`}>
       <Sidebar
         lists={lists}
         selectedListId={selectedListId}
