@@ -19,20 +19,36 @@ export function SectionsPanel({ list }: { list: LocalList }) {
   const [umbenennen, setUmbenennen] = useState<string | null>(null)
   const [neuerName, setNeuerName] = useState('')
   const [fehler, setFehler] = useState<string | null>(null)
+  // Solange gespeichert wird, ist der Knopf gesperrt: Zwei schnell
+  // hintereinander ausgelöste Aufrufe lesen sonst denselben Listenstand und
+  // der zweite überschreibt den ersten – ein Bereich ginge verloren.
+  const [speichert, setSpeichert] = useState(false)
 
   const anlegen = async (event: FormEvent) => {
     event.preventDefault()
-    const id = await repositories.addListSection(list.id, name)
+    const gewaehlt = name
+    // Sofort leeren, nicht erst nach dem Speichern: Sonst trifft die Leerung
+    // einen Namen, den man in der Zwischenzeit schon getippt hat – genau daran
+    // scheiterte das Anlegen zweier Bereiche kurz hintereinander.
+    setName('')
+
+    setSpeichert(true)
+    let id: string | null = null
+    try {
+      id = await repositories.addListSection(list.id, gewaehlt)
+    } finally {
+      setSpeichert(false)
+    }
     if (id === null) {
       setFehler(
         sections.length >= SECTIONS_MAX
           ? `Mehr als ${SECTIONS_MAX} Bereiche gehen nicht.`
           : 'Der Name darf nicht leer sein.',
       )
+      setName(gewaehlt)
       return
     }
     setFehler(null)
-    setName('')
   }
 
   const umbenennenSpeichern = async (event: FormEvent, id: string) => {
@@ -123,7 +139,7 @@ export function SectionsPanel({ list }: { list: LocalList }) {
           aria-label="Neuer Bereich"
           className={`${input} min-w-40 flex-1`}
         />
-        <button type="submit" className={primaryButton}>
+        <button type="submit" className={primaryButton} disabled={speichert}>
           Bereich anlegen
         </button>
       </form>

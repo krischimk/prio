@@ -535,18 +535,22 @@ test('E2E 6: Bereiche ordnen Aufgaben, nehmen sie beim Ziehen auf und klappen zu
   await register(page, uniqueEmail('m-bereiche'))
   await createList(page, 'Einkauf')
 
+  await createTask(page, 'Äpfel')
+  await createTask(page, 'Saft')
+  await createTask(page, 'Milch')
+
+  // Erst Aufgaben, dann Bereiche: Köpfe erscheinen nur über einer Liste mit
+  // Aufgaben – und der Test kann so auf jeden Kopf warten, statt auf die
+  // Zeitsteuerung des Formulars zu bauen.
   await page.getByTestId('app-bar-title').click()
   await page.getByRole('button', { name: 'Bereiche' }).click()
   for (const name of ['Obst', 'Getränke']) {
     await page.getByLabel('Neuer Bereich').fill(name)
     await page.getByRole('button', { name: 'Bereich anlegen' }).click()
+    await expect(page.getByTestId('section-header').filter({ hasText: name })).toBeVisible()
   }
   await page.getByRole('button', { name: 'Zurück' }).click()
   await page.getByRole('button', { name: 'Schließen' }).click()
-
-  await createTask(page, 'Äpfel')
-  await createTask(page, 'Saft')
-  await createTask(page, 'Milch')
 
   // Die erste Aufgabe kommt über das Formular in ihren Bereich.
   await taskRow(page, 'Äpfel').click()
