@@ -1466,6 +1466,40 @@ Die CI läuft bei jedem Push und Pull Request und führt Typecheck, Linting,
 Unit-Tests, Integrationstests, Produktionsbuild und die E2E-Tests aus. Ein
 fehlschlagender Test oder Build lässt die Pipeline fehlschlagen.
 
+### Wenn ein Lauf rot ist
+
+Von der Kommandozeile aus sind die Ergebnisse der Läufe einsehbar:
+
+```bash
+npm run ci:status   # welcher Job ist durchgefallen?
+npm run ci:log      # Log und Prüf-Vermerke der gescheiterten Jobs
+npm run ci:rerun    # gescheiterte Jobs neu starten
+```
+
+`ci:status` kommt ohne Zugangsschlüssel aus – Läufe und Job-Ergebnisse sind
+öffentlich. Für `ci:log` und `ci:rerun` braucht es einen **nur lesenden**
+Schlüssel, weil GitHub das Job-Log hinter „Must have admin rights" verlegt
+(das Artefakt mit dem Playwright-Bericht ebenfalls). Angelegt wird er einmalig:
+
+1. <https://github.com/settings/personal-access-tokens/new>
+2. *Repository access* → **Only select repositories** → `krischimk/prio`
+3. *Permissions* → *Repository permissions*: **Actions: Read-only**
+   (*Metadata: Read-only* wird automatisch mitgesetzt)
+4. Erzeugen, kopieren und ablegen:
+
+```bash
+mkdir -p ~/.prio-android
+printf 'GITHUB_TOKEN=%s\n' '<der-schlüssel>' > ~/.prio-android/github.env
+chmod 600 ~/.prio-android/github.env
+```
+
+Der Schlüssel liegt damit wie die übrigen privaten Daten außerhalb des
+Repositories und kann ausschließlich lesen.
+
+Zusätzlich trägt die E2E-Stufe im CI den Playwright-Bericht `github` ein:
+Gescheiterte Tests erscheinen als **Prüf-Vermerk** am Commit – und die sind
+auch ohne Schlüssel lesbar (siehe `playwright.config.ts`).
+
 ---
 
 ## Definition of Done – Stand

@@ -75,6 +75,14 @@ def main() -> int:
             print("Alles Übrige ist vollständig verknüpft.")
         else:
             print("Private Prio-Daten sind vollständig verknüpft.")
+
+        # Optional: der nur lesende Zugangsschlüssel für CI-Logs und Neustarts.
+        if not (target / "github.env").is_file():
+            print(
+                "Hinweis: github.env fehlt noch – npm run ci:log und ci:rerun "
+                "brauchen ihn (npm run ci:status geht ohne). Anleitung im README, "
+                "Abschnitt „Wenn ein Lauf rot ist"."
+            )
         return 0
 
     target.parent.mkdir(parents=True, exist_ok=True)

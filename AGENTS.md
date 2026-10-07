@@ -84,6 +84,10 @@ Gemessen, in absteigender Reihenfolge:
 * **Ein Release je Auftrag.** Was beim Prüfen auffällt, geht in dieselbe
   Fassung.
 * **GitHub-Läufe im Hintergrund** starten und währenddessen weiterarbeiten.
+* **Bei rotem Lauf zuerst `npm run ci:log`** (Log und Prüf-Vermerke der
+  gescheiterten Jobs; `npm run ci:rerun` startet sie neu). Ohne Schlüssel geht
+  `ci:status`. Ein lokaler Nachbau ist erst nötig, wenn das Log nichts hergibt –
+  er kostet Minuten und beweist nur, dass es lokal läuft.
 * **Shell-Aufrufe bündeln**, wo sie zusammengehören: Dateien lesen, prüfen und
   messen in einem Aufruf statt in fünf.
 

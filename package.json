@@ -32,7 +32,10 @@
     "android:emu:shot": "bash scripts/android-emulator.sh shot",
     "android:emu:stop": "bash scripts/android-emulator.sh stop",
     "android:emu:eval": "bash scripts/android-emulator.sh eval",
-    "icons:generate": "node scripts/generate-list-icons.mjs"
+    "icons:generate": "node scripts/generate-list-icons.mjs",
+    "ci:status": "node scripts/ci-github.mjs status",
+    "ci:log": "node scripts/ci-github.mjs log",
+    "ci:rerun": "node scripts/ci-github.mjs rerun"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
