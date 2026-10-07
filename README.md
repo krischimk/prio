@@ -908,25 +908,43 @@ jeweiligen Stelle kommentiert.
 
 ## Deployment (Cloudflare Pages)
 
-Die Web-Fassung ist dafür vorbereitet, aber noch nicht veröffentlicht. Cloudflare
-Pages hostet statische Dateien: Es baut das Repository und liefert `dist/` unter
-einer HTTPS-Adresse aus (`<projekt>.pages.dev`); einen Serverprozess gibt es
+Cloudflare Pages hostet statische Dateien: Es liefert `dist/` unter einer
+HTTPS-Adresse aus (in der Regel `prio.pages.dev`); einen Serverprozess gibt es
 nicht. Der kostenlose Tarif reicht für diesen Umfang.
 
-**Einstellungen im Cloudflare-Projekt**
+**Gebaut und veröffentlicht wird in GitHub Actions**, nicht in Cloudflare
+(`.github/workflows/ci.yml`, Job `deploy`). Die Gründe:
 
-| Einstellung | Wert |
-| --- | --- |
-| Repository | `krischimk/prio` |
-| Produktionsbranch | `main` |
-| Build command | `npm run build` |
-| Build output directory | `dist` |
-| Node-Version | ≥ 22.12 (z. B. `NODE_VERSION=24`) |
-| Umgebungsvariablen | `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` |
+* Der Deploy hängt an denselben Tests wie der Rest (`needs: [quality, e2e]`).
+  Eine ungeprüfte Fassung kann so nicht online gehen – anders als beim Bauen in
+  Cloudflare, das auf jeden Push hin baut.
+* Der Ablauf steht im Repository und ist damit nachlesbar und änderbar.
+* Veröffentlicht wird genau das Bundle, das der Lauf gebaut und geprüft hat.
 
-Die Variablen müssen **zur Build-Zeit** gesetzt sein – Vite schreibt sie in das
-Bundle. Der Publishable Key ist dafür vorgesehen und öffentlich; der Schutz
-kommt aus den RLS-Policies.
+**Einmalig einzurichten** (Cloudflare-Konto und Zugang):
+
+1. Konto anlegen: <https://dash.cloudflare.com/sign-up>.
+2. *Workers & Pages* → die **Account-ID** kopieren.
+3. *My Profile → API Tokens → Create Custom Token* mit der Berechtigung
+   **Account → Cloudflare Pages → Edit**; Token kopieren.
+4. In GitHub unter *Settings → Secrets and variables → Actions*:
+   Secret `CLOUDFLARE_API_TOKEN` und Variable `CLOUDFLARE_ACCOUNT_ID`.
+
+Danach veröffentlicht jeder Push auf `main` die Web-Fassung – aber erst nach
+den Tests. Fehlt der Zugang, wird der Job **grün übersprungen** und sagt das
+auch; das Repository leuchtet nicht rot, solange Cloudflare fehlt. Beim ersten
+Lauf legt der Workflow das Projekt `prio` selbst an.
+
+Die Supabase-Variablen `VITE_SUPABASE_URL` und `VITE_SUPABASE_PUBLISHABLE_KEY`
+stehen bereits als Repository-Variablen (der Release-Workflow nutzt dieselben).
+Sie müssen **zur Build-Zeit** gesetzt sein – Vite schreibt sie in das Bundle.
+Der Publishable Key ist dafür vorgesehen und öffentlich; der Schutz kommt aus
+den RLS-Policies.
+
+*Der andere Weg* wäre, das Repository in Cloudflare zu verbinden (*Workers &
+Pages → Create → Pages → Connect to Git*). Cloudflare baut dann selbst, mit
+`npm run build`, Ausgabeordner `dist`, `NODE_VERSION=24` und denselben zwei
+Variablen – aber ohne die Tests abzuwarten.
 
 **Vorher in Supabase einstellen**
 

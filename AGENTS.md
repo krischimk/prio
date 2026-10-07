@@ -15,6 +15,10 @@ nur die Regeln, die man beim Arbeiten kennen muss.
 * Version in `package.json` und das Release gehören zusammen: Version erhöhen,
   committen, Tag `v*` setzen und pushen. Der Release-Workflow baut und
   veröffentlicht die APK.
+* **Ein Push auf `main` veröffentlicht zweierlei:** die Web-Fassung nach
+  Cloudflare Pages (nach grünen Tests, Zugang siehe README) und, mit einem Tag,
+  die APK. `main` ist damit Produktion an zwei Stellen – was dort landet, ist
+  sichtbar.
 * **Das Tag bekommt einen Text, und der ist der Changelog.** GitHub kann ihn
   nicht selbst erzeugen: Ohne Pull Requests bleibt bei `--generate-notes` nur
   ein Verweis auf den Vergleich zweier Tags. Also `git tag -a v0.9.0 -m "…"`
