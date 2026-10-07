@@ -24,13 +24,32 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Eingaben erben die dunkle Optik, damit native Controls nicht ausbrechen. */
-input,
-textarea,
-select,
-button {
-  font: inherit;
-  color: inherit;
+/*
+ * Eingaben erben die dunkle Optik, damit native Controls nicht ausbrechen.
+ *
+ * Wichtig ist der Layer: Ungeschichtet würde `font: inherit` **jede**
+ * Schriftgröße aus den Tailwind-Klassen schlagen (Klassen stehen in
+ * `@layer utilities`, ungeschichtetes CSS gewinnt dagegen). Genau das war der
+ * Fall: `text-[11px]` an einem Knopf bewirkte nichts, er blieb bei 16 px.
+ * In `@layer base` bleibt die Vererbung der Rückfall – die Klasse sticht sie.
+ */
+@layer base {
+  input,
+  textarea,
+  select,
+  button {
+    font-family: inherit;
+    color: inherit;
+  }
+
+  /* Die Größe kommt aus den Klassen (`text-sm`, `text-[11px]` …); ohne Klasse
+   * gilt die Größe des umgebenden Textes. */
+  button,
+  input,
+  textarea,
+  select {
+    font-size: inherit;
+  }
 }
 
 /*
