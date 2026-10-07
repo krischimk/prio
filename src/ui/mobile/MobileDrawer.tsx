@@ -1,11 +1,11 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useAuth } from '../../auth/useAuth'
 import { useBackLayer } from '../../app/useBackLayer'
 import { useWorkspace } from '../../app/useWorkspace'
 import { describeReminderState } from '../../reminders/reminderStatus'
 import { describeSyncState } from '../../sync/syncStatus'
 import type { LocalList } from '../../domain/types'
-import { errorMessage, input, primaryButton, secondaryButton } from '../styles'
+import { iconButton, errorMessage, input, primaryButton, secondaryButton } from '../styles'
 import { BackendLabel } from '../BackendLabel'
 import { ListIcon } from '../ListIcon'
 import { UpdateEntry } from '../UpdateEntry'
@@ -44,17 +44,9 @@ export function MobileDrawer({
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Die Zurück-Taste schließt das Menü.
+  // Die Zurück-Taste und Escape schließen das Menü – beides kommt aus dem
+  // Zurück-Stapel (siehe `BackLayerProvider`), nicht aus dieser Komponente.
   useBackLayer(open, onClose)
-
-  useEffect(() => {
-    if (!open) return
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [open, onClose])
 
   if (!open) return null
 
@@ -100,7 +92,7 @@ export function MobileDrawer({
             type="button"
             onClick={onClose}
             aria-label="Menü schließen"
-            className="rounded-md p-2 text-neutral-400 active:bg-neutral-800"
+            className={iconButton}
           >
             <CloseIcon />
           </button>
