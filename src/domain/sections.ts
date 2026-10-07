@@ -108,9 +108,13 @@ export function groupTasks<T extends { section_id: string | null }>(
   tasks: T[],
   sections: ListSection[],
 ): TaskGroup<T>[] {
-  const bekannt = new Set(sections.map((section) => section.id))
+  // Über `parseSections`: Eine Zeile aus einer älteren Fassung hat das Feld
+  // noch nicht. Ohne diese Zeile stürzte die Ansicht beim Zeichnen ab – der
+  // schwarze Bildschirm nach dem Update.
+  const plan = parseSections(sections)
+  const bekannt = new Set(plan.map((section) => section.id))
   const ohne: T[] = []
-  const nachAbschnitt = new Map<string, T[]>(sections.map((section) => [section.id, []]))
+  const nachAbschnitt = new Map<string, T[]>(plan.map((section) => [section.id, []]))
 
   for (const task of tasks) {
     const ziel = task.section_id !== null && bekannt.has(task.section_id) ? task.section_id : null
@@ -123,7 +127,7 @@ export function groupTasks<T extends { section_id: string | null }>(
 
   return [
     { section: null, tasks: ohne, id: 'ohne-bereich' },
-    ...sections.map((section) => ({
+    ...plan.map((section) => ({
       section,
       tasks: nachAbschnitt.get(section.id) ?? [],
       id: section.id,

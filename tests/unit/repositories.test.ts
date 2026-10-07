@@ -816,6 +816,19 @@ describe('Repositories (lokale Geschäftslogik)', () => {
       expect(list.dirty).toBe(1)
     })
 
+    it('ergänzt den Abschnittsplan bei einer Liste aus alter Zeit', async () => {
+      // Zeile aus einer Fassung vor Migration 0013: Das Feld fehlt, und Dexie
+      // füllt es nicht nach. Ohne Ergänzung stürzt die Ansicht beim Gruppieren
+      // ab – der schwarze Bildschirm nach dem Update.
+      const list = await device.repositories.createList('Alt', userId)
+      const roh = (await device.db.lists.get(list.id)) as unknown as Record<string, unknown>
+      delete roh.sections
+      await device.db.lists.put(roh as never)
+
+      expect((await device.repositories.getList(list.id))?.sections).toEqual([])
+      expect((await device.repositories.listLists())[0].sections).toEqual([])
+    })
+
     it('benennt eine Liste um', async () => {
       const list = await device.repositories.createList('Alt', userId)
       device.clock.advance(1000)

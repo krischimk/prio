@@ -210,6 +210,19 @@ export function compareTasks(a: LocalTask, b: LocalTask): number {
 
 export function createRepositories(db: LocalDatabase, clock: Clock = systemClock): Repositories {
   /** Baut die Felder, die bei jeder lokalen Änderung gesetzt werden. */
+  /**
+   * Ergänzt den Abschnittsplan, wenn er fehlt.
+   *
+   * Zeilen aus einer Fassung vor Migration 0013 haben das Feld nicht, und Dexie
+   * füllt es nicht nach. Ohne diese Ergänzung stürzt die Ansicht beim Gruppieren
+   * ab – genau das war der schwarze Bildschirm nach dem Update auf 0.18.0.
+   * Geschrieben wird dabei nichts: Der Wert entsteht beim nächsten echten
+   * Schreiben von selbst.
+   */
+  function mitAbschnittsplan(list: LocalList): LocalList {
+    return { ...list, sections: parseSections(list.sections) }
+  }
+
   function stamp(): { updated_at: string; dirty: 1 } {
     return { updated_at: clock.now(), dirty: 1 }
   }
@@ -360,13 +373,14 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
 
     async getList(listId) {
       const list = await db.lists.get(listId)
-      return list && list.deleted_at === null ? list : undefined
+      return list && list.deleted_at === null ? mitAbschnittsplan(list) : undefined
     },
 
     async listLists() {
       const lists = await db.lists.toArray()
       return lists
         .filter((list) => list.deleted_at === null)
+        .map(mitAbschnittsplan)
         .sort((a, b) => a.name.localeCompare(b.name))
     },
 

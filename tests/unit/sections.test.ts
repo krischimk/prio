@@ -105,6 +105,15 @@ describe('Aufgaben gruppieren', () => {
     expect(gruppen[0].tasks.map((t) => t.id)).toEqual(['a'])
   })
 
+  it('verträgt einen fehlenden Abschnittsplan', () => {
+    // Zeilen aus einer Fassung vor Migration 0013 haben das Feld nicht. Genau
+    // daran ist 0.18.0 beim Zeichnen abgestürzt („Cannot read properties of
+    // undefined (reading 'map')") – die Ansicht blieb schwarz.
+    const gruppen = groupTasks([aufgabe('a', null)], undefined as unknown as ListSection[])
+    expect(gruppen).toHaveLength(1)
+    expect(gruppen[0].tasks.map((t2) => t2.id)).toEqual(['a'])
+  })
+
   it('flacht in Anzeigereihenfolge ab', () => {
     const gruppen = groupTasks(
       [aufgabe('a', 's-getraenke'), aufgabe('b', null), aufgabe('c', 's-obst')],
