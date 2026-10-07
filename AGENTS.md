@@ -173,6 +173,14 @@ nicht einmal je Änderung. Drei Stufen:
   Operation setzt `updated_at` und `dirty = 1` – sonst geht sie beim Sync
   verloren.
 * Gelöscht wird als Soft Delete (`deleted_at`), nie hart.
+* **Der Schlüssel-Wert-Speicher ist neutral, die Schlüssel gehören ihrem
+  Schreiber.** Zugriffe über `src/db/metaStore.ts`; welche Schlüssel es gibt,
+  weiß `repositories`, `reminderService` bzw. `syncStore`. Vorher lagen sie alle
+  in `syncStore`, und `db` wie `reminders` hingen damit an der Sync-Schicht.
+* **Die Sync-Engine verlangt nur `SyncTransport`** (`pull`/`push`); wer teilen
+  will, braucht `ShareDirectory`. `RemoteGateway` ist die Summe für die
+  Zusammensetzung, nicht die kleinste gemeinsame Schnittmenge. Auslöser:
+  `DESIGN.md` §15.5 C7.
 * **Lokale Eingabehilfen lösen keinen Abgleich aus.** Vorgemerkte Vorlaufzeiten
   und schon geteilte Adressen liegen nur lokal (`meta`) und werden nie
   hochgeladen. Wer sie wie eine Datenänderung zählt, lässt den Abgleich sich
