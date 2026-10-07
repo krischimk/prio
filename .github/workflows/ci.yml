@@ -135,10 +135,23 @@ jobs:
           grep -q "$VITE_SUPABASE_URL" dist/assets/*.js \
             || { echo "::error::Die Supabase-URL steckt nicht im Web-Bundle."; exit 1; }
 
+      # Der Projektname ist zugleich die Adresse: <name>.pages.dev. Nur wenn
+      # dieser Name weltweit noch frei ist, entsteht genau sie – sonst hängt
+      # Cloudflare Zufallszeichen an, und die Adresse ist nicht mehr zu merken.
+      # Deshalb wird hier geprüft statt geschluckt: Ein belegter Name soll
+      # sichtbar scheitern und nicht still eine kryptische Adresse erzeugen.
       - if: steps.zugang.outputs.bereit == 'true'
-        name: Projekt anlegen (beim ersten Mal)
-        run: npx --yes wrangler@4 pages project create prio --production-branch=main || true
+        name: Projekt anlegen (nur beim ersten Mal)
+        run: |
+          PROJEKT="prio-krischi"
+          if npx --yes wrangler@4 pages project list 2>/dev/null | grep -qE "(^|[[:space:]])$PROJEKT([[:space:]]|$)"; then
+            echo "Projekt $PROJEKT ist vorhanden."
+          else
+            npx --yes wrangler@4 pages project create "$PROJEKT" --production-branch=main
+          fi
+          npx --yes wrangler@4 pages project list 2>/dev/null | grep -qE "(^|[[:space:]])$PROJEKT([[:space:]]|$)" \
+            || { echo "::error::Projekt $PROJEKT fehlt und ließ sich nicht anlegen – ist der Name vergeben?"; exit 1; }
 
       - if: steps.zugang.outputs.bereit == 'true'
         name: Hochladen
-        run: npx --yes wrangler@4 pages deploy dist --project-name=prio --branch=main
+        run: npx --yes wrangler@4 pages deploy dist --project-name=prio-krischi --branch=main

@@ -933,7 +933,13 @@ nicht. Der kostenlose Tarif reicht für diesen Umfang.
 Danach veröffentlicht jeder Push auf `main` die Web-Fassung – aber erst nach
 den Tests. Fehlt der Zugang, wird der Job **grün übersprungen** und sagt das
 auch; das Repository leuchtet nicht rot, solange Cloudflare fehlt. Beim ersten
-Lauf legt der Workflow das Projekt `prio` selbst an.
+Lauf legt der Workflow das Projekt selbst an.
+
+**Die Adresse ist der Projektname:** `prio-krischi` → `prio-krischi.pages.dev`.
+Der Name muss weltweit frei sein, sonst hängt Cloudflare Zufallszeichen an
+(so geschehen bei `prio`: der Name gehört jemand anderem, das eigene Projekt
+landete unter `prio-5gj.pages.dev`). Der Workflow prüft das Anlegen deshalb und
+bricht mit einer Meldung ab, statt still eine unmerkliche Adresse zu erzeugen.
 
 Die Supabase-Variablen `VITE_SUPABASE_URL` und `VITE_SUPABASE_PUBLISHABLE_KEY`
 stehen bereits als Repository-Variablen (der Release-Workflow nutzt dieselben).
