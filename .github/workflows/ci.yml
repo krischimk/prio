@@ -58,7 +58,14 @@ jobs:
         run: npm run build
 
   e2e:
-    name: E2E-Tests (Playwright)
+    name: E2E-Tests (Playwright, Teil ${{ matrix.teil }}/2)
+    # Zwei Teil-Läufe auf zwei Rechnern: Die Suite selbst bleibt seriell (der
+    # Mock hält gemeinsamen Zustand), über Rechner hinweg geht es aber parallel.
+    # Die Wartezeit halbiert sich, ohne dass ein Test entfällt.
+    strategy:
+      fail-fast: false
+      matrix:
+        teil: [1, 2]
     runs-on: ubuntu-latest
     steps:
       - name: Repository auschecken
@@ -73,11 +80,19 @@ jobs:
       - name: Abhängigkeiten installieren
         run: npm ci
 
+      # Der Browser wird zwischengespeichert: Sonst kostet der Download in
+      # jedem Lauf und in jedem Teil-Lauf eine knappe Minute.
+      - name: Playwright-Browser zwischenspeichern
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Chromium installieren
         run: npx playwright install --with-deps chromium
 
       - name: E2E-Tests
-        run: npm run test:e2e
+        run: npm run test:e2e -- --shard=${{ matrix.teil }}/2
 
       - name: Playwright-Bericht hochladen (nur bei Fehlern)
         if: failure()
@@ -172,6 +187,15 @@ jobs:
       #
       # Nur für die Produktion und nur, wenn die Secrets liegen; sonst ein
       # Hinweis statt eines roten Laufs (wie beim Cloudflare-Zugang).
+      - if: |
+          steps.zugang.outputs.bereit == 'true' &&
+          github.ref == 'refs/heads/main'
+        name: Playwright-Browser zwischenspeichern
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - if: |
           steps.zugang.outputs.bereit == 'true' &&
           github.ref == 'refs/heads/main'

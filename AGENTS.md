@@ -144,6 +144,16 @@ nicht einmal je Änderung. Drei Stufen:
   E2E für genau den Commit bewiesen, aus dem die APK entsteht – und die Wartezeit
   kostet nichts, weil GitHub währenddessen arbeitet. Entfällt, wenn genau dieser
   App-Code schon einen grünen E2E-Lauf hat.
+* **Warten ist kein Arbeitsschritt.** Der Nutzer wartet *mit*, wenn ein Auftrag
+  auf einen grünen Lauf, ein Log oder einen Release-Bau blockiert. Deshalb:
+  erst lokal `npm run ci` und die betroffenen E2E-Dateien (bzw. vor einem
+  Release alle), dann handeln; die CI läuft als Rückversicherung im
+  Hintergrund. Wer lokal dieselben Tore gesehen hat, muss nicht auf sie warten.
+* **Ein Push je Auftrag, nicht je Änderung.** Jeder Push startet die volle
+  Suite und veröffentlicht die Web-Fassung. Kleine Änderungen sammeln und am
+  Ende des Auftrags in einem Zug pushen; reine Text-Änderungen (README, AGENTS,
+  Kommentare) brauchen keinen Lauf – `[skip ci]` in die Commit-Nachricht, und
+  lokal `npm run ci` genügt.
 
 ## Architektur – nicht aufweichen
 
