@@ -3,14 +3,11 @@ import { useWorkspace } from '../../app/useWorkspace'
 import { useUndo } from '../useUndo'
 import type { ListSection, LocalTask } from '../../domain/types'
 import { flattenGroups, groupTasks } from '../../domain/sections'
-import { formatDueLabel } from '../datetime'
-import { BellIcon, BellOffIcon, RepeatIcon } from '../icons'
-import { describeRecurrence } from '../recurrence'
-import { describeReminders } from '../reminder'
+import { appBackground, layer } from '../styles'
 import { TaskDescription } from '../TaskDescription'
-import { layer, appBackground, attentionText, dangerText } from '../styles'
-import { useCollapsedSections } from '../collapsedSections'
+import { TaskFacts } from '../TaskFacts'
 import { SectionHeader } from '../SectionHeader'
+import { useCollapsedSections } from '../collapsedSections'
 import { useReorderDrag, type ReorderDrag } from './useReorderDrag'
 
 /**
@@ -174,9 +171,6 @@ function MobileTaskRow({
 }) {
   const { repositories } = useWorkspace()
   const { offerUndo } = useUndo()
-  const due = task.due_at === null ? null : formatDueLabel(task.due_at, task.completed)
-  const wiederholung = describeRecurrence(task.recurrence)
-  const erinnerungen = describeReminders(task, currentUserId)
   const handlers = drag.getRowHandlers(task.id, index)
 
   return (
@@ -228,35 +222,7 @@ function MobileTaskRow({
           className="min-w-0 text-left select-none"
           data-testid="task-row"
         >
-          <span
-            className={`block break-words text-title leading-snug ${
-              task.completed ? 'text-ink-faint line-through' : 'text-ink'
-            }`}
-          >
-            {task.title}
-          </span>
-          {due ? (
-            <span className={`mt-0.5 block text-meta ${due.overdue ? dangerText : 'text-ink-faint'}`}>
-              {due.text}
-            </span>
-          ) : null}
-          {wiederholung ? (
-            <span className="mt-0.5 flex items-center gap-1 text-meta text-ink-faint">
-              <RepeatIcon className="h-3 w-3 shrink-0" />
-              {wiederholung}
-            </span>
-          ) : null}
-          {erinnerungen.map((erinnerung, index) => (
-            <span
-              key={index}
-              className={`mt-0.5 flex items-center gap-1 text-meta ${
-                erinnerung.afterDue && !erinnerung.muted ? attentionText : 'text-ink-faint'
-              }`}
-            >
-              {erinnerung.muted ? <BellOffIcon className="h-3 w-3 shrink-0" /> : <BellIcon className="h-3 w-3 shrink-0" />}
-              {erinnerung.text}
-            </span>
-          ))}
+          <TaskFacts task={task} currentUserId={currentUserId} dichte="mobil" />
         </button>
       {task.description ? <TaskDescription text={task.description} className="mt-0.5" /> : null}
       </div>

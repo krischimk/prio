@@ -1,17 +1,12 @@
-import { useState, type FormEvent } from 'react'
-import { useBackLayer } from '../../app/useBackLayer'
+import { useState } from 'react'
 import { useWorkspace } from '../../app/useWorkspace'
-import type { TaskReminder } from '../../domain/reminder'
 import type { ListSection, LocalList, LocalTask } from '../../domain/types'
-import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../datetime'
-import { RecurrenceSelect } from '../RecurrenceSelect'
-import { SectionSelect } from '../SectionSelect'
-import { ReminderList } from '../ReminderList'
-import { input } from '../styles'
 import { CloseIcon, MoveIcon, TrashIcon } from '../icons'
 import { Button } from '../components/Button'
 import { IconButton } from '../components/IconButton'
 import { Screen } from '../components/Screen'
+import { TaskFields } from '../TaskFields'
+import { useTaskForm } from '../useTaskForm'
 
 /**
  * Detail- und Bearbeitungsansicht einer Aufgabe.
@@ -41,50 +36,12 @@ export function TaskDetailSheet({
   const { repositories } = useWorkspace()
   const isNew = task === null
 
-  const [title, setTitle] = useState(task?.title ?? '')
-  const [description, setDescription] = useState(task?.description ?? '')
-  const [dueAt, setDueAt] = useState(toDateTimeLocalValue(task?.due_at ?? null))
-  const [recurrence, setRecurrence] = useState(task?.recurrence ?? '')
-  const [erinnerungen, setErinnerungen] = useState<TaskReminder[]>(task?.reminders ?? [])
-  const [bereich, setBereich] = useState<string | null>(task?.section_id ?? null)
-  // Eigener Zustand statt `task.completed`: Die übergebene Aufgabe ist eine
-  // Momentaufnahme und würde nach dem Umschalten nicht nachziehen.
+  // Zustand und Umwandlungen des Formulars kommen aus `useTaskForm` – dieselben
+  // wie in der Eingabezeile und der Aufgabenzeile der breiten Ansicht.
+  const form = useTaskForm({ task, listId, onSaved: onClose })
   const [completed, setCompleted] = useState(task?.completed ?? false)
   const [busy, setBusy] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
-
-  useBackLayer(true, onClose)
-
-  const save = async (event: FormEvent) => {
-    event.preventDefault()
-    if (busy || title.trim().length === 0) return
-    setBusy(true)
-    try {
-      if (task === null) {
-        await repositories.createTask({
-          listId,
-          title,
-          description,
-          dueAt: fromDateTimeLocalValue(dueAt),
-          recurrence: recurrence === '' ? null : recurrence,
-          reminders: erinnerungen,
-          sectionId: bereich,
-        })
-      } else {
-        await repositories.updateTask(task.id, {
-          title,
-          description,
-          dueAt: fromDateTimeLocalValue(dueAt),
-          recurrence: recurrence === '' ? null : recurrence,
-          reminders: erinnerungen,
-          sectionId: bereich,
-        })
-      }
-      onClose()
-    } finally {
-      setBusy(false)
-    }
-  }
 
   const toggleCompleted = async () => {
     if (task === null || busy) return
@@ -167,7 +124,7 @@ export function TaskDetailSheet({
                 type="submit"
                 form="task-detail-form"
                 variant="primary" size="sm"
-                disabled={busy || title.trim().length === 0}
+                disabled={form.busy || form.werte.title.trim().length === 0}
               >
                 Speichern
               </Button>
@@ -177,84 +134,16 @@ export function TaskDetailSheet({
       }
     >
 
-      <form id="task-detail-form" onSubmit={save} className="scroll-area safe-bottom flex-1 overflow-y-auto">
+      <form id="task-detail-form" onSubmit={form.speichern} className="scroll-area safe-bottom flex-1 overflow-y-auto">
         <div className="space-y-4 px-4 py-4">
-          <div>
-            <label htmlFor="detail-title" className="mb-1 block text-meta text-ink-muted">
-              Titel
-            </label>
-            <input
-              id="detail-title"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              // Beim Anlegen ist das Feld sofort aktiv – der Nutzer hat gerade
-              // auf "+" getippt und will schreiben.
-              autoFocus={isNew}
-              required
-              className={input}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="detail-description" className="mb-1 block text-meta text-ink-muted">
-              Beschreibung (optional)
-            </label>
-            <textarea
-              id="detail-description"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              rows={4}
-              className={input}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="detail-due" className="mb-1 block text-meta text-ink-muted">
-              Fällig am (optional)
-            </label>
-            <input
-              id="detail-due"
-              type="datetime-local"
-              value={dueAt}
-              onChange={(event) => {
-                const neu = event.target.value
-                setDueAt(neu)
-                // Ohne Fälligkeit gibt es nichts fortzuschreiben.
-                if (neu === '') setRecurrence('')
-              }}
-              className={input}
-            />
-          </div>
-
-          {sections.length > 0 ? (
-            <div>
-              <label htmlFor="detail-section" className="mb-1 block text-meta text-ink-muted">
-                Bereich
-              </label>
-              <SectionSelect
-                id="detail-section"
-                sections={sections}
-                value={bereich}
-                onChange={setBereich}
-              />
-            </div>
-          ) : null}
-
-          <RecurrenceSelect
-            id="detail-recurrence"
-            value={recurrence}
-            disabled={dueAt === ''}
-            onChange={setRecurrence}
-          />
-
-          <ReminderList
-            idPrefix="detail"
-            dueAt={fromDateTimeLocalValue(dueAt)}
-            recurrence={recurrence === '' ? null : recurrence}
-            reminders={erinnerungen}
-            viewerId={currentUserId}
+          <TaskFields
+            form={form}
+            sections={sections}
+            currentUserId={currentUserId}
             listIsShared={lists.find((eintrag) => eintrag.id === listId)?.is_shared ?? false}
-            onChange={setErinnerungen}
+            idPrefix="detail"
+            beschreibungZeilen={4}
+            titelAutofokus={isNew}
           />
 
           {task !== null ? (

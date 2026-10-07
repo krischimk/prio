@@ -1,26 +1,22 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
 import { useBackLayer } from '../app/useBackLayer'
 import { useUndo } from './useUndo'
-import type { TaskReminder } from '../domain/reminder'
 import type { ListSection, LocalTask } from '../domain/types'
-import { formatDueLabel, fromDateTimeLocalValue, toDateTimeLocalValue } from './datetime'
-import { BellIcon, BellOffIcon, RepeatIcon } from './icons'
-import { describeRecurrence } from './recurrence'
-import { RecurrenceSelect } from './RecurrenceSelect'
-import { ReminderList } from './ReminderList'
-import { SectionSelect } from './SectionSelect'
 import { TaskDescription } from './TaskDescription'
-import { describeReminders } from './reminder'
-import { cardSoft, dangerText, input, attentionText } from './styles'
+import { TaskFacts } from './TaskFacts'
+import { TaskFields } from './TaskFields'
 import { Button } from './components/Button'
+import { cardSoft } from './styles'
+import { useTaskForm } from './useTaskForm'
 
 /**
- * Eine Aufgabe in der Liste.
+ * Eine Aufgabe in der Liste (breite Ansicht).
  *
- * Zwei Zustände: Anzeige und Bearbeiten. Beim Wechsel in den Bearbeiten-Modus
- * wird das Formular aus der aktuellen Aufgabe befüllt – dadurch braucht es
- * keine Synchronisation zwischen Serverdaten und Formularzustand.
+ * Zwei Zustände: Anzeige und Bearbeiten. Der Inhalt der Anzeige kommt aus
+ * `TaskFacts` – dieselben Zeilen zeigt auch die mobile Liste, nur in flacher
+ * Form. Das Bearbeiten-Formular ist ein eigener Baustein (`TaskBearbeiten`),
+ * damit seine Felder erst beim Öffnen aus der Aufgabe befüllt werden.
  */
 export function TaskItem({
   task,
@@ -46,125 +42,20 @@ export function TaskItem({
   const [editing, setEditing] = useState(false)
   // Die Zurück-Taste schließt zuerst das Bearbeitungsformular.
   useBackLayer(editing, () => setEditing(false))
-  const [title, setTitle] = useState(task.title)
-  const [description, setDescription] = useState(task.description ?? '')
-  const [dueAt, setDueAt] = useState('')
-  const [recurrence, setRecurrence] = useState('')
-  const [erinnerungenEingabe, setErinnerungen] = useState<TaskReminder[]>([])
-  const [bereich, setBereich] = useState<string | null>(null)
-
-  const startEditing = () => {
-    setTitle(task.title)
-    setDescription(task.description ?? '')
-    setDueAt(toDateTimeLocalValue(task.due_at))
-    setRecurrence(task.recurrence ?? '')
-    setErinnerungen(task.reminders)
-    setBereich(task.section_id)
-    setEditing(true)
-  }
-
-  const save = async (event: FormEvent) => {
-    event.preventDefault()
-    await repositories.updateTask(task.id, {
-      title,
-      description,
-      dueAt: fromDateTimeLocalValue(dueAt),
-      recurrence: recurrence === '' ? null : recurrence,
-      reminders: erinnerungenEingabe,
-      sectionId: bereich,
-    })
-    setEditing(false)
-  }
 
   if (editing) {
     return (
       <li className="rounded-card border border-brand-line/60 bg-surface/60 p-3">
-        <form onSubmit={save} className="space-y-3" aria-label={`Aufgabe bearbeiten: ${task.title}`}>
-          <div>
-            <label htmlFor={`title-${task.id}`} className="mb-1 block text-meta text-ink-muted">
-              Titel
-            </label>
-            <input
-              id={`title-${task.id}`}
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              required
-              className={input}
-            />
-          </div>
-          <div>
-            <label htmlFor={`description-${task.id}`} className="mb-1 block text-meta text-ink-muted">
-              Beschreibung (optional)
-            </label>
-            <textarea
-              id={`description-${task.id}`}
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              rows={2}
-              className={input}
-            />
-          </div>
-          <div>
-            <label htmlFor={`due-${task.id}`} className="mb-1 block text-meta text-ink-muted">
-              Fällig am (optional)
-            </label>
-            <input
-              id={`due-${task.id}`}
-              type="datetime-local"
-              value={dueAt}
-              onChange={(event) => {
-                const neu = event.target.value
-                setDueAt(neu)
-                // Ohne Fälligkeit gibt es nichts fortzuschreiben.
-                if (neu === '') setRecurrence('')
-              }}
-              className={input}
-            />
-          </div>
-          {sections.length > 0 ? (
-            <div>
-              <label htmlFor={`section-${task.id}`} className="mb-1 block text-meta text-ink-muted">
-                Bereich
-              </label>
-              <SectionSelect
-                id={`section-${task.id}`}
-                sections={sections}
-                value={bereich}
-                onChange={setBereich}
-              />
-            </div>
-          ) : null}
-          <RecurrenceSelect
-            id={`recurrence-${task.id}`}
-            value={recurrence}
-            disabled={dueAt === ''}
-            onChange={setRecurrence}
-          />
-          <ReminderList
-            idPrefix={`task-${task.id}`}
-            dueAt={fromDateTimeLocalValue(dueAt)}
-            recurrence={recurrence === '' ? null : recurrence}
-            reminders={erinnerungenEingabe}
-            viewerId={currentUserId}
-            listIsShared={listIsShared}
-            onChange={setErinnerungen}
-          />
-          <div className="flex gap-2">
-            <Button type="submit" variant="primary">
-              Speichern
-            </Button>
-            <Button variant="secondary" onClick={() => setEditing(false)}>
-              Abbrechen
-            </Button>
-          </div>
-        </form>
+        <TaskBearbeiten
+          task={task}
+          sections={sections}
+          currentUserId={currentUserId}
+          listIsShared={listIsShared}
+          onDone={() => setEditing(false)}
+        />
       </li>
     )
   }
-
-  const due = task.due_at === null ? null : formatDueLabel(task.due_at, task.completed)
-  const wiederholung = describeRecurrence(task.recurrence)
-  const erinnerungen = describeReminders(task, currentUserId)
 
   return (
     <li className={`${cardSoft} flex items-start gap-3`}>
@@ -180,48 +71,26 @@ export function TaskItem({
         }}
       />
       <div className="min-w-0 flex-1">
-        <p className={`break-words text-body ${task.completed ? 'text-ink-faint line-through' : 'text-ink'}`}>
-          {task.title}
-        </p>
-        {task.description ? (
-          <TaskDescription text={task.description} className="mt-1" />
-        ) : null}
-        {due ? (
-          <p className={`mt-1 text-meta ${due.overdue ? dangerText : 'text-ink-faint'}`}>{due.text}</p>
-        ) : null}
-        {wiederholung ? (
-          <p className="mt-1 flex items-center gap-1 text-meta text-ink-faint">
-            <RepeatIcon className="h-3 w-3 shrink-0" />
-            {wiederholung}
-          </p>
-        ) : null}
-        {erinnerungen.map((erinnerung, index) => (
-          <p
-            key={index}
-            className={`mt-1 flex items-center gap-1 text-meta ${
-              erinnerung.afterDue && !erinnerung.muted ? attentionText : 'text-ink-faint'
-            }`}
-          >
-            {erinnerung.muted ? <BellOffIcon className="h-3 w-3 shrink-0" /> : <BellIcon className="h-3 w-3 shrink-0" />}
-            {erinnerung.text}
-          </p>
-        ))}
+        <TaskFacts task={task} currentUserId={currentUserId} />
+        {task.description ? <TaskDescription text={task.description} className="mt-1" /> : null}
       </div>
       <div className="flex shrink-0 gap-1">
         {onRequestMove ? (
           <Button
-            variant="ghost" size="sm"
+            variant="ghost"
+            size="sm"
             aria-label={`Aufgabe verschieben: ${task.title}`}
             onClick={() => onRequestMove(task)}
           >
             Verschieben
           </Button>
         ) : null}
-        <Button variant="ghost" size="sm" onClick={startEditing}>
+        <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
           Bearbeiten
         </Button>
         <Button
-          variant="danger" size="sm"
+          variant="danger"
+          size="sm"
           aria-label={`Aufgabe löschen: ${task.title}`}
           onClick={() => {
             void repositories.deleteTask(task.id)
@@ -231,5 +100,48 @@ export function TaskItem({
         </Button>
       </div>
     </li>
+  )
+}
+
+/**
+ * Das Bearbeitungsformular.
+ *
+ * Eigener Baustein, damit es beim Öffnen frisch aus der Aufgabe befüllt wird:
+ * `useTaskForm` liest die Werte beim ersten Rendern. Dauerhaft eingebunden
+ * zeigte es nach einem Abgleich (Pull) veraltete Werte.
+ */
+function TaskBearbeiten({
+  task,
+  sections,
+  currentUserId,
+  listIsShared,
+  onDone,
+}: {
+  task: LocalTask
+  sections: ListSection[]
+  currentUserId: string
+  listIsShared: boolean
+  onDone: () => void
+}) {
+  const form = useTaskForm({ task, listId: task.list_id, onSaved: onDone })
+
+  return (
+    <form onSubmit={form.speichern} className="space-y-3" aria-label={`Aufgabe bearbeiten: ${task.title}`}>
+      <TaskFields
+        form={form}
+        sections={sections}
+        currentUserId={currentUserId}
+        listIsShared={listIsShared}
+        idPrefix={`task-${task.id}`}
+      />
+      <div className="flex gap-2">
+        <Button type="submit" variant="primary" disabled={form.busy}>
+          Speichern
+        </Button>
+        <Button variant="secondary" onClick={onDone}>
+          Abbrechen
+        </Button>
+      </div>
+    </form>
   )
 }

@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from 'react'
-import { useWorkspace } from '../app/useWorkspace'
-import { fromDateTimeLocalValue } from './datetime'
+import { useState } from 'react'
+import { useTaskForm } from './useTaskForm'
+import { TaskFields } from './TaskFields'
 import { cardSoft, input } from './styles'
 import { Button } from './components/Button'
 
@@ -8,90 +8,58 @@ import { Button } from './components/Button'
  * Eingabezeile für neue Aufgaben.
  *
  * Standardfall: Titel eintippen, Enter. Beschreibung und Fälligkeit sind
- * optional und klappen auf Wunsch auf – so bleibt die Bedienung auf dem
- * Handy einfach.
+ * optional und klappen auf Wunsch auf – so bleibt die Bedienung auf dem Handy
+ * einfach. Die Felder selbst kommen aus `TaskFields`, der Zustand aus
+ * `useTaskForm` – dieselben wie in der Detailansicht und der Aufgabenzeile.
  */
 export function TaskComposer({ listId }: { listId: string }) {
-  const { repositories } = useWorkspace()
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [dueAt, setDueAt] = useState('')
   const [detailsOpen, setDetailsOpen] = useState(false)
-  const [busy, setBusy] = useState(false)
 
-  const reset = () => {
-    setTitle('')
-    setDescription('')
-    setDueAt('')
-    setDetailsOpen(false)
-  }
-
-  const submit = async (event: FormEvent) => {
-    event.preventDefault()
-    if (busy || title.trim().length === 0) return
-    setBusy(true)
-    try {
-      await repositories.createTask({
-        listId,
-        title,
-        description,
-        dueAt: fromDateTimeLocalValue(dueAt),
-      })
-      reset()
-    } finally {
-      setBusy(false)
-    }
-  }
+  const form = useTaskForm({
+    task: null,
+    listId,
+    onSaved: () => {
+      form.zuruecksetzen()
+      setDetailsOpen(false)
+    },
+  })
 
   return (
-    <form onSubmit={submit} className="space-y-3" aria-label="Neue Aufgabe anlegen">
+    <form onSubmit={form.speichern} className="space-y-3" aria-label="Neue Aufgabe anlegen">
       <div className="flex gap-2">
         <label htmlFor="new-task-title" className="sr-only">
           Neue Aufgabe
         </label>
         <input
           id="new-task-title"
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
+          value={form.werte.title}
+          onChange={(event) => form.setzen('title', event.target.value)}
           placeholder="Neue Aufgabe…"
           className={input}
         />
-        <Button type="submit" variant="primary" disabled={busy || title.trim().length === 0}>
+        <Button
+          type="submit"
+          variant="primary"
+          disabled={form.busy || form.werte.title.trim().length === 0}
+        >
           Hinzufügen
         </Button>
       </div>
 
       {detailsOpen ? (
         <div className={`${cardSoft} space-y-3`}>
-          <div>
-            <label htmlFor="new-task-description" className="mb-1 block text-meta text-ink-muted">
-              Beschreibung (optional)
-            </label>
-            <textarea
-              id="new-task-description"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              rows={2}
-              className={input}
-            />
-          </div>
-          <div>
-            <label htmlFor="new-task-due" className="mb-1 block text-meta text-ink-muted">
-              Fällig am (optional)
-            </label>
-            <input
-              id="new-task-due"
-              type="datetime-local"
-              value={dueAt}
-              onChange={(event) => setDueAt(event.target.value)}
-              className={input}
-            />
-          </div>
+          <TaskFields
+            form={form}
+            felder={['beschreibung', 'faellig']}
+            sections={[]}
+            idPrefix="new-task"
+          />
         </div>
       ) : null}
 
       <Button
-        variant="secondary" size="sm"
+        variant="secondary"
+        size="sm"
         aria-expanded={detailsOpen}
         onClick={() => setDetailsOpen((open) => !open)}
       >
