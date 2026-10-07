@@ -131,6 +131,14 @@ nicht einmal je Änderung. Drei Stufen:
 * **Ein Release ist der Schlussstrich, nicht der Zwischenschritt.** Nicht nach
   jedem Feature taggen; sonst läuft der mehrminütige Bau für jede
   Kleinigkeit.
+* **Ein neues Feld oder eine Migration braucht den Update-Weg in der Prüfung.**
+  Tests legen ihre Daten mit dem *aktuellen* Code an – sie prüfen nur „frisch
+  installiert". Dazu gehören zwei Fälle: eine Zeile **ohne** das neue Feld
+  (`tests/e2e/update.spec.ts`, E2E 7, stellt sie her) und die tatsächlich
+  eingespielte Migration (`npm run db:check`). Nach dem Veröffentlichen der
+  Web-Fassung `npm run smoke:live`. Auslöser: der schwarze Bildschirm von
+  0.18.0 (fehlendes `sections` in alten Zeilen) und der `PGRST204` danach
+  (Migration nie eingespielt) – beide nur beim *Bestandsnutzer* sichtbar.
 * **Erst `main` pushen, die CI abwarten, dann taggen.** Der Release-Workflow
   führt kein E2E aus, die CI tut es bei jedem Push auf `main`. Ist sie grün, ist
   E2E für genau den Commit bewiesen, aus dem die APK entsteht – und die Wartezeit

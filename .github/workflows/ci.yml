@@ -7,9 +7,12 @@ name: CI
 # Produktionsbuild kommt ohne Zugangsdaten aus.
 #
 # Der Job `deploy` veröffentlicht zusätzlich die Web-Fassung nach Cloudflare
-# Pages – aber nur auf `main` und nur nach grünen Tests. Fehlt der Zugang
-# (Secret `CLOUDFLARE_API_TOKEN`, Variable `CLOUDFLARE_ACCOUNT_ID`), wird er
-# übersprungen statt rot: Das Repository soll nicht bei jedem Push meckern,
+# Pages – aber nur nach grünen Tests. `main` landet als Produktion auf
+# prio-krischi.pages.dev, jeder andere Zweig als Vorschau-Adresse
+# (<hash>.prio-krischi.pages.dev). So lässt sich ein Fix vor dem
+# Zusammenführen ansehen, statt ihn sofort allen hinzustellen. Fehlt der Zugang
+# (Secret `CLOUDFLARE_API_TOKEN`, Variable `CLOUDFLARE_ACCOUNT_ID`), wird der
+# Job übersprungen statt rot: Das Repository soll nicht bei jedem Push meckern,
 # solange Cloudflare noch nicht eingerichtet ist.
 
 on:
@@ -93,7 +96,10 @@ jobs:
   deploy:
     name: Web-Fassung zu Cloudflare Pages
     needs: [quality, e2e]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Jeder Zweig wird veröffentlicht: `main` als Produktion, alles andere als
+    # Vorschau-Adresse (<hash>.prio-krischi.pages.dev). Damit lässt sich ein Fix
+    # vor dem Zusammenführen ansehen, statt ihn allen sofort hinzustellen.
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -154,4 +160,4 @@ jobs:
 
       - if: steps.zugang.outputs.bereit == 'true'
         name: Hochladen
-        run: npx --yes wrangler@4 pages deploy dist --project-name=prio-krischi --branch=main
+        run: npx --yes wrangler@4 pages deploy dist --project-name=prio-krischi --branch="${{ github.ref_name }}"

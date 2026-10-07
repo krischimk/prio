@@ -64,7 +64,14 @@ if (spawnSync('psql', ['--version'], { stdio: 'ignore' }).error) {
 }
 
 // --- Zugang vorhanden? -----------------------------------------------------
-if (!existsSync(ENV_FILE)) {
+// Zuerst die Umgebungsvariable: Im CI gibt es keine private Ablage, dort kommt
+// die Verbindung aus einem Repository-Secret. Lokal bleibt die Datei der Weg.
+const ausUmgebung = process.env[VARIABLE]?.trim()
+if (ausUmgebung) {
+  console.log(`${VARIABLE} aus der Umgebung verwendet.`)
+}
+
+if (!ausUmgebung && !existsSync(ENV_FILE)) {
   fail(
     `Es fehlt ${ENV_FILE}.\n\n` +
       'Dort steht die Datenbank-Verbindung, nicht der API-Schlüssel:\n\n' +
@@ -77,7 +84,7 @@ if (!existsSync(ENV_FILE)) {
   )
 }
 
-const dbUrl = readEnvValue(ENV_FILE, VARIABLE)
+const dbUrl = ausUmgebung || readEnvValue(ENV_FILE, VARIABLE)
 if (!dbUrl) {
   fail(`${ENV_FILE} enthält kein ${VARIABLE}.`)
 }
@@ -97,28 +104,73 @@ console.log(`Ziel: ${hostname}`)
 // Kein `--single-transaction`: Jede Migration bringt ihr eigenes begin/commit mit.
 const base = ['-X', '-v', 'ON_ERROR_STOP=1', '-d', dbUrl]
 
+/**
+ * Spalten, die der Code sendet.
+ *
+ * Fehlt eine davon, scheitert **jeder** Sync mit `PGRST204` – genau das ist
+ * passiert, als `lists.sections` geschrieben, aber Migration 0013 nie
+ * eingespielt wurde. Deshalb prüft `db:check` nicht nur, was da ist, sondern
+ * auch, was fehlt: Die Liste gehört gepflegt, wenn eine Spalte dazukommt.
+ */
+const ERWARTET = [
+  ['lists', 'sections', '0013'],
+  ['tasks', 'section_id', '0013'],
+  ['tasks', 'reminders', '0011'],
+  ['tasks', 'position', '0009'],
+  ['lists', 'icon', '0007'],
+]
+
 if (checkOnly) {
-  // Rein lesend: die Spalten von `tasks` und der RLS-Zustand. Damit fällt auf,
-  // ob die Datenbank hinter dem Repository zurückliegt (etwa fehlende Spalten,
-  // die jeden Sync mit PGRST204 scheitern ließen).
+  // Rein lesend: Spalten und RLS-Zustand, dazu die Erwartung von oben.
   const result = spawnSync(
     'psql',
     [
       ...base,
       '-c',
-      `select ordinal_position as nr, column_name, data_type
+      `select table_name as tabelle, ordinal_position as nr, column_name, data_type
          from information_schema.columns
-        where table_schema = 'public' and table_name = 'tasks'
-        order by ordinal_position`,
+        where table_schema = 'public' and table_name in ('lists', 'tasks')
+        order by table_name, ordinal_position`,
       '-c',
       `select relname as tabelle, relrowsecurity as rls
          from pg_class
         where relname in ('profiles', 'lists', 'list_members', 'tasks')
         order by relname`,
+      '-c',
+      `select e.tabelle, e.spalte,
+              case when c.column_name is null then 'FEHLT (Migration ' || e.migration || '?)'
+                   else 'da' end as zustand
+         from (values ${ERWARTET.map(([t2, s, m]) => `('${t2}', '${s}', '${m}')`).join(', ')}) as e(tabelle, spalte, migration)
+         left join information_schema.columns c
+                on c.table_schema = 'public' and c.table_name = e.tabelle and c.column_name = e.spalte
+        order by e.tabelle, e.spalte`,
     ],
     { stdio: 'inherit' },
   )
-  process.exit(result.status ?? 1)
+
+  // Der Exit-Code darf nicht am hübschen Druck hängen: Fehlende Spalten sind
+  // ein Fehler, nicht eine Information.
+  const fehlend = spawnSync(
+    'psql',
+    [
+      ...base,
+      '-tAc',
+      `select count(*) from (values ${ERWARTET.map(([t2, s]) => `('${t2}', '${s}')`).join(', ')}) as e(tabelle, spalte)
+        where not exists (
+          select 1 from information_schema.columns c
+           where c.table_schema = 'public' and c.table_name = e.tabelle and c.column_name = e.spalte)`,
+    ],
+    { encoding: 'utf8' },
+  )
+  const anzahl = Number((fehlend.stdout ?? '').trim())
+  if (anzahl > 0) {
+    console.error(
+      `\n${anzahl} erwartete Spalte(n) fehlen. Einspielen: npm run db:apply\n`,
+    )
+  } else {
+    console.log('\nAlle erwarteten Spalten sind da.')
+  }
+  process.exit((result.status ?? 0) !== 0 || anzahl > 0 ? 1 : 0)
 }
 
 if (!existsSync(BUNDLE)) {

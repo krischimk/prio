@@ -85,6 +85,21 @@ jobs:
             fi
           fi
 
+      # Erst die Migration, dann die App-Version, die sie braucht. Fehlt
+      # serverseitig eine Spalte, die die App sendet, scheitert jeder Sync mit
+      # PGRST204 – genau das ist bei 0.18.0 passiert. Die Prüfung bricht den
+      # Release ab, statt eine unbrauchbare APK zu veröffentlichen.
+      - name: Migrationen prüfen
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::notice::Kein SUPABASE_DB_URL hinterlegt – die Migrationsprüfung entfällt."
+            exit 0
+          fi
+          sudo apt-get install -y --no-install-recommends postgresql-client >/dev/null
+          npm run db:check
+
       - name: Signaturschlüssel bereitstellen
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}

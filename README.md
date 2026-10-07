@@ -1500,6 +1500,31 @@ Zusätzlich trägt die E2E-Stufe im CI den Playwright-Bericht `github` ein:
 Gescheiterte Tests erscheinen als **Prüf-Vermerk** am Commit – und die sind
 auch ohne Schlüssel lesbar (siehe `playwright.config.ts`).
 
+### Prüfungen gegen das echte Projekt
+
+Drei Dinge lassen sich mit dem Mock nicht prüfen und haben eigene Wege:
+
+| Befehl | Was er prüft | Voraussetzung |
+| --- | --- | --- |
+| `npm run db:check` | ob alle Spalten da sind, die die App sendet (fehlt eine, scheitert **jeder** Sync mit `PGRST204`) | `db.env` bzw. `SUPABASE_DB_URL` |
+| `npm run db:rls-check` | die Zugriffsregeln: A legt eine Liste an, B sieht sie nicht, nach dem Teilen sieht er sie und ihre Aufgaben – löschen darf er sie nicht | zwei Testkonten |
+| `npm run smoke:live` | die **veröffentlichte** Fassung: startet sie, meldet sie sich an, gleicht sie ab? | Testkonto |
+
+Die beiden Testkonten liegen als `PRIO_TEST_A_*` / `PRIO_TEST_B_*` in
+`~/.prio-android/testkonten.env` (außerhalb des Repositories, Rechte 600). Sie
+sind im echten Projekt angelegt und per SQL bestätigt; `db:rls-check` räumt
+seine Prüfdaten selbst wieder weg, `smoke:live` löscht seine Prüfliste.
+
+Der Rauchlauf gehört an das Ende einer Veröffentlichung: Er meldet einen
+schwarzen Bildschirm, eine fehlende Spalte oder eine verletzte Regel, **bevor**
+es jemand meldet. Genau der Fall von 0.18.0 wäre dort aufgefallen.
+
+Passend dazu gibt es `tests/e2e/update.spec.ts` (E2E 7): Er stellt eine Zeile
+aus der Vorfassung her (Feld entfernen, neu laden) und prüft beide Ansichten.
+Alle anderen Tests legen ihre Daten mit dem aktuellen Code an und prüfen damit
+nur den Fall „frisch installiert" – daran ist der schwarze Bildschirm
+vorbeigekommen.
+
 ---
 
 ## Definition of Done – Stand
