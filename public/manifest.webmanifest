@@ -1,6 +1,6 @@
 {
-  "name": "PRIO – offlinefähige Aufgaben",
-  "short_name": "PRIO",
+  "name": "Prio – offlinefähige Aufgaben",
+  "short_name": "Prio",
   "description": "Offline-first To-do-App mit Listen, gemeinsamen Listen und Cloud-Synchronisation.",
   "lang": "de",
   "start_url": "/",

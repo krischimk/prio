@@ -22,7 +22,7 @@ export function describeUpdateState(state: UpdateState): UpdateDescription {
     case 'checking':
       return { text: 'Suche nach Updates …', tone: 'muted' }
     case 'up-to-date':
-      return { text: `PRIO ${state.latest} ist die neueste Fassung.`, tone: 'ok' }
+      return { text: `Prio ${state.latest} ist die neueste Fassung.`, tone: 'ok' }
     case 'available':
       return {
         text: `Version ${state.release.version} ist verfügbar – installiert ist ${state.current}.`,

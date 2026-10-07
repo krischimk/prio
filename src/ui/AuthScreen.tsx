@@ -38,7 +38,7 @@ export function AuthScreen() {
   return (
     <div className={`flex min-h-screen items-center justify-center ${appBackground} px-4`}>
       <div className="w-full max-w-sm">
-        <h1 className="mb-1 text-2xl font-semibold tracking-tight text-neutral-50">PRIO</h1>
+        <h1 className="mb-1 text-2xl font-semibold tracking-tight text-neutral-50">Prio</h1>
         <p className="mb-6 text-sm text-neutral-400">
           Aufgaben offline erfassen – synchronisiert wird, sobald das Netz da ist.
         </p>

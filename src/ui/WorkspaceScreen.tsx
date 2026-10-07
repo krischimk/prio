@@ -50,7 +50,7 @@ function DesktopWorkspace() {
       <div className="flex min-h-0 flex-1 flex-col">
         <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-neutral-800 px-4 py-3">
           <div className="flex items-baseline gap-2">
-            <span className="font-semibold tracking-tight">PRIO</span>
+            <span className="font-semibold tracking-tight">Prio</span>
             <span className="text-xs text-neutral-500" data-testid="current-user">
               {user?.email}
             </span>

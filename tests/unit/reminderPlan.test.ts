@@ -184,7 +184,7 @@ describe('Erinnerungen planen', () => {
     const plan = planReminders(tasks, lists, NOW)
 
     expect(plan.find((entry) => entry.taskId === 't1')?.body).toBe('Arbeit')
-    expect(plan.find((entry) => entry.taskId === 't2')?.body).toBe('PRIO')
+    expect(plan.find((entry) => entry.taskId === 't2')?.body).toBe('Prio')
   })
 
   it('sortiert nach Zeitpunkt', () => {

@@ -36,7 +36,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
  */
 const config: CapacitorConfig = {
   appId: 'de.krischi.prio',
-  appName: 'PRIO',
+  appName: 'Prio',
   webDir: 'dist',
   android: {
     allowMixedContent: false,

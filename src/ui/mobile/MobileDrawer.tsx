@@ -95,7 +95,7 @@ export function MobileDrawer({
 
       <aside className={`safe-top safe-bottom absolute inset-y-0 left-0 flex w-80 max-w-[85%] flex-col overflow-y-auto border-r border-neutral-800 ${appBackground}`}>
         <div className="flex items-center justify-between px-4 pt-3">
-          <span className="text-lg font-semibold tracking-tight text-neutral-50">PRIO</span>
+          <span className="text-lg font-semibold tracking-tight text-neutral-50">Prio</span>
           <button
             type="button"
             onClick={onClose}

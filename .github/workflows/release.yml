@@ -147,7 +147,7 @@ jobs:
             exit 1
           fi
           gh release create "${GITHUB_REF_NAME}" "prio-${{ steps.version.outputs.name }}.apk" \
-            --title "PRIO ${GITHUB_REF_NAME}" \
+            --title "Prio ${GITHUB_REF_NAME}" \
             --notes-file release-notes.md
 
       - name: APK als Artefakt sichern (Probelauf ohne Tag)
