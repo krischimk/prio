@@ -1,5 +1,11 @@
 /**
- * Erzeugt die PWA-Icons als PNG.
+ * Erzeugt die App-Icons als PNG: für die PWA **und** für die Android-App.
+ *
+ * Beide aus einer Quelle, damit das Symbol überall dasselbe ist. Die Android-
+ * Ausgaben landen direkt in `android/app/src/main/res/`: die klassischen
+ * Kacheln (je Bildschirmdichte), die runden Varianten und der Vordergrund des
+ * adaptiven Symbols. Den Hintergrund des adaptiven Symbols setzt
+ * `values/ic_launcher_background.xml` (schwarz).
  *
  * Bewusst ohne Bildbibliothek: Ein PNG besteht nur aus wenigen Chunks, und
  * Node bringt die nötige Komprimierung (zlib) mit. Dadurch bleibt die
@@ -14,9 +20,26 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { deflateSync } from 'node:zlib'
 
-const OUT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'icons')
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
+const OUT_DIR = join(ROOT, 'public', 'icons')
+const ANDROID_RES = join(ROOT, 'android', 'app', 'src', 'main', 'res')
 
-const BACKGROUND = [0x0a, 0x0a, 0x0a, 0xff]
+/**
+ * Android-Bildschirmdichten.
+ *
+ * `kachel` ist die Größe des klassischen Symbols, `adaptiv` die des
+ * Vordergrunds im adaptiven Symbol (108dp-Raster, die sichtbare Fläche ist
+ * kleiner – das Motiv liegt von sich aus in der sicheren Zone).
+ */
+const DICHTEN = [
+  { ordner: 'mipmap-mdpi', kachel: 48, adaptiv: 108 },
+  { ordner: 'mipmap-hdpi', kachel: 72, adaptiv: 162 },
+  { ordner: 'mipmap-xhdpi', kachel: 96, adaptiv: 216 },
+  { ordner: 'mipmap-xxhdpi', kachel: 144, adaptiv: 324 },
+  { ordner: 'mipmap-xxxhdpi', kachel: 192, adaptiv: 432 },
+]
+
+const BACKGROUND = [0x00, 0x00, 0x00, 0xff]
 const BAR_COLORS = [
   [0xf5, 0xf5, 0xf5, 0xff],
   [0xa5, 0xb4, 0xfc, 0xff],
@@ -119,12 +142,61 @@ function drawMark(pixels, size, markScale) {
   })
 }
 
+function fillCircle(pixels, size, color) {
+  const radius = size / 2
+  for (let py = 0; py < size; py += 1) {
+    for (let px = 0; px < size; px += 1) {
+      const dx = px + 0.5 - radius
+      const dy = py + 0.5 - radius
+      if (dx * dx + dy * dy <= radius * radius) {
+        pixels.set(color, (py * size + px) * 4)
+      }
+    }
+  }
+}
+
+function writePng(file, size, pixels) {
+  mkdirSync(dirname(file), { recursive: true })
+  writeFileSync(file, encodePng(size, pixels))
+  console.log(`geschrieben: ${file} (${size}×${size})`)
+}
+
 function writeIcon(fileName, size, markScale) {
   const pixels = createCanvas(size, BACKGROUND)
   drawMark(pixels, size, markScale)
-  const file = join(OUT_DIR, fileName)
-  writeFileSync(file, encodePng(size, pixels))
-  console.log(`geschrieben: ${file} (${size}×${size})`)
+  writePng(join(OUT_DIR, fileName), size, pixels)
+}
+
+/** Die Symbole der Android-App: Kachel, runde Kachel und adaptiver Vordergrund. */
+function writeAndroidIcons() {
+  for (const { ordner, kachel, adaptiv } of DICHTEN) {
+    const ziel = join(ANDROID_RES, ordner)
+
+    // Klassische Kachel: abgerundetes Quadrat, damit sie auch dort sitzt, wo
+    // das System keine Form darüberlegt.
+    const quadrat = createCanvas(kachel, [0, 0, 0, 0])
+    fillRoundRect(quadrat, kachel, {
+      x: 0,
+      y: 0,
+      width: kachel,
+      height: kachel,
+      radius: kachel * 0.22,
+      color: BACKGROUND,
+    })
+    drawMark(quadrat, kachel, 1)
+    writePng(join(ziel, 'ic_launcher.png'), kachel, quadrat)
+
+    const rund = createCanvas(kachel, [0, 0, 0, 0])
+    fillCircle(rund, kachel, BACKGROUND)
+    drawMark(rund, kachel, 1)
+    writePng(join(ziel, 'ic_launcher_round.png'), kachel, rund)
+
+    // Adaptiver Vordergrund: ohne Hintergrund, das System legt seine Form
+    // darüber. Das Motiv bleibt in der sicheren Zone.
+    const vordergrund = createCanvas(adaptiv, [0, 0, 0, 0])
+    drawMark(vordergrund, adaptiv, 1)
+    writePng(join(ziel, 'ic_launcher_foreground.png'), adaptiv, vordergrund)
+  }
 }
 
 mkdirSync(OUT_DIR, { recursive: true })
@@ -134,3 +206,4 @@ writeIcon('icon-512.png', 512, 1)
 // kleiner und vollständig innerhalb der sicheren Zone.
 writeIcon('icon-maskable-512.png', 512, 0.62)
 writeIcon('apple-touch-icon.png', 180, 1)
+writeAndroidIcons()
