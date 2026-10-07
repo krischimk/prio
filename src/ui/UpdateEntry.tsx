@@ -1,7 +1,7 @@
 import { useUpdate } from './useUpdate'
 import { Markdown } from './Markdown'
 import { describeUpdateState, type UpdateTone } from '../updates/updateStatus'
-import { attentionText, dangerText, ghostButton, mutedText, primaryButton, secondaryButton, statusTone } from './styles'
+import { buttonClass, attentionText, dangerText, mutedText, primaryButton, secondaryButton, statusTone } from './styles'
 
 /**
  * Update-Status mit passender Aktion – ohne eigenes Fenster.
@@ -94,7 +94,7 @@ export function UpdateEntry() {
       {state.status === 'failed' ? (
         <button
           type="button"
-          className={`${ghostButton} mt-2 w-full px-2 py-1 text-xs`}
+          className={buttonClass('ghost', 'sm', 'mt-2 w-full')}
           onClick={() => {
             void check()
           }}

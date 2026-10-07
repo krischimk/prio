@@ -1,6 +1,6 @@
 import { useWorkspace } from '../app/useWorkspace'
 import { describeSyncState } from '../sync/syncStatus'
-import { ghostButton, statusTone } from './styles'
+import { buttonClass, statusTone } from './styles'
 
 /**
  * Statusanzeige der Synchronisation.
@@ -29,7 +29,7 @@ export function SyncIndicator() {
       </span>
       <button
         type="button"
-        className={`${ghostButton} px-2 py-1 text-xs`}
+        className={buttonClass('ghost', 'sm')}
         onClick={() => {
           void runSync()
         }}

@@ -312,6 +312,15 @@ Konkret:
 * **Farben und Flächen kommen aus `src/ui/styles.ts`.** In Komponenten keine
   rohen Farbklassen (`text-neutral-500`) und keine Hex-Werte. Das gilt besonders
   für Zustandsfarben: `SyncTone → Farbe` gibt es genau einmal.
+* **Knopfgrößen und -arten werden gewählt, nicht angehängt.** Statt
+  `` `${ghostButton} px-2 py-1 text-xs` `` heißt es `buttonClass('ghost', 'sm')`.
+  Grund: Tailwind ordnet die Utilities nach der Reihenfolge des **Stylesheets**,
+  ein angehängtes `px-2` verdrängt das `px-3` der Konstante deshalb nicht – es
+  wirkt schlicht nicht. So sind 22 „kompakte“ Knöpfe entstanden, die nie kompakt
+  waren (nur ihre Schrift war kleiner). Angehängt werden dürfen weiterhin
+  Layout-Klassen (Breite, Außenabstand, Ausrichtung); Größe, Farbe und Radius
+  kommen aus der Variante. `tests/unit/uiConventions.test.ts` hält es fest.
+  Auslöser: `DESIGN.md` §15.1 F3.
 * **Textformate stehen in einer gemeinsamen Funktion.** Fälligkeit, Zähler,
   Statusmeldungen – wenn zwei Ansichten dieselbe Information zeigen, stammt der
   Text aus derselben Quelle (z. B. `formatDueLabel` in `src/ui/datetime.ts`).

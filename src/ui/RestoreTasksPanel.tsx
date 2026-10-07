@@ -4,7 +4,7 @@ import { useWorkspace } from '../app/useWorkspace'
 import { RESTORE_WINDOW_DAYS } from '../db/repositories'
 import { formatCompletedLabel } from './datetime'
 import { CloseIcon } from './icons'
-import { primaryButton } from './styles'
+import { iconButton, buttonClass } from './styles'
 
 /**
  * „Aufgaben wiederherstellen“ in den Einstellungen.
@@ -55,7 +55,7 @@ export function RestoreTasksPanel({ open, onClose }: { open: boolean; onClose: (
             type="button"
             onClick={onClose}
             aria-label="Schließen"
-            className="rounded-md p-2 text-neutral-400 active:bg-neutral-800"
+            className={iconButton}
           >
             <CloseIcon />
           </button>
@@ -82,7 +82,7 @@ export function RestoreTasksPanel({ open, onClose }: { open: boolean; onClose: (
                   </div>
                   <button
                     type="button"
-                    className={`${primaryButton} shrink-0 px-3 py-1.5 text-xs`}
+                    className={buttonClass('primary', 'sm', 'shrink-0')}
                     onClick={() => {
                       void repositories.setTaskCompleted(task.id, false)
                     }}

@@ -7,7 +7,7 @@ import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../datetime'
 import { RecurrenceSelect } from '../RecurrenceSelect'
 import { SectionSelect } from '../SectionSelect'
 import { ReminderList } from '../ReminderList'
-import { appBackground, dangerButton, input, primaryButton, secondaryButton } from '../styles'
+import { iconButton, buttonClass, appBackground, dangerButton, input, secondaryButton } from '../styles'
 import { CloseIcon, MoveIcon, TrashIcon } from '../icons'
 
 /**
@@ -121,7 +121,7 @@ export function TaskDetailSheet({
           type="button"
           onClick={onClose}
           aria-label="Schließen"
-          className="rounded-md p-2 text-neutral-400 active:bg-neutral-800"
+          className={iconButton}
         >
           <CloseIcon />
         </button>
@@ -133,7 +133,7 @@ export function TaskDetailSheet({
           <>
             <button
               type="button"
-              className={`${dangerButton} px-3 py-2 text-xs`}
+              className={buttonClass('danger', 'sm')}
               onClick={() => {
                 void remove()
               }}
@@ -143,7 +143,7 @@ export function TaskDetailSheet({
             </button>
             <button
               type="button"
-              className={`${secondaryButton} px-3 py-2 text-xs`}
+              className={buttonClass('secondary', 'sm')}
               onClick={() => setConfirmingDelete(false)}
             >
               Abbrechen
@@ -155,7 +155,7 @@ export function TaskDetailSheet({
               <button
                 type="button"
                 aria-label="Aufgabe löschen"
-                className={`${dangerButton} px-3 py-2`}
+                className={dangerButton}
                 onClick={() => setConfirmingDelete(true)}
               >
                 <TrashIcon className="h-4 w-4" />
@@ -164,7 +164,7 @@ export function TaskDetailSheet({
             <button
               type="submit"
               form="task-detail-form"
-              className={`${primaryButton} px-3 py-2 text-xs`}
+              className={buttonClass('primary', 'sm')}
               disabled={busy || title.trim().length === 0}
             >
               Speichern
@@ -271,7 +271,7 @@ export function TaskDetailSheet({
           <div className="space-y-2 border-t border-neutral-800 px-4 py-4">
             <button
               type="button"
-              className={`${secondaryButton} flex w-full items-center justify-center gap-2 py-3`}
+              className={buttonClass('secondary', 'block', 'w-full')}
               onClick={() => {
                 if (task !== null) onRequestMove(task)
               }}

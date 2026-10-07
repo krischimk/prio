@@ -120,6 +120,33 @@ describe('UI-Konventionen', () => {
     ).toEqual([])
   })
 
+  /**
+   * Tailwind ordnet die Utilities in der Reihenfolge des **Stylesheets**, nicht
+   * des Klassenattributs. Ein an eine fertige Knopfkonstante gehängtes `px-2`
+   * verdrängt deren `px-3` deshalb nicht – im gebauten CSS steht `.px-3` hinter
+   * `.px-2`, `.py-2` hinter `.py-1`.
+   *
+   * Genau daran sind 22 „kompakte“ Knöpfe gescheitert: Sie waren nie kompakt,
+   * nur ihre Schrift war kleiner. Größe und Art werden deshalb **gewählt**
+   * (`buttonClass('ghost', 'sm')`), nicht angehängt. `extra` bleibt für Layout
+   * da – Breite, Außenabstand, Ausrichtung –, und das ist hier erlaubt.
+   */
+  it('hängt Knopfgrößen und -farben nicht an eine fertige Konstante', () => {
+    const namen =
+      'button|primaryButton|secondaryButton|ghostButton|ghostButtonMuted|dangerButton|iconButton|iconButtonMuted'
+    const verboten =
+      '(?:p|px|py|pt|pb|pl|pr)-[0-9.]|rounded(?:-[a-z0-9]+)?|text-(?:xs|sm|base|lg|xl|2xl)|bg-[a-z]+-[0-9]|text-(?:neutral|indigo|red|emerald|amber|white)-[0-9]|border-[a-z]+-[0-9]'
+    const treffer = findMatches(
+      sourceFiles.filter((file) => file !== STYLES_FILE),
+      new RegExp('\\$\\{(?:' + namen + ')\\}\\s+[^`"\']*?(?:' + verboten + ')'),
+    )
+
+    expect(
+      treffer,
+      'Größe und Art kommen aus `buttonClass(variante, groesse)` – angehängte Klassen wirken nicht (siehe styles.ts).',
+    ).toEqual([])
+  })
+
   it('zählt offene Aufgaben nur an einer Stelle', () => {
     const treffer = findMatches(
       sourceFiles.filter((file) => file !== TASK_COUNT_FILE),

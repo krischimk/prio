@@ -3,9 +3,6 @@ import type { SyncTone } from '../sync/syncStatus'
 /**
  * Gemeinsame Tailwind-Klassen und die semantischen Farben der Oberfläche.
  *
- * Bewusst nur Konstanten statt eigener Komponenten: Für einen Prototyp ist das
- * weniger Abstraktion und der Aufbau bleibt in den Komponenten sichtbar.
- *
  * Was hier steht und was nicht:
  *
  *   Hier stehen Farben, die eine **Bedeutung** tragen – Zustand, Gefahr,
@@ -13,30 +10,91 @@ import type { SyncTone } from '../sync/syncStatus'
  *   der breiten und der mobilen Ansicht nicht versehentlich verschieden
  *   aussieht.
  *
- *   Nicht hier stehen die Stufen der Tailwind-Skala als solche
- *   (`text-neutral-400` für „etwas unwichtiger“). Sie zu Konstanten zu machen
- *   würde nichts verhindern: Derselbe Wert ergibt dieselben Pixel, und die
- *   Komponenten würden nur schwerer lesbar.
+ *   Hier stehen außerdem die **Knöpfe**: eine Grundlage, eine Größenskala und
+ *   die Arten. Eine Größe wird gewählt, nicht angehängt – siehe unten.
+ *
+ *   Noch nicht hier stehen die Stufen der Tailwind-Skala als solche
+ *   (`text-neutral-400` für „etwas unwichtiger“). Sie werden zu Rollen, sobald
+ *   es Farbvariablen gibt (`DESIGN.md` §15.2).
  */
 
 const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400'
 
 /*
- * Achtung: Angehängte Klassen verdrängen diese Polsterung nicht.
+ * Warum eine Funktion und keine angehängte Zeichenkette
  *
- * Tailwind ordnet die Utilities in der Reihenfolge des Stylesheets, nicht des
- * Klassenattributs – ein an `primaryButton` gehängtes `px-2` bleibt wirkungslos.
- * Für einen schmaleren Knopf braucht es einen eigenen Stil.
+ * Tailwind ordnet die Utilities in der Reihenfolge des **Stylesheets**, nicht
+ * des Klassenattributs. Ein an einen fertigen Knopfstil gehängtes `px-2`
+ * verdrängt dessen `px-3` deshalb nicht – es wirkt schlicht nicht. Im gebauten
+ * Stylesheet steht `.px-3` hinter `.px-2` und `.py-2` hinter `.py-1`; so sind
+ * 22 „kompakte“ Knöpfe entstanden, die nie kompakt waren (nur ihre Schrift war
+ * kleiner). Genau daran ist vorher auch das schmale Zahlenfeld gescheitert
+ * (`numberInput`).
+ *
+ * Deshalb wird die Größe **gewählt** statt angehängt:
+ *
+ *   className={buttonClass('ghost', 'sm')}
+ *   className={buttonClass('secondary', 'md', 'w-full')}
+ *
+ * `extra` ist für **Layout** da (Breite, Außenabstand, Ausrichtung) – nicht für
+ * Polsterung, Farbe oder Schriftgröße. Die kommen aus Größe und Art.
+ * `tests/unit/uiConventions.test.ts` hält das fest.
  */
-export const button = `inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`
+const buttonBase = `inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`
 
-export const primaryButton = `${button} bg-indigo-500 text-white hover:bg-indigo-400`
+const buttonSizes = {
+  /** Der Standardknopf. */
+  md: 'px-3 py-2 text-sm',
+  /** Kompakt – Kopfzeilen, dichte Bereiche. */
+  sm: 'px-2 py-1 text-xs',
+  /** Blockknopf: gleiche Schrift, mehr Höhe für die Trefferfläche. */
+  block: 'px-3 py-3 text-sm',
+  /** Nur ein Symbol (rundum gleiche Polsterung). */
+  icon: 'p-2',
+} as const
 
-export const secondaryButton = `${button} border border-neutral-700 bg-neutral-900 text-neutral-100 hover:bg-neutral-800`
+const buttonVariants = {
+  primary: 'bg-indigo-500 text-white hover:bg-indigo-400',
+  secondary: 'border border-neutral-700 bg-neutral-900 text-neutral-100 hover:bg-neutral-800',
+  ghost: 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100',
+  /**
+   * Ein Bediensymbol ohne Rahmen. `active:` ist die Rückmeldung auf dem
+   * Telefon, `hover:` die auf dem Rechner (siehe `AGENTS.md`, erlaubte
+   * Unterschiede).
+   */
+  icon: 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100 active:bg-neutral-800',
+  /** Ein Symbolknopf, das heller steht – die Hauptbedienung der App-Leiste. */
+  iconBright: 'text-neutral-300 hover:bg-neutral-800 hover:text-neutral-100 active:bg-neutral-800',
+  iconMuted: 'text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300',
+  /** Ein Symbol, das einen aktiven Zustand zeigt (gefüllter Stern). */
+  iconActive: 'text-indigo-400 hover:bg-neutral-800 hover:text-indigo-300 active:bg-neutral-800',
+  danger: 'border border-red-900/60 bg-red-950/40 text-red-300 hover:bg-red-950/70',
+  /** Zurückgenommen, aber mit Aufmerksamkeit – etwa „neue Fassung da“. */
+  attention: 'text-amber-400 hover:bg-neutral-800 hover:text-amber-300',
+} as const
 
-export const ghostButton = `${button} text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100`
+export type ButtonSize = keyof typeof buttonSizes
+export type ButtonVariant = keyof typeof buttonVariants
 
-export const dangerButton = `${button} border border-red-900/60 bg-red-950/40 text-red-300 hover:bg-red-950/70`
+/** Setzt einen Knopf aus Grundlage, Größe, Art und Layout zusammen. */
+export function buttonClass(
+  variant: ButtonVariant = 'primary',
+  size: ButtonSize = 'md',
+  extra = '',
+): string {
+  return [buttonBase, buttonSizes[size], buttonVariants[variant], extra].filter(Boolean).join(' ')
+}
+
+export const primaryButton = buttonClass('primary')
+
+export const secondaryButton = buttonClass('secondary')
+
+export const ghostButton = buttonClass('ghost')
+
+export const dangerButton = buttonClass('danger')
+
+/** Symbolknopf: Schließen, Menü, Synchronisation. */
+export const iconButton = buttonClass('icon', 'icon')
 
 export const input = `w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 ${focusRing}`
 

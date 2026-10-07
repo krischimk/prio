@@ -3,7 +3,7 @@ import { useWorkspace } from '../app/useWorkspace'
 import { useMembers, useShareContacts } from '../app/hooks'
 import { suggestShareContacts } from '../domain/shareContacts'
 import type { LocalList } from '../domain/types'
-import { dangerButton, errorMessage, ghostButton, input, primaryButton, successMessage } from './styles'
+import { buttonClass, errorMessage, input, primaryButton, successMessage } from './styles'
 
 /**
  * Teilen einer Liste über die E-Mail-Adresse eines registrierten Nutzers.
@@ -97,7 +97,7 @@ export function SharePanel({ list, currentUserId }: { list: LocalList; currentUs
                 */}
                 <button
                   type="button"
-                  className={`${ghostButton} px-2 py-1 text-xs`}
+                  className={buttonClass('ghost', 'sm')}
                   onClick={() => setEmail(contact.email)}
                 >
                   {contact.email}
@@ -134,7 +134,7 @@ export function SharePanel({ list, currentUserId }: { list: LocalList; currentUs
                 </span>
                 <button
                   type="button"
-                  className={`${dangerButton} px-2 py-1 text-xs`}
+                  className={buttonClass('danger', 'sm')}
                   onClick={() => {
                     void repositories.removeMember(list.id, member.user_id)
                   }}

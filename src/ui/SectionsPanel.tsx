@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
 import { parseSections, SECTIONS_MAX, SECTION_NAME_MAX } from '../domain/sections'
 import type { LocalList } from '../domain/types'
-import { dangerButton, errorMessage, ghostButton, input, primaryButton, mutedText } from './styles'
+import { buttonClass, errorMessage, input, primaryButton, mutedText } from './styles'
 
 /**
  * Bereiche einer Liste verwalten: anlegen, umbenennen, löschen.
@@ -86,12 +86,12 @@ export function SectionsPanel({ list }: { list: LocalList }) {
                     aria-label="Neuer Name des Bereichs"
                     className={`${input} min-w-40 flex-1`}
                   />
-                  <button type="submit" className={`${primaryButton} px-2 py-1 text-xs`}>
+                  <button type="submit" className={buttonClass('primary', 'sm')}>
                     Speichern
                   </button>
                   <button
                     type="button"
-                    className={`${ghostButton} px-2 py-1 text-xs`}
+                    className={buttonClass('ghost', 'sm')}
                     onClick={() => setUmbenennen(null)}
                   >
                     Abbrechen
@@ -104,7 +104,7 @@ export function SectionsPanel({ list }: { list: LocalList }) {
                   </span>
                   <button
                     type="button"
-                    className={`${ghostButton} px-2 py-1 text-xs`}
+                    className={buttonClass('ghost', 'sm')}
                     onClick={() => {
                       setUmbenennen(section.id)
                       setNeuerName(section.name)
@@ -116,7 +116,7 @@ export function SectionsPanel({ list }: { list: LocalList }) {
                     type="button"
                     // Der Name steht im Knopf, damit klar ist, was verschwindet.
                     aria-label={`Bereich löschen: ${section.name}`}
-                    className={`${dangerButton} px-2 py-1 text-xs`}
+                    className={buttonClass('danger', 'sm')}
                     onClick={() => {
                       void repositories.deleteListSection(list.id, section.id)
                     }}

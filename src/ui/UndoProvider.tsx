@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
 import type { LocalTask } from '../domain/types'
-import { primaryButton } from './styles'
+import { buttonClass } from './styles'
 import { UndoContext, UNDO_VISIBLE_MS, type UndoContextValue } from './undoContext'
 
 /**
@@ -68,7 +68,7 @@ export function UndoProvider({ children }: { children: ReactNode }) {
             </span>
             <button
               type="button"
-              className={`${primaryButton} shrink-0 px-3 py-1.5 text-xs`}
+              className={buttonClass('primary', 'sm', 'shrink-0')}
               onClick={() => {
                 void undo()
               }}

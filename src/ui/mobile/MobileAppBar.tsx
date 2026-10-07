@@ -1,6 +1,6 @@
 import { useWorkspace } from '../../app/useWorkspace'
 import { describeSyncState } from '../../sync/syncStatus'
-import { appBackground, attentionDot, statusTone } from '../styles'
+import { buttonClass, appBackground, attentionDot, statusTone } from '../styles'
 import { useUpdate } from '../useUpdate'
 import { MenuIcon } from '../icons'
 import { ListIcon } from '../ListIcon'
@@ -38,7 +38,7 @@ export function MobileAppBar({
           type="button"
           onClick={onOpenMenu}
           aria-label={updateVerfuegbar ? 'Menü öffnen – neue Version verfügbar' : 'Menü öffnen'}
-          className="relative rounded-md p-2 text-neutral-300 active:bg-neutral-800"
+          className={buttonClass('iconBright', 'icon', 'relative')}
         >
           <MenuIcon />
           {/* Kleiner Hinweis, damit eine neue Fassung auffällt, ohne das Menü zu öffnen. */}

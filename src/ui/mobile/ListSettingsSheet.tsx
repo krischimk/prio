@@ -6,7 +6,7 @@ import { ListIcon } from '../ListIcon'
 import { ListIconPicker } from '../ListIconPicker'
 import { SharePanel } from '../SharePanel'
 import { SectionsPanel } from '../SectionsPanel'
-import { dangerButton, errorMessage, input, primaryButton, secondaryButton } from '../styles'
+import { iconButton, dangerButton, errorMessage, input, primaryButton, secondaryButton } from '../styles'
 import { CloseIcon } from '../icons'
 
 /**
@@ -91,7 +91,7 @@ export function ListSettingsSheet({
             type="button"
             onClick={onClose}
             aria-label="Schließen"
-            className="rounded-md p-2 text-neutral-400 active:bg-neutral-800"
+            className={iconButton}
           >
             <CloseIcon />
           </button>

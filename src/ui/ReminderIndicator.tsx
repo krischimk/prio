@@ -1,6 +1,6 @@
 import { useWorkspace } from '../app/useWorkspace'
 import { describeReminderState } from '../reminders/reminderStatus'
-import { mutedText, primaryButton, statusTone } from './styles'
+import { buttonClass, mutedText, statusTone } from './styles'
 
 /**
  * Zeigt an, ob und wie viele Erinnerungen geplant sind, und bietet das
@@ -17,7 +17,7 @@ export function ReminderIndicator() {
     return (
       <button
         type="button"
-        className={`${primaryButton} px-2 py-1 text-xs`}
+        className={buttonClass('primary', 'sm')}
         onClick={() => {
           void enableReminders()
         }}

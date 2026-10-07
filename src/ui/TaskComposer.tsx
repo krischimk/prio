@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
 import { fromDateTimeLocalValue } from './datetime'
-import { input, primaryButton, secondaryButton } from './styles'
+import { buttonClass, input, primaryButton } from './styles'
 
 /**
  * Eingabezeile für neue Aufgaben.
@@ -91,7 +91,7 @@ export function TaskComposer({ listId }: { listId: string }) {
 
       <button
         type="button"
-        className={`${secondaryButton} text-xs`}
+        className={buttonClass('secondary', 'sm')}
         aria-expanded={detailsOpen}
         onClick={() => setDetailsOpen((open) => !open)}
       >

@@ -23,7 +23,7 @@ import {
   formatReminderOffset,
   reminderSuggestion,
 } from './reminder'
-import { activeIcon, ghostButton, input, mutedText, numberInput, secondaryButton } from './styles'
+import { buttonClass, input, mutedText, numberInput } from './styles'
 
 /**
  * Erinnerungen einer Aufgabe – in beiden Ansichten dieselbe Komponente.
@@ -148,7 +148,7 @@ export function ReminderList({
                         : `Erinnerung ${index + 1} für mich stummschalten`
                     }
                     title={stumm ? 'Wieder für mich einschalten' : 'Nur für mich stummschalten'}
-                    className={`${ghostButton} shrink-0 px-2 py-2 ${stumm ? mutedText : ''}`}
+                    className={buttonClass(stumm ? 'iconMuted' : 'icon', 'icon', 'shrink-0')}
                   >
                     {stumm ? <BellOffIcon className="h-4 w-4" /> : <BellIcon className="h-4 w-4" />}
                   </button>
@@ -158,7 +158,7 @@ export function ReminderList({
                   onClick={() => entfernen(index)}
                   aria-label={`Erinnerung ${index + 1} entfernen`}
                   title="Erinnerung entfernen"
-                  className={`${ghostButton} shrink-0 px-2 py-2`}
+                  className={buttonClass('icon', 'icon', 'shrink-0')}
                 >
                   <TrashIcon className="h-4 w-4" />
                 </button>
@@ -170,7 +170,7 @@ export function ReminderList({
       )}
 
       {reminders.length < MAX_REMINDERS ? (
-        <button type="button" onClick={hinzufuegen} className={`${secondaryButton} px-2 py-1 text-xs`}>
+        <button type="button" onClick={hinzufuegen} className={buttonClass('secondary', 'sm')}>
           <PlusIcon className="h-4 w-4" />
           Weitere Erinnerung
         </button>
@@ -399,9 +399,7 @@ function CustomOffset({
             remembered ? 'Aus der Schnellauswahl entfernen' : 'In die Schnellauswahl aufnehmen'
           }
           title={remembered ? 'Aus der Schnellauswahl entfernen' : 'In der Schnellauswahl behalten'}
-          className={`${ghostButton} shrink-0 px-3 py-2 ${
-            remembered ? activeIcon : 'text-neutral-500'
-          }`}
+          className={buttonClass(remembered ? 'iconActive' : 'iconMuted', 'icon', 'shrink-0')}
         >
           <StarIcon filled={remembered} />
         </button>
