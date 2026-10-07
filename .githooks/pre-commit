@@ -51,4 +51,8 @@ pruefe() {
 
 pruefe "Typecheck (tsc -b)" "npm run typecheck" npm run --silent typecheck
 pruefe "Lint (oxlint)" "npm run lint" npm run --silent lint
+# Hilfsskripte (Python) auf Syntaxfehler prüfen. Auslöser: Ein
+# Anführungszeichen im Text zerlegte setup_private_data.py, und weder
+# oxlint noch die Tests sahen die Datei an – sie lag kaputt auf main.
+pruefe "Skripte (py_compile)" "npm run scripts:check" npm run --silent scripts:check
 pruefe "Tests (vitest)" "npm run test" npm run --silent test

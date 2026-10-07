@@ -19,7 +19,7 @@
     "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
     "icons": "node scripts/generate-icons.mjs",
-    "ci": "npm run typecheck && npm run lint && npm run test && npm run build",
+    "ci": "npm run typecheck && npm run lint && npm run scripts:check && npm run test && npm run build",
     "db:sql": "node scripts/bundle-migrations.mjs",
     "db:apply": "npm run db:sql && node scripts/db-apply.mjs",
     "db:check": "node scripts/db-apply.mjs --check",
@@ -35,7 +35,8 @@
     "icons:generate": "node scripts/generate-list-icons.mjs",
     "ci:status": "node scripts/ci-github.mjs status",
     "ci:log": "node scripts/ci-github.mjs log",
-    "ci:rerun": "node scripts/ci-github.mjs rerun"
+    "ci:rerun": "node scripts/ci-github.mjs rerun",
+    "scripts:check": "python3 -m py_compile scripts/*.py"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",

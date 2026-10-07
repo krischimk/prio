@@ -81,7 +81,7 @@ def main() -> int:
             print(
                 "Hinweis: github.env fehlt noch – npm run ci:log und ci:rerun "
                 "brauchen ihn (npm run ci:status geht ohne). Anleitung im README, "
-                "Abschnitt „Wenn ein Lauf rot ist"."
+                "Abschnitt „Wenn ein Lauf rot ist“."
             )
         return 0
 
