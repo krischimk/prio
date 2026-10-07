@@ -1,43 +1,21 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { createRepositories } from '../db/repositories'
-import { openLocalDatabase, type LocalDatabase } from '../db/localDb'
-import { createSyncEngine, type SyncEngine, type SyncResult } from '../sync/syncEngine'
-import { createShareListAction } from '../sync/shareList'
-import { createCapacitorNotificationsPort } from '../reminders/capacitorNotifications'
-import { createReminderService, type ReminderService, type ReminderStatus } from '../reminders/reminderService'
-import { countDirty } from '../sync/syncStore'
+import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
 import type { NetworkMonitor } from '../sync/network'
 import type { RemoteGateway } from '../sync/remoteGateway'
-import { withChangeTracking } from './trackedRepositories'
+import { WorkspaceLoading } from '../ui/WorkspaceLoading'
 import { WorkspaceContext, type WorkspaceValue } from './workspaceContext'
-import { appBackground } from '../ui/styles'
+import { createWorkspaceRuntime, type WorkspaceRuntime } from './workspaceRuntime'
 
 /**
- * Arbeitsbereich eines angemeldeten Benutzers.
+ * Reicht den Arbeitsbereich eines angemeldeten Benutzers an die Oberfläche.
  *
- * Hier wird alles zusammengesteckt, was nur mit einem Benutzer existiert:
- * lokale Datenbank, Geschäftslogik, Sync-Engine und der Status der
- * Synchronisation. Die UI-Komponenten bekommen davon nur noch das Nötige.
+ * Die Arbeit selbst steckt in `createWorkspaceRuntime` (React-frei: Datenbank,
+ * Sync, Erinnerungen, Timer). Diese Komponente öffnet sie, abonniert ihre
+ * Momentaufnahme und stellt sie dem Kontext bereit – mehr nicht.
  *
- * Nebenläufigkeit: Ein Sync läuft nie zweimal gleichzeitig (siehe
- * `syncEngine.ts`). Lokale Änderungen lösen einen Sync aus, der kurz
- * entprellt wird, damit schnelles Tippen nicht viele Anfragen erzeugt.
- *
- * Hinweis zur Umsetzung: Die Effekte spiegeln den Zustand externer Systeme
- * (IndexedDB, Netzwerk, Sync-Engine) nach React. Die Lint-Regel
- * `react/set-state-in-effect` ist deshalb in `.oxlintrc.json` abgeschaltet –
- * siehe „Bewusste Entscheidungen“ in der README.
+ * Hinweis zur Umsetzung: Der Effekt spiegelt ein externes System (IndexedDB)
+ * nach React. Die Lint-Regel `react/set-state-in-effect` ist deshalb für diese
+ * Datei abgeschaltet – siehe „Bewusste Entscheidungen“ in der README.
  */
-
-const LOCAL_CHANGE_DEBOUNCE_MS = 400
-const PERIODIC_SYNC_MS = 30_000
-
-interface ReadyWorkspace {
-  database: LocalDatabase
-  engine: SyncEngine
-  reminders: ReminderService
-}
-
 export function WorkspaceProvider({
   userId,
   gateway,
@@ -49,242 +27,56 @@ export function WorkspaceProvider({
   network: NetworkMonitor
   children: ReactNode
 }) {
-  const [ready, setReady] = useState<ReadyWorkspace | null>(null)
-  /**
-   * Zwei getrennte Zähler – das ist wichtig:
-   *
-   *  - `dataVersion` erhöht sich bei jeder Änderung der lokalen Daten, egal ob
-   *    durch den Benutzer oder durch einen Pull. Die Lese-Hooks hängen daran.
-   *  - `localRevision` erhöht sich NUR bei lokalen Benutzeränderungen und ist
-   *    der Auslöser für einen Sync.
-   *
-   * Würde der Pull ebenfalls einen Sync auslösen, entstünde eine Endlosschleife
-   * (Pull → Zähler → Sync → Pull → …).
-   */
-  const [dataVersion, setDataVersion] = useState(0)
-  const [localRevision, setLocalRevision] = useState(0)
-  const [syncStatus, setSyncStatus] = useState<SyncResult | null>(null)
-  const [syncing, setSyncing] = useState(false)
-  const [pendingCount, setPendingCount] = useState(0)
-  const [reminderStatus, setReminderStatus] = useState<ReminderStatus | null>(null)
-  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  /**
-   * `false`, sobald die Komponente abgebaut ist.
-   *
-   * Nötig, weil Sync und Datenbankzugriffe asynchron sind: Sie können noch
-   * laufen, wenn die Komponente schon verschwunden ist (Abmelden, Testende,
-   * Seitenwechsel). Ein anschließendes `setState` liefe dann ins Leere – in
-   * React 19 führt das zu „window is not defined", wenn die Umgebung bereits
-   * abgeräumt ist.
-   */
-  const mountedRef = useRef(true)
+  const [runtime, setRuntime] = useState<WorkspaceRuntime | null>(null)
 
   useEffect(() => {
-    mountedRef.current = true
-    return () => {
-      mountedRef.current = false
-      if (debounceTimer.current) clearTimeout(debounceTimer.current)
-    }
-  }, [])
-
-  // Lokale Datenbank öffnen und Sync-Engine aufbauen.
-  useEffect(() => {
-    let active = true
-    openLocalDatabase(userId)
-      .then((database) => {
-        if (!active) return
-        const engine = createSyncEngine({
-          db: database,
-          gateway,
-          currentUserId: userId,
-          isOnline: () => network.isOnline(),
-        })
-        setReady({
-          database,
-          engine,
-          reminders: createReminderService({
-            db: database,
-            port: createCapacitorNotificationsPort(),
-            viewerId: userId,
-          }),
-        })
+    let aktiv = true
+    let erzeugt: WorkspaceRuntime | null = null
+    createWorkspaceRuntime({ userId, gateway, network })
+      .then((laufzeit) => {
+        if (!aktiv) {
+          // StrictMode baut zweimal auf; die erste Laufzeit wird sofort beendet.
+          laufzeit.schliessen()
+          return
+        }
+        erzeugt = laufzeit
+        setRuntime(laufzeit)
       })
       .catch(() => {
-        if (active) setReady(null)
+        if (aktiv) setRuntime(null)
       })
     return () => {
-      active = false
+      aktiv = false
+      erzeugt?.schliessen()
     }
   }, [userId, gateway, network])
 
-  /** Wird nach jeder schreibenden Operation aufgerufen und stößt das Neuladen an. */
-  const notifyLocalChange = useCallback(() => {
-    if (!mountedRef.current) return
-    setDataVersion((value) => value + 1)
-    setLocalRevision((value) => value + 1)
-  }, [])
-
-  /**
-   * Für lokale Eingabehilfen (vorgemerkte Vorlaufzeiten, schon geteilte
-   * Adressen): neu zeichnen, aber **keinen** Abgleich auslösen.
-   *
-   * Diese Daten kennt der Server nicht und braucht sie nicht. Zählte man sie
-   * wie Datenänderungen, löst der Abgleich, der sie auffrischt, gleich den
-   * nächsten aus – die App synchronisiert dann im Sekundentakt.
-   */
-  const notifyLocalOnlyChange = useCallback(() => {
-    if (!mountedRef.current) return
-    setDataVersion((value) => value + 1)
-  }, [])
-
-  const repositories = useMemo(() => {
-    if (!ready) return null
-    // `withChangeTracking` speichert den Callback nur und ruft ihn ausschließlich
-    // bei schreibenden Operationen auf – niemals während des Renderns. Der Lint
-    // kann das nicht sehen und meldet deshalb pauschal "refs during render".
-    // oxlint-disable-next-line react/refs
-    return withChangeTracking(createRepositories(ready.database), notifyLocalChange, notifyLocalOnlyChange)
-  }, [ready, notifyLocalChange, notifyLocalOnlyChange])
-
-  const refreshDerivedState = useCallback(async () => {
-    if (!ready) return
-    const pending = await countDirty(ready.database)
-    if (!mountedRef.current) return
-    setPendingCount(pending)
-  }, [ready])
-
-  /** Gleicht die geplanten Erinnerungen mit den Aufgaben ab. */
-  const refreshReminders = useCallback(async () => {
-    if (!ready || !mountedRef.current) return
-    const status = await ready.reminders.sync()
-    if (mountedRef.current) setReminderStatus(status)
-  }, [ready])
-
-  const runSync = useCallback(async () => {
-    if (!ready) return
-    setSyncing(true)
-    let pulled = 0
-    try {
-      const result = await ready.engine.sync()
-      pulled = result.pulled
-      if (!mountedRef.current) return
-      setSyncStatus(result)
-
-      /*
-       * Vorschläge für das Teilen auffrischen: Wer mit mir eine Liste teilt,
-       * soll beim nächsten Teilen vorgeschlagen werden – auch wenn ich die
-       * Adresse nie selbst eingetippt habe. Bewusst ohne Wirkung auf den
-       * Abgleich: Schlägt es fehl (offline, ältere Serverfassung), bleiben die
-       * bisherigen Vorschläge stehen.
-       */
-      if (repositories) {
-        try {
-          const kontakte = await gateway.coMemberContacts()
-          await repositories.mergeShareContacts(kontakte, new Date().toISOString())
-        } catch {
-          // Der Abgleich ist wichtiger als die Vorschläge.
-        }
-      }
-      // Nach einem Pull kann sich lokal etwas geändert haben – die Anzeige
-      // muss neu lesen, aber ohne einen weiteren Sync auszulösen.
-      if (result.pulled > 0) setDataVersion((value) => value + 1)
-    } finally {
-      if (mountedRef.current) setSyncing(false)
-      await refreshDerivedState()
-      // Nur wenn wirklich neue Daten angekommen sind: Erinnerungen nachziehen.
-      if (pulled > 0) await refreshReminders()
-    }
-  }, [ready, repositories, gateway, refreshDerivedState, refreshReminders])
-
-  const enableReminders = useCallback(async () => {
-    if (!ready) return
-    const status = await ready.reminders.enable()
-    if (mountedRef.current) setReminderStatus(status)
-  }, [ready])
-
-  // Nach jeder lokalen Änderung: offene Änderungen zählen und Sync anstoßen.
-  useEffect(() => {
-    if (!ready || localRevision === 0) return
-    void refreshDerivedState()
-    if (debounceTimer.current) clearTimeout(debounceTimer.current)
-    debounceTimer.current = setTimeout(() => {
-      void runSync()
-      // Lokale Änderungen wirken sofort auf die Erinnerungen – auch offline.
-      void refreshReminders()
-    }, LOCAL_CHANGE_DEBOUNCE_MS)
-    return () => {
-      if (debounceTimer.current) clearTimeout(debounceTimer.current)
-    }
-  }, [localRevision, ready, refreshDerivedState, runSync, refreshReminders])
-
-  // Erster Sync nach dem Anmelden, danach regelmäßig und bei "wieder online".
-  useEffect(() => {
-    if (!ready) return
-    void runSync()
-    // Erinnerungen einmalig aufbauen – unabhängig davon, ob der Sync etwas
-    // bewegt hat (z. B. beim Start mit bereits vorhandenen Aufgaben).
-    void refreshReminders()
-    const interval = setInterval(() => {
-      if (network.isOnline()) void runSync()
-    }, PERIODIC_SYNC_MS)
-    const unsubscribe = network.subscribe((online) => {
-      if (online) void runSync()
-    })
-    return () => {
-      clearInterval(interval)
-      unsubscribe()
-    }
-  }, [ready, runSync, refreshReminders, network])
-
-  const shareListByEmail = useMemo(() => {
-    if (!repositories) return null
-    return createShareListAction({ gateway, repositories, sync: runSync })
-  }, [gateway, repositories, runSync])
-
-  const value = useMemo<WorkspaceValue | null>(() => {
-    if (!repositories || !shareListByEmail) return null
-    return {
-      repositories,
-      dataVersion,
-      syncStatus,
-      pendingCount,
-      syncing,
-      reminderStatus,
-      runSync,
-      enableReminders,
-      shareListByEmail,
-    }
-  }, [
-    repositories,
-    dataVersion,
-    syncStatus,
-    pendingCount,
-    syncing,
-    reminderStatus,
-    runSync,
-    enableReminders,
-    shareListByEmail,
-  ])
-
   // Die Oberfläche erscheint, sobald die lokale Datenbank offen ist. Der erste
-  // Sync läuft bewusst im Hintergrund weiter – die App darf nie auf eine
+  // Abgleich läuft bewusst im Hintergrund weiter – die App darf nie auf eine
   // Serverantwort warten.
-  //
-  // Der Lint verfolgt den `mountedRef`-Zugriff aus `runSync`/`refreshReminders`
-  // bis zu dieser Zeile und meldet "refs during render". Tatsächlich werden
-  // diese Funktionen ausschließlich asynchron aufgerufen, niemals beim Rendern.
-  // oxlint-disable-next-line react/refs
-  if (!value) {
-    return <WorkspaceLoading />
-  }
+  if (!runtime) return <WorkspaceLoading />
 
-  return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>
+  return <Bereit runtime={runtime}>{children}</Bereit>
 }
 
-function WorkspaceLoading() {
-  return (
-    <div className={`flex min-h-screen items-center justify-center ${appBackground} text-ink-muted`}>
-      Lokale Daten werden geladen…
-    </div>
+/** Abonniert die Laufzeit und gibt sie als Kontext weiter. */
+function Bereit({ runtime, children }: { runtime: WorkspaceRuntime; children: ReactNode }) {
+  const zustand = useSyncExternalStore(runtime.abonnieren, runtime.zustand)
+
+  const value = useMemo<WorkspaceValue>(
+    () => ({
+      repositories: runtime.repositories,
+      dataVersion: zustand.datenVersion,
+      syncStatus: zustand.syncStatus,
+      pendingCount: zustand.pendingCount,
+      syncing: zustand.syncing,
+      reminderStatus: zustand.reminderStatus,
+      runSync: runtime.synchronisieren,
+      enableReminders: runtime.erinnerungenErlauben,
+      shareListByEmail: runtime.shareListByEmail,
+    }),
+    [runtime, zustand],
   )
+
+  return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>
 }
