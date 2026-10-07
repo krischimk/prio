@@ -2,7 +2,7 @@ import { useWorkspace } from '../app/useWorkspace'
 import type { LocalList } from '../domain/types'
 import { groupListIcons } from './listIcons'
 import { ListIcon } from './ListIcon'
-import { secondaryButton } from './styles'
+import { cardSoft, secondaryButton } from './styles'
 
 /**
  * Auswahl des Listensymbols.
@@ -34,8 +34,8 @@ export function ListIconPicker({
   }
 
   return (
-    <div className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-3">
-      <p className="text-xs text-neutral-400">
+    <div className={`${cardSoft} space-y-3`}>
+      <p className="text-meta text-ink-muted">
         Ein Symbol hilft, die Liste schneller wiederzufinden.
       </p>
 
@@ -53,7 +53,7 @@ export function ListIconPicker({
         {groupListIcons().map((gruppe) => (
           <div key={gruppe.name ?? 'ohne Gruppe'}>
             {gruppe.name ? (
-              <h4 className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-500">
+              <h4 className="mb-2 text-meta font-medium uppercase tracking-wide text-ink-faint">
                 {gruppe.name}
               </h4>
             ) : null}
@@ -65,10 +65,10 @@ export function ListIconPicker({
                   aria-label={eintrag.label}
                   aria-pressed={list.icon === eintrag.id}
                   onClick={() => setzen(eintrag.id)}
-                  className={`flex aspect-square items-center justify-center rounded-md border ${
+                  className={`flex aspect-square items-center justify-center rounded-control border ${
                     list.icon === eintrag.id
-                      ? 'border-indigo-500 bg-indigo-950/60 text-indigo-100'
-                      : 'border-neutral-700 bg-neutral-900 text-neutral-300 hover:bg-neutral-800'
+                      ? 'border-brand bg-brand-tint/60 text-brand-faint'
+                      : 'border-line-strong bg-surface text-ink-soft hover:bg-raised'
                   }`}
                 >
                   <ListIcon icon={eintrag.id} className="h-6 w-6" />
@@ -85,7 +85,7 @@ export function ListIconPicker({
         </button>
       ) : null}
 
-      <p className="text-xs text-neutral-600">
+      <p className="text-meta text-ink-dim">
         Ein Teil der Symbole stammt aus Material Design Icons (Apache-2.0) – siehe THIRD-PARTY.md.
       </p>
     </div>

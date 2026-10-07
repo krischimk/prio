@@ -36,13 +36,13 @@ export function RestoreTasksPanel({ open, onClose }: { open: boolean; onClose: (
       aria-modal="true"
       aria-label="Aufgaben wiederherstellen"
     >
-      <div className="absolute inset-0 bg-black/60" aria-hidden="true" onClick={onClose} />
+      <div className="absolute inset-0 bg-page/60" aria-hidden="true" onClick={onClose} />
 
-      <div className="safe-bottom relative flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-2xl border-t border-neutral-800 bg-neutral-900 md:max-w-lg md:rounded-2xl md:border">
-        <header className="flex items-start justify-between gap-2 border-b border-neutral-800 px-4 py-3">
+      <div className="safe-bottom relative flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-sheet border-t border-line bg-surface md:max-w-lg md:rounded-sheet md:border">
+        <header className="flex items-start justify-between gap-2 border-b border-line px-4 py-3">
           <div className="min-w-0">
-            <h2 className="text-sm font-medium text-neutral-100">Aufgaben wiederherstellen</h2>
-            <p className="text-xs text-neutral-500">
+            <h2 className="text-body font-medium text-ink">Aufgaben wiederherstellen</h2>
+            <p className="text-meta text-ink-faint">
               Abgehakt in den letzten {RESTORE_WINDOW_DAYS} Tagen
             </p>
           </div>
@@ -63,7 +63,7 @@ export function RestoreTasksPanel({ open, onClose }: { open: boolean; onClose: (
 
         <div className="scroll-area flex-1 overflow-y-auto">
           {tasks.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-neutral-500" data-testid="restore-empty">
+            <p className="px-4 py-8 text-center text-body text-ink-faint" data-testid="restore-empty">
               In diesem Zeitraum wurde nichts abgehakt.
             </p>
           ) : (
@@ -71,11 +71,11 @@ export function RestoreTasksPanel({ open, onClose }: { open: boolean; onClose: (
               {tasks.map((task) => (
                 <li
                   key={task.id}
-                  className="flex items-start gap-3 border-b border-neutral-800 px-4 py-3 last:border-b-0"
+                  className="flex items-start gap-3 border-b border-line px-4 py-3 last:border-b-0"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="break-words text-sm text-neutral-100">{task.title}</p>
-                    <p className="mt-0.5 text-xs text-neutral-500">
+                    <p className="break-words text-body text-ink">{task.title}</p>
+                    <p className="mt-0.5 text-meta text-ink-faint">
                       {listNames.get(task.list_id) ?? 'Gelöschte Liste'}
                       {task.completed_at ? ` · ${formatCompletedLabel(task.completed_at)}` : ''}
                     </p>

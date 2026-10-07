@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
 import { fromDateTimeLocalValue } from './datetime'
-import { buttonClass, input, primaryButton } from './styles'
+import { cardSoft, buttonClass, input, primaryButton } from './styles'
 
 /**
  * Eingabezeile für neue Aufgaben.
@@ -61,9 +61,9 @@ export function TaskComposer({ listId }: { listId: string }) {
       </div>
 
       {detailsOpen ? (
-        <div className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-3">
+        <div className={`${cardSoft} space-y-3`}>
           <div>
-            <label htmlFor="new-task-description" className="mb-1 block text-xs text-neutral-400">
+            <label htmlFor="new-task-description" className="mb-1 block text-meta text-ink-muted">
               Beschreibung (optional)
             </label>
             <textarea
@@ -75,7 +75,7 @@ export function TaskComposer({ listId }: { listId: string }) {
             />
           </div>
           <div>
-            <label htmlFor="new-task-due" className="mb-1 block text-xs text-neutral-400">
+            <label htmlFor="new-task-due" className="mb-1 block text-meta text-ink-muted">
               Fällig am (optional)
             </label>
             <input

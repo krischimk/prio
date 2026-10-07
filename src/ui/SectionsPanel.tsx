@@ -59,13 +59,13 @@ export function SectionsPanel({ list }: { list: LocalList }) {
 
   return (
     <div className="space-y-2">
-      <p className={`text-xs ${mutedText}`}>
+      <p className={`text-meta ${mutedText}`}>
         Bereiche ordnen Aufgaben innerhalb der Liste, etwa „Obst" und „Getränke". Aufgaben ohne
         Bereich stehen oben.
       </p>
 
       {sections.length === 0 ? (
-        <p className={`text-xs ${mutedText}`}>Noch keine Bereiche.</p>
+        <p className={`text-meta ${mutedText}`}>Noch keine Bereiche.</p>
       ) : (
         <ul className="space-y-1">
           {sections.map((section) => (
@@ -99,7 +99,7 @@ export function SectionsPanel({ list }: { list: LocalList }) {
                 </form>
               ) : (
                 <>
-                  <span className="min-w-0 flex-1 truncate text-sm text-neutral-100">
+                  <span className="min-w-0 flex-1 truncate text-body text-ink">
                     {section.name}
                   </span>
                   <button

@@ -39,7 +39,7 @@ function DesktopWorkspace() {
   const selected = lists.find((list) => list.id === selectedListId) ?? null
 
   return (
-    <div className={`flex min-h-screen flex-col ${appBackground} text-neutral-100 md:h-screen md:flex-row`}>
+    <div className={`flex min-h-screen flex-col ${appBackground} text-ink md:h-screen md:flex-row`}>
       <Sidebar
         lists={lists}
         selectedListId={selectedListId}
@@ -48,10 +48,10 @@ function DesktopWorkspace() {
       />
 
       <div className="flex min-h-0 flex-1 flex-col">
-        <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-neutral-800 px-4 py-3">
+        <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line px-4 py-3">
           <div className="flex items-baseline gap-2">
             <span className="font-semibold tracking-tight">Prio</span>
-            <span className="text-xs text-neutral-500" data-testid="current-user">
+            <span className="text-meta text-ink-faint" data-testid="current-user">
               {user?.email}
             </span>
             <BackendLabel />
@@ -102,7 +102,7 @@ function DesktopWorkspace() {
         {selected ? (
           <TaskPanel list={selected} currentUserId={user?.id ?? ''} lists={lists} />
         ) : (
-          <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-neutral-500">
+          <div className="flex flex-1 items-center justify-center p-6 text-center text-body text-ink-faint">
             Lege links eine Liste an, um Aufgaben zu erfassen.
           </div>
         )}

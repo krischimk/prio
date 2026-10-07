@@ -46,7 +46,7 @@ export function MobileWorkspace() {
   const openCount = tasks.filter((task) => !task.completed).length
 
   return (
-    <div className={`min-h-screen ${appBackground} text-neutral-100`}>
+    <div className={`min-h-screen ${appBackground} text-ink`}>
       <MobileAppBar
         listName={selected?.name ?? null}
         listIcon={selected?.icon ?? null}
@@ -56,12 +56,12 @@ export function MobileWorkspace() {
 
       <main className="app-bar-offset pb-28">
         {selected === null ? (
-          <p className="px-6 py-12 text-center text-sm text-neutral-500">
+          <p className="px-6 py-12 text-center text-body text-ink-faint">
             Öffne oben links das Menü und lege eine Liste an.
           </p>
         ) : (
           <>
-            <div className="px-4 pb-1 pt-3 text-xs text-neutral-500">
+            <div className="px-4 pb-1 pt-3 text-meta text-ink-faint">
               <span>{formatOpenTasks(openCount)}</span>
             </div>
             <MobileTaskList
@@ -83,7 +83,7 @@ export function MobileWorkspace() {
             type="button"
             onClick={() => setDetail({ task: null })}
             aria-label="Neue Aufgabe"
-            className="pointer-events-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-500 text-white shadow-lg shadow-black/40 active:bg-indigo-400"
+            className="pointer-events-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-brand text-on-brand shadow-lg shadow-page/40 active:bg-brand-soft"
           >
             <PlusIcon />
           </button>

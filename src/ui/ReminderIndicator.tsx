@@ -32,7 +32,7 @@ export function ReminderIndicator() {
   return (
     <span
       data-testid="reminder-status"
-      className={`text-xs ${tone === 'error' ? statusTone.error.text : mutedText}`}
+      className={`text-meta ${tone === 'error' ? statusTone.error.text : mutedText}`}
     >
       {text}
     </span>

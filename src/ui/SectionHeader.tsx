@@ -30,10 +30,10 @@ export function SectionHeader({
       data-testid="section-header"
     >
       <ChevronIcon offen={offen} className={`h-3.5 w-3.5 shrink-0 ${mutedText}`} />
-      <span className="text-[11px] font-semibold tracking-wide text-neutral-300 uppercase">
+      <span className="text-label font-semibold tracking-wide text-ink-soft uppercase">
         {name}
       </span>
-      <span className={`text-[11px] ${mutedText}`}>{anzahl}</span>
+      <span className={`text-label ${mutedText}`}>{anzahl}</span>
     </button>
   )
 }

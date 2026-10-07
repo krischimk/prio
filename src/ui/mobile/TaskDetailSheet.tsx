@@ -116,7 +116,7 @@ export function TaskDetailSheet({
         langen Beschreibung weit weg vom Blick. Hier oben ist es klein, aber
         immer erreichbar; das Löschen fragt weiterhin nach.
       */}
-      <header className="safe-top flex min-h-16 shrink-0 items-center gap-2 border-b border-neutral-800 px-2 py-1">
+      <header className="safe-top flex min-h-16 shrink-0 items-center gap-2 border-b border-line px-2 py-1">
         <button
           type="button"
           onClick={onClose}
@@ -125,7 +125,7 @@ export function TaskDetailSheet({
         >
           <CloseIcon />
         </button>
-        <h2 className="min-w-0 flex-1 truncate text-base font-medium text-neutral-100">
+        <h2 className="min-w-0 flex-1 truncate text-title font-medium text-ink">
           {isNew ? 'Neue Aufgabe' : 'Aufgabe'}
         </h2>
 
@@ -176,7 +176,7 @@ export function TaskDetailSheet({
       <form id="task-detail-form" onSubmit={save} className="scroll-area safe-bottom flex-1 overflow-y-auto">
         <div className="space-y-4 px-4 py-4">
           <div>
-            <label htmlFor="detail-title" className="mb-1 block text-xs text-neutral-400">
+            <label htmlFor="detail-title" className="mb-1 block text-meta text-ink-muted">
               Titel
             </label>
             <input
@@ -192,7 +192,7 @@ export function TaskDetailSheet({
           </div>
 
           <div>
-            <label htmlFor="detail-description" className="mb-1 block text-xs text-neutral-400">
+            <label htmlFor="detail-description" className="mb-1 block text-meta text-ink-muted">
               Beschreibung (optional)
             </label>
             <textarea
@@ -205,7 +205,7 @@ export function TaskDetailSheet({
           </div>
 
           <div>
-            <label htmlFor="detail-due" className="mb-1 block text-xs text-neutral-400">
+            <label htmlFor="detail-due" className="mb-1 block text-meta text-ink-muted">
               Fällig am (optional)
             </label>
             <input
@@ -224,7 +224,7 @@ export function TaskDetailSheet({
 
           {sections.length > 0 ? (
             <div>
-              <label htmlFor="detail-section" className="mb-1 block text-xs text-neutral-400">
+              <label htmlFor="detail-section" className="mb-1 block text-meta text-ink-muted">
                 Bereich
               </label>
               <SectionSelect
@@ -268,7 +268,7 @@ export function TaskDetailSheet({
         </div>
 
         {canMove ? (
-          <div className="space-y-2 border-t border-neutral-800 px-4 py-4">
+          <div className="space-y-2 border-t border-line px-4 py-4">
             <button
               type="button"
               className={buttonClass('secondary', 'block', 'w-full')}

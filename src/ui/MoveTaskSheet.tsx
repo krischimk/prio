@@ -53,14 +53,14 @@ export function MoveTaskSheet({
       aria-label="Aufgabe verschieben"
     >
       <div
-        className="absolute inset-0 cursor-default bg-black/60"
+        className="absolute inset-0 cursor-default bg-page/60"
         aria-hidden="true"
         onClick={onClose}
       />
 
-      <div className="safe-bottom relative max-h-[70%] overflow-y-auto rounded-t-2xl border-t border-neutral-800 bg-neutral-900 md:max-h-[85vh] md:w-full md:max-w-lg md:rounded-2xl md:border">
+      <div className="safe-bottom relative max-h-[70%] overflow-y-auto rounded-t-sheet border-t border-line bg-surface md:max-h-[85vh] md:w-full md:max-w-lg md:rounded-sheet md:border">
         <div className="flex items-center justify-between px-4 pt-4">
-          <h2 className="text-sm font-medium text-neutral-100">Verschieben nach</h2>
+          <h2 className="text-body font-medium text-ink">Verschieben nach</h2>
           <button
             type="button"
             onClick={onClose}
@@ -70,7 +70,7 @@ export function MoveTaskSheet({
             <CloseIcon />
           </button>
         </div>
-        <p className="truncate px-4 pb-3 text-xs text-neutral-500">{task.title}</p>
+        <p className="truncate px-4 pb-3 text-meta text-ink-faint">{task.title}</p>
 
         <ul className="pb-4" data-testid="move-targets">
           {targets.map((list) => (
@@ -81,14 +81,14 @@ export function MoveTaskSheet({
                   void move(list.id)
                 }}
                 disabled={busy}
-                className="w-full border-t border-neutral-800 px-4 py-3 text-left text-sm text-neutral-200 active:bg-neutral-800 disabled:opacity-50"
+                className="w-full border-t border-line px-4 py-3 text-left text-body text-ink-soft active:bg-raised disabled:opacity-50"
               >
                 {list.name}
               </button>
             </li>
           ))}
           {targets.length === 0 ? (
-            <li className="px-4 py-4 text-sm text-neutral-500">
+            <li className="px-4 py-4 text-body text-ink-faint">
               Es gibt keine andere Liste zum Verschieben.
             </li>
           ) : null}

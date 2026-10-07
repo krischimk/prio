@@ -14,7 +14,7 @@ export function SyncIndicator() {
   const farben = statusTone[tone]
 
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-meta">
       {/*
         `min-w-0` ist hier entscheidend: Ein Flex-Element schrumpft sonst nicht
         unter die Breite seines längsten Wortes. Servermeldungen können ein

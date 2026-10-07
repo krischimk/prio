@@ -10,14 +10,14 @@ import { mutedText } from './styles'
  */
 export function Markdown({ text, className = '' }: { text: string; className?: string }) {
   return (
-    <div className={`space-y-2 text-xs ${className}`}>
+    <div className={`space-y-2 text-meta ${className}`}>
       {parseMarkdown(text).map((block, index) => {
         switch (block.art) {
           case 'ueberschrift':
             return (
               <p
                 key={index}
-                className={`font-semibold ${block.stufe <= 2 ? 'text-neutral-200' : 'text-neutral-300'}`}
+                className={`font-semibold ${block.stufe <= 2 ? 'text-ink-soft' : 'text-ink-soft'}`}
               >
                 {block.text}
               </p>
@@ -42,13 +42,13 @@ function teilWiedergeben(teil: ReturnType<typeof parseInline>[number], index: nu
   switch (teil.art) {
     case 'fett':
       return (
-        <strong key={index} className="font-semibold text-neutral-200">
+        <strong key={index} className="font-semibold text-ink-soft">
           {teil.text}
         </strong>
       )
     case 'code':
       return (
-        <code key={index} className="rounded bg-neutral-800 px-1 py-0.5 font-mono text-[11px] text-neutral-200">
+        <code key={index} className="rounded-control bg-raised px-1 py-0.5 font-mono text-label text-ink-soft">
           {teil.text}
         </code>
       )

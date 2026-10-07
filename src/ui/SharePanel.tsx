@@ -3,7 +3,7 @@ import { useWorkspace } from '../app/useWorkspace'
 import { useMembers, useShareContacts } from '../app/hooks'
 import { suggestShareContacts } from '../domain/shareContacts'
 import type { LocalList } from '../domain/types'
-import { buttonClass, errorMessage, input, primaryButton, successMessage } from './styles'
+import { cardSoft, buttonClass, errorMessage, input, primaryButton, successMessage } from './styles'
 
 /**
  * Teilen einer Liste über die E-Mail-Adresse eines registrierten Nutzers.
@@ -56,14 +56,14 @@ export function SharePanel({ list, currentUserId }: { list: LocalList; currentUs
 
   if (!isOwner) {
     return (
-      <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-3 text-xs text-neutral-400">
+      <div className={`${cardSoft} text-meta text-ink-muted`}>
         Diese Liste gehört jemand anderem. Nur der Besitzer kann Mitglieder verwalten.
       </div>
     )
   }
 
   return (
-    <div className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-3">
+    <div className={`${cardSoft} space-y-3`}>
       <form onSubmit={submit} className="flex flex-wrap gap-2" aria-label="Liste teilen">
         <label htmlFor="share-email" className="sr-only">
           E-Mail-Adresse des Mitglieds
@@ -84,7 +84,7 @@ export function SharePanel({ list, currentUserId }: { list: LocalList; currentUs
 
       {vorschlaege.length > 0 ? (
         <div>
-          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+          <h3 className="mb-1 text-meta font-semibold uppercase tracking-wide text-ink-faint">
             Zuletzt geteilt
           </h3>
           <ul className="flex flex-wrap gap-2">
@@ -120,16 +120,16 @@ export function SharePanel({ list, currentUserId }: { list: LocalList; currentUs
       ) : null}
 
       <div>
-        <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+        <h3 className="mb-1 text-meta font-semibold uppercase tracking-wide text-ink-faint">
           Mitglieder
         </h3>
         {members.length === 0 ? (
-          <p className="text-xs text-neutral-500">Noch keine Mitglieder.</p>
+          <p className="text-meta text-ink-faint">Noch keine Mitglieder.</p>
         ) : (
           <ul className="space-y-1">
             {members.map((member) => (
-              <li key={member.user_id} className="flex items-center justify-between gap-2 text-xs">
-                <span className="truncate font-mono text-neutral-300" title={member.user_id}>
+              <li key={member.user_id} className="flex items-center justify-between gap-2 text-meta">
+                <span className="truncate font-mono text-ink-soft" title={member.user_id}>
                   Mitglied {member.user_id.slice(0, 8)}
                 </span>
                 <button
@@ -148,7 +148,7 @@ export function SharePanel({ list, currentUserId }: { list: LocalList; currentUs
       </div>
 
       {!list.is_shared ? (
-        <p className="text-xs text-neutral-500">
+        <p className="text-meta text-ink-faint">
           Nach dem Teilen wird die Liste synchronisiert, sobald eine Verbindung besteht.
         </p>
       ) : null}

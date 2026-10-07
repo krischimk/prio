@@ -60,7 +60,7 @@ export function MobileTaskList({
 
   if (tasks.length === 0) {
     return (
-      <p className="px-4 py-10 text-center text-sm text-neutral-500" data-testid="empty-tasks">
+      <p className="px-4 py-10 text-center text-body text-ink-faint" data-testid="empty-tasks">
         Noch keine Aufgaben in dieser Liste.
       </p>
     )
@@ -154,7 +154,7 @@ function zielAbschnitt(
 }
 
 function DropIndicator() {
-  return <li aria-hidden="true" data-testid="drop-indicator" className="h-0.5 bg-indigo-500" />
+  return <li aria-hidden="true" data-testid="drop-indicator" className="h-0.5 bg-brand" />
 }
 
 function MobileTaskRow({
@@ -182,14 +182,14 @@ function MobileTaskRow({
   return (
     <li
       data-task-row
-      className={`flex items-start gap-3 border-b border-neutral-900 ${appBackground} px-4 py-3 ${
-        isDragging ? 'relative z-10 shadow-lg shadow-black/50' : ''
+      className={`flex items-start gap-3 border-b border-line-soft ${appBackground} px-4 py-3 ${
+        isDragging ? 'relative z-10 shadow-lg shadow-page/50' : ''
       }`}
       style={isDragging ? { transform: `translateY(${drag.offsetY}px)` } : undefined}
     >
       <input
         type="checkbox"
-        className="mt-0.5 h-5 w-5 shrink-0 accent-indigo-500"
+        className="mt-0.5 h-5 w-5 shrink-0 accent-brand"
         checked={task.completed}
         aria-label={`Aufgabe erledigen: ${task.title}`}
         onChange={(event) => {
@@ -229,19 +229,19 @@ function MobileTaskRow({
           data-testid="task-row"
         >
           <span
-            className={`block break-words text-[15px] leading-snug ${
-              task.completed ? 'text-neutral-500 line-through' : 'text-neutral-100'
+            className={`block break-words text-title leading-snug ${
+              task.completed ? 'text-ink-faint line-through' : 'text-ink'
             }`}
           >
             {task.title}
           </span>
           {due ? (
-            <span className={`mt-0.5 block text-xs ${due.overdue ? dangerText : 'text-neutral-500'}`}>
+            <span className={`mt-0.5 block text-meta ${due.overdue ? dangerText : 'text-ink-faint'}`}>
               {due.text}
             </span>
           ) : null}
           {wiederholung ? (
-            <span className="mt-0.5 flex items-center gap-1 text-xs text-neutral-500">
+            <span className="mt-0.5 flex items-center gap-1 text-meta text-ink-faint">
               <RepeatIcon className="h-3 w-3 shrink-0" />
               {wiederholung}
             </span>
@@ -249,8 +249,8 @@ function MobileTaskRow({
           {erinnerungen.map((erinnerung, index) => (
             <span
               key={index}
-              className={`mt-0.5 flex items-center gap-1 text-xs ${
-                erinnerung.afterDue && !erinnerung.muted ? attentionText : 'text-neutral-500'
+              className={`mt-0.5 flex items-center gap-1 text-meta ${
+                erinnerung.afterDue && !erinnerung.muted ? attentionText : 'text-ink-faint'
               }`}
             >
               {erinnerung.muted ? <BellOffIcon className="h-3 w-3 shrink-0" /> : <BellIcon className="h-3 w-3 shrink-0" />}

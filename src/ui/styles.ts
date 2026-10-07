@@ -13,12 +13,16 @@ import type { SyncTone } from '../sync/syncStatus'
  *   Hier stehen außerdem die **Knöpfe**: eine Grundlage, eine Größenskala und
  *   die Arten. Eine Größe wird gewählt, nicht angehängt – siehe unten.
  *
- *   Noch nicht hier stehen die Stufen der Tailwind-Skala als solche
- *   (`text-neutral-400` für „etwas unwichtiger“). Sie werden zu Rollen, sobald
- *   es Farbvariablen gibt (`DESIGN.md` §15.2).
+ *   Hier stehen **keine Palettenwerte**. Farben, Schriftgrößen und Rundungen
+ *   sind Rollen und stehen in `src/index.css` als CSS-Variablen
+ *   (`--color-ink-muted`, `--text-meta`, `--radius-card`); Tailwind macht
+ *   daraus `text-ink-muted`, `text-meta`, `rounded-card`. Diese Datei ordnet sie
+ *   nur noch zu Bedeutung: „Fehler“ sieht in beiden Ansichten gleich aus, weil
+ *   es genau eine Stelle dafür gibt.
  */
 
-const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400'
+const focusRing =
+  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-soft'
 
 /*
  * Warum eine Funktion und keine angehängte Zeichenkette
@@ -40,37 +44,37 @@ const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-
  * Polsterung, Farbe oder Schriftgröße. Die kommen aus Größe und Art.
  * `tests/unit/uiConventions.test.ts` hält das fest.
  */
-const buttonBase = `inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`
+const buttonBase = `inline-flex items-center justify-center gap-2 rounded-control font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${focusRing}`
 
 const buttonSizes = {
   /** Der Standardknopf. */
-  md: 'px-3 py-2 text-sm',
+  md: 'px-3 py-2 text-body',
   /** Kompakt – Kopfzeilen, dichte Bereiche. */
-  sm: 'px-2 py-1 text-xs',
+  sm: 'px-2 py-1 text-meta',
   /** Blockknopf: gleiche Schrift, mehr Höhe für die Trefferfläche. */
-  block: 'px-3 py-3 text-sm',
+  block: 'px-3 py-3 text-body',
   /** Nur ein Symbol (rundum gleiche Polsterung). */
   icon: 'p-2',
 } as const
 
 const buttonVariants = {
-  primary: 'bg-indigo-500 text-white hover:bg-indigo-400',
-  secondary: 'border border-neutral-700 bg-neutral-900 text-neutral-100 hover:bg-neutral-800',
-  ghost: 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100',
+  primary: 'bg-brand text-on-brand hover:bg-brand-soft',
+  secondary: 'border border-line-strong bg-surface text-ink hover:bg-raised',
+  ghost: 'text-ink-muted hover:bg-raised hover:text-ink',
   /**
    * Ein Bediensymbol ohne Rahmen. `active:` ist die Rückmeldung auf dem
    * Telefon, `hover:` die auf dem Rechner (siehe `AGENTS.md`, erlaubte
    * Unterschiede).
    */
-  icon: 'text-neutral-400 hover:bg-neutral-800 hover:text-neutral-100 active:bg-neutral-800',
+  icon: 'text-ink-muted hover:bg-raised hover:text-ink active:bg-raised',
   /** Ein Symbolknopf, das heller steht – die Hauptbedienung der App-Leiste. */
-  iconBright: 'text-neutral-300 hover:bg-neutral-800 hover:text-neutral-100 active:bg-neutral-800',
-  iconMuted: 'text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300',
+  iconBright: 'text-ink-soft hover:bg-raised hover:text-ink active:bg-raised',
+  iconMuted: 'text-ink-faint hover:bg-raised hover:text-ink-soft',
   /** Ein Symbol, das einen aktiven Zustand zeigt (gefüllter Stern). */
-  iconActive: 'text-indigo-400 hover:bg-neutral-800 hover:text-indigo-300 active:bg-neutral-800',
-  danger: 'border border-red-900/60 bg-red-950/40 text-red-300 hover:bg-red-950/70',
+  iconActive: 'text-brand-soft hover:bg-raised hover:text-brand-ink active:bg-raised',
+  danger: 'border border-danger-line/60 bg-danger-tint/40 text-danger-ink hover:bg-danger-tint/70',
   /** Zurückgenommen, aber mit Aufmerksamkeit – etwa „neue Fassung da“. */
-  attention: 'text-amber-400 hover:bg-neutral-800 hover:text-amber-300',
+  attention: 'text-warn hover:bg-raised hover:text-warn-ink',
 } as const
 
 export type ButtonSize = keyof typeof buttonSizes
@@ -96,7 +100,7 @@ export const dangerButton = buttonClass('danger')
 /** Symbolknopf: Schließen, Menü, Synchronisation. */
 export const iconButton = buttonClass('icon', 'icon')
 
-export const input = `w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 ${focusRing}`
+export const input = `w-full rounded-control border border-line-strong bg-surface px-3 py-2 text-body text-ink placeholder:text-ink-faint ${focusRing}`
 
 /**
  * Schmales Feld für die Zahlen einer eigenen Vorlaufzeit.
@@ -106,14 +110,28 @@ export const input = `w-full rounded-md border border-neutral-700 bg-neutral-900
  * `px-2` verdrängt das `px-3` aus `input` deshalb nicht – das Feld blieb breit
  * gepolstert und schnitt bei drei Ziffern ab.
  */
-export const numberInput = `w-full rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm text-neutral-100 ${focusRing}`
+export const numberInput = `w-full rounded-control border border-line-strong bg-surface px-2 py-1 text-body text-ink ${focusRing}`
 
 /** Der Grund hinter allem: reines Schwarz, kein Grau. */
-export const appBackground = 'bg-black'
+export const appBackground = 'bg-page'
 
-export const card = 'rounded-lg border border-neutral-800 bg-neutral-900/60 p-4'
+/** Eine Karte: Panels, aufgeklappte Bereiche, Dialoginhalte. */
+export const card = 'rounded-card border border-line bg-surface/60 p-4'
 
-export const link = `rounded text-indigo-400 underline-offset-2 hover:underline ${focusRing}`
+/**
+ * Die gedämpfte Karte – Karten **in** Karten und Zeilen: die Aufgabenzeile,
+ * aufgeklappte Zusatzfelder, eine Hinweisbox.
+ *
+ * Vorher gab es dafür sieben Ausprägungen (zwei Deckkräfte, drei Polsterungen)
+ * in fünf Dateien; der Token `card` stand daneben und wurde nie benutzt.
+ */
+export const cardSoft = 'rounded-card border border-line bg-surface/40 p-3'
+
+/** Der leere Zustand: gestrichelter Rahmen statt einer Fläche. */
+export const emptyState =
+  'rounded-card border border-dashed border-line px-3 py-6 text-center text-body text-ink-faint'
+
+export const link = `rounded-control text-brand-soft underline-offset-2 hover:underline ${focusRing}`
 
 /* -------------------------------------------------------------------------- */
 /* Semantische Farben                                                          */
@@ -136,13 +154,13 @@ export interface SyncToneStyle {
  * benutzt – vorher stand dieselbe Abbildung dreimal im Code.
  */
 export const statusTone: Record<SyncTone, SyncToneStyle> = {
-  ok: { dot: 'bg-emerald-400', text: 'text-emerald-400', label: 'Alles synchronisiert' },
-  pending: { dot: 'bg-amber-400', text: 'text-amber-400', label: 'Synchronisation ausstehend' },
-  error: { dot: 'bg-red-400', text: 'text-red-400', label: 'Synchronisation fehlgeschlagen' },
+  ok: { dot: 'bg-ok', text: 'text-ok', label: 'Alles synchronisiert' },
+  pending: { dot: 'bg-warn', text: 'text-warn', label: 'Synchronisation ausstehend' },
+  error: { dot: 'bg-danger', text: 'text-danger', label: 'Synchronisation fehlgeschlagen' },
 }
 
 /** Hervorhebung für überfällige Aufgaben. */
-export const dangerText = 'text-red-400'
+export const dangerText = 'text-danger'
 
 /**
  * Hinweis, der Aufmerksamkeit braucht – etwa eine verfügbare neue Fassung.
@@ -150,21 +168,21 @@ export const dangerText = 'text-red-400'
  * Bewusst getrennt von den Sync-Zuständen: „ausstehend“ und „hier gibt es
  * etwas zu tun“ sind verschiedene Aussagen.
  */
-export const attentionText = 'text-amber-400'
-export const attentionDot = 'bg-amber-400'
+export const attentionText = 'text-warn'
+export const attentionDot = 'bg-warn'
 
 /** Inline-Meldung unter einem Formular – Fehler und Erfolg. */
-export const errorMessage = 'text-xs text-red-400'
-export const successMessage = 'text-xs text-emerald-400'
+export const errorMessage = 'text-meta text-danger'
+export const successMessage = 'text-meta text-ok'
 
 /** Umschlossene Meldungsbox (Anmeldung und Registrierung). */
 export const errorBox =
-  'rounded-md border border-red-900/60 bg-red-950/40 px-3 py-2 text-sm text-red-300'
+  'rounded-control border border-danger-line/60 bg-danger-tint/40 px-3 py-2 text-body text-danger-ink'
 export const successBox =
-  'rounded-md border border-emerald-900/60 bg-emerald-950/40 px-3 py-2 text-sm text-emerald-300'
+  'rounded-control border border-ok-line/60 bg-ok-tint/40 px-3 py-2 text-body text-ok-ink'
 
 /** Zurückgenommener Text für Hinweise und Metadaten. */
-export const mutedText = 'text-neutral-500'
+export const mutedText = 'text-ink-faint'
 
 /**
  * Ein Bediensymbol, das einen aktiven Zustand zeigt – etwa der gefüllte Stern
@@ -174,4 +192,4 @@ export const mutedText = 'text-neutral-500'
  * dieselbe Farbe haben soll. Der Architekturtest fängt nur die Statusfarben
  * (emerald/amber/red) ab; für alles andere ist diese Datei die Absprache.
  */
-export const activeIcon = 'text-indigo-400'
+export const activeIcon = 'text-brand-soft'

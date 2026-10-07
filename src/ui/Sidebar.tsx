@@ -46,10 +46,10 @@ export function Sidebar({
 
   return (
     <aside
-      className={`shrink-0 border-b border-neutral-800 ${appBackground} p-4 md:h-screen md:w-72 md:overflow-y-auto md:border-b-0 md:border-r`}
+      className={`shrink-0 border-b border-line ${appBackground} p-4 md:h-screen md:w-72 md:overflow-y-auto md:border-b-0 md:border-r`}
       aria-label="Listen"
     >
-      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Listen</h2>
+      <h2 className="mb-3 text-meta font-semibold uppercase tracking-wide text-ink-faint">Listen</h2>
 
       <ul className="mb-4 space-y-1" data-testid="list-of-lists">
         {lists.map((list) => {
@@ -60,10 +60,10 @@ export function Sidebar({
                 type="button"
                 onClick={() => onSelect(list.id)}
                 aria-current={selected ? 'true' : undefined}
-                className={`flex w-full items-center justify-between gap-2 rounded-md px-2 py-2 text-left text-sm ${
+                className={`flex w-full items-center justify-between gap-2 rounded-control px-2 py-2 text-left text-body ${
                   selected
-                    ? 'bg-indigo-950/60 text-indigo-100'
-                    : 'text-neutral-300 hover:bg-neutral-900 hover:text-neutral-100'
+                    ? 'bg-brand-tint/60 text-brand-faint'
+                    : 'text-ink-soft hover:bg-surface hover:text-ink'
                 }`}
               >
                 <span className="flex min-w-0 items-center gap-2">
@@ -71,7 +71,7 @@ export function Sidebar({
                 <span className="truncate">{list.name}</span>
               </span>
                 {list.is_shared ? (
-                  <span className="shrink-0 text-xs text-indigo-400" title="Gemeinsame Liste">
+                  <span className="shrink-0 text-meta text-brand-soft" title="Gemeinsame Liste">
                     geteilt
                   </span>
                 ) : null}
@@ -80,7 +80,7 @@ export function Sidebar({
           )
         })}
         {lists.length === 0 ? (
-          <li className="px-2 py-1 text-sm text-neutral-500">Noch keine Liste vorhanden.</li>
+          <li className="px-2 py-1 text-body text-ink-faint">Noch keine Liste vorhanden.</li>
         ) : null}
       </ul>
 
@@ -105,7 +105,7 @@ export function Sidebar({
         ) : null}
       </form>
 
-      <p className="mt-4 text-xs text-neutral-600">
+      <p className="mt-4 text-meta text-ink-dim">
         Änderungen werden lokal gespeichert und später synchronisiert.
       </p>
     </aside>

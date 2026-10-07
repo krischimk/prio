@@ -13,7 +13,7 @@ import { SharePanel } from './SharePanel'
 import { MoveTaskSheet } from './MoveTaskSheet'
 import { TaskComposer } from './TaskComposer'
 import { TaskItem } from './TaskItem'
-import { buttonClass, input, primaryButton, secondaryButton } from './styles'
+import { card, emptyState, buttonClass, input, primaryButton, secondaryButton } from './styles'
 import { formatOpenTasks } from './taskCount'
 
 /**
@@ -97,12 +97,12 @@ export function TaskPanel({
         ) : (
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2">
-              <ListIcon icon={list.icon} className="h-6 w-6 shrink-0 text-neutral-300" />
-              <h1 className="truncate text-xl font-semibold text-neutral-50" data-testid="list-title">
+              <ListIcon icon={list.icon} className="h-6 w-6 shrink-0 text-ink-soft" />
+              <h1 className="truncate text-heading font-semibold text-ink-strong" data-testid="list-title">
                 {list.name}
               </h1>
               {list.is_shared ? (
-                <span className="rounded-full border border-indigo-800 bg-indigo-950/60 px-2 py-0.5 text-xs text-indigo-300">
+                <span className="rounded-full border border-brand-line bg-brand-tint/60 px-2 py-0.5 text-meta text-brand-ink">
                   geteilt
                 </span>
               ) : null}
@@ -168,7 +168,7 @@ export function TaskPanel({
 
         {iconOpen ? <ListIconPicker list={list} /> : null}
         {sectionsOpen ? (
-          <div className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-3">
+          <div className={card}>
             <SectionsPanel list={list} />
           </div>
         ) : null}
@@ -178,11 +178,11 @@ export function TaskPanel({
       <TaskComposer listId={list.id} />
 
       <div className="min-h-0 flex-1">
-        <div className="mb-2 text-xs text-neutral-500">
+        <div className="mb-2 text-meta text-ink-faint">
           <span>{formatOpenTasks(openTasks)}</span>
         </div>
         {tasks.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-neutral-800 px-3 py-6 text-center text-sm text-neutral-500">
+          <p className={emptyState}>
             Noch keine Aufgaben in dieser Liste.
           </p>
         ) : mitBereichen ? (

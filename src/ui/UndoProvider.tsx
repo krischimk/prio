@@ -61,9 +61,9 @@ export function UndoProvider({ children }: { children: ReactNode }) {
           <div
             role="status"
             data-testid="undo-bar"
-            className="pointer-events-auto mb-24 flex w-full max-w-md items-center gap-3 rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-3 shadow-lg shadow-black/40 md:mb-4"
+            className="pointer-events-auto mb-24 flex w-full max-w-md items-center gap-3 rounded-card border border-line-strong bg-raised px-4 py-3 shadow-lg shadow-page/40 md:mb-4"
           >
-            <span className="min-w-0 flex-1 truncate text-sm text-neutral-100">
+            <span className="min-w-0 flex-1 truncate text-body text-ink">
               „{offer.title}“ erledigt
             </span>
             <button

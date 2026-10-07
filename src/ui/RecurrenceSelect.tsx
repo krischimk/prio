@@ -22,7 +22,7 @@ export function RecurrenceSelect({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="mb-1 block text-xs text-neutral-400">
+      <label htmlFor={id} className="mb-1 block text-meta text-ink-muted">
         Wiederholung
       </label>
       <select
@@ -40,7 +40,7 @@ export function RecurrenceSelect({
         ))}
       </select>
       {disabled ? (
-        <p className="mt-1 text-xs text-neutral-500">
+        <p className="mt-1 text-meta text-ink-faint">
           Nur mit Fälligkeitsdatum möglich – sonst gibt es nichts fortzuschreiben.
         </p>
       ) : null}

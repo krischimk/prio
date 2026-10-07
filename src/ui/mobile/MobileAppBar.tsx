@@ -32,7 +32,7 @@ export function MobileAppBar({
   const updateVerfuegbar = update.status === 'available'
 
   return (
-    <header className={`safe-top fixed inset-x-0 top-0 z-30 border-b border-neutral-800 ${appBackground}`}>
+    <header className={`safe-top fixed inset-x-0 top-0 z-30 border-b border-line ${appBackground}`}>
       <div className="flex h-14 items-center gap-1 px-2">
         <button
           type="button"
@@ -53,7 +53,7 @@ export function MobileAppBar({
 
         {listName === null ? (
           <span
-            className="min-w-0 flex-1 truncate text-center text-base font-medium text-neutral-100"
+            className="min-w-0 flex-1 truncate text-center text-title font-medium text-ink"
             data-testid="app-bar-title"
           >
             prio
@@ -67,7 +67,7 @@ export function MobileAppBar({
             type="button"
             onClick={onOpenList}
             aria-label={`Liste „${listName}“ verwalten`}
-            className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-base font-medium text-neutral-100 active:bg-neutral-800"
+            className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-control px-2 py-1 text-title font-medium text-ink active:bg-raised"
             data-testid="app-bar-title"
           >
             <ListIcon icon={listIcon} className="h-4 w-4 shrink-0" />
@@ -82,7 +82,7 @@ export function MobileAppBar({
           }}
           aria-label={`${farben.label} – jetzt synchronisieren`}
           title={text}
-          className="rounded-md p-3 active:bg-neutral-800"
+          className="rounded-control p-3 active:bg-raised"
         >
           <span className={`block h-2.5 w-2.5 rounded-full ${farben.dot}`} />
         </button>

@@ -1,10 +1,86 @@
 @import 'tailwindcss';
 
 /*
- * Dark Mode ist der einzige Modus – es gibt bewusst keinen Light Mode.
- * Deshalb wird nicht mit `dark:`-Varianten gearbeitet, sondern direkt mit
- * dunklen Farbwerten. Das hält die Klassen kurz und die Optik eindeutig.
+ * Ein Modus, aber eine Wertequelle.
+ *
+ * Die App ist nur dunkel – einen hellen Modus gibt es nicht. Die Werte stehen
+ * trotzdem nicht in den Komponenten, sondern hier als benannte **Rollen**
+ * (`--color-surface`, `--color-ink-muted`, `--color-danger` …); Tailwind macht
+ * daraus Utilities (`bg-surface`, `text-ink-muted`).
+ *
+ * Warum: In den Komponenten standen rund 230 rohe Palettenschritte
+ * (`text-neutral-500`, `border-neutral-800`). Ein zweiter Modus – oder nur ein
+ * anderer Grundton – wäre damit ein Umbau jeder Komponente gewesen; mit Rollen
+ * ist es diese Datei. Dazu kommen Schriftgrößen und Rundungen als Rollen, damit
+ * „Titel" nicht „16 px" heißt.
+ *
+ * Deshalb gilt: **keine Palettenklassen in Komponenten**.
+ * `tests/unit/uiConventions.test.ts` hält das fest.
  */
+@theme {
+  /* Flächen und Linien */
+  --color-page: #000000; /* der Grund hinter allem – reines Schwarz */
+  --color-surface: #171717; /* Karten, Felder, Blätter */
+  --color-raised: #262626; /* Hover, Chips, eingelassene Flächen */
+  --color-line: #262626; /* Rahmen */
+  --color-line-soft: #171717; /* leiser als `line`: Trenner zwischen Zeilen */
+  --color-line-strong: #404040; /* Rahmen von Eingabefeldern */
+
+  /* Schrift, von kräftig nach zurückgenommen */
+  --color-ink-strong: #fafafa;
+  --color-ink: #f5f5f5;
+  --color-ink-soft: #d4d4d4;
+  --color-ink-muted: #a3a3a3;
+  --color-ink-faint: #737373;
+  --color-ink-dim: #525252;
+
+  /* Die Akzentfarbe – Auswahl, Handlung, Verweis */
+  --color-brand: #6366f1;
+  --color-brand-soft: #818cf8;
+  --color-brand-ink: #a5b4fc;
+  --color-brand-faint: #e0e7ff;
+  --color-brand-tint: #1e1b4b;
+  --color-brand-line: #3730a3;
+  --color-on-brand: #ffffff; /* Schrift auf der Akzentfarbe */
+
+  /* Zustände */
+  --color-danger: #f87171;
+  --color-danger-ink: #fca5a5;
+  --color-danger-tint: #450a0a;
+  --color-danger-line: #7f1d1d;
+  --color-ok: #34d399;
+  --color-ok-ink: #6ee7b7;
+  --color-ok-tint: #022c22;
+  --color-ok-line: #064e3b;
+  --color-warn: #fbbf24;
+  --color-warn-ink: #fcd34d;
+
+  /*
+   * Schriftgrößen als Rollen statt Pixel.
+   *
+   * Die Zeilenhöhen sind die, die Tailwind für dieselben Größen mitbringt –
+   * die Umstellung ändert deshalb nichts am Aussehen. `11px` und `15px` gab es
+   * vorher als willkürliche Werte; sie gehen in `label` bzw. `title` auf und
+   * skalieren damit mit der Systemschrift.
+   */
+  --text-label: 0.6875rem; /* kleinste Auszeichnung: „Mehr", Zähler, „geteilt" */
+  --text-label--line-height: 1rem;
+  --text-meta: 0.75rem; /* Metadaten und Hinweise */
+  --text-meta--line-height: 1rem;
+  --text-body: 0.875rem; /* Fließtext */
+  --text-body--line-height: 1.25rem;
+  --text-title: 1rem; /* Titel einer Zeile oder Karte */
+  --text-title--line-height: 1.5rem;
+  --text-heading: 1.25rem; /* Überschrift: Listenname, Marke */
+  --text-heading--line-height: 1.75rem;
+  --text-display: 1.5rem; /* Anmeldung, große Leerzustände */
+  --text-display--line-height: 2rem;
+
+  /* Rundungen: drei Stufen mit Bedeutung */
+  --radius-control: 0.375rem; /* Knöpfe, Felder, Chips */
+  --radius-card: 0.5rem; /* Karten und Zeilen */
+  --radius-sheet: 1rem; /* Blätter und Dialoge */
+}
 
 :root {
   color-scheme: dark;
@@ -18,8 +94,8 @@ body,
 
 body {
   margin: 0;
-  background-color: #000000;
-  color: #f5f5f5;
+  background-color: var(--color-page);
+  color: var(--color-ink);
   font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -61,7 +137,7 @@ body {
  */
 .scroll-flaeche {
   scrollbar-width: thin;
-  scrollbar-color: #525252 transparent; /* neutral-600 */
+  scrollbar-color: var(--color-ink-dim) transparent;
 }
 
 .scroll-flaeche::-webkit-scrollbar {
@@ -69,7 +145,7 @@ body {
 }
 
 .scroll-flaeche::-webkit-scrollbar-thumb {
-  background-color: #525252; /* neutral-600 */
+  background-color: var(--color-ink-dim);
   border-radius: 3px;
 }
 

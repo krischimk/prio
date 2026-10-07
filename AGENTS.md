@@ -309,9 +309,15 @@ unabhängig davon, in welcher Ansicht sie erscheint.
 
 Konkret:
 
-* **Farben und Flächen kommen aus `src/ui/styles.ts`.** In Komponenten keine
-  rohen Farbklassen (`text-neutral-500`) und keine Hex-Werte. Das gilt besonders
-  für Zustandsfarben: `SyncTone → Farbe` gibt es genau einmal.
+* **Farben, Schriftgrößen und Rundungen sind Rollen, keine Palettenwerte.** Die
+  Werte stehen in `src/index.css` (`@theme`: `--color-ink-muted`, `--text-meta`,
+  `--radius-card`); in Komponenten stehen nur die daraus erzeugten Klassen
+  (`text-ink-muted`, `text-meta`, `rounded-card`) – keine Palettenschritte
+  (`text-neutral-500`), keine Hex-Werte, keine Pixel-Schriftgrößen. Die
+  Bedeutungen ordnet `src/ui/styles.ts` zu; Zustandsfarben gibt es genau einmal
+  (`SyncTone → Farbe`). Durchgesetzt von `tests/unit/uiConventions.test.ts`, das
+  ganz `src` liest. Auslöser: rund 230 Palettenschritte in 26 Dateien machten
+  jeden zweiten Modus zum Umbau jeder Komponente (`DESIGN.md` §15.2 A2).
 * **Knopfgrößen und -arten werden gewählt, nicht angehängt.** Statt
   `` `${ghostButton} px-2 py-1 text-xs` `` heißt es `buttonClass('ghost', 'sm')`.
   Grund: Tailwind ordnet die Utilities nach der Reihenfolge des **Stylesheets**,

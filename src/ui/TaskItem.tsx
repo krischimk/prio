@@ -12,7 +12,7 @@ import { ReminderList } from './ReminderList'
 import { SectionSelect } from './SectionSelect'
 import { TaskDescription } from './TaskDescription'
 import { describeReminders } from './reminder'
-import { buttonClass, dangerText, input, primaryButton, secondaryButton, attentionText } from './styles'
+import { cardSoft, buttonClass, dangerText, input, primaryButton, secondaryButton, attentionText } from './styles'
 
 /**
  * Eine Aufgabe in der Liste.
@@ -77,10 +77,10 @@ export function TaskItem({
 
   if (editing) {
     return (
-      <li className="rounded-lg border border-indigo-900/60 bg-neutral-900/60 p-3">
+      <li className="rounded-card border border-brand-line/60 bg-surface/60 p-3">
         <form onSubmit={save} className="space-y-3" aria-label={`Aufgabe bearbeiten: ${task.title}`}>
           <div>
-            <label htmlFor={`title-${task.id}`} className="mb-1 block text-xs text-neutral-400">
+            <label htmlFor={`title-${task.id}`} className="mb-1 block text-meta text-ink-muted">
               Titel
             </label>
             <input
@@ -92,7 +92,7 @@ export function TaskItem({
             />
           </div>
           <div>
-            <label htmlFor={`description-${task.id}`} className="mb-1 block text-xs text-neutral-400">
+            <label htmlFor={`description-${task.id}`} className="mb-1 block text-meta text-ink-muted">
               Beschreibung (optional)
             </label>
             <textarea
@@ -104,7 +104,7 @@ export function TaskItem({
             />
           </div>
           <div>
-            <label htmlFor={`due-${task.id}`} className="mb-1 block text-xs text-neutral-400">
+            <label htmlFor={`due-${task.id}`} className="mb-1 block text-meta text-ink-muted">
               Fällig am (optional)
             </label>
             <input
@@ -122,7 +122,7 @@ export function TaskItem({
           </div>
           {sections.length > 0 ? (
             <div>
-              <label htmlFor={`section-${task.id}`} className="mb-1 block text-xs text-neutral-400">
+              <label htmlFor={`section-${task.id}`} className="mb-1 block text-meta text-ink-muted">
                 Bereich
               </label>
               <SectionSelect
@@ -166,10 +166,10 @@ export function TaskItem({
   const erinnerungen = describeReminders(task, currentUserId)
 
   return (
-    <li className="flex items-start gap-3 rounded-lg border border-neutral-800 bg-neutral-900/40 p-3">
+    <li className={`${cardSoft} flex items-start gap-3`}>
       <input
         type="checkbox"
-        className="mt-1 h-4 w-4 shrink-0 accent-indigo-500"
+        className="mt-1 h-4 w-4 shrink-0 accent-brand"
         checked={task.completed}
         aria-label={`Aufgabe erledigen: ${task.title}`}
         onChange={(event) => {
@@ -179,17 +179,17 @@ export function TaskItem({
         }}
       />
       <div className="min-w-0 flex-1">
-        <p className={`break-words text-sm ${task.completed ? 'text-neutral-500 line-through' : 'text-neutral-100'}`}>
+        <p className={`break-words text-body ${task.completed ? 'text-ink-faint line-through' : 'text-ink'}`}>
           {task.title}
         </p>
         {task.description ? (
           <TaskDescription text={task.description} className="mt-1" />
         ) : null}
         {due ? (
-          <p className={`mt-1 text-xs ${due.overdue ? dangerText : 'text-neutral-500'}`}>{due.text}</p>
+          <p className={`mt-1 text-meta ${due.overdue ? dangerText : 'text-ink-faint'}`}>{due.text}</p>
         ) : null}
         {wiederholung ? (
-          <p className="mt-1 flex items-center gap-1 text-xs text-neutral-500">
+          <p className="mt-1 flex items-center gap-1 text-meta text-ink-faint">
             <RepeatIcon className="h-3 w-3 shrink-0" />
             {wiederholung}
           </p>
@@ -197,8 +197,8 @@ export function TaskItem({
         {erinnerungen.map((erinnerung, index) => (
           <p
             key={index}
-            className={`mt-1 flex items-center gap-1 text-xs ${
-              erinnerung.afterDue && !erinnerung.muted ? attentionText : 'text-neutral-500'
+            className={`mt-1 flex items-center gap-1 text-meta ${
+              erinnerung.afterDue && !erinnerung.muted ? attentionText : 'text-ink-faint'
             }`}
           >
             {erinnerung.muted ? <BellOffIcon className="h-3 w-3 shrink-0" /> : <BellIcon className="h-3 w-3 shrink-0" />}

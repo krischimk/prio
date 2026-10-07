@@ -80,14 +80,14 @@ export function MobileDrawer({
         nicht zwei Bedienelemente mit demselben Namen.
       */}
       <div
-        className="absolute inset-0 cursor-default bg-black/60"
+        className="absolute inset-0 cursor-default bg-page/60"
         aria-hidden="true"
         onClick={onClose}
       />
 
-      <aside className={`safe-top safe-bottom absolute inset-y-0 left-0 flex w-80 max-w-[85%] flex-col overflow-y-auto border-r border-neutral-800 ${appBackground}`}>
+      <aside className={`safe-top safe-bottom absolute inset-y-0 left-0 flex w-80 max-w-[85%] flex-col overflow-y-auto border-r border-line ${appBackground}`}>
         <div className="flex items-center justify-between px-4 pt-3">
-          <span className="text-lg font-semibold tracking-tight text-neutral-50">Prio</span>
+          <span className="text-heading font-semibold tracking-tight text-ink-strong">Prio</span>
           <button
             type="button"
             onClick={onClose}
@@ -98,14 +98,14 @@ export function MobileDrawer({
           </button>
         </div>
         <div className="px-4 pb-4">
-          <p className="truncate text-xs text-neutral-500" data-testid="drawer-user">
+          <p className="truncate text-meta text-ink-faint" data-testid="drawer-user">
             {email}
           </p>
           <BackendLabel />
         </div>
 
         <section className="px-4 pb-4" aria-label="Listen">
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Listen</h2>
+          <h2 className="mb-2 text-meta font-semibold uppercase tracking-wide text-ink-faint">Listen</h2>
           <ul className="space-y-1">
             {lists.map((list) => {
               const selected = list.id === selectedListId
@@ -118,21 +118,21 @@ export function MobileDrawer({
                       onClose()
                     }}
                     aria-current={selected ? 'true' : undefined}
-                    className={`flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm ${
-                      selected ? 'bg-indigo-950/60 text-indigo-100' : 'text-neutral-300 active:bg-neutral-900'
+                    className={`flex w-full items-center justify-between gap-2 rounded-control px-3 py-2 text-left text-body ${
+                      selected ? 'bg-brand-tint/60 text-brand-faint' : 'text-ink-soft active:bg-surface'
                     }`}
                   >
                     <span className="flex min-w-0 items-center gap-2">
                       <ListIcon icon={list.icon} className="h-4 w-4 shrink-0" />
                       <span className="truncate">{list.name}</span>
                     </span>
-                    {list.is_shared ? <span className="shrink-0 text-xs text-indigo-400">geteilt</span> : null}
+                    {list.is_shared ? <span className="shrink-0 text-meta text-brand-soft">geteilt</span> : null}
                   </button>
                 </li>
               )
             })}
             {lists.length === 0 ? (
-              <li className="px-3 py-1 text-sm text-neutral-500">Noch keine Liste vorhanden.</li>
+              <li className="px-3 py-1 text-body text-ink-faint">Noch keine Liste vorhanden.</li>
             ) : null}
           </ul>
 
@@ -162,11 +162,11 @@ export function MobileDrawer({
           </form>
         </section>
 
-        <section className="border-t border-neutral-800 px-4 py-4" aria-label="Synchronisation">
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+        <section className="border-t border-line px-4 py-4" aria-label="Synchronisation">
+          <h2 className="mb-2 text-meta font-semibold uppercase tracking-wide text-ink-faint">
             Synchronisation
           </h2>
-          <p className="text-xs text-neutral-400" data-testid="drawer-sync">
+          <p className="text-meta text-ink-muted" data-testid="drawer-sync">
             {sync.text}
           </p>
           <button
@@ -181,11 +181,11 @@ export function MobileDrawer({
           </button>
         </section>
 
-        <section className="border-t border-neutral-800 px-4 py-4" aria-label="Einstellungen">
-          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+        <section className="border-t border-line px-4 py-4" aria-label="Einstellungen">
+          <h2 className="mb-2 text-meta font-semibold uppercase tracking-wide text-ink-faint">
             Einstellungen
           </h2>
-          {reminders.text ? <p className="mb-2 text-xs text-neutral-400">{reminders.text}</p> : null}
+          {reminders.text ? <p className="mb-2 text-meta text-ink-muted">{reminders.text}</p> : null}
           {reminders.canEnable ? (
             <button
               type="button"
@@ -198,7 +198,7 @@ export function MobileDrawer({
             </button>
           ) : null}
           {!reminders.available ? (
-            <p className="text-xs text-neutral-500">Erinnerungen sind auf diesem Gerät nicht verfügbar.</p>
+            <p className="text-meta text-ink-faint">Erinnerungen sind auf diesem Gerät nicht verfügbar.</p>
           ) : null}
 
           <button
@@ -210,12 +210,12 @@ export function MobileDrawer({
           </button>
         </section>
 
-        <section className="border-t border-neutral-800 px-4 py-4" aria-label="Updates">
-          <h3 className="text-xs font-medium uppercase tracking-wide text-neutral-500">Updates</h3>
+        <section className="border-t border-line px-4 py-4" aria-label="Updates">
+          <h3 className="text-meta font-medium uppercase tracking-wide text-ink-faint">Updates</h3>
           <UpdateEntry />
         </section>
 
-        <div className="mt-auto border-t border-neutral-800 px-4 py-4">
+        <div className="mt-auto border-t border-line px-4 py-4">
           <button
             type="button"
             className={`${secondaryButton} w-full`}

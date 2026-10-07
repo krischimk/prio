@@ -13,13 +13,17 @@ import { describe, expect, it } from 'vitest'
  *   dieselbe Bedeutung an zwei Stellen eine andere Farbe bekommt.
  *
  * Geprüft wird deshalb nur, was eindeutig ist:
- *   1. Status- und Gefahrfarben stehen genau einmal (`src/ui/styles.ts`).
+ *   1. Keine Palettenklassen in Komponenten – Farben sind Rollen aus
+ *      `src/index.css` (`text-ink-muted`, `bg-surface`, `border-line`).
  *   2. Keine Hex-Farben in Komponenten.
- *   3. Datum und Uhrzeit werden nur über die gemeinsame Funktion formatiert.
+ *   3. Status- und Gefahrfarben stehen genau einmal (`src/ui/styles.ts`).
+ *   4. Datum und Uhrzeit werden nur über die gemeinsame Funktion formatiert.
+ *   5. Knopfgrößen und -arten werden gewählt, nicht angehängt.
  *
- * Was ausdrücklich NICHT geprüft wird: die Stufen der Tailwind-Skala
- * (`text-neutral-400` und so weiter). Derselbe Wert ergibt dieselben Pixel –
- * ein Verbot wäre reine Schikane.
+ * Früher stand hier, die Stufen der Tailwind-Skala (`text-neutral-400`)
+ * auszunehmen: „derselbe Wert ergibt dieselben Pixel“. Das galt, solange es
+ * einen Modus gab. Mit Rollen ist derselbe Wert eben **nicht** mehr derselbe,
+ * und genau daran hing der Umbau: rund 230 Stellen in 26 Dateien.
  *
  * Siehe `AGENTS.md`, Abschnitt „Oberfläche“.
  */
@@ -27,7 +31,15 @@ import { describe, expect, it } from 'vitest'
 // Vitest läuft mit dem Projektverzeichnis als Arbeitsverzeichnis; `import.meta.url`
 // ist unter jsdom keine Datei-URL.
 const PROJECT_ROOT = process.cwd()
-const UI_DIR = join(PROJECT_ROOT, 'src', 'ui')
+/**
+ * Geprüft wird ganz `src`, nicht nur `src/ui`.
+ *
+ * `src/App.tsx` und `src/app/WorkspaceProvider.tsx` trugen eigene Farbklassen,
+ * und der Test las sie nie – die Regel galt dort ungeprüft. Ein Verstoß in
+ * `src/app` ist derselbe Verstoß.
+ */
+const SOURCE_DIR = join(PROJECT_ROOT, 'src')
+const UI_DIR = join(SOURCE_DIR, 'ui')
 const STYLES_FILE = join(UI_DIR, 'styles.ts')
 const DATETIME_FILE = join(UI_DIR, 'datetime.ts')
 const TASK_COUNT_FILE = join(UI_DIR, 'taskCount.ts')
@@ -57,13 +69,25 @@ function findMatches(files: string[], pattern: RegExp): string[] {
   return treffer
 }
 
-const sourceFiles = collectSourceFiles(UI_DIR)
+const sourceFiles = collectSourceFiles(SOURCE_DIR)
 
 describe('UI-Konventionen', () => {
   it('findet die Quelldateien', () => {
     // Schützt den Test davor, bei einem falschen Pfad stillschweigend
     // durchzulaufen.
     expect(sourceFiles.length).toBeGreaterThan(10)
+  })
+
+  it('nennt in Komponenten keine Palettenfarbe, sondern eine Rolle', () => {
+    const treffer = findMatches(
+      sourceFiles.filter((file) => file !== STYLES_FILE),
+      /(?:bg|text|border|ring|outline|divide|placeholder|accent|fill|stroke|shadow|from|to|via)-(?:neutral|indigo|red|emerald|amber|white|black|slate|gray|zinc|stone)-?[0-9/]*/,
+    )
+
+    expect(
+      treffer,
+      'Farben sind Rollen aus src/index.css (bg-surface, text-ink-muted, border-line, text-danger …). Ein Palettenschritt in einer Komponente macht den zweiten Modus zum Umbau jeder Datei.',
+    ).toEqual([])
   })
 
   it('definiert Status- und Gefahrfarben nur in styles.ts', () => {
@@ -147,10 +171,30 @@ describe('UI-Konventionen', () => {
     ).toEqual([])
   })
 
+  /**
+   * `text-[11px]` skaliert nicht mit der Systemschrift – es ist ein Pixelwert.
+   * Elf Pixel gab es an vier Stellen (Abschnittskopf, „Mehr“, Code-Chip, mobiler
+   * Aufgabentitel); sie gehen in `text-label` bzw. `text-title` auf.
+   */
+  it('nutzt für Schriftgrößen die Rollen statt willkürlicher Werte', () => {
+    const treffer = findMatches(
+      sourceFiles.filter((file) => file !== STYLES_FILE),
+      /text-\[\d+(?:\.\d+)?(?:px|rem|em)\]/,
+    )
+
+    expect(
+      treffer,
+      'Schriftgrößen sind Rollen aus src/index.css (text-label, text-meta, text-body, text-title, text-heading, text-display).',
+    ).toEqual([])
+  })
+
   it('zählt offene Aufgaben nur an einer Stelle', () => {
+    // Nur **Text in der Oberfläche** zählt, also ein Zeichenketten-Literal.
+    // Ein Satz in einem Kommentar („eine offene Aufgabe verstummt …“) ist keine
+    // zweite Formulierung und darf die Regel nicht auslösen.
     const treffer = findMatches(
       sourceFiles.filter((file) => file !== TASK_COUNT_FILE),
-      /offene Aufgaben?/,
+      /['"`][^'"`]*offene Aufgaben?[^'"`]*['"`]/,
     )
 
     expect(

@@ -18,7 +18,7 @@ export function BackendLabel() {
 
   return (
     <span
-      className={`text-xs ${mutedText}`}
+      className={`text-meta ${mutedText}`}
       data-testid="backend-label"
       title="Datenziel dieser Fassung"
     >

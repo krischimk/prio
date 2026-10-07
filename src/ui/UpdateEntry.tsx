@@ -33,23 +33,23 @@ export function UpdateEntry() {
 
   return (
     <div>
-      <p className={`mt-2 break-words text-xs ${toneClass[tone]}`} data-testid="update-status">
+      <p className={`mt-2 break-words text-meta ${toneClass[tone]}`} data-testid="update-status">
         {text}
       </p>
 
       {verfuegbar ? (
         <>
           {formatSize(state.release.sizeBytes) ? (
-            <p className="mt-1 text-xs text-neutral-500">{formatSize(state.release.sizeBytes)}</p>
+            <p className="mt-1 text-meta text-ink-faint">{formatSize(state.release.sizeBytes)}</p>
           ) : null}
 
           {state.release.notes.trim() !== '' ? (
             <details className="mt-2">
-              <summary className="cursor-pointer text-xs text-neutral-400">
+              <summary className="cursor-pointer text-meta text-ink-muted">
                 Was ist neu?
               </summary>
-              <div className="scroll-flaeche mt-2 max-h-40 overflow-y-auto rounded-md border border-neutral-800 bg-neutral-950/60 p-2">
-                <Markdown text={state.release.notes} className="break-words text-neutral-400" />
+              <div className="scroll-flaeche mt-2 max-h-40 overflow-y-auto rounded-control border border-line bg-page/60 p-2">
+                <Markdown text={state.release.notes} className="break-words text-ink-muted" />
               </div>
             </details>
           ) : null}
@@ -66,7 +66,7 @@ export function UpdateEntry() {
           </button>
 
           {!canInstall ? (
-            <p className="mt-2 text-xs text-neutral-500">
+            <p className="mt-2 text-meta text-ink-faint">
               Im Browser wird die Datei nur geladen. Installieren lässt sie sich in der App.
             </p>
           ) : null}
@@ -85,7 +85,7 @@ export function UpdateEntry() {
       )}
 
       {installError ? (
-        <p className={`mt-2 break-words text-xs ${dangerText}`} data-testid="update-error">
+        <p className={`mt-2 break-words text-meta ${dangerText}`} data-testid="update-error">
           {installError}
         </p>
       ) : null}

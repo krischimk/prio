@@ -72,17 +72,17 @@ export function ListSettingsSheet({
       aria-modal="true"
       aria-label="Liste verwalten"
     >
-      <div className="absolute inset-0 bg-black/60" aria-hidden="true" onClick={onClose} />
+      <div className="absolute inset-0 bg-page/60" aria-hidden="true" onClick={onClose} />
 
-      <div className="safe-bottom relative flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-2xl border-t border-neutral-800 bg-neutral-900 md:max-w-lg md:rounded-2xl md:border">
-        <header className="flex items-start justify-between gap-2 border-b border-neutral-800 px-4 py-3">
+      <div className="safe-bottom relative flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-sheet border-t border-line bg-surface md:max-w-lg md:rounded-sheet md:border">
+        <header className="flex items-start justify-between gap-2 border-b border-line px-4 py-3">
           <div className="flex min-w-0 items-center gap-2">
-            <ListIcon icon={list.icon} className="h-5 w-5 shrink-0 text-neutral-300" />
+            <ListIcon icon={list.icon} className="h-5 w-5 shrink-0 text-ink-soft" />
             <div className="min-w-0">
-              <h2 className="break-words text-sm font-medium text-neutral-100" data-testid="list-sheet-title">
+              <h2 className="break-words text-body font-medium text-ink" data-testid="list-sheet-title">
                 {list.name}
               </h2>
-              <p className="text-xs text-neutral-500">
+              <p className="text-meta text-ink-faint">
                 {istBesitzer ? 'Deine Liste' : 'Von jemand anderem geteilt'}
               </p>
             </div>
@@ -152,7 +152,7 @@ export function ListSettingsSheet({
 
           {modus === 'umbenennen' ? (
             <form onSubmit={umbenennen} className="space-y-3" aria-label="Liste umbenennen">
-              <label htmlFor="list-rename" className="block text-xs text-neutral-400">
+              <label htmlFor="list-rename" className="block text-meta text-ink-muted">
                 Neuer Name
               </label>
               <input
@@ -183,7 +183,7 @@ export function ListSettingsSheet({
 
           {modus === 'loeschen' ? (
             <div className="space-y-3">
-              <p className="text-sm text-neutral-300">
+              <p className="text-body text-ink-soft">
                 Die Liste und alle ihre Aufgaben werden gelöscht. Rückgängig machen lässt sich das
                 nicht.
               </p>
@@ -220,7 +220,7 @@ export function ListSettingsSheet({
 
           {modus === 'verlassen' ? (
             <div className="space-y-3">
-              <p className="text-sm text-neutral-300">
+              <p className="text-body text-ink-soft">
                 Die Liste verschwindet aus deiner Ansicht. Die Aufgaben bleiben beim Besitzer.
               </p>
               <button

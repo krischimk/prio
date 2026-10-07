@@ -38,14 +38,14 @@ export function AuthScreen() {
   return (
     <div className={`flex min-h-screen items-center justify-center ${appBackground} px-4`}>
       <div className="w-full max-w-sm">
-        <h1 className="mb-1 text-2xl font-semibold tracking-tight text-neutral-50">Prio</h1>
-        <p className="mb-6 text-sm text-neutral-400">
+        <h1 className="mb-1 text-display font-semibold tracking-tight text-ink-strong">Prio</h1>
+        <p className="mb-6 text-body text-ink-muted">
           Aufgaben offline erfassen – synchronisiert wird, sobald das Netz da ist.
         </p>
 
         <form onSubmit={submit} className="space-y-3" aria-label="Anmeldung">
           <div>
-            <label htmlFor="email" className="mb-1 block text-sm text-neutral-300">
+            <label htmlFor="email" className="mb-1 block text-body text-ink-soft">
               E-Mail
             </label>
             <input
@@ -60,7 +60,7 @@ export function AuthScreen() {
           </div>
 
           <div>
-            <label htmlFor="password" className="mb-1 block text-sm text-neutral-300">
+            <label htmlFor="password" className="mb-1 block text-body text-ink-soft">
               Passwort
             </label>
             <input
@@ -91,7 +91,7 @@ export function AuthScreen() {
           </button>
         </form>
 
-        <p className="mt-4 text-sm text-neutral-400">
+        <p className="mt-4 text-body text-ink-muted">
           {mode === 'signin' ? 'Noch kein Konto?' : 'Schon registriert?'}{' '}
           <button type="button" onClick={toggleMode} className={link}>
             {mode === 'signin' ? 'Registrieren' : 'Anmelden'}

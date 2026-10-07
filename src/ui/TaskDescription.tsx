@@ -45,7 +45,7 @@ export function TaskDescription({ text, className = '' }: { text: string; classN
       <span
         ref={textRef}
         data-testid="task-description"
-        className={`block break-words text-xs ${
+        className={`block break-words text-meta ${
           offen ? 'scroll-flaeche max-h-60 overflow-y-auto whitespace-pre-wrap' : 'truncate'
         } ${mutedText}`}
       >
@@ -61,7 +61,7 @@ export function TaskDescription({ text, className = '' }: { text: string; classN
             event.stopPropagation()
             setOffen((vorher) => !vorher)
           }}
-          className={`text-[11px] leading-none underline-offset-2 hover:underline ${mutedText}`}
+          className={`text-label leading-none underline-offset-2 hover:underline ${mutedText}`}
         >
           {offen ? 'Weniger' : 'Mehr'}
         </button>

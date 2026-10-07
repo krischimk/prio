@@ -92,16 +92,16 @@ export function ReminderList({
   return (
     <div>
       <div className="mb-1 flex items-baseline justify-between">
-        <span className="block text-xs text-neutral-400">Erinnerungen</span>
+        <span className="block text-meta text-ink-muted">Erinnerungen</span>
         {reminders.length > 0 ? (
-          <span className={`text-xs ${mutedText}`}>
+          <span className={`text-meta ${mutedText}`}>
             {reminders.length === 1 ? '1 Termin' : `${reminders.length} Termine`}
           </span>
         ) : null}
       </div>
 
       {reminders.length === 0 ? (
-        <p className={`mb-2 text-xs ${mutedText}`}>
+        <p className={`mb-2 text-meta ${mutedText}`}>
           Keine. Eine Fälligkeit erinnert nicht von selbst.
         </p>
       ) : (
@@ -111,7 +111,7 @@ export function ReminderList({
             // Beim Ändern des Wertes darf die Stummschaltung nicht verloren gehen.
             const behalteStumm = reminder.mutedBy !== undefined ? { mutedBy: reminder.mutedBy } : {}
             return (
-            <li key={index} className="rounded-md border border-neutral-800 p-2">
+            <li key={index} className="rounded-control border border-line p-2">
               <div className="flex items-start gap-2">
                 <div className="min-w-0 flex-1">
                   {relativ ? (
@@ -175,7 +175,7 @@ export function ReminderList({
           Weitere Erinnerung
         </button>
       ) : (
-        <p className={`text-xs ${mutedText}`}>
+        <p className={`text-meta ${mutedText}`}>
           Mehr als {MAX_REMINDERS} Erinnerungen je Aufgabe sind nicht vorgesehen.
         </p>
       )}
@@ -212,7 +212,7 @@ function AbsoluteRow({
         className={input}
       />
       {at !== null ? (
-        <p className={`mt-1 flex items-center gap-1 text-xs ${mutedText}`}>
+        <p className={`mt-1 flex items-center gap-1 text-meta ${mutedText}`}>
           {muted ? <BellOffIcon className="h-3 w-3 shrink-0" /> : <BellIcon className="h-3 w-3 shrink-0" />}
           {formatReminderLabel(at)}
           {muted ? ' · für mich stumm' : ''}
@@ -302,7 +302,7 @@ function OffsetRow({
       ) : null}
 
       {zeitpunkt !== null ? (
-        <p className={`mt-1 flex items-center gap-1 text-xs ${mutedText}`}>
+        <p className={`mt-1 flex items-center gap-1 text-meta ${mutedText}`}>
           {muted ? <BellOffIcon className="h-3 w-3 shrink-0" /> : <BellIcon className="h-3 w-3 shrink-0" />}
           {formatReminderLabel(zeitpunkt)}
           {muted ? ' · für mich stumm' : ''}
@@ -373,7 +373,7 @@ function CustomOffset({
       */}
       <div className="flex items-end gap-2">
         <div className="flex-1">
-          <label htmlFor={`${idPrefix}-richtung`} className="mb-1 block text-xs text-neutral-400">
+          <label htmlFor={`${idPrefix}-richtung`} className="mb-1 block text-meta text-ink-muted">
             Richtung
           </label>
           <select
@@ -407,19 +407,19 @@ function CustomOffset({
 
       <div className="flex items-end gap-2">
         <div className="min-w-0 flex-1">
-          <label className="mb-1 block text-xs text-neutral-400">Tage</label>
+          <label className="mb-1 block text-meta text-ink-muted">Tage</label>
           {zahl('tage', 'Tage vorher oder nachher', felder.tage, 3650)}
         </div>
         <div className="min-w-0 flex-1">
-          <label className="mb-1 block text-xs text-neutral-400">Std</label>
+          <label className="mb-1 block text-meta text-ink-muted">Std</label>
           {zahl('stunden', 'Stunden vorher oder nachher', felder.stunden, 23)}
         </div>
         <div className="min-w-0 flex-1">
-          <label className="mb-1 block text-xs text-neutral-400">Min</label>
+          <label className="mb-1 block text-meta text-ink-muted">Min</label>
           {zahl('minuten', 'Minuten vorher oder nachher', felder.minuten, 59)}
         </div>
       </div>
-      <p className={`text-xs ${mutedText}`}>
+      <p className={`text-meta ${mutedText}`}>
         {formatReminderOffset(value)}
         {value < 0 ? ' – erinnert erst, wenn die Aufgabe noch offen ist.' : ''}
       </p>
