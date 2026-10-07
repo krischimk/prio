@@ -4,6 +4,7 @@ import {
   isCachedCheckUsable,
   parseCachedCheck,
   serializeCachedCheck,
+  shouldCacheResult,
   type CachedCheck,
 } from '../../src/updates/updateCache'
 
@@ -51,5 +52,19 @@ describe('Gemerkte Update-Prüfung', () => {
     expect(parseCachedCheck('{}')).toBeNull()
     expect(parseCachedCheck('{"at":"gestern","current":"0.1.0","result":{}}')).toBeNull()
     expect(isCachedCheckUsable(null, '0.15.1', JETZT)).toBe(false)
+  })
+})
+
+describe('Fehlschläge gehören nicht in den Speicher', () => {
+  it('merkt nur brauchbare Ergebnisse', () => {
+    expect(shouldCacheResult({ status: 'up-to-date', current: '0.15.2', latest: '0.15.2' })).toBe(true)
+    expect(shouldCacheResult({ status: 'failed', message: 'kein Netz' })).toBe(false)
+  })
+
+  it('verwirft einen gemerkten Fehlschlag', () => {
+    // Sonst stünde nach einem Start ohne Netz für Stunden eine Fehlermeldung
+    // da, obwohl die Verbindung längst wieder steht.
+    const fehlschlag = eintrag({ result: { status: 'failed', message: 'GitHub ist nicht erreichbar.' } })
+    expect(isCachedCheckUsable(fehlschlag, '0.15.1', JETZT + 1000)).toBe(false)
   })
 })

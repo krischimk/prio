@@ -2,7 +2,12 @@ import { Capacitor } from '@capacitor/core'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { currentVersion } from '../updates/currentVersion'
 import { checkForUpdate } from '../updates/updateCheck'
-import { isCachedCheckUsable, readCachedCheck, writeCachedCheck } from '../updates/updateCache'
+import {
+  isCachedCheckUsable,
+  readCachedCheck,
+  shouldCacheResult,
+  writeCachedCheck,
+} from '../updates/updateCache'
 import { createUpdateInstaller } from '../updates/updateInstaller'
 import type { UpdateState } from '../updates/updateStatus'
 import { UpdateContext, type UpdateContextValue } from './updateContext'
@@ -45,7 +50,9 @@ export function UpdateProvider({ children }: { children: ReactNode }) {
     setState({ status: 'checking' })
     try {
       const ergebnis = await checkForUpdate(version)
-      writeCachedCheck({ at: Date.now(), current: version, result: ergebnis })
+      if (shouldCacheResult(ergebnis)) {
+        writeCachedCheck({ at: Date.now(), current: version, result: ergebnis })
+      }
       setState(ergebnis)
     } finally {
       laeuft.current = false

@@ -55,8 +55,17 @@ export function isCachedCheckUsable(
   now: number,
 ): boolean {
   if (cached === null) return false
+  // Ein Fehlschlag wird nicht wiederverwendet: Er ist ein Grund zum
+  // Wiederholen, nicht zum Merken. Sonst stünde nach einem Start ohne Netz
+  // für Stunden eine Fehlermeldung da, obwohl die Verbindung längst steht.
+  if (cached.result.status === 'failed') return false
   if (cached.current !== currentVersion) return false
   return now - cached.at < UPDATE_CHECK_INTERVAL_MS
+}
+
+/** Nur brauchbare Ergebnisse werden gemerkt – siehe `isCachedCheckUsable`. */
+export function shouldCacheResult(result: UpdateCheckResult): boolean {
+  return result.status !== 'failed'
 }
 
 /** Der gemerkte Eintrag als Text für den Speicher. */

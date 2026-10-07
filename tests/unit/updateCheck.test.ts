@@ -114,3 +114,18 @@ describe('Fehlschläge erklären', () => {
     expect(ergebnis).toEqual({ status: 'failed', message: 'Abfrage fehlgeschlagen (503).' })
   })
 })
+
+describe('Netzfehler', () => {
+  it('sagt „nicht erreichbar" statt „Failed to fetch"', async () => {
+    const ohneNetz = (async () => {
+      throw new TypeError('Failed to fetch')
+    }) as unknown as typeof fetch
+
+    const ergebnis = await checkForUpdate('0.15.2', ohneNetz)
+
+    expect(ergebnis.status).toBe('failed')
+    if (ergebnis.status !== 'failed') return
+    expect(ergebnis.message).toContain('nicht erreichbar')
+    expect(ergebnis.message).not.toContain('Failed to fetch')
+  })
+})

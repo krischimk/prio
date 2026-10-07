@@ -125,9 +125,15 @@ export async function checkForUpdate(
       ? { status: 'available', current: currentVersion, release }
       : { status: 'up-to-date', current: currentVersion, latest: release.version }
   } catch (error) {
+    // „Failed to fetch" ist die Meldung des Browsers für „kein Netz" – im
+    // App-Kontext sagt das niemandem etwas.
+    const roh = error instanceof Error ? error.message : ''
+    const ohneNetz = error instanceof TypeError || /failed to fetch|networkerror|load failed/i.test(roh)
     return {
       status: 'failed',
-      message: error instanceof Error ? error.message : 'Unbekannter Fehler bei der Abfrage.',
+      message: ohneNetz
+        ? 'GitHub ist gerade nicht erreichbar. Besteht eine Verbindung?'
+        : roh || 'Unbekannter Fehler bei der Abfrage.',
     }
   }
 }
