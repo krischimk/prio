@@ -113,14 +113,12 @@ export function TaskPanel({
                 Umbenennen
               </Button>
               <Button
-               
                 variant="ghost" size="sm"
                 onClick={() => setIconOpen((offen) => !offen)}
               >
                 Symbol
               </Button>
               <Button
-               
                 variant="ghost" size="sm"
                 aria-expanded={sectionsOpen}
                 onClick={() => setSectionsOpen((offen) => !offen)}
@@ -128,7 +126,6 @@ export function TaskPanel({
                 Bereiche
               </Button>
               <Button
-               
                 variant="ghost" size="sm"
                 aria-expanded={shareOpen}
                 onClick={() => setShareOpen((open) => !open)}
@@ -138,7 +135,6 @@ export function TaskPanel({
               {confirmingDelete ? (
                 <>
                   <Button
-                   
                     variant="danger" size="sm"
                     onClick={() => {
                       void repositories.deleteList(list.id)
@@ -147,7 +143,6 @@ export function TaskPanel({
                     Wirklich löschen
                   </Button>
                   <Button
-                   
                     variant="ghost" size="sm"
                     onClick={() => setConfirmingDelete(false)}
                   >
@@ -156,7 +151,6 @@ export function TaskPanel({
                 </>
               ) : (
                 <Button
-                 
                   variant="danger" size="sm"
                   onClick={() => setConfirmingDelete(true)}
                 >

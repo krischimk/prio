@@ -29,7 +29,6 @@ export function SyncIndicator() {
         </span>
       </span>
       <Button
-       
         variant="ghost" size="sm"
         onClick={() => {
           void runSync()

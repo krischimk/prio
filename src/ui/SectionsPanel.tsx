@@ -91,7 +91,6 @@ export function SectionsPanel({ list }: { list: LocalList }) {
                     Speichern
                   </Button>
                   <Button
-                   
                     variant="ghost" size="sm"
                     onClick={() => setUmbenennen(null)}
                   >
@@ -104,7 +103,6 @@ export function SectionsPanel({ list }: { list: LocalList }) {
                     {section.name}
                   </span>
                   <Button
-                   
                     variant="ghost" size="sm"
                     onClick={() => {
                       setUmbenennen(section.id)

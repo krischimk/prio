@@ -71,7 +71,6 @@ export function UndoProvider({ children }: { children: ReactNode }) {
               „{offer.title}“ erledigt
             </span>
             <Button
-             
               variant="primary" size="sm" layout="shrink-0"
               onClick={() => {
                 void undo()

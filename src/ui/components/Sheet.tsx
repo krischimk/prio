@@ -1,12 +1,8 @@
-import { useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react'
-import { useBackLayer } from '../../app/useBackLayer'
+import type { ReactNode } from 'react'
 import { layer } from '../styles'
 import { CloseIcon } from '../icons'
 import { IconButton } from './IconButton'
-
-/** Alles, was den Fokus bekommen kann – für die Fokusfalle. */
-const FOKUSSIERBAR =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+import { useDialog } from './useDialog'
 
 export interface SheetProps {
   /** Der Name des Dialogs für Vorleseprogramme. Fehlt er, gilt `title`. */
@@ -41,16 +37,12 @@ export interface SheetProps {
  * Warum ein Bauteil und nicht vier Markups: Der Rahmen war viermal von Hand
  * geschrieben (Schleier, Ausrichtung, Höhe, Kopfzeile, Schließen-Knopf), und
  * die vier Fassungen waren schon auseinandergelaufen – eine hatte 70 % Höhe
- * statt 85 vh. Was hier außerdem **einmal** gelöst ist, statt in jedem Dialog:
+ * statt 85 vh.
  *
- *   * Rolle und Name für Vorleseprogramme (`role="dialog"`, `aria-modal`,
- *     `aria-label`) – vorher dreimal getippt, zweimal davon ohne Namen.
- *   * Zurück-Taste und Escape über den Zurück-Stapel (`useBackLayer`).
- *   * Der Fokus wandert in den Dialog, bleibt beim Tabben darin (das behauptet
- *     `aria-modal` schließlich) und geht beim Schließen dorthin zurück, wo er
- *     war.
- *   * Die Ebene über allem (`layer.screen`) – die Zahlen standen vorher an neun
- *     Stellen im Code.
+ * Das **Verhalten** (Rolle und Name für Vorleseprogramme, Escape und
+ * Zurück-Taste, Fokus hinein/darin/zurück) liegt in `useDialog` und wird mit
+ * `Screen` geteilt; die Ebene über allem kommt aus `layer.screen` statt als
+ * Zahl an neun Stellen im Code.
  */
 export function Sheet({
   label,
@@ -63,41 +55,7 @@ export function Sheet({
   footer,
   children,
 }: SheetProps) {
-  const panel = useRef<HTMLDivElement>(null)
-
-  // Zurück-Taste und Escape kommen aus dem Zurück-Stapel, nicht aus diesem
-  // Bauteil – und dürfen eine Stufe zurückgehen, während das X ganz schließt.
-  useBackLayer(true, onBack ?? onClose)
-
-  useEffect(() => {
-    const vorher = document.activeElement instanceof HTMLElement ? document.activeElement : null
-    const bereich = panel.current
-    // Der Rahmen bekommt den Fokus – nicht der erste Knopf: Sonst wäre der
-    // Schließen-Knopf vorbelegt, und ein versehentliches Enter schlösse den
-    // Dialog. Ein Feld mit `autoFocus` hat den Fokus schon und behält ihn.
-    if (bereich && !bereich.contains(document.activeElement)) {
-      bereich.focus()
-    }
-    return () => vorher?.focus?.()
-  }, [])
-
-  const tabFalle = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== 'Tab' || !panel.current) return
-    // Bewusst ohne Sichtbarkeitsfilter: In einem Dialog ist der Inhalt sichtbar,
-    // und `offsetParent`/`getClientRects` sind in jsdom leer – die Prüfung wäre
-    // dort immer falsch und ließe sich nicht testen.
-    const elemente = [...panel.current.querySelectorAll<HTMLElement>(FOKUSSIERBAR)]
-    if (elemente.length === 0) return
-    const erstes = elemente[0]
-    const letztes = elemente[elemente.length - 1]
-    if (event.shiftKey && document.activeElement === erstes) {
-      event.preventDefault()
-      letztes.focus()
-    } else if (!event.shiftKey && document.activeElement === letztes) {
-      event.preventDefault()
-      erstes.focus()
-    }
-  }
+  const { panel, onKeyDown } = useDialog<HTMLDivElement>({ onClose, onBack })
 
   return (
     <div className={`fixed inset-0 ${layer.screen} flex items-end justify-center md:items-center`}>
@@ -109,7 +67,7 @@ export function Sheet({
         aria-modal="true"
         aria-label={label ?? (typeof title === 'string' ? title : undefined)}
         tabIndex={-1}
-        onKeyDown={tabFalle}
+        onKeyDown={onKeyDown}
         className="safe-bottom relative flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-sheet border-t border-line bg-surface outline-none md:max-w-lg md:rounded-sheet md:border"
       >
         <header className="flex items-start justify-between gap-2 border-b border-line px-4 py-3">

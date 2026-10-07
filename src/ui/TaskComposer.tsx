@@ -91,7 +91,6 @@ export function TaskComposer({ listId }: { listId: string }) {
       ) : null}
 
       <Button
-       
         variant="secondary" size="sm"
         aria-expanded={detailsOpen}
         onClick={() => setDetailsOpen((open) => !open)}

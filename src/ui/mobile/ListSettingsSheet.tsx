@@ -82,35 +82,30 @@ export function ListSettingsSheet({
               {istBesitzer ? (
                 <>
                   <Button
-                   
                     variant="secondary" layout="w-full"
                     onClick={() => setModus('umbenennen')}
                   >
                     Umbenennen
                   </Button>
                   <Button
-                   
                     variant="secondary" layout="w-full"
                     onClick={() => setModus('symbol')}
                   >
                     Symbol ändern
                   </Button>
                   <Button
-                   
                     variant="secondary" layout="w-full"
                     onClick={() => setModus('bereiche')}
                   >
                     Bereiche
                   </Button>
                   <Button
-                   
                     variant="secondary" layout="w-full"
                     onClick={() => setModus('teilen')}
                   >
                     Teilen
                   </Button>
                   <Button
-                   
                     variant="danger" layout="w-full"
                     onClick={() => setModus('loeschen')}
                   >
@@ -119,7 +114,6 @@ export function ListSettingsSheet({
                 </>
               ) : (
                 <Button
-                 
                   variant="danger" layout="w-full"
                   onClick={() => setModus('verlassen')}
                 >
@@ -146,7 +140,6 @@ export function ListSettingsSheet({
                   Speichern
                 </Button>
                 <Button
-                 
                   variant="secondary" layout="flex-1"
                   onClick={() => setModus('menue')}
                 >
@@ -167,7 +160,6 @@ export function ListSettingsSheet({
                 nicht.
               </p>
               <Button
-               
                 variant="danger" layout="w-full"
                 disabled={busy}
                 onClick={() => void ausfuehren(() => repositories.deleteList(list.id))}
@@ -175,7 +167,6 @@ export function ListSettingsSheet({
                 Wirklich löschen
               </Button>
               <Button
-               
                 variant="secondary" layout="w-full"
                 onClick={() => setModus('menue')}
               >
@@ -188,7 +179,6 @@ export function ListSettingsSheet({
             <div className="space-y-3">
               <SectionsPanel list={list} />
               <Button
-               
                 variant="secondary" layout="w-full"
                 onClick={() => setModus('menue')}
               >
@@ -203,7 +193,6 @@ export function ListSettingsSheet({
                 Die Liste verschwindet aus deiner Ansicht. Die Aufgaben bleiben beim Besitzer.
               </p>
               <Button
-               
                 variant="danger" layout="w-full"
                 disabled={busy}
                 onClick={() => void ausfuehren(() => repositories.leaveList(list.id, currentUserId))}
@@ -211,7 +200,6 @@ export function ListSettingsSheet({
                 Wirklich verlassen
               </Button>
               <Button
-               
                 variant="secondary" layout="w-full"
                 onClick={() => setModus('menue')}
               >

@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { BackLayerProvider } from '../../src/app/BackLayerProvider'
+import { Screen } from '../../src/ui/components/Screen'
 import { Sheet } from '../../src/ui/components/Sheet'
 
 /**
@@ -98,5 +99,42 @@ describe('Sheet', () => {
     unmount()
     expect(auslöser).toHaveFocus()
     auslöser.remove()
+  })
+})
+
+/**
+ * Dieselbe Mechanik, andere Form: Die Detailansicht füllt die ganze Fläche.
+ * Geprüft wird, dass `Screen` denselben Dialogvertrag erfüllt – dafür sorgt
+ * `useDialog`.
+ */
+describe('Screen', () => {
+  it('meldet sich als Dialog mit Namen an und zeigt die Kopfleiste', () => {
+    const onClose = vi.fn()
+    render(
+      <BackLayerProvider>
+        <Screen label="Aufgabe" onClose={onClose} header={<header>Kopfleiste</header>}>
+          <p>Formular</p>
+        </Screen>
+      </BackLayerProvider>,
+    )
+
+    expect(screen.getByRole('dialog', { name: 'Aufgabe' })).toBeInTheDocument()
+    expect(screen.getByText('Kopfleiste')).toBeInTheDocument()
+    expect(screen.getByText('Formular')).toBeInTheDocument()
+  })
+
+  it('schließt mit Escape', async () => {
+    const user = userEvent.setup()
+    const onClose = vi.fn()
+    render(
+      <BackLayerProvider>
+        <Screen label="Aufgabe" onClose={onClose} header={<header>Kopf</header>}>
+          <p>Formular</p>
+        </Screen>
+      </BackLayerProvider>,
+    )
+
+    await user.keyboard('{Escape}')
+    expect(onClose).toHaveBeenCalledOnce()
   })
 })

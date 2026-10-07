@@ -52,7 +52,6 @@ export function RestoreTasksPanel({ open, onClose }: { open: boolean; onClose: (
                     </p>
                   </div>
                   <Button
-                   
                     variant="primary" size="sm" layout="shrink-0"
                     onClick={() => {
                       void repositories.setTaskCompleted(task.id, false)

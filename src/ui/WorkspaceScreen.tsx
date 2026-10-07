@@ -61,7 +61,6 @@ function DesktopWorkspace() {
             <ReminderIndicator />
             <SyncIndicator />
             <Button
-             
               variant="ghost" size="sm"
               onClick={() => setRestoreOpen(true)}
             >
@@ -73,7 +72,6 @@ function DesktopWorkspace() {
               steht als Titel bereit (Vorleseprogramme, Mauszeiger).
             */}
             <Button
-             
               data-testid="update-button"
               title={updateBeschreibung.text}
               variant={updateVerfuegbar ? 'attention' : 'ghost'} size="sm"
@@ -89,7 +87,6 @@ function DesktopWorkspace() {
                   : 'Nach Updates suchen'}
             </Button>
             <Button
-             
               variant="ghost" size="sm"
               onClick={() => {
                 void signOut()

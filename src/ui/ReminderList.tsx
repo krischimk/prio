@@ -135,7 +135,6 @@ export function ReminderList({
                 </div>
                 {listIsShared && viewerId !== undefined ? (
                   <IconButton
-                   
                     onClick={() =>
                       onChange(
                         reminders.map((eintrag, i) =>
@@ -156,7 +155,6 @@ export function ReminderList({
                   </IconButton>
                 ) : null}
                 <IconButton
-                 
                   onClick={() => entfernen(index)}
                   aria-label={`Erinnerung ${index + 1} entfernen`}
                   title="Erinnerung entfernen"
@@ -394,7 +392,6 @@ function CustomOffset({
           </select>
         </div>
         <IconButton
-         
           onClick={onRemember}
           aria-pressed={remembered}
           aria-label={

@@ -17,7 +17,6 @@ export function ReminderIndicator() {
   if (canEnable) {
     return (
       <Button
-       
         variant="primary" size="sm"
         onClick={() => {
           void enableReminders()

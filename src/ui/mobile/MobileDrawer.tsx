@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react'
 import { useAuth } from '../../auth/useAuth'
-import { useBackLayer } from '../../app/useBackLayer'
 import { useWorkspace } from '../../app/useWorkspace'
 import { describeReminderState } from '../../reminders/reminderStatus'
 import { describeSyncState } from '../../sync/syncStatus'
@@ -13,6 +12,7 @@ import { CloseIcon } from '../icons'
 import { appBackground } from '../styles'
 import { IconButton } from '../components/IconButton'
 import { Button } from '../components/Button'
+import { useDialog } from '../components/useDialog'
 
 /**
  * Ausklappbares Menü der mobilen Ansicht.
@@ -46,9 +46,10 @@ export function MobileDrawer({
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Die Zurück-Taste und Escape schließen das Menü – beides kommt aus dem
-  // Zurück-Stapel (siehe `BackLayerProvider`), nicht aus dieser Komponente.
-  useBackLayer(open, onClose)
+  // Zurück-Taste, Escape, Fokus und Rolle kommen aus `useDialog` – dasselbe
+  // Verhalten wie bei Blatt und Detailansicht. `active: open`, weil das Menü
+  // immer eingebunden ist, aber meistens zu.
+  const { panel, onKeyDown } = useDialog<HTMLDivElement>({ active: open, onClose })
 
   if (!open) return null
 
@@ -74,7 +75,15 @@ export function MobileDrawer({
   }
 
   return (
-    <div className={`fixed inset-0 ${layer.raised}`} role="dialog" aria-modal="true" aria-label="Menü">
+    <div
+      ref={panel}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Menü"
+      tabIndex={-1}
+      onKeyDown={onKeyDown}
+      className={`fixed inset-0 outline-none ${layer.raised}`}
+    >
       {/*
         Der Hintergrund schließt das Menü, ist aber kein Bedienelement:
         Er ist dekorativ (aria-hidden) und nicht per Tastatur erreichbar.
@@ -91,7 +100,6 @@ export function MobileDrawer({
         <div className="flex items-center justify-between px-4 pt-3">
           <span className="text-heading font-semibold tracking-tight text-ink-strong">Prio</span>
           <IconButton
-           
             onClick={onClose}
             aria-label="Menü schließen"
             variant="icon"
@@ -172,7 +180,6 @@ export function MobileDrawer({
             {sync.text}
           </p>
           <Button
-           
             variant="secondary" layout="mt-2 w-full"
             onClick={() => {
               void runSync()
@@ -190,7 +197,6 @@ export function MobileDrawer({
           {reminders.text ? <p className="mb-2 text-meta text-ink-muted">{reminders.text}</p> : null}
           {reminders.canEnable ? (
             <Button
-             
               variant="secondary" layout="w-full"
               onClick={() => {
                 void enableReminders()
@@ -204,7 +210,6 @@ export function MobileDrawer({
           ) : null}
 
           <Button
-           
             variant="secondary" layout="mt-3 w-full"
             onClick={onOpenRestore}
           >
@@ -219,7 +224,6 @@ export function MobileDrawer({
 
         <div className="mt-auto border-t border-line px-4 py-4">
           <Button
-           
             variant="secondary" layout="w-full"
             onClick={() => {
               void signOut()

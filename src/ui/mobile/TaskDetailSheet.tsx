@@ -7,10 +7,11 @@ import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../datetime'
 import { RecurrenceSelect } from '../RecurrenceSelect'
 import { SectionSelect } from '../SectionSelect'
 import { ReminderList } from '../ReminderList'
-import { layer, appBackground, input } from '../styles'
+import { input } from '../styles'
 import { CloseIcon, MoveIcon, TrashIcon } from '../icons'
 import { Button } from '../components/Button'
 import { IconButton } from '../components/IconButton'
+import { Screen } from '../components/Screen'
 
 /**
  * Detail- und Bearbeitungsansicht einer Aufgabe.
@@ -110,70 +111,71 @@ export function TaskDetailSheet({
 
   const canMove = !isNew && lists.length > 1
 
+  /*
+   * Die Kopfleiste trägt alles, was die Aufgabe abschließt: schließen,
+   * speichern, löschen. Vorher stand „Speichern" ganz unten – nach einer
+   * langen Beschreibung weit weg vom Blick. Hier oben ist es klein, aber
+   * immer erreichbar; das Löschen fragt weiterhin nach.
+   */
   return (
-    <div className={`fixed inset-0 ${layer.screen} flex flex-col ${appBackground}`} role="dialog" aria-modal="true" aria-label={isNew ? 'Neue Aufgabe' : 'Aufgabe'}>
-      {/*
-        Die Kopfleiste trägt alles, was die Aufgabe abschließt: schließen,
-        speichern, löschen. Vorher stand „Speichern" ganz unten – nach einer
-        langen Beschreibung weit weg vom Blick. Hier oben ist es klein, aber
-        immer erreichbar; das Löschen fragt weiterhin nach.
-      */}
-      <header className="safe-top flex min-h-16 shrink-0 items-center gap-2 border-b border-line px-2 py-1">
-        <IconButton
-         
-          onClick={onClose}
-          aria-label="Schließen"
-          variant="icon"
-        >
-          <CloseIcon />
-        </IconButton>
-        <h2 className="min-w-0 flex-1 truncate text-title font-medium text-ink">
-          {isNew ? 'Neue Aufgabe' : 'Aufgabe'}
-        </h2>
+    <Screen
+      label={isNew ? 'Neue Aufgabe' : 'Aufgabe'}
+      onClose={onClose}
+      header={
+        <header className="safe-top flex min-h-16 shrink-0 items-center gap-2 border-b border-line px-2 py-1">
+          <IconButton
+            onClick={onClose}
+            aria-label="Schließen"
+            variant="icon"
+          >
+            <CloseIcon />
+          </IconButton>
+          <h2 className="min-w-0 flex-1 truncate text-title font-medium text-ink">
+            {isNew ? 'Neue Aufgabe' : 'Aufgabe'}
+          </h2>
 
-        {confirmingDelete ? (
-          <>
-            <Button
-             
-              variant="danger" size="sm"
-              onClick={() => {
-                void remove()
-              }}
-              disabled={busy}
-            >
-              Wirklich löschen
-            </Button>
-            <Button
-             
-              variant="secondary" size="sm"
-              onClick={() => setConfirmingDelete(false)}
-            >
-              Abbrechen
-            </Button>
-          </>
-        ) : (
-          <>
-            {isNew ? null : (
+          {confirmingDelete ? (
+            <>
               <Button
-               
-                aria-label="Aufgabe löschen"
-                variant="danger"
-                onClick={() => setConfirmingDelete(true)}
+                variant="danger" size="sm"
+                onClick={() => {
+                  void remove()
+                }}
+                disabled={busy}
               >
-                <TrashIcon className="h-4 w-4" />
+                Wirklich löschen
               </Button>
-            )}
-            <Button
-              type="submit"
-              form="task-detail-form"
-              variant="primary" size="sm"
-              disabled={busy || title.trim().length === 0}
-            >
-              Speichern
-            </Button>
-          </>
-        )}
-      </header>
+              <Button
+                variant="secondary" size="sm"
+                onClick={() => setConfirmingDelete(false)}
+              >
+                Abbrechen
+              </Button>
+            </>
+          ) : (
+            <>
+              {isNew ? null : (
+                <Button
+                  aria-label="Aufgabe löschen"
+                  variant="danger"
+                  onClick={() => setConfirmingDelete(true)}
+                >
+                  <TrashIcon className="h-4 w-4" />
+                </Button>
+              )}
+              <Button
+                type="submit"
+                form="task-detail-form"
+                variant="primary" size="sm"
+                disabled={busy || title.trim().length === 0}
+              >
+                Speichern
+              </Button>
+            </>
+          )}
+        </header>
+      }
+    >
 
       <form id="task-detail-form" onSubmit={save} className="scroll-area safe-bottom flex-1 overflow-y-auto">
         <div className="space-y-4 px-4 py-4">
@@ -257,7 +259,6 @@ export function TaskDetailSheet({
 
           {task !== null ? (
             <Button
-             
               onClick={() => {
                 void toggleCompleted()
               }}
@@ -272,7 +273,6 @@ export function TaskDetailSheet({
         {canMove ? (
           <div className="space-y-2 border-t border-line px-4 py-4">
             <Button
-             
               variant="secondary" size="block" layout="w-full"
               onClick={() => {
                 if (task !== null) onRequestMove(task)
@@ -284,6 +284,6 @@ export function TaskDetailSheet({
           </div>
         ) : null}
       </form>
-    </div>
+    </Screen>
   )
 }

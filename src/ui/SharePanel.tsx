@@ -97,7 +97,6 @@ export function SharePanel({ list, currentUserId }: { list: LocalList; currentUs
                   versehentlicher Tipp niemandem Zugriff geben.
                 */}
                 <Button
-                 
                   variant="ghost" size="sm"
                   onClick={() => setEmail(contact.email)}
                 >
@@ -134,7 +133,6 @@ export function SharePanel({ list, currentUserId }: { list: LocalList; currentUs
                   Mitglied {member.user_id.slice(0, 8)}
                 </span>
                 <Button
-                 
                   variant="danger" size="sm"
                   onClick={() => {
                     void repositories.removeMember(list.id, member.user_id)

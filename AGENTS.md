@@ -327,6 +327,14 @@ Konkret:
   Layout-Klassen (Breite, Außenabstand, Ausrichtung); Größe, Farbe und Radius
   kommen aus der Variante. `tests/unit/uiConventions.test.ts` hält es fest.
   Auslöser: `DESIGN.md` §15.1 F3.
+* **Dialoge und Blätter kommen aus den Bausteinen, nicht aus eigenem Markup.**
+  `Sheet` (Blatt von unten, breit mittig), `Screen` (ganze Fläche) und
+  `useDialog` (Verhalten: Rolle, Name, Escape, Zurück-Taste, Fokus) in
+  `src/ui/components/`. Ein neuer Dialog ist eine Form plus Inhalt; Rahmen,
+  Schleier, Fokusführung und Ebene (`layer.*`) sind schon da. Vorher war der
+  Rahmen viermal von Hand geschrieben – eine Fassung hatte 70 % Höhe statt
+  85 vh, eine keinen Namen für Vorleseprogramme, und Escape kannte nur einer.
+  Auslöser: `DESIGN.md` §15.2 A4.
 * **Textformate stehen in einer gemeinsamen Funktion.** Fälligkeit, Zähler,
   Statusmeldungen – wenn zwei Ansichten dieselbe Information zeigen, stammt der
   Text aus derselben Quelle (z. B. `formatDueLabel` in `src/ui/datetime.ts`).

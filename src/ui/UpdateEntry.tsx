@@ -56,7 +56,6 @@ export function UpdateEntry() {
           ) : null}
 
           <Button
-           
             variant="primary" layout="mt-3 w-full"
             onClick={() => {
               void install()
@@ -74,7 +73,6 @@ export function UpdateEntry() {
         </>
       ) : (
         <Button
-         
           variant="secondary" layout="mt-3 w-full"
           onClick={() => {
             void check()
@@ -94,7 +92,6 @@ export function UpdateEntry() {
       {/* Unsichtbar für die Oberfläche, aber im Fehlerfall hilfreich. */}
       {state.status === 'failed' ? (
         <Button
-         
           variant="ghost" size="sm" layout="mt-2 w-full"
           onClick={() => {
             void check()

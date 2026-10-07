@@ -210,7 +210,6 @@ export function TaskItem({
       <div className="flex shrink-0 gap-1">
         {onRequestMove ? (
           <Button
-           
             variant="ghost" size="sm"
             aria-label={`Aufgabe verschieben: ${task.title}`}
             onClick={() => onRequestMove(task)}
@@ -222,7 +221,6 @@ export function TaskItem({
           Bearbeiten
         </Button>
         <Button
-         
           variant="danger" size="sm"
           aria-label={`Aufgabe löschen: ${task.title}`}
           onClick={() => {
