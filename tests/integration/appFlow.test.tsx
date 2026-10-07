@@ -24,6 +24,9 @@ function createServices() {
     auth,
     network,
     gateway: createLazyGateway(server, () => auth.currentUser?.id ?? ''),
+    // Kein Datenziel: Die Anzeige bleibt leer, statt (wie vorher) das echte
+    // Projekt aus der Umgebung zu nennen.
+    backendUrl: null,
   }
   return { server, auth, network, services }
 }

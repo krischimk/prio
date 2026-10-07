@@ -1,4 +1,5 @@
 import { AuthProvider } from './auth/AuthProvider'
+import { BackendContext } from './app/backendContext'
 import { useAuth } from './auth/useAuth'
 import { BackLayerProvider } from './app/BackLayerProvider'
 import { WorkspaceProvider } from './app/WorkspaceProvider'
@@ -19,9 +20,13 @@ import { appBackground } from './ui/styles'
 export function App({ services }: { services: AppServices | null }) {
   if (!services) return <MissingConfiguration />
   return (
-    <AuthProvider port={services.auth}>
-      <AuthenticatedArea services={services} />
-    </AuthProvider>
+    // Das Datenziel einmal hier hineinreichen; die Anzeige sitzt tief in beiden
+    // Ansichten und soll nicht selbst in der Umgebung nachsehen.
+    <BackendContext.Provider value={{ url: services.backendUrl }}>
+      <AuthProvider port={services.auth}>
+        <AuthenticatedArea services={services} />
+      </AuthProvider>
+    </BackendContext.Provider>
   )
 }
 

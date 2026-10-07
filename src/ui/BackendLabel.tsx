@@ -1,4 +1,4 @@
-import { readSupabaseConfig } from '../auth/supabaseAuth'
+import { useBackendUrl } from '../app/backendContext'
 import { formatBackendLabel } from './backendLabel'
 import { mutedText } from './styles'
 
@@ -13,7 +13,7 @@ import { mutedText } from './styles'
  * aus `backendLabel.ts`.
  */
 export function BackendLabel() {
-  const label = formatBackendLabel(readSupabaseConfig()?.url)
+  const label = formatBackendLabel(useBackendUrl())
   if (!label) return null
 
   return (
