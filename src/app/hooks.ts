@@ -62,16 +62,44 @@ export function useTasks(listId: string | null): LocalTask[] {
 }
 
 /**
+ * Eine einzelne Aufgabe.
+ *
+ * Für die Rückgängig-Leiste: Sie merkt sich nur die Kennung und liest den Titel
+ * hier nach. Kopierte Daten (`{ taskId, title }`) zeigten nach einer Umbenennung
+ * innerhalb der fünf Sekunden den alten Titel.
+ */
+export function useTask(taskId: string | null): LocalTask | null {
+  const { repositories, dataVersion } = useWorkspace()
+  const [task, setTask] = useState<LocalTask | null>(null)
+  useEffect(
+    () =>
+      subscribe(
+        () =>
+          taskId === null
+            ? Promise.resolve(null)
+            : repositories.getTask(taskId).then((gefunden) => gefunden ?? null),
+        setTask,
+      ),
+    [repositories, dataVersion, taskId],
+  )
+  return task
+}
+
+/**
  * Abgehakte Aufgaben, die noch wiederhergestellt werden können – zuletzt
  * abgehakte zuerst.
+ *
+ * `aktiv` ist wichtig: Das Panel ist in beiden Ansichten **immer** eingebunden
+ * und meistens zu. Ohne diesen Schalter las die App bei jeder Änderung die
+ * abgehakten Aufgaben für ein unsichtbares Fenster.
  */
-export function useRestorableTasks(): LocalTask[] {
+export function useRestorableTasks(aktiv = true): LocalTask[] {
   const { repositories, dataVersion } = useWorkspace()
   const [tasks, setTasks] = useState<LocalTask[]>([])
-  useEffect(
-    () => subscribe(() => repositories.listRestorableTasks(), setTasks),
-    [repositories, dataVersion],
-  )
+  useEffect(() => {
+    if (!aktiv) return
+    return subscribe(() => repositories.listRestorableTasks(), setTasks)
+  }, [repositories, dataVersion, aktiv])
   return tasks
 }
 

@@ -20,7 +20,7 @@ import { Sheet } from './components/Sheet'
  */
 export function RestoreTasksPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { repositories } = useWorkspace()
-  const tasks = useRestorableTasks()
+  const tasks = useRestorableTasks(open)
   const lists = useLists()
 
   if (!open) return null

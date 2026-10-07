@@ -57,7 +57,9 @@ describe('Upgrade der lokalen Datenbank', () => {
     // Jetzt die App öffnen – sie kennt nur die neue Klasse mit Version 5.
     const db = await openLocalDatabase(userId)
 
-    expect(db.verno).toBe(5)
+    // Die neueste Fassung: Version 6 indiziert `completed_at`, damit die
+    // Wiederherstellung nicht mehr alle Aufgaben lesen muss.
+    expect(db.verno).toBe(6)
     expect(await db.tasks.count()).toBe(1)
     expect((await db.tasks.get('task-1'))?.title).toBe('Bestandsaufgabe')
     expect(await db.lists.count()).toBe(1)
@@ -151,8 +153,13 @@ describe('Upgrade der lokalen Datenbank', () => {
 
   it('legt eine frische Datenbank direkt in der neuesten Version an', async () => {
     const db = await openLocalDatabase(createTestUserId('frisch'))
-    expect(db.verno).toBe(5)
+    // Die neueste Fassung: Version 6 indiziert `completed_at`, damit die
+    // Wiederherstellung nicht mehr alle Aufgaben lesen muss.
+    expect(db.verno).toBe(6)
     expect(await db.reminders.count()).toBe(0)
+    // Der neue Index ist da – sonst suchte die Wiederherstellung wieder alles
+    // zusammen.
+    expect(db.tasks.schema.indexes.map((index) => index.name)).toContain('completed_at')
     db.close()
   })
 

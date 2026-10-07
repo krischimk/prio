@@ -141,6 +141,25 @@ export class LocalDatabase extends Dexie {
             task.dirty = 1
           }),
       )
+
+    /*
+     * `completed_at` wird indiziert.
+     *
+     * „Aufgaben wiederherstellen“ suchte die abgehakten Aufgaben bisher mit
+     * `db.tasks.toArray()` – einem Lesevorgang über **alle** Aufgaben der
+     * Datenbank, nur um danach in JavaScript zu filtern. Mit dem Index liest
+     * die Abfrage genau den Zeitraum.
+     *
+     * Ein reiner Index-Zusatz: Es gibt keine Daten umzuschreiben, und Dexie
+     * legt den Index beim Öffnen selbst an (kein `upgrade`-Rückruf nötig).
+     */
+    this.version(6).stores({
+      lists: 'id, owner_id, updated_at, dirty',
+      list_members: '[list_id+user_id], list_id, user_id, updated_at, dirty',
+      tasks: 'id, list_id, updated_at, dirty, completed_at',
+      meta: 'key',
+      reminders: '[taskId+at], taskId, notificationId, at',
+    })
   }
 }
 

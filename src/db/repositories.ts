@@ -602,15 +602,12 @@ async function wiederOeffnen(db: LocalDatabase, task: LocalTask, now: string): P
         timeOf(clock.now()) - RESTORE_WINDOW_DAYS * 24 * 60 * 60 * 1000,
       ).toISOString()
 
-      const tasks = await db.tasks.toArray()
+      // Über den Index `completed_at`: Die Datenbank liefert nur die Aufgaben
+      // seit der Grenze. Vorher las ein `toArray()` **alle** Aufgaben und
+      // filterte danach in JavaScript.
+      const tasks = await db.tasks.where('completed_at').aboveOrEqual(grenze).toArray()
       return tasks
-        .filter(
-          (task) =>
-            task.deleted_at === null &&
-            task.completed &&
-            task.completed_at !== null &&
-            task.completed_at >= grenze,
-        )
+        .filter((task) => task.deleted_at === null && task.completed)
         // Zuletzt abgehakt zuerst. Die Zeitstempel liegen alle im selben
         // ISO-Format vor, der Vergleich ist deshalb stabil.
         .sort((a, b) => (b.completed_at ?? '').localeCompare(a.completed_at ?? ''))
