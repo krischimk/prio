@@ -188,7 +188,7 @@ für den Überhaul, nicht in die Vorbereitung:
 | Wie viel Bewegung? | P41–P46 beschreiben ein Vokabular. Ob `prio` es überhaupt einsetzt, ist eine eigene Entscheidung. |
 | Eigene Bauteile oder ein fertiges System? | shadcn/ui und `matraic/m3e` (beide MIT) bringen Bauteile und Verhalten mit – und eine eigene Token-Sprache, die gegen P1/P4 arbeitet. Entweder übernehmen und umbiegen, oder selbst bauen. |
 | Systemschrift oder eigene Schrift? | Morphe bleibt bei `FontFamily.Default` (P15). Eine eigene Schrift ist ein Bekenntnis mit Ladezeit. |
-| Was passiert mit den rohen Farbklassen im Bestand? | Rund 170 Stellen (`text-neutral-500` allein 41) stehen derzeit neben `styles.ts`. Sie sind die Arbeitsliste des Überhauls, kein Notstand. |
+| Was passiert mit den rohen Farbklassen im Bestand? | Rund 230 Stellen (`text-neutral-500` allein 41) stehen derzeit neben `styles.ts` – der genaue Stand und die Arbeitsliste stehen in §15.2. |
 
 ## 14 Verhältnis zu `AGENTS.md`
 
@@ -200,6 +200,79 @@ steht, ist ein Vorschlag.
 Umgekehrt gilt: Was hier als **Test** ausgewiesen ist, ist bereits oder
 problemlos prüfbar. Genau die Prinzipien sind die reifen, unabhängig davon, ob
 sie schön klingen.
+
+## 15 Befunde im Bestand (Arbeitsliste)
+
+Der Vorrat an Prinzipien steht oben; hier steht, wo der **Bestand** davon
+abweicht. Grundlage ist eine Bestandsprüfung vom 07.10.2026 – Oberfläche,
+Zustands-/Anwendungsschicht, Daten/Sync und Styling getrennt geprüft, jede Zahl
+am Code nachgemessen. Jeder Punkt nennt den Ort, das Maß der Abweichung und den
+Aufwand. Erledigte Punkte bleiben stehen und werden abgehakt: Die Liste ist der
+Arbeitsvorrat, kein Wunschzettel. Aufwand: **S** ein Nachmittag, **M** ein Tag,
+**L** mehrere.
+
+### 15.1 Schon heute falsch – keine Geschmacksfrage
+
+| # | Befund | Ort | Beleg | Aufwand | Stand |
+| --- | --- | --- | --- | --- | --- |
+| F1 | „Aufgabe verschieben" gibt es nur auf dem Telefon | `src/ui/mobile/MoveTaskSheet.tsx:36` | `moveTask` hat genau **eine** Aufrufstelle, und `parity.spec.ts` hat keinen Eintrag dafür | S | erledigt |
+| F2 | Escape schließt die breiten Dialoge nicht, obwohl der Kommentar es behauptet | `src/ui/RestoreTasksPanel.tsx:50` | nur `MobileDrawer.tsx:53` hatte einen `keydown`-Zuhörer; `useBackLayer` kannte keinen Tastaturweg | S | erledigt |
+| F3 | Angehängte Klassen an Knöpfen bewirken nichts, der „kompakte" Knopf existiert nicht | `src/ui/TaskPanel.tsx:94` u. a. | im gebauten CSS steht `.px-3` **hinter** `.px-2`, `.py-2` hinter `.py-1` – 22 Stellen wirkungslos | S | erledigt |
+| F4 | `db:check` nennt falsche Migrationsdateien | `scripts/db-apply.mjs:115` | `tasks.position` → 0009 (richtig 0005), `lists.icon` → 0007 (richtig 0008) | S | erledigt |
+| F5 | Toter Code | `src/domain/merge.ts:28`, `src/app/WorkspaceProvider.tsx:69` | `needsPush` wird nur von Tests gelesen, `lastSyncedAt` hat keinen Verbraucher | S | erledigt |
+| F6 | Der Paritätstest prüft nur, was jemand eingetragen hat | `tests/e2e/parity.spec.ts:39` | eine handgepflegte Tabelle; F1 ist genau deshalb unbemerkt geblieben | M | offen |
+
+### 15.2 Fundament – Voraussetzung für jeden Umbau
+
+| # | Befund | Ort | Maß | Aufwand | Stand |
+| --- | --- | --- | --- | --- | --- |
+| A1 | Keine Bausteine, nur Klassenketten | `src/ui/styles.ts:6` | 82 `<button>`, 228 Verwendungen der Knopf-Konstante, drei konkurrierende „kleiner Knopf"-Rezepte | M | offen |
+| A2 | Keine Farb-, Raum- und Typo-Tokens | `src/index.css`, `src/ui/styles.ts` | **234** rohe Farbklassen in **26** Dateien; 7 Schriftgrößen (5 in `px`), 8 Polster-, 6 Radius-, 9 Abstandswerte | L | offen |
+| A3 | Kartenfläche siebenfach statt einmal | `src/ui/styles.ts:56` (`card` – **unbenutzt**) | 7 Ausprägungen in 5 Dateien, zwei Deckkräfte, drei Polsterungen | S | offen |
+| A4 | Dialoge sind fünfmal von Hand gebaut | `RestoreTasksPanel`, `ListSettingsSheet`, `MoveTaskSheet`, `TaskDetailSheet`, `MobileDrawer` | 4 Rahmen, 4 Schleier, 9 unbenannte Z-Ebenen, 1 von 4 mit Escape, keine Fokusführung | M | offen |
+| A5 | Gerätegeometrie als verstreute Zahlen | `MobileAppBar.tsx:36`, `index.css:139`, `MobileWorkspace.tsx:57`, `UndoProvider.tsx:58` | vier voneinander abhängige Werte (`h-14`, `3.5rem`, `pb-28`, `mb-24`) ohne Beziehung im Code | S | offen |
+| A6 | Kein Ort, an dem man ein Bauteil in allen Zuständen sieht | – | `DESIGN.md` §12 nennt die „Küchenseite" als Prüfmittel; sie fehlt | S | offen |
+
+### 15.3 Zwei Ansichten
+
+| # | Befund | Ort | Maß | Aufwand | Stand |
+| --- | --- | --- | --- | --- | --- |
+| Z1 | Aufgabenzeile und Aufgabenformular sind zweimal gebaut | `TaskItem.tsx:71-155` und `mobile/TaskDetailSheet.tsx:176-254`, `TaskComposer.tsx` | Zeileninhalt wörtlich doppelt, **drei** Formulare; Anlegen kann mobil mehr als breit | M–L | offen |
+| Z2 | Zwei Modusschalter mit verschiedenen Schwellen | `src/app/useIsDesktop.ts:18` gegen `md:` | JS entscheidet bei 1024 px, `md:` bei 768 px; 9 `md:`-Stellen in 7 Dateien | S | offen |
+| Z3 | Ansichtszustand liegt in beiden Bäumen | `WorkspaceScreen.tsx:32-33`, `mobile/MobileWorkspace.tsx:34-37` | `useSelectedListId` und `restoreOpen` je zweimal → Auswahlverlust beim Breitewechsel | M | offen |
+| Z4 | Navigation ist kein Modell | 10 `useBackLayer`-Aufrufe in 7 Dateien | „was ist offen" nur als Boolean je Komponente | M | offen |
+
+### 15.4 Zustands- und Anwendungsschicht
+
+| # | Befund | Ort | Maß | Aufwand | Stand |
+| --- | --- | --- | --- | --- | --- |
+| B1 | `WorkspaceProvider` ist DB, Sync, Erinnerungen, Cloud-Aufruf, Timer und Darstellung | `src/app/WorkspaceProvider.tsx` | 295 Zeilen, 8 Zustandszellen, 10 Kontextfelder, `ui/styles`-Import, JSX | M | offen |
+| B2 | Anzeigetexte und Ton-Vokabular in den Fachschichten | `syncStatus`, `reminderStatus`, `updateStatus`, `authPort`, `OFFLINE_MESSAGE` | 26 Textstellen außerhalb `src/ui`; Fehler teils am Wortlaut erkannt statt an einem `code` | M | offen |
+| B3 | `trackedRepositories` klassifiziert 27 Methoden von Hand, ungeprüft | `src/app/trackedRepositories.ts:48-79` | ein falscher Eimer heißt: kein Sync (still) oder Dauer-Sync; 0 Tests | S | offen |
+| B4 | Lese-Hooks invalidieren grob und lesen für geschlossene Panels | `src/app/hooks.ts`, `RestoreTasksPanel.tsx:23` | Zähler ohne Bezug; je Änderung u. a. ein Scan der ganzen `tasks`-Tabelle für ein unsichtbares Panel | M | offen |
+| B5 | `BackendLabel` liest `import.meta.env` selbst | `src/ui/BackendLabel.tsx:17` gegen `src/app/services.ts:16` | widerspricht der dokumentierten Zusage; in Tests mit Attrappe zeigt es das echte Projekt | S | offen |
+| B6 | Lint-Regel global abgeschaltet statt dateiweise | `.oxlintrc.json:7` | begründet mit zwei Dateien, gilt für alle | S | offen |
+| B7 | `UndoProvider` kopiert Domänendaten, verschluckt Fehler, kennt fremdes Layout | `src/ui/UndoProvider.tsx:19,73,58` | Titelkopie, unbehandelte Ablehnung, `mb-24` als Wissen über den Plus-Knopf | S | offen |
+
+### 15.5 Daten- und Sync-Schicht
+
+| # | Befund | Ort | Maß | Aufwand | Stand |
+| --- | --- | --- | --- | --- | --- |
+| C1 | Ein abgelehnter Datensatz blockiert die ganze Warteschlange | `src/sync/syncEngine.ts:96-104`, `src/sync/supabaseGateway.ts:55-70` | ein `try` um drei Upserts; `markPushed` läuft dann nie, alles bleibt `dirty` und wird alle 30 s wiederholt | M | offen |
+| C2 | Feldkatalog an 6+ Orten, schon auseinandergelaufen | `scripts/db-apply.mjs`, `domain/mapping.ts`, `db/localDb.ts`, `domain/types.ts`, Migrationen | die Prüfliste deckt 5 von 29 gesendeten Spalten ab; F4 war die Folge | M | offen |
+| C3 | `repositories.ts` macht sechs Dinge in 713 Zeilen | `src/db/repositories.ts` | Entitäten und lokale Eingabehilfen in einer Fabrik; 11 handgeschriebene `dirty: 1` neben 17 `stamp()` | M | offen |
+| C4 | Drei Mechanismen für „Feld fehlt in alten Zeilen" | `repositories.ts:222`, `domain/sections.ts:111`, `mapping.ts:85-94`, `db/localDb.ts:65-84` | 9 Lesestellen, drei Antworten; `merge.ts` schaltet mit `as unknown as` die Typprüfung an der Grenze ab | M | offen |
+| C5 | Anzeigepolitik in der Datenschicht | `repositories.ts:186-196` (`compareTasks`), `:379-385`, `RESTORE_WINDOW_DAYS` | eine andere Sortierung oder Gruppierung muss heute die Datenschicht ändern | S | offen |
+| C6 | `syncStore` ist der app-weite Schlüssel-Wert-Speicher | `src/sync/syncStore.ts` | `db` und `reminders` hängen damit an `sync` – die Schichtrichtung steht verkehrt | S | offen |
+| C7 | `RemoteGateway` vermischt Transport und Fach-Aufrufe | `src/sync/remoteGateway.ts:29-50` | 4 Implementierungen müssen `pull/push` **und** `shareListByEmail`/`coMemberContacts` nachbauen | S | offen |
+
+### 15.6 Prüfungen, die mitziehen müssen
+
+| # | Befund | Ort | Maß | Aufwand | Stand |
+| --- | --- | --- | --- | --- | --- |
+| P1 | Der Architekturtest liest nur `src/ui` | `tests/unit/uiConventions.test.ts:30` | `src/App.tsx` (11 rohe Farbklassen) und `WorkspaceProvider` werden nie geprüft | S | offen |
+| P2 | Nichts prüft Rollen, Token, angehängte Klassen oder den toten `card` | dito | die Regeln aus 15.2 sind heute reine Disziplin | S | offen |
+| P3 | Kein Test für die Klassifikation in `trackedRepositories` | `tests/` | 27 Zuordnungen, 3 Kategorien, 0 Prüfungen (B3) | S | offen |
 
 ## Quellen
 
