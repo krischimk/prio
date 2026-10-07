@@ -24,8 +24,6 @@ export type MergeOutcome = 'inserted' | 'local-wins' | 'remote-wins' | 'unchange
 export interface MergeResult<T> {
   row: T
   outcome: MergeOutcome
-  /** `true` ⇒ die lokale Zeile muss beim nächsten Push hochgeladen werden. */
-  needsPush: boolean
 }
 
 /**
@@ -50,23 +48,23 @@ export function resolveMerge<L extends SyncableRow & LocalOnly>(
   remote: Omit<L, 'dirty'>,
 ): MergeResult<L> {
   if (!local) {
-    return { row: { ...remote, dirty: 0 } as unknown as L, outcome: 'inserted', needsPush: false }
+    return { row: { ...remote, dirty: 0 } as unknown as L, outcome: 'inserted' }
   }
 
   const localTime = timeOf(local.updated_at)
   const remoteTime = timeOf(remote.updated_at)
 
   if (localTime > remoteTime) {
-    return { row: { ...local, dirty: 1 }, outcome: 'local-wins', needsPush: true }
+    return { row: { ...local, dirty: 1 }, outcome: 'local-wins' }
   }
 
   if (remoteTime > localTime) {
-    return { row: { ...remote, dirty: 0 } as unknown as L, outcome: 'remote-wins', needsPush: false }
+    return { row: { ...remote, dirty: 0 } as unknown as L, outcome: 'remote-wins' }
   }
 
   if (local.dirty === 1) {
-    return { row: local, outcome: 'local-wins', needsPush: true }
+    return { row: local, outcome: 'local-wins' }
   }
 
-  return { row: { ...remote, dirty: 0 } as unknown as L, outcome: 'unchanged', needsPush: false }
+  return { row: { ...remote, dirty: 0 } as unknown as L, outcome: 'unchanged' }
 }

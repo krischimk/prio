@@ -23,7 +23,6 @@ export interface WorkspaceValue {
   /** `true`, solange ein Sync läuft. */
   syncing: boolean
   /** Zeitpunkt des letzten erfolgreichen Syncs (aus der lokalen Meta-Tabelle). */
-  lastSyncedAt: string | null
   /** Zustand der Erinnerungen (Berechtigung und Anzahl). */
   reminderStatus: ReminderStatus | null
   runSync(): Promise<void>

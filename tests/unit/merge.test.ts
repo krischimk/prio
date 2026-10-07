@@ -29,7 +29,6 @@ describe('resolveMerge (Last Write Wins)', () => {
     expect(result.outcome).toBe('inserted')
     expect(result.row.title).toBe('vom Server')
     expect(result.row.dirty).toBe(0)
-    expect(result.needsPush).toBe(false)
   })
 
   it('behält die lokale Version, wenn sie jünger ist, und lädt sie hoch', () => {
@@ -40,7 +39,6 @@ describe('resolveMerge (Last Write Wins)', () => {
 
     expect(result.outcome).toBe('local-wins')
     expect(result.row.title).toBe('lokal')
-    expect(result.needsPush).toBe(true)
     expect(result.row.dirty).toBe(1)
   })
 
@@ -53,7 +51,6 @@ describe('resolveMerge (Last Write Wins)', () => {
     expect(result.outcome).toBe('remote-wins')
     expect(result.row.title).toBe('server')
     expect(result.row.dirty).toBe(0)
-    expect(result.needsPush).toBe(false)
   })
 
   it('behält bei gleichem Zeitstempel die noch nicht hochgeladene lokale Änderung', () => {
@@ -64,7 +61,6 @@ describe('resolveMerge (Last Write Wins)', () => {
 
     expect(result.outcome).toBe('local-wins')
     expect(result.row.title).toBe('lokal')
-    expect(result.needsPush).toBe(true)
   })
 
   it('übernimmt bei gleichem Zeitstempel die Serverversion, wenn lokal sauber ist', () => {
@@ -75,7 +71,6 @@ describe('resolveMerge (Last Write Wins)', () => {
 
     expect(result.outcome).toBe('unchanged')
     expect(result.row.title).toBe('server')
-    expect(result.needsPush).toBe(false)
   })
 
   it('überträgt einen neueren Soft Delete vom Server', () => {
@@ -96,6 +91,5 @@ describe('resolveMerge (Last Write Wins)', () => {
 
     expect(result.outcome).toBe('local-wins')
     expect(result.row.deleted_at).toBe(T1)
-    expect(result.needsPush).toBe(true)
   })
 })

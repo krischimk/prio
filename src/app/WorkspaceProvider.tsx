@@ -5,7 +5,7 @@ import { createSyncEngine, type SyncEngine, type SyncResult } from '../sync/sync
 import { createShareListAction } from '../sync/shareList'
 import { createCapacitorNotificationsPort } from '../reminders/capacitorNotifications'
 import { createReminderService, type ReminderService, type ReminderStatus } from '../reminders/reminderService'
-import { countDirty, META_LAST_SYNC_AT, readMeta } from '../sync/syncStore'
+import { countDirty } from '../sync/syncStore'
 import type { NetworkMonitor } from '../sync/network'
 import type { RemoteGateway } from '../sync/remoteGateway'
 import { withChangeTracking } from './trackedRepositories'
@@ -66,7 +66,6 @@ export function WorkspaceProvider({
   const [syncStatus, setSyncStatus] = useState<SyncResult | null>(null)
   const [syncing, setSyncing] = useState(false)
   const [pendingCount, setPendingCount] = useState(0)
-  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null)
   const [reminderStatus, setReminderStatus] = useState<ReminderStatus | null>(null)
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   /**
@@ -150,10 +149,8 @@ export function WorkspaceProvider({
   const refreshDerivedState = useCallback(async () => {
     if (!ready) return
     const pending = await countDirty(ready.database)
-    const lastSynced = await readMeta(ready.database, META_LAST_SYNC_AT)
     if (!mountedRef.current) return
     setPendingCount(pending)
-    setLastSyncedAt(lastSynced)
   }, [ready])
 
   /** Gleicht die geplanten Erinnerungen mit den Aufgaben ab. */
@@ -252,7 +249,6 @@ export function WorkspaceProvider({
       syncStatus,
       pendingCount,
       syncing,
-      lastSyncedAt,
       reminderStatus,
       runSync,
       enableReminders,
@@ -264,7 +260,6 @@ export function WorkspaceProvider({
     syncStatus,
     pendingCount,
     syncing,
-    lastSyncedAt,
     reminderStatus,
     runSync,
     enableReminders,
