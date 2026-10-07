@@ -99,7 +99,10 @@ jobs:
     # Jeder Zweig wird veröffentlicht: `main` als Produktion, alles andere als
     # Vorschau-Adresse (<hash>.prio-krischi.pages.dev). Damit lässt sich ein Fix
     # vor dem Zusammenführen ansehen, statt ihn allen sofort hinzustellen.
-    if: github.event_name == 'push'
+    #
+    # `workflow_dispatch` ist mit dabei, damit sich das auch von Hand auslösen
+    # lässt – nützlich, wenn nur geprüft werden soll, ob die Rauchprüfung greift.
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
