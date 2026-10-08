@@ -416,7 +416,13 @@ function MobileTaskRow({
          * Tastatur und Fokus bleiben erhalten (`tabIndex` kommt weiter aus den
          * Attributen), die Rolle nicht.
          */
-        {...(klon ? {} : { ...attributes, role: undefined })}
+        /*
+         * `attributes` bringt `role="button"` und `tabIndex` mit – beides
+         * braucht die Tastatursteuerung (ohne Rolle schluckt der Browser die
+         * Leertaste als Scrollen). Weil die Flaeche damit wie ein Knopf heisst,
+         * suchen Pruefungen Knoepfe darin ueber Kennungen, nicht ueber Namen.
+         */
+        {...(klon ? {} : attributes)}
         {...(klon ? {} : listeners)}
         /* Griff fuer die Tastaturpruefung: dnd-kit legt hier Rolle und
            Fokusierbarkeit ab. */

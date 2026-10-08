@@ -91,7 +91,13 @@ describe('App-Integration', () => {
      * ausgelasteten Maschine riß die Sekunde – der Test war damit flaky und hat
      * einmal einen Commit blockiert.
      */
-    expect(await screen.findByText('Vom Server geändert', {}, { timeout: 5000 })).toBeInTheDocument()
+    /*
+     * Die Wartezeit muss deutlich unter dem Budget des Tests liegen (20 s) und
+     * deutlich über dem, was der Abgleich braucht. Mit 5 s war das ein
+     * Wettlauf: Unter Last kam der Abgleich später, der Test schlug fehl, ohne
+     * dass etwas kaputt war – und blockierte einmal sogar einen Commit.
+     */
+    expect(await screen.findByText('Vom Server geändert', {}, { timeout: 15_000 })).toBeInTheDocument()
     await waitFor(() => expect(screen.getByTestId('sync-status')).toHaveTextContent('Alles synchronisiert'))
   })
 
