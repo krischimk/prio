@@ -32,7 +32,6 @@
   --color-ink-soft: #d4d4d4;
   --color-ink-muted: #a3a3a3;
   --color-ink-faint: #8f8f8f; /* 4,7:1 auf `raised` – vorher #737373 mit 3,2:1 (nicht lesbar) */
-  --color-ink-dim: #525252;
 
   /* Die Akzentfarbe – Auswahl, Handlung, Verweis */
   --color-brand: #6366f1;
@@ -169,7 +168,7 @@ body {
  */
 .scroll-flaeche {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-ink-dim) transparent;
+  scrollbar-color: var(--color-ink-faint) transparent;
 }
 
 .scroll-flaeche::-webkit-scrollbar {
@@ -177,7 +176,7 @@ body {
 }
 
 .scroll-flaeche::-webkit-scrollbar-thumb {
-  background-color: var(--color-ink-dim);
+  background-color: var(--color-ink-faint);
   border-radius: 3px;
 }
 

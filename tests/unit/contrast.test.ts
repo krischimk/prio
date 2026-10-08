@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -54,6 +54,28 @@ function runde(zahl: number): string {
   return zahl.toFixed(2)
 }
 
+
+/** Alle Textrollen, die in der Oberfläche wirklich vorkommen. */
+function genutzteTextrollen(): string[] {
+  const ordner = join(process.cwd(), 'src')
+  const rollen = new Set<string>()
+  const durchlaufe = (pfad: string) => {
+    for (const eintrag of readdirSync(pfad, { withFileTypes: true })) {
+      const voll = join(pfad, eintrag.name)
+      if (eintrag.isDirectory()) {
+        durchlaufe(voll)
+        continue
+      }
+      if (!/\.tsx?$/.test(eintrag.name)) continue
+      for (const treffer of readFileSync(voll, 'utf8').matchAll(/\btext-ink-([a-z]+)\b/g)) {
+        rollen.add(`ink-${treffer[1]}`)
+      }
+    }
+  }
+  durchlaufe(ordner)
+  return [...rollen]
+}
+
 describe('Kontrast', () => {
   it('findet die Farbrollen', () => {
     expect(Object.keys(FARBEN).length).toBeGreaterThan(20)
@@ -97,6 +119,34 @@ describe('Kontrast', () => {
   it('hält Statusfarben lesbar', () => {
     for (const rolle of ['danger', 'ok', 'warn', 'brand-soft']) {
       expect(kontrast(FARBEN[rolle], FARBEN.surface), rolle).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+
+  it('prüft jede Textrolle, die in der Oberfläche vorkommt', () => {
+    // F2: Der Test kannte fünf Rollen; `text-ink-dim` gab es zusätzlich, und
+    // sie wurde als Text benutzt (3,0:1 – nicht lesbar). Eine neue Textrolle
+    // muss hier auftauchen, sonst ist sie ungeprüft.
+    const fehlend = genutzteTextrollen().filter((rolle) => !TEXTROLLEN.includes(rolle))
+
+    expect(
+      fehlend,
+      'Neue Textrolle: in TEXTROLLEN aufnehmen und prüfen (4,5:1), oder sie ist keine Textrolle.',
+    ).toEqual([])
+  })
+
+  it('hält die Ink-Rampe unterscheidbar', () => {
+    // P18/P2: Die Rampe ist eine Hierarchie. Zwei Stufen, die sich kaum
+    // unterscheiden, sind keine zwei Stufen. `ink-strong` und `ink` sind die
+    // bewusste Ausnahme: beide sind „weiß", der Unterschied ist die Härte, und
+    // beide tragen Text.
+    const rampe = ['ink-strong', 'ink', 'ink-soft', 'ink-muted', 'ink-faint']
+    const stufen = rampe.map((rolle) => helligkeit(FARBEN[rolle]))
+    for (let i = 1; i < stufen.length; i += 1) {
+      expect(stufen[i], `${rampe[i]} muss dunkler sein als ${rampe[i - 1]}`).toBeLessThan(stufen[i - 1])
+    }
+    for (let i = 2; i < rampe.length; i += 1) {
+      const abstand = kontrast(FARBEN[rampe[i - 1]], FARBEN[rampe[i]])
+      expect(abstand, `${rampe[i - 1]} → ${rampe[i]}: ${runde(abstand)}:1`).toBeGreaterThanOrEqual(1.2)
     }
   })
 })

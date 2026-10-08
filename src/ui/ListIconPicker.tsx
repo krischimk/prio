@@ -86,7 +86,7 @@ export function ListIconPicker({
         </Button>
       ) : null}
 
-      <p className="text-meta text-ink-dim">
+      <p className="text-meta text-ink-faint">
         Ein Teil der Symbole stammt aus Material Design Icons (Apache-2.0) – siehe THIRD-PARTY.md.
       </p>
     </div>

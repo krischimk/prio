@@ -107,7 +107,7 @@ export function Sidebar({
         ) : null}
       </form>
 
-      <p className="mt-4 text-meta text-ink-dim">
+      <p className="mt-4 text-meta text-ink-faint">
         Änderungen werden lokal gespeichert und später synchronisiert.
       </p>
     </aside>
