@@ -1,7 +1,7 @@
 import type { ListSection } from '../domain/types'
 import { Field } from './components/Field'
 import { RecurrenceSelect } from './RecurrenceSelect'
-import { ReminderList } from './ReminderList'
+import { ReminderList } from './reminderList/ReminderList'
 import { SectionSelect } from './SectionSelect'
 import { input } from './styles'
 import type { TaskForm } from './useTaskForm'
