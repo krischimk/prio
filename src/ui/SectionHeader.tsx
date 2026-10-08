@@ -16,6 +16,8 @@ export function SectionHeader({
   className = '',
   abschnittId,
   hervorgehoben = false,
+  gruppe,
+  handlers,
 }: {
   name: string
   anzahl: number
@@ -26,6 +28,10 @@ export function SectionHeader({
   abschnittId?: string
   /** Ziel eines laufenden Ziehens: Der Kopf zeigt, wohin die Aufgabe kommt. */
   hervorgehoben?: boolean
+  /** Der Gruppenschluessel – das Ziehen findet darueber die Gruppe. */
+  gruppe?: string
+  /** Zieh-Griffe: Der Kopf laesst sich greifen, um Bereiche umzusortieren. */
+  handlers?: Record<string, unknown>
 }) {
   return (
     <button
@@ -38,6 +44,8 @@ export function SectionHeader({
       data-testid="section-header"
       data-section-header=""
       data-section-id={abschnittId}
+      data-gruppe-kopf={gruppe}
+      {...handlers}
       data-drop-target={hervorgehoben ? 'true' : undefined}
     >
       <ChevronIcon offen={offen} className={`h-3.5 w-3.5 shrink-0 ${mutedText}`} />

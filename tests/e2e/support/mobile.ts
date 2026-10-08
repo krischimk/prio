@@ -11,6 +11,17 @@ import { PASSWORD } from './helpers'
  * Funktionstabelle über beide Ansichten.
  */
 
+/**
+ * Setzt den Langdruck fuer den Test kurz.
+ *
+ * Chromium drosselt Zeitgeber ohne Vordergrund (rund eine Sekunde), deshalb war
+ * ein Test mit den echten 400 ms schwankend. Die App selbst aendert sich nicht –
+ * nur die Wartezeit.
+ */
+export async function kurzerLangdruck(page: Page): Promise<void> {
+  await page.addInitScript(() => window.localStorage.setItem('prio:langdruck-ms', '120'))
+}
+
 export async function register(page: Page, email: string): Promise<void> {
   await page.goto('/')
   await page.getByRole('button', { name: 'Registrieren', exact: true }).click()
@@ -57,6 +68,18 @@ export function taskRow(page: Page, title: string) {
  * mit öffnen. Für Zusicherungen über die Zeile als Ganzes (Titel *und*
  * Beschreibung) ist deshalb das Listenelement richtig.
  */
+/**
+ * Die **Zeile** einer Aufgabe (nicht der innere Knopf).
+ *
+ * Fuer Masse wichtig: Der Knopf ist nur so hoch wie der Titel, die Zeile ist
+ * etwa doppelt so hoch. Ueber den Knopf und seinen Vorfahren gesucht, damit die
+ * Zuordnung eindeutig bleibt – `filter({ hasText })` traf sonst die erste Zeile.
+ */
 export function taskZeile(page: Page, title: string) {
-  return page.locator('[data-task-row]').filter({ hasText: title })
+  return page
+    .getByTestId('task-row')
+    // Exakt, nicht als Teilstring: „Erste" steckt sonst auch in „Dreizehnte" –
+    // und ein Treffer auf die falsche Zeile verschiebt das Ziel um eine Zeile.
+    .filter({ hasText: new RegExp(`^${title}$`) })
+    .locator('xpath=ancestor::*[@data-task-row]')
 }

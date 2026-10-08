@@ -1,4 +1,4 @@
-import { Fragment, useRef } from 'react'
+import { useRef } from 'react'
 import { useWorkspace } from '../../app/useWorkspace'
 import { useUndo } from '../useUndo'
 import type { ListSection, LocalTask } from '../../domain/types'
@@ -9,7 +9,9 @@ import { TaskDescription } from '../TaskDescription'
 import { TaskFacts } from '../TaskFacts'
 import { SectionHeader } from '../SectionHeader'
 import { useCollapsedSections } from '../collapsedSections'
-import { useReorderDrag, type ReorderDrag } from './useReorderDrag'
+import { useFlip } from '../useFlip'
+import { OHNE_BEREICH, useReorderDrag, type ReorderDrag } from './useReorderDrag'
+import { ordneUm } from './ordnen'
 
 /**
  * Aufgabenliste der mobilen Ansicht.
@@ -19,8 +21,10 @@ import { useReorderDrag, type ReorderDrag } from './useReorderDrag'
  * andere Liste.
  *
  * Umsortieren: Die Zeile gedrückt halten (rund 0,4 s), dann ziehen. Während des
- * Ziehens zeigt eine Linie, wo die Aufgabe landen würde. Kurzes Wischen scrollt
- * weiterhin die Liste.
+ * Ziehens nimmt die Liste **schon die Reihenfolge an, die beim Loslassen
+ * entstünde** – kein Einfügestrich, sondern die sichtbare Endposition. Die
+ * gezogene Aufgabe hängt als Kopie unter dem Finger, an ihrem Platz bleibt eine
+ * blasse Lücke. Kurzes Wischen scrollt weiterhin die Liste.
  */
 export function MobileTaskList({
   tasks,
@@ -41,26 +45,73 @@ export function MobileTaskList({
   currentUserId: string
 }) {
   const listRef = useRef<HTMLDivElement>(null)
-  const gruppen = groupTasks(tasks, sections)
-  const flach = flattenGroups(gruppen)
   const mitBereichen = sections.length > 0
   // Zugeklappt wird je Liste gemerkt – nicht je Abschnitt, damit der Schlüssel
   // auch dann stimmt, wenn es (noch) keine Bereiche gibt.
   const { zugeklappt, umschalten } = useCollapsedSections(tasks[0]?.list_id ?? '')
 
+  /** Der Gruppenschlüssel einer Aufgabe: ihr Bereich oder „ohne Bereich". */
+  const gruppeVon = (task: LocalTask) =>
+    mitBereichen ? (task.section_id ?? OHNE_BEREICH) : OHNE_BEREICH
+  /** Die Gruppen in ihrer Reihenfolge – „ohne Bereich" zuerst. */
+  const gruppenSchluessel = [
+    OHNE_BEREICH,
+    ...sections.map((abschnitt) => abschnitt.id),
+  ]
+
   const drag = useReorderDrag({
-    itemIds: flach.map((task) => task.id),
     /*
-     * Der Zielbereich kommt aus der Geometrie des Ziehens, nicht mehr aus dem
-     * Nachbarn an der neuen Stelle. Nur so sind **leere** und **zugeklappte**
-     * Bereiche erreichbar: Dort gibt es keine Nachbarzeile, an der sich der
-     * Bereich ablesen ließe – wohl aber einen Kopf.
+     * Der Zielbereich und der Platz kommen aus der Geometrie des Ziehens:
+     * welcher Kopf über dem Finger liegt und an wie vielen Zeilenmitten dieser
+     * Gruppe er vorbei ist. Nur so sind leere Bereiche erreichbar – und der
+     * ganze leere Raum unter einem Kopf gehört zu seinem Bereich.
      */
-    onReorder: (orderedTaskIds, draggedId, abschnittId) => {
-      onReorder(orderedTaskIds, { [draggedId]: abschnittId })
+    onDrop: (draggedId, gruppe, index) => {
+      const naechste = ordneUm({
+        eintraege: tasks,
+        gruppen: gruppenSchluessel,
+        gruppeVon,
+        gezogeneId: draggedId,
+        ziel: { gruppe, index },
+      })
+      /*
+       * Geschrieben wird, wenn sich **etwas** ändert: die Reihenfolge oder der
+       * Bereich. Nur auf die Reihenfolge zu sehen war der Fehler beim Ziehen in
+       * einen leeren Bereich – dort bleibt die flache Reihenfolge gleich, der
+       * Bereich ändert sich aber.
+       */
+      const reihenfolgeGleich =
+        naechste.map((task) => task.id).join('\u0000') ===
+        tasks.map((task) => task.id).join('\u0000')
+      const gezogene = tasks.find((task) => task.id === draggedId)
+      const bereichGleich = gezogene !== undefined && gruppeVon(gezogene) === gruppe
+      if (!reihenfolgeGleich || !bereichGleich) {
+        onReorder(
+          naechste.map((task) => task.id),
+          { [draggedId]: gruppe === OHNE_BEREICH ? null : gruppe },
+        )
+      }
     },
     containerRef: listRef,
   })
+
+  /*
+   * Die Anzeige während des Ziehens: dieselbe Rechnung wie beim Loslassen,
+   * nur ohne zu schreiben. Was man sieht, ist damit genau das Ergebnis.
+   */
+  const angezeigt =
+    drag.draggingId === null || drag.ziel === null
+      ? tasks
+      : ordneUm({
+          eintraege: tasks,
+          gruppen: gruppenSchluessel,
+          gruppeVon,
+          gezogeneId: drag.draggingId,
+          ziel: drag.ziel,
+        })
+
+  // Elemente gleiten an ihren neuen Platz, statt zu springen.
+  useFlip(listRef, angezeigt.map((task) => task.id).join(','))
 
   if (tasks.length === 0) {
     return (
@@ -70,6 +121,12 @@ export function MobileTaskList({
     )
   }
 
+  const gruppen = groupTasks(angezeigt, sections)
+  const flach = flattenGroups(gruppen)
+  const klonTask =
+    drag.draggingId === null
+      ? null
+      : (tasks.find((task) => task.id === drag.draggingId) ?? null)
   let index = -1
 
   return (
@@ -93,36 +150,21 @@ export function MobileTaskList({
                   onToggle={() => umschalten(gruppe.id)}
                   className="px-4 pt-3"
                   abschnittId={gruppe.section?.id}
-                  hervorgehoben={drag.dropSectionIdAktiv && drag.dropSectionId === (gruppe.section?.id ?? null)}
+                  gruppe={gruppe.id}
                 />
                 {offen
                   ? gruppe.tasks.map((task) => {
                       index += 1
-                      /*
-                       * Die Linie gehoert an den Gruppenanfang, wenn das Ziel
-                       * diese Gruppe ist, aber keine ihrer Zeilen: Etwa in
-                       * einen leeren Bereich oder in die Aufgaben ohne Bereich.
-                       */
-                      const zeileInDieserGruppe = gruppe.tasks.some(
-                        (eigene) => eigene.id === drag.dropBeforeId,
-                      )
-                      const anfang =
-                        drag.dropSectionIdAktiv &&
-                        drag.dropSectionId === (gruppe.section?.id ?? null) &&
-                        !zeileInDieserGruppe
                       return (
-                        <Fragment key={task.id}>
-                          {anfang && task.id === gruppe.tasks[0]?.id ? <DropIndicator /> : null}
-                          {drag.dropBeforeId === task.id ? <DropIndicator /> : null}
-                          <MobileTaskRow
-                            task={task}
-                            index={index}
-                            drag={drag}
-                            onOpen={onOpenTask}
-                            isDragging={drag.draggingId === task.id}
-                            currentUserId={currentUserId}
-                          />
-                        </Fragment>
+                        <MobileTaskRow
+                          key={task.id}
+                          task={task}
+                          drag={drag}
+                          onOpen={onOpenTask}
+                          isDragging={drag.draggingId === task.id}
+                          gruppeId={gruppe.id}
+                          currentUserId={currentUserId}
+                        />
                       )
                     })
                   : null}
@@ -132,60 +174,83 @@ export function MobileTaskList({
         : flach.map((task) => {
             index += 1
             return (
-              <Fragment key={task.id}>
-                {drag.dropBeforeId === task.id ? <DropIndicator /> : null}
-                <MobileTaskRow
-                  task={task}
-                  index={index}
-                  drag={drag}
-                  onOpen={onOpenTask}
-                  isDragging={drag.draggingId === task.id}
-                  currentUserId={currentUserId}
-                />
-              </Fragment>
+              <MobileTaskRow
+                key={task.id}
+                task={task}
+                drag={drag}
+                onOpen={onOpenTask}
+                isDragging={drag.draggingId === task.id}
+                gruppeId={OHNE_BEREICH}
+                currentUserId={currentUserId}
+              />
             )
           })}
-      {drag.dropAtEnd ? <DropIndicator /> : null}
+      {/*
+        Die schwebende Kopie unter dem Finger. Sie liegt fest im Fenster, damit
+        sie nicht mitscrollt, und nimmt keine Zeigerereignisse an – sonst
+        blockierte sie die Zeile, die den Zug führt.
+      */}
+      {klonTask && drag.klon ? (
+        <div
+          aria-hidden="true"
+          data-testid="drag-clone"
+          className="pointer-events-none fixed z-50"
+          style={{ left: drag.klon.left, top: drag.klon.top, width: drag.klon.width }}
+        >
+          <ul className="shadow-lg shadow-page/50">
+            <MobileTaskRow
+              task={klonTask}
+              drag={drag}
+              onOpen={onOpenTask}
+              isDragging
+              gruppeId={OHNE_BEREICH}
+              currentUserId={currentUserId}
+              klon
+            />
+          </ul>
+        </div>
+      ) : null}
     </div>
   )
 }
 
-function DropIndicator() {
-  return <li aria-hidden="true" data-testid="drop-indicator" className="h-0.5 bg-brand" />
-}
-
 function MobileTaskRow({
   task,
-  index,
   drag,
   onOpen,
   isDragging,
+  gruppeId,
   currentUserId,
+  klon = false,
 }: {
   task: LocalTask
-  index: number
   drag: ReorderDrag
   onOpen: (task: LocalTask) => void
   isDragging: boolean
+  /** Der Gruppenschluessel – das Ziehen liest daraus die Zugehoerigkeit. */
+  gruppeId: string
   currentUserId: string
+  /** Die schwebende Kopie: ohne Zieh-Griffe, ohne Kennung, ohne Zeigerereignisse. */
+  klon?: boolean
 }) {
   const { repositories } = useWorkspace()
   const { offerUndo } = useUndo()
-  const handlers = drag.getRowHandlers(task.id, index)
+  const handlers = klon ? {} : drag.getRowHandlers(task.id)
 
   return (
     <li
-      data-task-row
-      data-id={task.id}
+      data-task-row={klon ? undefined : true}
+      data-id={klon ? undefined : task.id}
+      data-gruppe={klon ? undefined : gruppeId}
+      data-flip-id={klon ? undefined : task.id}
       /*
-       * Der Bereich der Zeile gehört ins DOM: Das Ziehen liest den Zielbereich
-       * aus der Geometrie, und dazu muss jede Zeile wissen, wohin sie gehört.
+       * Die gezogene Zeile bleibt blass an ihrem Platz stehen: Sie zeigt damit
+       * die Lücke, in der die Aufgabe landen würde. Die schwebende Kopie unter
+       * dem Finger zeigt sie selbst.
        */
-      data-section-id={task.section_id ?? undefined}
       className={`flex items-start gap-3 border-b border-line-soft ${appBackground} px-4 py-3 ${
-        isDragging ? 'relative ' + layer.row + ' shadow-lg shadow-page/50' : ''
+        klon ? layer.row + ' shadow-lg shadow-page/50' : isDragging ? 'opacity-25' : ''
       }`}
-      style={isDragging ? { transform: `translateY(${drag.offsetY}px)` } : undefined}
     >
       <input
         type="checkbox"
