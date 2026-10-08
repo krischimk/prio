@@ -4,7 +4,7 @@ import {
   MeasuringStrategy,
   DragOverlay,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
   TouchSensor,
   closestCorners,
   useDroppable,
@@ -32,7 +32,6 @@ import { focusRing, appBackground, layer } from '../styles'
 import { leerAufgaben } from '../emptyTexts'
 import { TaskDescription } from '../TaskDescription'
 import { TaskFacts } from '../TaskFacts'
-import { GripIcon } from '../icons'
 import { SectionHeader } from '../SectionHeader'
 import { useCollapsedSections } from '../collapsedSections'
 import { OHNE_BEREICH, ordneUm } from './ordnen'
@@ -138,8 +137,16 @@ export function MobileTaskList({
    * weiter scrollt – deshalb liegt der Zug auf dem Griff.)
    */
   const sensoren = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TouchSensor, { activationConstraint: { distance: 6 } }),
+    /*
+     * **MouseSensor und TouchSensor, nicht PointerSensor.** Die Dokumentation
+     * warnt: „Touch events do not suffer the same limitations as Pointer
+     * events, and it is possible to prevent the page from scrolling in
+     * touchmove events." Nur der TouchSensor kann das Scrollen also
+     * unterdruecken. Mit dem PointerSensor – den Chrome fuer den Finger
+     * liefert – nahm der Browser die Geste selbst an.
+     */
+    useSensor(MouseSensor, { activationConstraint: { delay: 400, tolerance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 400, tolerance: 6 } }),
     // Tastatur: Leertaste hebt auf, Pfeile verschieben, Leertaste legt ab.
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
@@ -454,12 +461,13 @@ function MobileTaskRow({
       */}
       <div
         /*
-         * `attributes` bringt `role="button"` mit. Auf dieser Flaeche liegen
-         * aber schon Knoepfe (Titel, „Mehr") – eine Rolle „Knopf" um Knoepfe
-         * herum ist falsch und macht Vorlesern wie Tests die Zuordnung unklar.
-         * Tastatur und Fokus bleiben erhalten (`tabIndex` kommt weiter aus den
-         * Attributen), die Rolle nicht.
+         * Hier liegen Ziehen und Oeffnen: gedrueckt halten (rund 0,4 s), dann
+         * ziehen. `attributes` bringt `role="button"` und `tabIndex` mit – die
+         * Tastatursteuerung braucht beides. Weil die Flaeche damit wie ein
+         * Knopf heisst, suchen Pruefungen Knoepfe darin ueber Kennungen.
          */
+        {...(klon ? {} : attributes)}
+        {...(klon ? {} : listeners)}
         className="flex min-w-0 flex-1 flex-col text-left"
       >
         <button
@@ -478,26 +486,6 @@ function MobileTaskRow({
         ) : null}
       </div>
 
-      {/*
-        Der Griff traegt die Zieh-Attribute und `touch-action: none` – nur er.
-        Auf der ganzen Zeile wuerde der Browser nicht mehr scrollen, und genau
-        daran scheiterte es vorher: Nach wenigen Millimetern uebernahm er die
-        Geste, der Zug sprang zurueck und die Seite scrollte.
-      */}
-      {klon ? (
-        <span className="h-11 w-11 shrink-0" aria-hidden="true" />
-      ) : (
-        <button
-          type="button"
-          {...attributes}
-          {...listeners}
-          aria-label={`Aufgabe verschieben: ${task.title}`}
-          data-testid="task-drag"
-          className={`${focusRing} flex h-11 w-11 shrink-0 touch-none items-center justify-center rounded-control text-ink-faint active:bg-raised`}
-        >
-          <GripIcon />
-        </button>
-      )}
     </li>
   )
 }

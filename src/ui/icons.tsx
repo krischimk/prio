@@ -49,22 +49,6 @@ export function CheckIcon({ className = 'h-5 w-5' }: { className?: string }) {
   )
 }
 
-/**
- * Der Griff zum Umsortieren: zwei Reihen Punkte.
- *
- * Er ist die Flaeche, an der ein Zug beginnt. Das ist kein Zierrat, sondern
- * noetig: Nur auf dem Griff darf `touch-action: none` stehen, damit der Browser
- * die Geste nicht als Scrollen an sich nimmt – auf der ganzen Zeile wuerde das
- * das Scrollen der Liste verhindern.
- */
-export function GripIcon({ className = 'h-5 w-5' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
-      <path d="M9 7h.01M15 7h.01M9 12h.01M15 12h.01M9 17h.01M15 17h.01" />
-    </svg>
-  )
-}
-
 export function MoveIcon({ className = 'h-5 w-5' }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
