@@ -76,7 +76,7 @@ export function TaskPanel({
 
   return (
     <section
-      className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4 p-6"
+      className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col gap-4 p-rand"
       aria-label="Aufgaben"
     >
       <header className="space-y-3">
@@ -188,7 +188,7 @@ export function TaskPanel({
             {leerAufgaben('breit')}
           </p>
         ) : mitBereichen ? (
-          <div className="space-y-4" data-testid="task-list">
+          <div className="space-y-abschnitt" data-testid="task-list">
             {gruppen.map((gruppe) => (
               <div key={gruppe.id}>
                 {/* Aufgaben ohne Bereich stehen oben, aber ohne Überschrift:
@@ -203,7 +203,7 @@ export function TaskPanel({
                   />
                 )}
                 {zugeklappt.has(gruppe.id) ? null : (
-                  <ul className="space-y-2">
+                  <ul className="space-y-zeile">
                     {gruppe.tasks.map((task) => (
                       <TaskItem
                         key={task.id}
@@ -220,7 +220,7 @@ export function TaskPanel({
             ))}
           </div>
         ) : (
-          <ul className="space-y-2" data-testid="task-list">
+          <ul className="space-y-zeile" data-testid="task-list">
             {tasks.map((task) => (
               <TaskItem
                 key={task.id}

@@ -84,6 +84,26 @@
    * Rückgängig-Leiste. Wer die Leiste höher macht, brach den Inhalt, ohne dass
    * eine Beziehung im Code stand.
    */
+  /*
+   * Vier benannte Abstände.
+   *
+   * Tailwinds Skala ist vollständig, aber undifferenziert: Sie hängt an einer
+   * Variablen (`--spacing: 0.25rem`) und steuert **alles** –
+   * `.p-4{padding:calc(var(--spacing) * 4)}` wie `.h-14{height:calc(var(--spacing) * 14)}`.
+   * Sie ist damit kein Rhythmus-Regler: Wer sie dreht, ändert Polster, Breiten
+   * und Höhen gleichzeitig. Und `px-4` steht an 29 Stellen für mindestens drei
+   * Zwecke (Bildschirmrand, Listenzeile, Kartenkopf); `px-4 py-3` tritt sechsmal
+   * als unbenannte Zeile auf. Was fehlte, war keine zweite Skala, sondern ein
+   * **Name** dafür, wofür ein Abstand steht.
+   *
+   * Diese vier werden nur dort benutzt, wo die Bedeutung festliegt. Alle
+   * übrigen Polsterstellen bleiben bei den Tailwind-Schritten – eine zweite
+   * Skala für alles wäre genau der Umbau, der nichts gewinnt.
+   */
+  --spacing-karte: calc(var(--spacing) * 4); /* Polster einer Karte */
+  --spacing-zeile: calc(var(--spacing) * 2); /* zwischen zwei Zeilen einer Liste */
+  --spacing-abschnitt: calc(var(--spacing) * 4); /* zwischen zwei Abschnitten */
+  --spacing-rand: calc(var(--spacing) * 6); /* Rand des Inhaltsbereichs */
   --spacing-app-bar: 3.5rem; /* Höhe der App-Leiste */
   --spacing-fab: 3.5rem; /* Durchmesser des runden Plus-Knopfes */
   --spacing-fab-gap: 1.25rem; /* sein Abstand zum unteren Rand */

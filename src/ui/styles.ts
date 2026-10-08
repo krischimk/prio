@@ -141,7 +141,7 @@ export const layer = {
 export const appBackground = 'bg-page'
 
 /** Eine Karte: Panels, aufgeklappte Bereiche, Dialoginhalte. */
-export const card = 'rounded-card border border-line bg-surface/60 p-4'
+export const card = 'rounded-card border border-line bg-surface/60 p-karte'
 
 /**
  * Die gedämpfte Karte – Karten **in** Karten und Zeilen: die Aufgabenzeile,
