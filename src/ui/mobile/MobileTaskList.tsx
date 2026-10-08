@@ -128,11 +128,18 @@ export function MobileTaskList({
 
   const aktivTask = aktiv === null ? null : (nachId.get(aktiv) ?? null)
 
+  /*
+   * Am **Griff** braucht es keinen Langdruck: Er ist eindeutig, und mit
+   * `touch-action: none` kann der Browser die Geste nicht als Scrollen an sich
+   * nehmen. Also genügt eine Strecke – der Zug beginnt, sobald sich der Finger
+   * bewegt. Ein Langdruck wäre hier nur Wartezeit.
+   *
+   * (Ein Zug an der ganzen Zeile bräuchte den Langdruck, damit ein Wischen
+   * weiter scrollt – deshalb liegt der Zug auf dem Griff.)
+   */
   const sensoren = useSensors(
-    // Maus: erst nach kurzem Halten ziehen – sonst wäre jeder Klick ein Zug.
-    useSensor(PointerSensor, { activationConstraint: { delay: 400, tolerance: 6 } }),
-    // Finger: dasselbe, damit ein Wischen die Liste scrollt.
-    useSensor(TouchSensor, { activationConstraint: { delay: 400, tolerance: 6 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { distance: 6 } }),
     // Tastatur: Leertaste hebt auf, Pfeile verschieben, Leertaste legt ab.
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
@@ -142,13 +149,31 @@ export function MobileTaskList({
     setAktivBreite(event.active.rect.current.initial?.width ?? null)
   }
 
-  /** Beim Überfahren einer anderen Gruppe dorthin umhängen (Vorschau). */
+  /*
+   * Beim Ueberfahren einer anderen Gruppe wandert die Aufgabe dorthin – die
+   * Vorschau, aus der beim Loslassen das Ergebnis wird.
+   *
+   * **Der Container kommt von dnd-kit**, nicht aus den Daten:
+   * `over.data.current.sortable.containerId` ist die Kennung des
+   * `SortableContext`, in dem der Finger gerade ist. Vorher habe ich die Gruppe
+   * aus `task.section_id` gelesen – und die aendert sich waehrend des Ziehens
+   * nicht, also stieg die Funktion immer sofort aus. Deshalb konnte eine
+   * Aufgabe den Bereich per Ziehen nie wechseln, obwohl der Code dastand.
+   */
+  /** In welchem `SortableContext` liegt ein Element laut dnd-kit? */
+  const containerVon = (eintrag: { data: { current?: Record<string, unknown> } }): string | null => {
+    const sortable = eintrag.data.current?.sortable as { containerId?: string } | undefined
+    return sortable?.containerId ?? null
+  }
+
   const onDragOver = (event: DragOverEvent) => {
     const { active, over } = event
     if (!over) return
+
     const aktiveId = String(active.id)
-    const zielGruppe = gruppeVonId(String(over.id))
-    if (gruppeVonId(aktiveId) === zielGruppe) return
+    const quelle = containerVon(active) ?? gruppeVonId(aktiveId)
+    const ziel = containerVon(over) ?? gruppeVonId(String(over.id))
+    if (quelle === ziel) return
 
     setReihenfolge((bisher) =>
       ordneUm({
@@ -156,7 +181,7 @@ export function MobileTaskList({
         gruppen,
         gruppeVon: (eintrag) => gruppeVonId(eintrag.id),
         gezogeneId: aktiveId,
-        ziel: { gruppe: zielGruppe, index: 0 },
+        ziel: { gruppe: ziel, index: 0 },
       }).map((eintrag) => eintrag.id),
     )
   }
@@ -172,21 +197,24 @@ export function MobileTaskList({
 
     const aktiveId = String(active.id)
     setReihenfolge((bisher) => {
+      const zielGruppe = containerVon(over) ?? gruppeVonId(String(over.id))
+      const zielIndex = (over.data.current?.sortable as { index?: number } | undefined)?.index
       const neu = ordneUm({
         eintraege: bisher.map((id) => ({ id })),
         gruppen,
         gruppeVon: (eintrag) => gruppeVonId(eintrag.id),
         gezogeneId: aktiveId,
         ziel: {
-          gruppe: gruppeVonId(String(over.id)),
-          index: bisher.indexOf(String(over.id)),
+          gruppe: zielGruppe,
+          index: zielIndex ?? bisher.indexOf(String(over.id)),
         },
       }).map((eintrag) => eintrag.id)
 
       const gleich = neu.join('\u0000') === tasks.map((task) => task.id).join('\u0000')
-      const bereichGleich = gruppeVonId(aktiveId) === (nachId.get(aktiveId)?.section_id ?? null)
+      const bereichGleich =
+        (zielGruppe === OHNE_BEREICH ? null : zielGruppe) ===
+        (nachId.get(aktiveId)?.section_id ?? null)
       if (!gleich || !bereichGleich) {
-        const zielGruppe = gruppeVonId(aktiveId)
         onReorder(neu, { [aktiveId]: zielGruppe === OHNE_BEREICH ? null : zielGruppe })
       }
       return neu
@@ -406,7 +434,7 @@ function MobileTaskRow({
       data-id={klon ? undefined : task.id}
       style={klon ? undefined : style}
       className={`flex items-start gap-3 border-b border-line-soft ${appBackground} px-4 py-3 ${
-        klon ? layer.row + ' shadow-lg shadow-page/50' : isDragging || istAktiv === task.id ? 'opacity-25' : ''
+        klon ? layer.row + ' shadow-lg shadow-page/50' : isDragging || istAktiv === task.id ? 'opacity-0' : ''
       }`}
     >
       <input
