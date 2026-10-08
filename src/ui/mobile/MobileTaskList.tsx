@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   DndContext,
+  MeasuringStrategy,
   DragOverlay,
   KeyboardSensor,
   PointerSensor,
   TouchSensor,
-  closestCenter,
+  closestCorners,
   useDroppable,
   useSensor,
   useSensors,
@@ -31,6 +32,7 @@ import { focusRing, appBackground, layer } from '../styles'
 import { leerAufgaben } from '../emptyTexts'
 import { TaskDescription } from '../TaskDescription'
 import { TaskFacts } from '../TaskFacts'
+import { GripIcon } from '../icons'
 import { SectionHeader } from '../SectionHeader'
 import { useCollapsedSections } from '../collapsedSections'
 import { OHNE_BEREICH, ordneUm } from './ordnen'
@@ -81,6 +83,8 @@ export function MobileTaskList({
   // auch dann stimmt, wenn es (noch) keine Bereiche gibt.
   const { zugeklappt, umschalten } = useCollapsedSections(tasks[0]?.list_id ?? '')
   const [aktiv, setAktiv] = useState<string | null>(null)
+  /** Die Breite der gezogenen Zeile – die Kopie darf nicht schmaler sein. */
+  const [aktivBreite, setAktivBreite] = useState<number | null>(null)
 
   /** Der Gruppenschlüssel einer Aufgabe: ihr Bereich oder „ohne Bereich". */
   const gruppeVon = (task: LocalTask) =>
@@ -133,7 +137,10 @@ export function MobileTaskList({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
-  const onDragStart = (event: DragStartEvent) => setAktiv(String(event.active.id))
+  const onDragStart = (event: DragStartEvent) => {
+    setAktiv(String(event.active.id))
+    setAktivBreite(event.active.rect.current.initial?.width ?? null)
+  }
 
   /** Beim Überfahren einer anderen Gruppe dorthin umhängen (Vorschau). */
   const onDragOver = (event: DragOverEvent) => {
@@ -201,7 +208,14 @@ export function MobileTaskList({
   return (
     <DndContext
       sensors={sensoren}
-      collisionDetection={closestCenter}
+      /*
+       * `closestCorners` statt `closestCenter`: Bei mehreren Gruppen am
+       * naechsten Rand entscheiden – die Empfehlung fuer mehrere Container.
+       * `MeasuringStrategy.Always` misst waehrend des Ziehens neu: Die Gruppen
+       * aendern ihre Groesse, wenn eine Aufgabe sie wechselt.
+       */
+      collisionDetection={closestCorners}
+      measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
       modifiers={[restrictToVerticalAxis]}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
@@ -237,7 +251,9 @@ export function MobileTaskList({
         Die schwebende Kopie: dnd-kit bewegt sie selbst, ohne die Liste neu zu
         zeichnen. Sie nimmt keine Zeigerereignisse an.
       */}
-      <DragOverlay>
+      <DragOverlay
+        style={aktivBreite === null ? undefined : { width: aktivBreite }}
+      >
         {aktivTask ? (
           <ul>
             <MobileTaskRow
@@ -416,17 +432,6 @@ function MobileTaskRow({
          * Tastatur und Fokus bleiben erhalten (`tabIndex` kommt weiter aus den
          * Attributen), die Rolle nicht.
          */
-        /*
-         * `attributes` bringt `role="button"` und `tabIndex` mit – beides
-         * braucht die Tastatursteuerung (ohne Rolle schluckt der Browser die
-         * Leertaste als Scrollen). Weil die Flaeche damit wie ein Knopf heisst,
-         * suchen Pruefungen Knoepfe darin ueber Kennungen, nicht ueber Namen.
-         */
-        {...(klon ? {} : attributes)}
-        {...(klon ? {} : listeners)}
-        /* Griff fuer die Tastaturpruefung: dnd-kit legt hier Rolle und
-           Fokusierbarkeit ab. */
-        data-testid={klon ? undefined : 'task-drag'}
         className="flex min-w-0 flex-1 flex-col text-left"
       >
         <button
@@ -444,6 +449,27 @@ function MobileTaskRow({
           <TaskDescription text={task.description} className="mt-0.5" />
         ) : null}
       </div>
+
+      {/*
+        Der Griff traegt die Zieh-Attribute und `touch-action: none` – nur er.
+        Auf der ganzen Zeile wuerde der Browser nicht mehr scrollen, und genau
+        daran scheiterte es vorher: Nach wenigen Millimetern uebernahm er die
+        Geste, der Zug sprang zurueck und die Seite scrollte.
+      */}
+      {klon ? (
+        <span className="h-11 w-11 shrink-0" aria-hidden="true" />
+      ) : (
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          aria-label={`Aufgabe verschieben: ${task.title}`}
+          data-testid="task-drag"
+          className={`${focusRing} flex h-11 w-11 shrink-0 touch-none items-center justify-center rounded-control text-ink-faint active:bg-raised`}
+        >
+          <GripIcon />
+        </button>
+      )}
     </li>
   )
 }
