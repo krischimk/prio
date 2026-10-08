@@ -3,6 +3,7 @@ import { isRecurrence, nextOccurrence, successorId } from '../../domain/recurren
 import { alignReminders } from '../../domain/reminder'
 import { newId } from '../../domain/ids'
 import { normalisiereAufgabe } from '../../domain/normalize'
+import { parseSections } from '../../domain/sections'
 import { compareRestorable, compareTasks, restoreCutoff } from '../../domain/ordering'
 import type { LocalTask } from '../../domain/types'
 import { optionalText, requireText, ValidationError } from '../validation'
@@ -196,11 +197,36 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
      * damit beim nächsten Sync mit übertragen. Der Server prüft über die
      * RLS-Policies, dass die Ziel-Liste überhaupt zugänglich ist.
      */
-    async moveTask(taskId, targetListId) {
+    /**
+     * Verschiebt eine Aufgabe in eine andere Liste – und auf Wunsch in einen
+     * ihrer Bereiche.
+     *
+     * Der Bereich wird beim Listenwechsel **immer** mitgeführt: Die Kennung aus
+     * der alten Liste gilt dort nicht. Angegeben werden kann nur ein Bereich,
+     * den die Zielliste wirklich hat; alles andere wird zu „ohne Bereich" –
+     * sonst hinge die Aufgabe an einem Bereich, den es nicht gibt.
+     */
+    async moveTask(taskId, targetListId, zielAbschnitt) {
       const task = await ctx.requireTask(taskId)
-      if (task.list_id === targetListId) return task
-      await ctx.requireList(targetListId)
-      const updated: LocalTask = { ...task, list_id: targetListId, ...ctx.stamp() }
+      const liste = await ctx.requireList(targetListId)
+      const wechselt = task.list_id !== targetListId
+
+      const gewuenscht =
+        zielAbschnitt === undefined ? (wechselt ? null : task.section_id) : zielAbschnitt
+      const bereiche = parseSections(liste.sections)
+      const naechsterBereich =
+        gewuenscht !== null && bereiche.some((bereich) => bereich.id === gewuenscht)
+          ? gewuenscht
+          : null
+
+      if (!wechselt && naechsterBereich === task.section_id) return task
+
+      const updated: LocalTask = {
+        ...task,
+        list_id: targetListId,
+        section_id: naechsterBereich,
+        ...ctx.stamp(),
+      }
       await ctx.db.tasks.put(updated)
       return updated
     },
@@ -263,7 +289,22 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
       const grenze = restoreCutoff(timeOf(ctx.clock.now()))
       // Über den Index `deleted_at`: Nur gelöschte Zeilen stehen darin.
       const tasks = await ctx.db.tasks.where('deleted_at').aboveOrEqual(grenze).toArray()
-      return tasks.sort(compareRestorable)
+
+      /*
+       * Aufgaben, deren Liste selbst gelöscht ist, gehören hier **nicht** hin:
+       * Sie kommen mit ihrer Liste zurück, und einzeln wiederhergestellt
+       * landeten sie in einer gelöschten Liste – sichtbar passierte nichts.
+       * In der Liste stehen sie außerdem als längst erledigt oder vor Tagen
+       * gelöscht, was zusätzlich verwirrt.
+       */
+      const geloeschteListen = new Set(
+        (await ctx.db.lists.where('deleted_at').aboveOrEqual(grenze).toArray()).map(
+          (liste) => liste.id,
+        ),
+      )
+      return tasks
+        .filter((task) => !geloeschteListen.has(task.list_id))
+        .sort(compareRestorable)
     },
 
     /**

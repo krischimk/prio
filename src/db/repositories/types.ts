@@ -67,7 +67,7 @@ export interface Repositories {
   updateTask(taskId: string, patch: UpdateTaskInput): Promise<LocalTask>
   setTaskCompleted(taskId: string, completed: boolean): Promise<LocalTask>
   /** Verschiebt eine Aufgabe in eine andere Liste (beide müssen zugänglich sein). */
-  moveTask(taskId: string, targetListId: string): Promise<LocalTask>
+  moveTask(taskId: string, targetListId: string, zielAbschnitt?: string | null): Promise<LocalTask>
   /**
    * Setzt die Reihenfolge innerhalb einer Liste neu.
    * `orderedTaskIds` enthält alle Aufgaben der Liste in der gewünschten

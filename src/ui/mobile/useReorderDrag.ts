@@ -33,6 +33,9 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent, type RefOb
  * einem Aufblitzen der Einfügelinie.
  */
 const MOVE_TOLERANCE_PX = 6
+
+/** Ab wann ein abgebrochener Zug als Absicht gilt und uebernommen wird. */
+const CANCELLED_COMMIT_AFTER_MS = 250
 /** Zone am Fensterrand, in der beim Ziehen mitgescrollt wird. */
 const AUTOSCROLL_ZONE_PX = 72
 /** Wie weit je Bewegung gescrollt wird, wenn der Finger in der Randzone ist. */
@@ -57,6 +60,13 @@ export interface ReorderDrag {
   dropAtEnd: boolean
   /** Der Bereich, in den die Aufgabe gerät – für die Hervorhebung seines Kopfes. */
   dropSectionId: string | null
+  /**
+   * `true`, sobald ein Ziel feststeht.
+   *
+   * Noetig, weil `dropSectionId === null` zweierlei heisst: „kein Ziel" und
+   * „Ziel ist der Bereich ohne Bereich".
+   */
+  dropSectionIdAktiv: boolean
   /** Versatz der gezogenen Zeile in Pixeln. */
   offsetY: number
   getRowHandlers: (id: string, index: number) => RowDragHandlers
@@ -158,6 +168,8 @@ export function useReorderDrag(options: {
     id: string
     index: number
     startY: number
+    /** Wann gehoben wurde – entscheidet, ob ein Abbruch noch als Zug gilt. */
+    gehobenUm: number
     slots: Slot[]
   } | null>(null)
   /**
@@ -212,8 +224,20 @@ export function useReorderDrag(options: {
   useEffect(() => reset, [reset])
 
   /** Unterbindet das Scrollen, solange gezogen wird. */
+  /**
+   * Haelt den Browser aus dem laufenden Zug heraus.
+   *
+   * Der Zuhoerer wird **beim Aufnehmen** eingetragen, nicht erst beim Heben –
+   * aber `preventDefault` nur, solange wirklich gezogen wird. Vorher haing er
+   * erst am Heben: Bewegte sich der Finger danach, hatte der Browser die Geste
+   * schon als Scrollen beansprucht und schickte `pointercancel`. Der Zug war
+   * dann nach wenigen Millisekunden vorbei – die Einfu gelinie blitzte nur auf.
+   *
+   * Am Anfang zu horchen kostet nichts: Ohne Zug wird nicht eingegriffen, das
+   * Scrollen der Liste bleibt also erhalten.
+   */
   const blockScroll = useCallback((event: TouchEvent) => {
-    if (event.cancelable) event.preventDefault()
+    if (drag.current !== null && event.cancelable) event.preventDefault()
   }, [])
 
   /**
@@ -252,7 +276,7 @@ export function useReorderDrag(options: {
       const container = containerRef.current
       const elemente = container
         ? Array.from(
-            container.querySelectorAll<HTMLElement>('[data-task-row], [data-section-id]'),
+            container.querySelectorAll<HTMLElement>('[data-task-row], [data-section-header]'),
           )
         : []
 
@@ -261,6 +285,7 @@ export function useReorderDrag(options: {
         id,
         index,
         startY,
+        gehobenUm: Date.now(),
         /*
          * Lagen und Höhen einmalig festhalten: Die Zeilen sind unterschiedlich
          * hoch (Beschreibung, Fälligkeit), eine feste Zeilenhöhe würde nicht
@@ -277,7 +302,7 @@ export function useReorderDrag(options: {
             art: istZeile ? ('zeile' as const) : ('kopf' as const),
             top: rect.top,
             height: rect.height,
-            id: istZeile ? (element.dataset.id ?? '') : (element.dataset.sectionId ?? ''),
+            id: istZeile ? (element.dataset.id ?? '') : `kopf:${element.dataset.sectionId ?? ''}`,
             abschnittId: element.dataset.sectionId ?? null,
           }
         }),
@@ -331,6 +356,19 @@ export function useReorderDrag(options: {
     },
     [blockScroll, containerRef, scrollSchritt],
   )
+
+  /**
+   * `true`, wenn der Zug lange genug lief, um als Absicht zu gelten.
+   *
+   * Ein Abbruch kurz nach dem Heben ist meist ein Fehlgriff (der Finger rutschte
+   * und das System uebernahm) – dann passiert besser nichts. Nach einem
+   * sichtbaren Zug dagegen soll die Aufgabe dort landen, wo die Linie stand.
+   */
+  const gezogenLangeGenug = useCallback(() => {
+    const current = drag.current
+    if (current === null) return false
+    return Date.now() - current.gehobenUm > CANCELLED_COMMIT_AFTER_MS
+  }, [])
 
   const endDragging = useCallback(
     (commit: boolean) => {
@@ -429,7 +467,13 @@ export function useReorderDrag(options: {
       },
 
       onPointerCancel: () => {
-        endDragging(false)
+        /*
+         * Nimmt das System die Geste doch noch an sich (Scrollen, Auswahl),
+         * wird uebernommen, was die Linie gezeigt hat – sofern der Zug lang
+         * genug lief. Vorher verpuffte er: Der Finger hatte sichtbar gezogen,
+         * und am Ende passierte nichts.
+         */
+        endDragging(gezogenLangeGenug())
       },
 
       onLostPointerCapture: () => {
@@ -440,7 +484,7 @@ export function useReorderDrag(options: {
 
       onContextMenu: (event) => event.preventDefault(),
     }),
-    [clearTimer, endDragging, longPressMs, startDragging],
+    [clearTimer, endDragging, gezogenLangeGenug, longPressMs, startDragging],
   )
 
   // Die Linie gehört **vor** die Zeile, die im Ergebnis an dieser Stelle steht.
@@ -453,6 +497,7 @@ export function useReorderDrag(options: {
     dropBeforeId,
     dropAtEnd,
     dropSectionId: draggingId === null ? null : abschnitt,
+    dropSectionIdAktiv: draggingId !== null && ziel !== null,
     offsetY,
     getRowHandlers,
     wasDragging: () => didDrag.current,

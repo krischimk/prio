@@ -187,6 +187,9 @@ test('verschiebt eine Aufgabe über die Detailansicht in eine andere Liste', asy
   await expect(eigene).toHaveAttribute('aria-current', 'true')
   await expect(eigene).toContainText('aktuelle Liste')
   await sheet.getByRole('button', { name: 'Arbeit' }).click()
+  // Die Auswahl wirkt erst mit dem Bestaetigen: Vorher verschob ein Tippen
+  // sofort, und wer sich umentschied, hatte schon verschoben.
+  await sheet.getByRole('button', { name: 'Verschieben', exact: true }).click()
   await expect(sheet).toBeHidden()
 
   // Die Detailansicht bleibt offen; schließen zeigt die leere Quellliste.
@@ -320,6 +323,38 @@ test('zieht eine Aufgabe in einen leeren Bereich', async ({ page, request }) => 
 
   await expect(kopf).toContainText('1')
   await expect(taskRow(page, 'Milch')).toBeVisible()
+})
+
+test('zieht eine Aufgabe in den Bereich ohne Bereich', async ({ page, request }) => {
+  await resetServer(request)
+  await register(page, uniqueEmail('m7j'))
+  await createList(page, 'Einkauf')
+  await createTask(page, 'Milch')
+
+  // Ein Bereich, damit es die Gruppe „Ohne Bereich" ueberhaupt gibt: Ohne
+  // Bereiche ist die Liste flach und hat keinen Kopf.
+  await page.getByTestId('app-bar-title').click()
+  await page.getByRole('button', { name: 'Bereiche' }).click()
+  await page.getByLabel('Neuer Bereich').fill('Kühl')
+  await page.getByRole('button', { name: 'Bereich anlegen' }).click()
+  await page.getByRole('button', { name: 'Zurück' }).click()
+  await page.getByRole('button', { name: 'Schließen' }).click()
+
+  // Die Aufgabe in den Bereich legen …
+  await taskRow(page, 'Milch').click()
+  await page.getByLabel('Bereich').selectOption({ label: 'Kühl' })
+  await page.getByRole('button', { name: 'Speichern', exact: true }).click()
+
+  const kuehl = page.getByTestId('section-header').filter({ hasText: 'Kühl' })
+  const ohne = page.getByTestId('section-header').filter({ hasText: 'Ohne Bereich' })
+  await expect(kuehl).toContainText('1')
+  await expect(ohne).toContainText('0')
+
+  // … und wieder herausziehen, auf den Kopf „Ohne Bereich".
+  await dragRowOnto(page, 'Milch', ohne)
+
+  await expect(ohne).toContainText('1')
+  await expect(kuehl).toContainText('0')
 })
 
 test('scrollt beim Ziehen an den Rand mit', async ({ page }) => {
@@ -769,15 +804,17 @@ test('E2E 6: Bereiche ordnen Aufgaben, nehmen sie beim Ziehen auf und klappen zu
   const kopf = (name: string) => page.getByTestId('section-header').filter({ hasText: name })
   await expect(kopf('Obst')).toContainText('1')
 
-  // Aufgaben ohne Bereich stehen oben, **ohne** eigene Überschrift; darunter
-  // die Bereiche in ihrer Reihenfolge. Der Kopf wird groß dargestellt –
-  // verglichen wird deshalb kleingeschrieben.
+  // Aufgaben ohne Bereich stehen oben – **mit** eigenem Kopf, seit sich dorthin
+  // ziehen laesst: Eine leere Gruppe hat sonst kein Ziel. Darunter die Bereiche
+  // in ihrer Reihenfolge. Der Kopf wird gross dargestellt, verglichen wird
+  // deshalb kleingeschrieben.
   const koepfe = (await page.getByTestId('section-header').allInnerTexts()).map((text) =>
     text.toLowerCase(),
   )
-  expect(koepfe).toHaveLength(2)
-  expect(koepfe[0]).toContain('obst')
-  expect(koepfe[1]).toContain('getränke')
+  expect(koepfe).toHaveLength(3)
+  expect(koepfe[0]).toContain('ohne bereich')
+  expect(koepfe[1]).toContain('obst')
+  expect(koepfe[2]).toContain('getränke')
 
   // Die Bereiche stehen **unter** den Aufgaben ohne Bereich: „Milch" und
   // „Saft" zuerst (zuletzt angelegt), dann „Äpfel" im Bereich „Obst".

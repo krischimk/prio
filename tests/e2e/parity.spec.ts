@@ -556,6 +556,7 @@ const funktionen: Funktion[] = [
         'true',
       )
       await blatt.getByRole('button', { name: 'Arbeit' }).click()
+      await blatt.getByRole('button', { name: 'Verschieben', exact: true }).click()
       await expect(blatt).toBeHidden()
 
       // Aus der Quellliste ist sie verschwunden …
@@ -587,6 +588,7 @@ const funktionen: Funktion[] = [
         'true',
       )
       await blatt.getByRole('button', { name: 'Arbeit' }).click()
+      await blatt.getByRole('button', { name: 'Verschieben', exact: true }).click()
       await expect(blatt).toBeHidden()
 
       // Die Detailansicht bleibt offen; geschlossen ist die Quellliste leer.

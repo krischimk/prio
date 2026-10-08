@@ -79,22 +79,40 @@ export function MobileTaskList({
             const offen = !zugeklappt.has(gruppe.id)
             return (
               <div key={gruppe.id}>
-                {gruppe.section === null ? null : (
-                  <SectionHeader
-                    name={gruppe.section.name}
-                    anzahl={gruppe.tasks.length}
-                    offen={offen}
-                    onToggle={() => umschalten(gruppe.id)}
-                    className="px-4 pt-3"
-                    abschnittId={gruppe.section.id}
-                    hervorgehoben={drag.dropSectionId === gruppe.section.id}
-                  />
-                )}
+                {/*
+                  Auch die Aufgaben ohne Bereich bekommen einen Kopf - aber nur,
+                  wenn es ueberhaupt Bereiche gibt. Ohne ihn liesse sich dorthin
+                  nicht ziehen: Das Ziel eines Zuges ist immer ein Kopf, und eine
+                  leere Gruppe hat keine Zeile, an der es sich ablesen liesse.
+                  Ohne Bereiche bleibt die Liste flach und ohne Kopf.
+                */}
+                <SectionHeader
+                  name={gruppe.section?.name ?? 'Ohne Bereich'}
+                  anzahl={gruppe.tasks.length}
+                  offen={offen}
+                  onToggle={() => umschalten(gruppe.id)}
+                  className="px-4 pt-3"
+                  abschnittId={gruppe.section?.id}
+                  hervorgehoben={drag.dropSectionIdAktiv && drag.dropSectionId === (gruppe.section?.id ?? null)}
+                />
                 {offen
                   ? gruppe.tasks.map((task) => {
                       index += 1
+                      /*
+                       * Die Linie gehoert an den Gruppenanfang, wenn das Ziel
+                       * diese Gruppe ist, aber keine ihrer Zeilen: Etwa in
+                       * einen leeren Bereich oder in die Aufgaben ohne Bereich.
+                       */
+                      const zeileInDieserGruppe = gruppe.tasks.some(
+                        (eigene) => eigene.id === drag.dropBeforeId,
+                      )
+                      const anfang =
+                        drag.dropSectionIdAktiv &&
+                        drag.dropSectionId === (gruppe.section?.id ?? null) &&
+                        !zeileInDieserGruppe
                       return (
                         <Fragment key={task.id}>
+                          {anfang && task.id === gruppe.tasks[0]?.id ? <DropIndicator /> : null}
                           {drag.dropBeforeId === task.id ? <DropIndicator /> : null}
                           <MobileTaskRow
                             task={task}

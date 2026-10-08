@@ -1008,6 +1008,37 @@ describe('Repositories (lokale Geschäftslogik)', () => {
    * stellt, ist das der Weg zurück – die Leiste nimmt es sofort zurück, das
    * Fenster „Wiederherstellen" in den nächsten sieben Tagen.
    */
+  it('verschiebt eine Aufgabe in einen Bereich der Zielliste', async () => {
+    const quelle = await device.repositories.createList('Haushalt', userId)
+    const ziel = await device.repositories.createList('Arbeit', userId)
+    await device.repositories.addListSection(ziel.id, 'Projekte')
+    const bereich = (await device.repositories.getList(ziel.id))!.sections[0]!
+    const aufgabe = await device.repositories.createTask({ listId: quelle.id, title: 'Umzug' })
+
+    await device.repositories.moveTask(aufgabe.id, ziel.id, bereich.id)
+
+    const danach = (await device.repositories.getTask(aufgabe.id))!
+    expect(danach.list_id).toBe(ziel.id)
+    expect(danach.section_id).toBe(bereich.id)
+  })
+
+  it('setzt beim Listenwechsel einen ungueltigen Bereich auf keinen Bereich', async () => {
+    const quelle = await device.repositories.createList('Haushalt', userId)
+    await device.repositories.addListSection(quelle.id, 'Kueche')
+    const bereich = (await device.repositories.getList(quelle.id))!.sections[0]!
+    const ziel = await device.repositories.createList('Arbeit', userId)
+    const aufgabe = await device.repositories.createTask({
+      listId: quelle.id,
+      title: 'Umzug',
+      sectionId: bereich.id,
+    })
+
+    // Der Bereich gibt es in der Zielliste nicht.
+    await device.repositories.moveTask(aufgabe.id, ziel.id, bereich.id)
+
+    expect((await device.repositories.getTask(aufgabe.id))!.section_id).toBe(null)
+  })
+
   it('holt eine gelöschte Aufgabe zurück', async () => {
     const liste = await device.repositories.createList('Haushalt', userId)
     const aufgabe = await device.repositories.createTask({ listId: liste.id, title: 'Weg damit' })
@@ -1031,10 +1062,10 @@ describe('Repositories (lokale Geschäftslogik)', () => {
 
     expect(await device.repositories.listLists()).toEqual([])
     expect((await device.repositories.listDeletedLists()).map((l) => l.name)).toEqual(['Haushalt'])
-    // Die Aufgabe ist mit der Liste gelöscht.
-    expect((await device.repositories.listDeletedTasks()).map((t2) => t2.title)).toEqual([
-      'Mit der Liste weg',
-    ])
+    // Die Aufgabe kommt mit ihrer Liste zurück und steht deshalb **nicht**
+    // einzeln im Wiederherstellen: Einzeln zurückgeholt landete sie in einer
+    // gelöschten Liste, sichtbar passierte nichts.
+    expect(await device.repositories.listDeletedTasks()).toEqual([])
 
     await device.repositories.restoreList(liste.id)
 

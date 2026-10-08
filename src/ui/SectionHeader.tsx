@@ -36,6 +36,7 @@ export function SectionHeader({
         hervorgehoben ? 'bg-brand-tint/40 text-brand-faint' : ''
       } ${className}`}
       data-testid="section-header"
+      data-section-header=""
       data-section-id={abschnittId}
       data-drop-target={hervorgehoben ? 'true' : undefined}
     >

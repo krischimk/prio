@@ -44,6 +44,7 @@ function aufbau({ mitKopf = false }: { mitKopf?: boolean } = {}) {
   }
   if (mitKopf) {
     const kopf = document.createElement('div')
+    kopf.setAttribute('data-section-header', '')
     kopf.setAttribute('data-section-id', 'bereich-1')
     behaelter.appendChild(kopf)
   }
@@ -63,13 +64,15 @@ describe('useReorderDrag', () => {
       .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
       .mockImplementation(function (this: HTMLElement) {
         const geschwister = this.parentElement
-          ? Array.from(this.parentElement.querySelectorAll('[data-task-row], [data-section-id]'))
+          ? Array.from(
+              this.parentElement.querySelectorAll('[data-task-row], [data-section-header]'),
+            )
           : []
         const stelle = Math.max(0, geschwister.indexOf(this))
-        const top = this.hasAttribute('data-section-id') ? 150 : stelle * ZEILENHOEHE
+        const top = this.hasAttribute('data-section-header') ? 150 : stelle * ZEILENHOEHE
         return {
           top,
-          height: this.hasAttribute('data-section-id') ? 32 : ZEILENHOEHE,
+          height: this.hasAttribute('data-section-header') ? 32 : ZEILENHOEHE,
           bottom: top + ZEILENHOEHE,
           left: 0,
           right: 100,

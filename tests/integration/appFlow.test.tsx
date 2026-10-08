@@ -36,7 +36,13 @@ afterEach(() => {
 })
 
 describe('App-Integration', () => {
-  it('meldet an, lädt Listen, speichert eine Aufgabe lokal und synchronisiert', async () => {
+  /*
+   * Eigenes Zeitbudget: Der Test wartet **in sich** bis zu fuenf Sekunden auf
+   * den Abgleich. Mit dem Standardbudget von fuenf Sekunden fuer den ganzen
+   * Test war das ein Wettlauf – er schlug sporadisch fehl, ohne dass etwas
+   * kaputt war. Das Budget muss groesser sein als die laengste Wartezeit darin.
+   */
+  it('meldet an, lädt Listen, speichert eine Aufgabe lokal und synchronisiert', { timeout: 20_000 }, async () => {
     const user = userEvent.setup()
     const { server, services } = createServices()
 
