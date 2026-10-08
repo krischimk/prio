@@ -1002,4 +1002,46 @@ describe('Repositories (lokale Geschäftslogik)', () => {
       )
     })
   })
+
+  /*
+   * Wiederherstellen nach dem Löschen: Seit das Löschen keine Rückfrage mehr
+   * stellt, ist das der Weg zurück – die Leiste nimmt es sofort zurück, das
+   * Fenster „Wiederherstellen" in den nächsten sieben Tagen.
+   */
+  it('holt eine gelöschte Aufgabe zurück', async () => {
+    const liste = await device.repositories.createList('Haushalt', userId)
+    const aufgabe = await device.repositories.createTask({ listId: liste.id, title: 'Weg damit' })
+
+    await device.repositories.deleteTask(aufgabe.id)
+
+    expect(await device.repositories.listTasks(liste.id)).toEqual([])
+    expect((await device.repositories.listDeletedTasks()).map((t2) => t2.title)).toEqual(['Weg damit'])
+
+    await device.repositories.restoreTask(aufgabe.id)
+
+    expect((await device.repositories.listTasks(liste.id)).map((t2) => t2.title)).toEqual(['Weg damit'])
+    expect(await device.repositories.listDeletedTasks()).toEqual([])
+  })
+
+  it('holt eine gelöschte Liste samt ihrer Aufgaben zurück', async () => {
+    const liste = await device.repositories.createList('Haushalt', userId)
+    await device.repositories.createTask({ listId: liste.id, title: 'Mit der Liste weg' })
+
+    await device.repositories.deleteList(liste.id)
+
+    expect(await device.repositories.listLists()).toEqual([])
+    expect((await device.repositories.listDeletedLists()).map((l) => l.name)).toEqual(['Haushalt'])
+    // Die Aufgabe ist mit der Liste gelöscht.
+    expect((await device.repositories.listDeletedTasks()).map((t2) => t2.title)).toEqual([
+      'Mit der Liste weg',
+    ])
+
+    await device.repositories.restoreList(liste.id)
+
+    expect((await device.repositories.listLists()).map((l) => l.name)).toEqual(['Haushalt'])
+    expect((await device.repositories.listTasks(liste.id)).map((t2) => t2.title)).toEqual([
+      'Mit der Liste weg',
+    ])
+  })
 })
+

@@ -47,6 +47,8 @@ export const SCHREIBEND = [
   'markListShared',
   'removeMember',
   'leaveList',
+  'restoreTask',
+  'restoreList',
 ] as const satisfies readonly (keyof Repositories)[]
 
 /** Lokale Eingabehilfen: nur neu laden, nie abgleichen. */
@@ -66,6 +68,8 @@ export const LESEND = [
   'listMembers',
   'listReminderPresets',
   'listShareContacts',
+  'listDeletedTasks',
+  'listDeletedLists',
 ] as const satisfies readonly (keyof Repositories)[]
 
 type BeliebigeMethode = (...args: never[]) => Promise<unknown>

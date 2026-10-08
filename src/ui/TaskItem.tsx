@@ -38,7 +38,7 @@ export function TaskItem({
   onRequestMove?: (task: LocalTask) => void
 }) {
   const { repositories } = useWorkspace()
-  const { offerUndo } = useUndo()
+  const { offerUndo, offer } = useUndo()
   const [editing, setEditing] = useState(false)
   // Die Zurück-Taste schließt zuerst das Bearbeitungsformular.
   useBackLayer(editing, () => setEditing(false), 'aufgabe-bearbeiten')
@@ -93,7 +93,18 @@ export function TaskItem({
           size="sm"
           aria-label={`Aufgabe löschen: ${task.title}`}
           onClick={() => {
-            void repositories.deleteTask(task.id)
+            const id = task.id
+            const titel = task.title
+            void repositories.deleteTask(id).then(() =>
+              offer({
+                taskId: id,
+                text: `„${titel}“`,
+                art: 'geloescht',
+                rueckgaengig: async () => {
+                  await repositories.restoreTask(id)
+                },
+              }),
+            )
           }}
         >
           Löschen

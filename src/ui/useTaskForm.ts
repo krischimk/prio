@@ -24,6 +24,13 @@ export interface TaskForm {
   dueIso: string | null
   busy: boolean
   speichern: (event: FormEvent) => Promise<void>
+  /**
+   * `true`, wenn im Formular etwas anders steht als beim Öffnen.
+   *
+   * Gebraucht wird das beim Schließen über das Kreuz: Die Änderungen sind dann
+   * nicht gespeichert, und das soll nicht stillschweigend passieren.
+   */
+  geaendert: boolean
 }
 
 function werteVon(task: LocalTask | null): TaskFormWerte {
@@ -63,13 +70,23 @@ export function useTaskForm({
 }): TaskForm {
   const { repositories } = useWorkspace()
   const [werte, setWerte] = useState<TaskFormWerte>(() => werteVon(task))
+  /**
+   * Der Stand beim Öffnen – daran wird „geändert" gemessen.
+   *
+   * Als Zustand, nicht als Ref: Gelesen wird er beim Rendern, und ein Ref
+   * gehört nicht dorthin (er löst kein Neuzeichnen aus).
+   */
+  const [start, setStart] = useState<TaskFormWerte>(() => werteVon(task))
   const [busy, setBusy] = useState(false)
 
   const setzen = useCallback(<F extends keyof TaskFormWerte>(feld: F, wert: TaskFormWerte[F]) => {
     setWerte((alte) => ({ ...alte, [feld]: wert }))
   }, [])
 
-  const zuruecksetzen = useCallback(() => setWerte(werteVon(null)), [])
+  const zuruecksetzen = useCallback(() => {
+    setStart(werteVon(null))
+    setWerte(werteVon(null))
+  }, [])
 
   const speichern = async (event: FormEvent) => {
     event.preventDefault()
@@ -102,5 +119,8 @@ export function useTaskForm({
     dueIso: fromDateTimeLocalValue(werte.dueAt),
     busy,
     speichern,
+    // Ein Vergleich der Werte, kein zweites Buchführungsfeld: So kann die
+    // Anzeige nicht auseinanderlaufen.
+    geaendert: JSON.stringify(werte) !== JSON.stringify(start),
   }
 }

@@ -1,13 +1,51 @@
 import { parseSections, withNewSection, withRenamedSection, withoutSection } from '../../domain/sections'
 import { newId } from '../../domain/ids'
-import { compareListsByName } from '../../domain/ordering'
+import { timeOf } from '../../domain/clock'
+import { compareListsByName, restoreCutoff } from '../../domain/ordering'
 import type { LocalList, LocalTask } from '../../domain/types'
-import { requireText } from '../validation'
+import { requireText, ValidationError } from '../validation'
 import type { Kontext } from './context'
 import type { Repositories } from './types'
 
-export function listen(ctx: Kontext): Pick<Repositories, 'createList' | 'renameList' | 'setListIcon' | 'deleteList' | 'getList' | 'listLists' | 'addListSection' | 'renameListSection' | 'deleteListSection'> {
+export function listen(ctx: Kontext): Pick<Repositories, 'createList' | 'renameList' | 'setListIcon' | 'deleteList' | 'getList' | 'listLists' | 'listDeletedLists' | 'restoreList' | 'addListSection' | 'renameListSection' | 'deleteListSection'> {
   return {
+    async listDeletedLists() {
+      const grenze = restoreCutoff(timeOf(ctx.clock.now()))
+      const lists = await ctx.db.lists.where('deleted_at').aboveOrEqual(grenze).toArray()
+      return lists
+        .filter((list) => list.owner_id !== '')
+        .sort((a, b) => (b.deleted_at ?? '').localeCompare(a.deleted_at ?? ''))
+    },
+
+    /**
+     * Holt eine gelöschte Liste zurück – samt der Aufgaben, die mit ihr
+     * gelöscht wurden.
+     *
+     * Erkannt werden sie an ihrem `deleted_at`: `deleteList` stempelt Liste und
+     * Aufgaben mit demselben Zeitstempel. Aufgaben, die vorher einzeln gelöscht
+     * wurden, bleiben damit gelöscht.
+     */
+    async restoreList(listId) {
+      const list = await ctx.db.lists.get(listId)
+      if (!list) throw new ValidationError('not-found', 'Diese Liste existiert nicht mehr.')
+      const zeitpunkt = list.deleted_at
+
+      await ctx.db.transaction('rw', ctx.db.lists, ctx.db.tasks, async () => {
+        await ctx.db.lists.put({ ...list, deleted_at: null, ...ctx.stamp() })
+        if (zeitpunkt === null) return
+        const mitgeloescht = await ctx.db.tasks
+          .where('list_id')
+          .equals(listId)
+          .filter((task) => task.deleted_at === zeitpunkt)
+          .toArray()
+        if (mitgeloescht.length > 0) {
+          await ctx.db.tasks.bulkPut(
+            mitgeloescht.map((task) => ({ ...task, deleted_at: null, ...ctx.stamp() })),
+          )
+        }
+      })
+    },
+
     async createList(name, ownerId) {
       const now = ctx.clock.now()
       const list: LocalList = {

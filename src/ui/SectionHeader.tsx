@@ -14,23 +14,37 @@ export function SectionHeader({
   offen,
   onToggle,
   className = '',
+  abschnittId,
+  hervorgehoben = false,
 }: {
   name: string
   anzahl: number
   offen: boolean
   onToggle: () => void
   className?: string
+  /** Kennung des Bereichs – das Ziehen erkennt daran sein Ziel. */
+  abschnittId?: string
+  /** Ziel eines laufenden Ziehens: Der Kopf zeigt, wohin die Aufgabe kommt. */
+  hervorgehoben?: boolean
 }) {
   return (
     <button
       type="button"
       aria-expanded={offen}
       onClick={onToggle}
-      className={`${focusRing} flex w-full items-center gap-1.5 py-1 text-left ${className}`}
+      className={`${focusRing} flex w-full items-center gap-1.5 rounded-control py-1 text-left ${
+        hervorgehoben ? 'bg-brand-tint/40 text-brand-faint' : ''
+      } ${className}`}
       data-testid="section-header"
+      data-section-id={abschnittId}
+      data-drop-target={hervorgehoben ? 'true' : undefined}
     >
       <ChevronIcon offen={offen} className={`h-3.5 w-3.5 shrink-0 ${mutedText}`} />
-      <span className="text-label font-semibold tracking-wide text-ink-soft uppercase">
+      <span
+        className={`text-label font-semibold tracking-wide uppercase ${
+          hervorgehoben ? 'text-brand-faint' : 'text-ink-soft'
+        }`}
+      >
         {name}
       </span>
       <span className={`text-label ${mutedText}`}>{anzahl}</span>

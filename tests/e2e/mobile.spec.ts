@@ -29,6 +29,28 @@ async function taskTitles(page: Page): Promise<string[]> {
   return page.getByTestId('task-row').allInnerTexts()
 }
 
+/** Hält eine Zeile gedrückt und zieht sie auf ein anderes Element. */
+async function dragRowOnto(
+  page: Page,
+  title: string,
+  ziel: ReturnType<Page['getByTestId']>,
+): Promise<void> {
+  const box = await taskRow(page, title).boundingBox()
+  const zielBox = await ziel.boundingBox()
+  if (!box || !zielBox) throw new Error(`Zeile "${title}" oder Ziel nicht gefunden`)
+
+  const x = box.x + box.width / 2
+  await page.mouse.move(x, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.waitForTimeout(600)
+  // Knapp unterhalb der Zielmitte: Genau auf der Mitte entscheidet der
+  // halbe Pixel, ob die Aufgabe vor oder hinter der Zeile landet.
+  await page.mouse.move(x, zielBox.y + zielBox.height * 0.75, { steps: 10 })
+  await page.waitForTimeout(120)
+  await page.mouse.up()
+  await page.waitForTimeout(300)
+}
+
 /** Hält eine Zeile gedrückt und zieht sie ein Stück nach unten. */
 async function dragRowDown(page: Page, title: string, distancePx: number): Promise<void> {
   const box = await taskRow(page, title).boundingBox()
@@ -131,8 +153,10 @@ test('löscht eine Aufgabe in der Detailansicht', async ({ page }) => {
   await createTask(page, 'Wird gelöscht')
 
   await taskRow(page, 'Wird gelöscht').click()
+  // Kein Bestätigungsdialog mehr: Löschen wirkt sofort, die Leiste bietet den
+  // Weg zurück.
   await page.getByRole('button', { name: 'Aufgabe löschen' }).click()
-  await page.getByRole('button', { name: 'Wirklich löschen' }).click()
+  await expect(page.getByTestId('undo-bar')).toContainText('Wird gelöscht')
 
   await expect(page.getByText('Noch keine Aufgaben in dieser Liste.')).toBeVisible()
 })
@@ -157,8 +181,11 @@ test('verschiebt eine Aufgabe über die Detailansicht in eine andere Liste', asy
 
   const sheet = page.getByRole('dialog', { name: 'Aufgabe verschieben' })
   await expect(sheet).toBeVisible()
-  // Die eigene Liste wird nicht angeboten.
-  await expect(sheet.getByRole('button', { name: 'Haushalt' })).toHaveCount(0)
+  // Die eigene Liste steht **mit** in der Auswahl und ist angehakt – sonst wäre
+  // nicht zu sehen, wo die Aufgabe gerade liegt.
+  const eigene = sheet.getByRole('button', { name: /Haushalt/ })
+  await expect(eigene).toHaveAttribute('aria-current', 'true')
+  await expect(eigene).toContainText('aktuelle Liste')
   await sheet.getByRole('button', { name: 'Arbeit' }).click()
   await expect(sheet).toBeHidden()
 
@@ -247,6 +274,54 @@ test('legt eine gezogene Zeile wieder an ihren Platz zurück', async ({ page }) 
   expect(await taskTitles(page)).toEqual(['Dritte', 'Zweite', 'Erste'])
 })
 
+test('fragt beim Schließen nach, wenn Änderungen nicht gespeichert sind', async ({ page }) => {
+  await register(page, uniqueEmail('m7g'))
+  await createList(page, 'Haushalt')
+  await createTask(page, 'Milch')
+
+  await taskRow(page, 'Milch').click()
+  await page.getByLabel('Titel', { exact: true }).fill('Milch und Brot')
+
+  // Über das Kreuz hinaus: Die Änderung ist nicht gespeichert.
+  await page.getByRole('button', { name: 'Schließen' }).click()
+  const frage = page.getByRole('alertdialog', { name: 'Änderungen verwerfen' })
+  await expect(frage).toBeVisible()
+
+  // „Weiter bearbeiten" bleibt im Formular – mit der Änderung.
+  await frage.getByRole('button', { name: 'Weiter bearbeiten' }).click()
+  await expect(page.getByLabel('Titel', { exact: true })).toHaveValue('Milch und Brot')
+
+  // „Verwerfen" schließt, ohne zu speichern.
+  await page.getByRole('button', { name: 'Schließen' }).click()
+  await frage.getByRole('button', { name: 'Verwerfen' }).click()
+  await expect(page.getByLabel('Titel', { exact: true })).toHaveCount(0)
+  expect(await taskTitles(page)).toEqual(['Milch'])
+})
+
+test('zieht eine Aufgabe in einen leeren Bereich', async ({ page, request }) => {
+  await resetServer(request)
+  await register(page, uniqueEmail('m7f'))
+  await createList(page, 'Einkauf')
+  await createTask(page, 'Milch')
+
+  // Ein Bereich, in dem noch nichts steht: Es gibt keine Zeile, an der sich das
+  // Ziel ablesen ließe – nur seinen Kopf.
+  await page.getByTestId('app-bar-title').click()
+  await page.getByRole('button', { name: 'Bereiche' }).click()
+  await page.getByLabel('Neuer Bereich').fill('Getränke')
+  await page.getByRole('button', { name: 'Bereich anlegen' }).click()
+  await page.getByRole('button', { name: 'Zurück' }).click()
+  await page.getByRole('button', { name: 'Schließen' }).click()
+
+  const kopf = page.getByTestId('section-header').filter({ hasText: 'Getränke' })
+  await expect(kopf).toContainText('0')
+
+  await dragRowOnto(page, 'Milch', kopf)
+
+  await expect(kopf).toContainText('1')
+  await expect(taskRow(page, 'Milch')).toBeVisible()
+})
+
 test('scrollt beim Ziehen an den Rand mit', async ({ page }) => {
   await register(page, uniqueEmail('m7e'))
   await createList(page, 'Lang')
@@ -331,14 +406,52 @@ test('benennt eine Liste über die App-Leiste um', async ({ page }) => {
   await expect(page.getByTestId('app-bar-title')).toHaveText('Zweiter Name')
 })
 
+test('nimmt eine gelöschte Aufgabe über die Leiste zurück', async ({ page }) => {
+  await register(page, uniqueEmail('m7h'))
+  await createList(page, 'Haushalt')
+  await createTask(page, 'Doch behalten')
+
+  await taskRow(page, 'Doch behalten').click()
+  await page.getByRole('button', { name: 'Aufgabe löschen' }).click()
+
+  // Kein Bestätigungsdialog: Löschen wirkt sofort, die Leiste bietet den Weg
+  // zurück.
+  const leiste = page.getByTestId('undo-bar')
+  await expect(leiste).toContainText('Doch behalten')
+  await leiste.getByRole('button', { name: 'Rückgängig' }).click()
+
+  await expect(taskRow(page, 'Doch behalten')).toBeVisible()
+})
+
+test('stellt eine gelöschte Aufgabe im Fenster wieder her', async ({ page }) => {
+  await register(page, uniqueEmail('m7i'))
+  await createList(page, 'Haushalt')
+  await createTask(page, 'Später zurück')
+
+  await taskRow(page, 'Später zurück').click()
+  // Das Löschen schließt die Detailansicht selbst.
+  await page.getByRole('button', { name: 'Aufgabe löschen' }).click()
+
+  // In den Einstellungen steht sie unter „Gelöscht" – sieben Tage lang.
+  await openMenu(page)
+  await page.getByRole('button', { name: 'Aufgaben wiederherstellen' }).click()
+  const bereich = page.getByTestId('restore-deleted')
+  await expect(bereich).toContainText('Später zurück')
+  await bereich.getByRole('button', { name: 'Wiederherstellen' }).first().click()
+  await page.getByRole('button', { name: 'Schließen' }).click()
+
+  await expect(taskRow(page, 'Später zurück')).toBeVisible()
+})
+
 test('löscht eine Liste über die App-Leiste', async ({ page }) => {
   await register(page, uniqueEmail('m11'))
   await createList(page, 'Wegwerfliste')
 
   await page.getByTestId('app-bar-title').click()
   await page.getByRole('button', { name: 'Liste löschen' }).click()
-  // Erst nach der Rückfrage wird wirklich gelöscht.
-  await page.getByRole('button', { name: 'Wirklich löschen' }).click()
+  // „Löschen" ist die Tat, „Liste löschen" der Menüpunkt dorthin.
+  await page.getByRole('button', { name: 'Löschen', exact: true }).click()
+  await expect(page.getByTestId('undo-bar')).toContainText('Liste „Wegwerfliste“')
 
   await expect(page.getByRole('dialog', { name: 'Liste verwalten' })).toBeHidden()
   await expect(page.getByText('Öffne oben links das Menü und lege eine Liste an.')).toBeVisible()
@@ -670,8 +783,10 @@ test('E2E 6: Bereiche ordnen Aufgaben, nehmen sie beim Ziehen auf und klappen zu
   // „Saft" zuerst (zuletzt angelegt), dann „Äpfel" im Bereich „Obst".
   expect(await taskTitles(page)).toEqual(['Milch', 'Saft', 'Äpfel'])
 
-  // „Saft" unter „Äpfel" ziehen – damit landet sie im Bereich „Obst".
-  await dragRowDown(page, 'Saft', 120)
+  // „Saft" auf „Äpfel" ziehen – damit landet sie im Bereich „Obst". Gezogen
+  // wird auf die Zeile selbst, nicht um eine geratene Strecke: Seit ein
+  // Bereichskopf ebenfalls ein Ziel ist, entscheidet die Lage des Fingers.
+  await dragRowOnto(page, 'Saft', taskRow(page, 'Äpfel'))
 
   await expect(kopf('Obst')).toContainText('2')
   // „Milch" bleibt ohne Bereich und steht deshalb weiter oben.

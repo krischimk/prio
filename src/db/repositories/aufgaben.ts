@@ -5,7 +5,7 @@ import { newId } from '../../domain/ids'
 import { normalisiereAufgabe } from '../../domain/normalize'
 import { compareRestorable, compareTasks, restoreCutoff } from '../../domain/ordering'
 import type { LocalTask } from '../../domain/types'
-import { optionalText, requireText } from '../validation'
+import { optionalText, requireText, ValidationError } from '../validation'
 import type { Kontext } from './context'
 import type { Repositories } from './types'
 
@@ -42,7 +42,7 @@ async function wiederOeffnen(ctx: Kontext, task: LocalTask, now: string): Promis
   return geoeffnet
 }
 
-export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updateTask' | 'setTaskCompleted' | 'moveTask' | 'reorderTasks' | 'deleteTask' | 'getTask' | 'listTasks' | 'listRestorableTasks'> {
+export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updateTask' | 'setTaskCompleted' | 'moveTask' | 'reorderTasks' | 'deleteTask' | 'getTask' | 'listTasks' | 'listRestorableTasks' | 'listDeletedTasks' | 'restoreTask'> {
   return {
 
     async createTask(input) {
@@ -257,6 +257,25 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
         .filter((task) => task.deleted_at === null && !task.completed)
         .map(normalisiereAufgabe)
         .sort(compareTasks)
+    },
+
+    async listDeletedTasks() {
+      const grenze = restoreCutoff(timeOf(ctx.clock.now()))
+      // Über den Index `deleted_at`: Nur gelöschte Zeilen stehen darin.
+      const tasks = await ctx.db.tasks.where('deleted_at').aboveOrEqual(grenze).toArray()
+      return tasks.sort(compareRestorable)
+    },
+
+    /**
+     * Holt eine gelöschte Aufgabe zurück.
+     *
+     * `deleted_at` wird geleert, `dirty` gesetzt: Der Server muss davon
+     * erfahren, sonst bliebe sie dort gelöscht.
+     */
+    async restoreTask(taskId) {
+      const task = await ctx.db.tasks.get(taskId)
+      if (!task) throw new ValidationError('not-found', 'Diese Aufgabe existiert nicht mehr.')
+      await ctx.db.tasks.put({ ...task, deleted_at: null, ...ctx.stamp() })
     },
 
     async listRestorableTasks() {

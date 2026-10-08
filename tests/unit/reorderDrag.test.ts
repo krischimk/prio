@@ -1,44 +1,59 @@
 import { describe, expect, it } from 'vitest'
-import { einfuegestelle } from '../../src/ui/mobile/useReorderDrag'
+import { zielAusSlots, type Slot } from '../../src/ui/mobile/useReorderDrag'
 
 /**
- * Die Einfügestelle beim Ziehen (unit).
+ * Das Ziel beim Ziehen (unit).
  *
- * Drei Zeilen à 50 px: Mittellinien bei 25, 75 und 125. Gezählt wird, an wie
- * vielen Mittellinien **anderer** Zeilen der Finger vorbei ist – das ist der
- * Index in der Liste ohne die gezogene Aufgabe.
+ * Drei Zeilen à 50 px (Mittellinien bei 25, 75, 125), dazu ein Bereichskopf.
  */
-const ZEILEN = [
-  { top: 0, height: 50 },
-  { top: 50, height: 50 },
-  { top: 100, height: 50 },
-]
+function zeile(id: string, top: number, abschnittId: string | null = null): Slot {
+  return { art: 'zeile', top, height: 50, id, abschnittId }
+}
+function kopf(abschnittId: string, top: number): Slot {
+  return { art: 'kopf', top, height: 32, id: abschnittId, abschnittId }
+}
 
-describe('einfuegestelle', () => {
+const FLACH = [zeile('A', 0), zeile('B', 50), zeile('C', 100)]
+
+describe('zielAusSlots', () => {
   it('lässt die Aufgabe an ihrem Platz, solange der Finger in ihrer Zeile bleibt', () => {
     // Genau hier sprang sie früher: Sobald der Finger die eigene Mitte (75)
     // verließ, galt die nächste Zeile als Ziel.
-    expect(einfuegestelle(ZEILEN, 1, 60)).toBe(1)
-    expect(einfuegestelle(ZEILEN, 1, 80)).toBe(1)
-    expect(einfuegestelle(ZEILEN, 1, 99)).toBe(1)
+    expect(zielAusSlots(FLACH, 1, 60).stelle).toBe(1)
+    expect(zielAusSlots(FLACH, 1, 80).stelle).toBe(1)
+    expect(zielAusSlots(FLACH, 1, 99).stelle).toBe(1)
   })
 
   it('zählt nur die anderen Mittellinien', () => {
-    // Oberhalb aller Mittellinien: ganz nach vorn.
-    expect(einfuegestelle(ZEILEN, 1, 0)).toBe(0)
-    // Unterhalb aller Mittellinien: ganz nach hinten.
-    expect(einfuegestelle(ZEILEN, 1, 500)).toBe(2)
+    expect(zielAusSlots(FLACH, 1, 0).stelle).toBe(0)
+    expect(zielAusSlots(FLACH, 1, 500).stelle).toBe(2)
+    expect(zielAusSlots(FLACH, 0, 30).stelle).toBe(0)
+    expect(zielAusSlots(FLACH, 0, 80).stelle).toBe(1)
+    expect(zielAusSlots(FLACH, 0, 130).stelle).toBe(2)
   })
 
-  it('schiebt genau eine Position, wenn eine Mittellinie überschritten wird', () => {
-    // Oben liegende Aufgabe (Mitte 25) eine Position nach unten.
-    expect(einfuegestelle(ZEILEN, 0, 30)).toBe(0)
-    expect(einfuegestelle(ZEILEN, 0, 80)).toBe(1)
-    expect(einfuegestelle(ZEILEN, 0, 130)).toBe(2)
+  it('nimmt den Bereich der nächsten Zeile', () => {
+    const mitBereichen = [
+      kopf('obst', 0),
+      zeile('A', 32, 'obst'),
+      kopf('getraenke', 82),
+      zeile('B', 114, 'getraenke'),
+    ]
+
+    expect(zielAusSlots(mitBereichen, 1, 120).abschnittId).toBe('getraenke')
   })
 
-  it('kommt mit einer einzelnen Zeile und mit fehlenden Maßen zurecht', () => {
-    expect(einfuegestelle([{ top: 0, height: 50 }], 0, 999)).toBe(0)
-    expect(einfuegestelle([ZEILEN[0]!, undefined as never, ZEILEN[2]!], 0, 130)).toBe(1)
+  it('zieht in einen leeren Bereich, wenn der Finger auf seinem Kopf steht', () => {
+    // Ohne diese Regel ließe sich ein leerer Bereich gar nicht befüllen: Es gibt
+    // keine Zeile, an der sich das Ziel ablesen ließe.
+    const mitLeerem = [zeile('A', 0, null), kopf('leer', 50)]
+
+    expect(zielAusSlots(mitLeerem, 0, 60).abschnittId).toBe('leer')
+  })
+
+  it('zieht auch in einen zugeklappten Bereich', () => {
+    const zugeklappt = [zeile('A', 0, null), kopf('zu', 50)]
+
+    expect(zielAusSlots(zugeklappt, 0, 70).abschnittId).toBe('zu')
   })
 })

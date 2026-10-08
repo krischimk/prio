@@ -75,8 +75,10 @@ test('löscht eine Liste in der breiten Ansicht', async ({ page }) => {
   await register(page, uniqueEmail('l4'))
   await createList(page, 'Wegwerfliste')
 
+  // Kein Bestätigungsdialog mehr: Löschen wirkt sofort, dafür erscheint die
+  // Rückgängig-Leiste.
   await page.getByRole('button', { name: 'Liste löschen', exact: true }).click()
-  await page.getByRole('button', { name: 'Wirklich löschen', exact: true }).click()
+  await expect(page.getByTestId('undo-bar')).toContainText('Liste „Wegwerfliste“')
 
   await expect(page.getByText('Lege links eine Liste an, um Aufgaben zu erfassen.')).toBeVisible()
 })

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useWorkspace } from '../../app/useWorkspace'
+import { useUndo } from '../useUndo'
 import type { LocalList } from '../../domain/types'
 import { ListIcon } from '../ListIcon'
 import { ListIconPicker } from '../ListIconPicker'
@@ -34,6 +35,7 @@ export function ListSettingsSheet({
   onClose: () => void
 }) {
   const { repositories } = useWorkspace()
+  const { offer } = useUndo()
   const [modus, setModus] = useState<Modus>('menue')
   const [name, setName] = useState(list.name)
   const [busy, setBusy] = useState(false)
@@ -157,15 +159,29 @@ export function ListSettingsSheet({
           {modus === 'loeschen' ? (
             <div className="space-y-3">
               <p className="text-body text-ink-soft">
-                Die Liste und alle ihre Aufgaben werden gelöscht. Rückgängig machen lässt sich das
-                nicht.
+                Die Liste und alle ihre Aufgaben werden gelöscht. Unten erscheint kurz eine Leiste,
+                mit der sich das zurücknehmen lässt; sonst sind sie noch sieben Tage unter
+                „Wiederherstellen" zu finden.
               </p>
               <Button
                 variant="danger" layout="w-full"
                 disabled={busy}
-                onClick={() => void ausfuehren(() => repositories.deleteList(list.id))}
+                onClick={() =>
+                  void ausfuehren(async () => {
+                    const id = list.id
+                    const name = list.name
+                    await repositories.deleteList(id)
+                    offer({
+                      text: `Liste „${name}“`,
+                      art: 'geloescht',
+                      rueckgaengig: async () => {
+                        await repositories.restoreList(id)
+                      },
+                    })
+                  })
+                }
               >
-                Wirklich löschen
+                Löschen
               </Button>
               <Button
                 variant="secondary" layout="w-full"

@@ -42,6 +42,9 @@ export interface Repositories {
   setListIcon(listId: string, icon: string | null): Promise<LocalList>
   deleteList(listId: string): Promise<void>
   getList(listId: string): Promise<LocalList | undefined>
+  /** Gelöschte Listen der letzten Tage – für „Wiederherstellen". */
+  listDeletedLists(): Promise<LocalList[]>
+  restoreList(listId: string): Promise<void>
   listLists(): Promise<LocalList[]>
 
   // Abschnitte einer Liste
@@ -77,6 +80,9 @@ export interface Repositories {
   ): Promise<void>
   deleteTask(taskId: string): Promise<void>
   getTask(taskId: string): Promise<LocalTask | undefined>
+  /** Gelöschte Aufgaben der letzten Tage – für „Wiederherstellen". */
+  listDeletedTasks(): Promise<LocalTask[]>
+  restoreTask(taskId: string): Promise<void>
   /** Offene Aufgaben einer Liste, in der vom Benutzer bestimmten Reihenfolge. */
   listTasks(listId: string): Promise<LocalTask[]>
   /**

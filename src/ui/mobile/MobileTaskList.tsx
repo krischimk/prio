@@ -50,8 +50,14 @@ export function MobileTaskList({
 
   const drag = useReorderDrag({
     itemIds: flach.map((task) => task.id),
-    onReorder: (orderedTaskIds, draggedId) => {
-      onReorder(orderedTaskIds, zielAbschnitt(orderedTaskIds, flach, draggedId))
+    /*
+     * Der Zielbereich kommt aus der Geometrie des Ziehens, nicht mehr aus dem
+     * Nachbarn an der neuen Stelle. Nur so sind **leere** und **zugeklappte**
+     * Bereiche erreichbar: Dort gibt es keine Nachbarzeile, an der sich der
+     * Bereich ablesen ließe – wohl aber einen Kopf.
+     */
+    onReorder: (orderedTaskIds, draggedId, abschnittId) => {
+      onReorder(orderedTaskIds, { [draggedId]: abschnittId })
     },
     containerRef: listRef,
   })
@@ -80,6 +86,8 @@ export function MobileTaskList({
                     offen={offen}
                     onToggle={() => umschalten(gruppe.id)}
                     className="px-4 pt-3"
+                    abschnittId={gruppe.section.id}
+                    hervorgehoben={drag.dropSectionId === gruppe.section.id}
                   />
                 )}
                 {offen
@@ -124,33 +132,6 @@ export function MobileTaskList({
   )
 }
 
-/**
- * In welchen Bereich gehört die gezogene Aufgabe nach dem Ziehen?
- *
- * Ihr Ziel ergibt sich aus den Nachbarn an der neuen Stelle: Steht sie vor
- * einer Aufgabe, gilt deren Bereich; steht sie am Ende, der Bereich der
- * Aufgabe davor. Ohne Bereiche bleibt es `null`.
- *
- * Ein **leerer** Bereich lässt sich so nicht befüllen – es gibt keine
- * Nachbarzeile, an der er zu erkennen wäre. Die erste Aufgabe kommt deshalb
- * über das Formular hinein; danach geht Ziehen auch dorthin.
- */
-function zielAbschnitt(
-  orderedTaskIds: string[],
-  flach: LocalTask[],
-  draggedId: string | null,
-): Record<string, string | null> {
-  if (draggedId === null) return {}
-  const bereichVon = new Map(flach.map((task) => [task.id, task.section_id]))
-  const stelle = orderedTaskIds.indexOf(draggedId)
-  if (stelle < 0) return {}
-
-  const nachbar =
-    orderedTaskIds[stelle + 1] ?? (stelle > 0 ? orderedTaskIds[stelle - 1] : undefined)
-  const ziel = nachbar === undefined ? (bereichVon.get(draggedId) ?? null) : (bereichVon.get(nachbar) ?? null)
-  return { [draggedId]: ziel }
-}
-
 function DropIndicator() {
   return <li aria-hidden="true" data-testid="drop-indicator" className="h-0.5 bg-brand" />
 }
@@ -177,6 +158,12 @@ function MobileTaskRow({
   return (
     <li
       data-task-row
+      data-id={task.id}
+      /*
+       * Der Bereich der Zeile gehört ins DOM: Das Ziehen liest den Zielbereich
+       * aus der Geometrie, und dazu muss jede Zeile wissen, wohin sie gehört.
+       */
+      data-section-id={task.section_id ?? undefined}
       className={`flex items-start gap-3 border-b border-line-soft ${appBackground} px-4 py-3 ${
         isDragging ? 'relative ' + layer.row + ' shadow-lg shadow-page/50' : ''
       }`}

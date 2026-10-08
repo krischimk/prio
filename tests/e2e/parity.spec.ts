@@ -79,8 +79,9 @@ const funktionen: Funktion[] = [
       await breit.register(page, uniqueEmail('p-loeschen-b'))
       await breit.createList(page, 'Wegwerfliste')
 
+      // Direkt löschen; die Rückgängig-Leiste ist der Weg zurück.
       await page.getByRole('button', { name: 'Liste löschen', exact: true }).click()
-      await page.getByRole('button', { name: 'Wirklich löschen', exact: true }).click()
+      await expect(page.getByTestId('undo-bar')).toContainText('Liste „Wegwerfliste“')
 
       await expect(page.getByText('Lege links eine Liste an, um Aufgaben zu erfassen.')).toBeVisible()
     },
@@ -90,7 +91,8 @@ const funktionen: Funktion[] = [
 
       await page.getByTestId('app-bar-title').click()
       await page.getByRole('button', { name: 'Liste löschen' }).click()
-      await page.getByRole('button', { name: 'Wirklich löschen' }).click()
+      await page.getByRole('button', { name: 'Löschen', exact: true }).click()
+      await expect(page.getByTestId('undo-bar')).toContainText('Liste „Wegwerfliste“')
 
       await expect(page.getByText('Öffne oben links das Menü und lege eine Liste an.')).toBeVisible()
     },
@@ -548,8 +550,11 @@ const funktionen: Funktion[] = [
       await page.getByRole('button', { name: 'Aufgabe verschieben: Bericht' }).click()
       const blatt = page.getByRole('dialog', { name: 'Aufgabe verschieben' })
       await expect(blatt).toBeVisible()
-      // Die eigene Liste wird nicht angeboten.
-      await expect(blatt.getByRole('button', { name: 'Haushalt' })).toHaveCount(0)
+      // Die eigene Liste steht mit in der Auswahl und ist angehakt.
+      await expect(blatt.getByRole('button', { name: /Haushalt/ })).toHaveAttribute(
+        'aria-current',
+        'true',
+      )
       await blatt.getByRole('button', { name: 'Arbeit' }).click()
       await expect(blatt).toBeHidden()
 
@@ -576,7 +581,11 @@ const funktionen: Funktion[] = [
 
       const blatt = page.getByRole('dialog', { name: 'Aufgabe verschieben' })
       await expect(blatt).toBeVisible()
-      await expect(blatt.getByRole('button', { name: 'Haushalt' })).toHaveCount(0)
+      // Die eigene Liste ist sichtbar und angehakt.
+      await expect(blatt.getByRole('button', { name: /Haushalt/ })).toHaveAttribute(
+        'aria-current',
+        'true',
+      )
       await blatt.getByRole('button', { name: 'Arbeit' }).click()
       await expect(blatt).toBeHidden()
 

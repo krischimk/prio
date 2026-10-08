@@ -40,6 +40,10 @@ const ABDECKUNG: Record<(typeof SCHREIBEND)[number], string | null> = {
   // haben dafür einen Weg, aber keinen eigenen Paritätseintrag.
   reorderTasks: null,
   deleteTask: null,
+  // Wiederherstellen läuft über das Wiederherstellen-Fenster; der Eintrag
+  // „Abgehakte Aufgabe wiederherstellen" deckt den Weg in beiden Ansichten ab.
+  restoreTask: 'Abgehakte Aufgabe wiederherstellen',
+  restoreList: null,
   markListShared: 'Vorschlag für eine schon einmal geteilte Adresse',
   removeMember: null,
   leaveList: null,

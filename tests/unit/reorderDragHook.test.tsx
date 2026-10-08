@@ -25,7 +25,7 @@ function zeiger(x: number, y: number, pointerId = 1) {
   } as unknown as ReactPointerEvent<HTMLElement>
 }
 
-function aufbau() {
+function aufbau({ mitKopf = false }: { mitKopf?: boolean } = {}) {
   const onReorder = vi.fn()
   const { result, rerender } = renderHook(() => {
     const ref = useRef<HTMLDivElement>(null)
@@ -33,13 +33,19 @@ function aufbau() {
     return { ref, drag }
   })
 
-  // Zeilen mit gestellten Maßen rendern.
+  // Zeilen mit gestellten Maßen rendern – auf Wunsch mit einem Bereichskopf
+  // darunter (Maße: siehe `getBoundingClientRect`-Attrappe unten).
   const behaelter = document.createElement('div')
   for (const id of IDS) {
     const zeile = document.createElement('div')
     zeile.setAttribute('data-task-row', '')
     zeile.setAttribute('data-id', id)
     behaelter.appendChild(zeile)
+  }
+  if (mitKopf) {
+    const kopf = document.createElement('div')
+    kopf.setAttribute('data-section-id', 'bereich-1')
+    behaelter.appendChild(kopf)
   }
   document.body.appendChild(behaelter)
   result.current.ref.current = behaelter
@@ -57,13 +63,13 @@ describe('useReorderDrag', () => {
       .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
       .mockImplementation(function (this: HTMLElement) {
         const geschwister = this.parentElement
-          ? Array.from(this.parentElement.querySelectorAll('[data-task-row]'))
+          ? Array.from(this.parentElement.querySelectorAll('[data-task-row], [data-section-id]'))
           : []
         const stelle = Math.max(0, geschwister.indexOf(this))
-        const top = stelle * ZEILENHOEHE
+        const top = this.hasAttribute('data-section-id') ? 150 : stelle * ZEILENHOEHE
         return {
           top,
-          height: ZEILENHOEHE,
+          height: this.hasAttribute('data-section-id') ? 32 : ZEILENHOEHE,
           bottom: top + ZEILENHOEHE,
           left: 0,
           right: 100,
@@ -115,7 +121,7 @@ describe('useReorderDrag', () => {
       handler.onPointerUp(zeiger(0, 130))
     })
 
-    expect(onReorder).toHaveBeenCalledWith(['A', 'C', 'B'], 'B')
+    expect(onReorder).toHaveBeenCalledWith(['A', 'C', 'B'], 'B', null)
   })
 
   it('schreibt das Ziel auch, wenn Loslassen und Bewegung im selben Frame kommen', () => {
@@ -130,7 +136,20 @@ describe('useReorderDrag', () => {
       vi.advanceTimersByTime(0)
     })
 
-    expect(onReorder).toHaveBeenCalledWith(['A', 'C', 'B'], 'B')
+    expect(onReorder).toHaveBeenCalledWith(['A', 'C', 'B'], 'B', null)
+  })
+
+  it('gibt den Bereich des Kopfes mit, auf dem der Finger steht', () => {
+    const { onReorder, drag } = aufbau({ mitKopf: true })
+    const handler = aufnehmen(drag)
+
+    act(() => {
+      // Der Kopf „Bereich" liegt bei 150–182; der Finger steht darauf.
+      handler.onPointerMove(zeiger(0, 160))
+      handler.onPointerUp(zeiger(0, 160))
+    })
+
+    expect(onReorder).toHaveBeenCalledWith(expect.any(Array), 'B', 'bereich-1')
   })
 
   it('bricht den Langdruck bei einem waagerechten Wisch ab', () => {

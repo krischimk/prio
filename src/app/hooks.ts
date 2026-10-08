@@ -62,6 +62,33 @@ export function useTasks(listId: string | null): LocalTask[] {
 }
 
 /**
+ * Gelöschte Aufgaben der letzten Tage – zuletzt gelöschte zuerst.
+ *
+ * `aktiv` wie bei `useRestorableTasks`: Das Fenster ist meistens zu, und ein
+ * Lesevorgang für ein unsichtbares Fenster ist verschwendet.
+ */
+export function useDeletedTasks(aktiv = true): LocalTask[] {
+  const { repositories, dataVersion } = useWorkspace()
+  const [tasks, setTasks] = useState<LocalTask[]>([])
+  useEffect(() => {
+    if (!aktiv) return
+    return subscribe(() => repositories.listDeletedTasks(), setTasks)
+  }, [repositories, dataVersion, aktiv])
+  return tasks
+}
+
+/** Gelöschte Listen der letzten Tage – zuletzt gelöschte zuerst. */
+export function useDeletedLists(aktiv = true): LocalList[] {
+  const { repositories, dataVersion } = useWorkspace()
+  const [lists, setLists] = useState<LocalList[]>([])
+  useEffect(() => {
+    if (!aktiv) return
+    return subscribe(() => repositories.listDeletedLists(), setLists)
+  }, [repositories, dataVersion, aktiv])
+  return lists
+}
+
+/**
  * Eine einzelne Aufgabe.
  *
  * Für die Rückgängig-Leiste: Sie merkt sich nur die Kennung und liest den Titel

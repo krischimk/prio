@@ -160,6 +160,23 @@ export class LocalDatabase extends Dexie {
       meta: 'key',
       reminders: '[taskId+at], taskId, notificationId, at',
     })
+
+    /*
+     * `deleted_at` wird indiziert.
+     *
+     * „Wiederherstellen" sucht die gelöschten Aufgaben und Listen der letzten
+     * Tage. Ohne Index wäre das wieder ein Lesevorgang über alle Zeilen – wie
+     * vor Version 6 bei `completed_at`.
+     *
+     * Ein reiner Index-Zusatz: kein Datenumbau, kein `upgrade`-Rückruf.
+     */
+    this.version(7).stores({
+      lists: 'id, owner_id, updated_at, dirty, deleted_at',
+      list_members: '[list_id+user_id], list_id, user_id, updated_at, dirty',
+      tasks: 'id, list_id, updated_at, dirty, completed_at, deleted_at',
+      meta: 'key',
+      reminders: '[taskId+at], taskId, notificationId, at',
+    })
   }
 }
 

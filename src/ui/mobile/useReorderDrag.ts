@@ -24,8 +24,15 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent, type RefOb
  * noch nicht mit dem Scrollen begonnen.
  */
 
-/** Bewegung, ab der ein begonnener Langdruck als Wischen gilt. */
-const MOVE_TOLERANCE_PX = 10
+/**
+ * Bewegung, ab der ein begonnener Langdruck als Wischen gilt.
+ *
+ * Bewusst kleiner als die Scroll-Schwelle des Browsers (rund 10 px): Bewegt
+ * sich der Finger mehr als das, beginnt der Browser zu scrollen und schickt
+ * `pointercancel` – der Langdruck wäre dann ohnehin vorbei, nur später und mit
+ * einem Aufblitzen der Einfügelinie.
+ */
+const MOVE_TOLERANCE_PX = 6
 /** Zone am Fensterrand, in der beim Ziehen mitgescrollt wird. */
 const AUTOSCROLL_ZONE_PX = 72
 /** Wie weit je Bewegung gescrollt wird, wenn der Finger in der Randzone ist. */
@@ -48,6 +55,8 @@ export interface ReorderDrag {
   dropBeforeId: string | null
   /** `true`, wenn die Linie ans Ende der Liste gehört. */
   dropAtEnd: boolean
+  /** Der Bereich, in den die Aufgabe gerät – für die Hervorhebung seines Kopfes. */
+  dropSectionId: string | null
   /** Versatz der gezogenen Zeile in Pixeln. */
   offsetY: number
   getRowHandlers: (id: string, index: number) => RowDragHandlers
@@ -55,8 +64,26 @@ export interface ReorderDrag {
   wasDragging: () => boolean
 }
 
+/** Ein Platz in der Liste: eine Aufgabenzeile oder der Kopf eines Bereichs. */
+export interface Slot {
+  art: 'zeile' | 'kopf'
+  top: number
+  height: number
+  id: string
+  /** Der Bereich, zu dem der Platz gehört – `null` heißt „ohne Bereich". */
+  abschnittId: string | null
+}
+
+/** Wohin eine gezogene Aufgabe fällt. */
+export interface Ziel {
+  /** Einfügeindex in der Liste **ohne** die gezogene Aufgabe. */
+  stelle: number
+  /** Der Bereich, in den sie dabei gerät. */
+  abschnittId: string | null
+}
+
 /**
- * Die Einfügestelle aus den Zeilenmitten – **ohne** die gezogene Zeile.
+ * Das Ziel aus den Zeilenmitten – **ohne** die gezogene Zeile.
  *
  * Gezählt wird, an wie vielen Mittellinien **anderer** Zeilen der Finger vorbei
  * ist. Das ist zugleich der Index, an dem die Aufgabe in der Liste ohne sie
@@ -66,21 +93,44 @@ export interface ReorderDrag {
  * Finger die eigene Zeilenmitte verließ, galt schon der nächste Platz als Ziel.
  * Die Aufgabe sprang bei der kleinsten Bewegung eine Position weiter und ließ
  * sich an ihrem Platz kaum wieder ablegen.
+ *
+ * Der **Bereich** kommt aus der Geometrie, nicht aus dem Nachbarn: Steht der
+ * Finger auf einem Bereichskopf, gehört die Aufgabe in dessen Bereich. Das ist
+ * der einzige Weg in einen **leeren** oder **zugeklappten** Bereich – dort gibt
+ * es keine Zeile, an der sich das Ziel ablesen ließe.
  */
-export function einfuegestelle(
-  rects: Array<{ top: number; height: number }>,
-  draggedIndex: number,
-  clientY: number,
-): number {
-  let ziel = 0
-  for (let i = 0; i < rects.length; i += 1) {
-    if (i === draggedIndex) continue
-    const rect = rects[i]
-    if (!rect) continue
-    if (clientY < rect.top + rect.height / 2) break
-    ziel += 1
+export function zielAusSlots(slots: Slot[], draggedIndex: number, clientY: number): Ziel {
+  const gezogeneId = slots[draggedIndex]?.art === 'zeile' ? slots[draggedIndex]?.id : undefined
+
+  // 1) Wie viele andere Zeilenmitten liegen oberhalb des Fingers?
+  let stelle = 0
+  let zeilenGesehen = 0
+  for (let i = 0; i < slots.length; i += 1) {
+    const slot = slots[i]
+    if (!slot || slot.art !== 'zeile') continue
+    if (slot.id === gezogeneId) continue
+    if (clientY < slot.top + slot.height / 2) break
+    stelle += 1
+    zeilenGesehen += 1
   }
-  return ziel
+  void zeilenGesehen
+
+  // 2) Der Bereich: ein Kopf unter dem Finger gewinnt, sonst die nächste Zeile
+  //    darunter, sonst die letzte Zeile darüber.
+  const kopfUnterFinger = slots.find(
+    (slot) => slot.art === 'kopf' && clientY >= slot.top && clientY < slot.top + slot.height,
+  )
+  if (kopfUnterFinger) {
+    return { stelle, abschnittId: kopfUnterFinger.abschnittId }
+  }
+
+  const zeilen = slots.filter((slot) => slot.art === 'zeile' && slot.id !== gezogeneId)
+  const naechste = zeilen.find((slot) => clientY < slot.top + slot.height / 2)
+  const letzte = [...zeilen].reverse().find((slot) => slot.top <= clientY)
+  return {
+    stelle,
+    abschnittId: (naechste ?? letzte)?.abschnittId ?? null,
+  }
 }
 
 export function useReorderDrag(options: {
@@ -89,7 +139,7 @@ export function useReorderDrag(options: {
    * Die neue Reihenfolge und die Kennung der gezogenen Aufgabe – der Aufrufer
    * braucht sie, um den Zielabschnitt zu bestimmen.
    */
-  onReorder: (orderedIds: string[], draggedId: string) => void
+  onReorder: (orderedIds: string[], draggedId: string, abschnittId: string | null) => void
   containerRef: RefObject<HTMLElement | null>
   longPressMs?: number
 }): ReorderDrag {
@@ -97,6 +147,7 @@ export function useReorderDrag(options: {
 
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [ziel, setZiel] = useState<number | null>(null)
+  const [abschnitt, setAbschnitt] = useState<string | null>(null)
   const [offsetY, setOffsetY] = useState(0)
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -107,7 +158,7 @@ export function useReorderDrag(options: {
     id: string
     index: number
     startY: number
-    rects: Array<{ top: number; height: number }>
+    slots: Slot[]
   } | null>(null)
   /**
    * Das Ziel liegt **auch** als Ref vor.
@@ -117,6 +168,8 @@ export function useReorderDrag(options: {
    * vorige Wert – die Aufgabe landete woanders, als die Linie zeigte.
    */
   const zielRef = useRef<number | null>(null)
+  /** Der Zielbereich aus der Geometrie – beim Loslassen maßgeblich. */
+  const abschnittRef = useRef<string | null>(null)
   /** Wie weit beim Ziehen mitgescrollt wurde (die Zeilenlagen verschieben sich). */
   const scrollDelta = useRef(0)
   /** Letzte Fingerposition – die Scroll-Schleife liest sie, ohne neu zu rendern. */
@@ -148,9 +201,11 @@ export function useReorderDrag(options: {
     press.current = null
     drag.current = null
     zielRef.current = null
+    abschnittRef.current = null
     scrollDelta.current = 0
     setDraggingId(null)
     setZiel(null)
+    setAbschnitt(null)
     setOffsetY(0)
   }, [clearTimer])
 
@@ -187,7 +242,7 @@ export function useReorderDrag(options: {
     // Reacts Regel gegen Veränderung hat recht – ein neues Feld ist klarer.
     drag.current = {
       ...current,
-      rects: current.rects.map((rect) => ({ ...rect, top: rect.top - gescrollt })),
+      slots: current.slots.map((slot) => ({ ...slot, top: slot.top - gescrollt })),
     }
     scrollDelta.current += gescrollt
   }, [])
@@ -195,26 +250,47 @@ export function useReorderDrag(options: {
   const startDragging = useCallback(
     (id: string, index: number, startY: number, element: HTMLElement, pointerId: number) => {
       const container = containerRef.current
-      const rows = container ? Array.from(container.querySelectorAll<HTMLElement>('[data-task-row]')) : []
+      const elemente = container
+        ? Array.from(
+            container.querySelectorAll<HTMLElement>('[data-task-row], [data-section-id]'),
+          )
+        : []
 
       press.current = null
       drag.current = {
         id,
         index,
         startY,
-        // Höhen und Lagen einmalig festhalten: Die Zeilen sind unterschiedlich
-        // hoch (Beschreibung, Fälligkeit), eine feste Zeilenhöhe würde nicht
-        // genügen. Beim mitscrollenden Ziehen werden sie mitgeführt.
-        rects: rows.map((row) => {
-          const rect = row.getBoundingClientRect()
-          return { top: rect.top, height: rect.height }
+        /*
+         * Lagen und Höhen einmalig festhalten: Die Zeilen sind unterschiedlich
+         * hoch (Beschreibung, Fälligkeit), eine feste Zeilenhöhe würde nicht
+         * genügen. Beim mitscrollenden Ziehen werden sie mitgeführt.
+         *
+         * Bereichsköpfe gehören dazu: Nur über sie lässt sich in einen leeren
+         * oder zugeklappten Bereich ziehen – dort gibt es keine Zeile, an der
+         * sich das Ziel ablesen ließe.
+         */
+        slots: elemente.map((element) => {
+          const rect = element.getBoundingClientRect()
+          const istZeile = element.hasAttribute('data-task-row')
+          return {
+            art: istZeile ? ('zeile' as const) : ('kopf' as const),
+            top: rect.top,
+            height: rect.height,
+            id: istZeile ? (element.dataset.id ?? '') : (element.dataset.sectionId ?? ''),
+            abschnittId: element.dataset.sectionId ?? null,
+          }
         }),
       }
       zielRef.current = index
+      abschnittRef.current = null
+      // Die Linie erscheint erst, wenn sich der Finger bewegt: Beim Aufnehmen
+      // blitzte sie sonst kurz auf, ohne etwas zu sagen.
+      setZiel(null)
+      setAbschnitt(null)
       scrollDelta.current = 0
       didDrag.current = true
       setDraggingId(id)
-      setZiel(index)
       setOffsetY(0)
 
       // Zeiger einfangen: So kommen Bewegungen weiter an, auch wenn der Finger
@@ -242,9 +318,11 @@ export function useReorderDrag(options: {
         }
         scrollSchritt()
 
-        const neuesZiel = einfuegestelle(laufend.rects, laufend.index, letzteY.current)
-        zielRef.current = neuesZiel
-        setZiel((bisher) => (bisher === neuesZiel ? bisher : neuesZiel))
+        const ziel = zielAusSlots(laufend.slots, laufend.index, letzteY.current)
+        zielRef.current = ziel.stelle
+        abschnittRef.current = ziel.abschnittId
+        setZiel((bisher) => (bisher === ziel.stelle ? bisher : ziel.stelle))
+        setAbschnitt((bisher) => (bisher === ziel.abschnittId ? bisher : ziel.abschnittId))
         setOffsetY(letzteY.current - laufend.startY + scrollDelta.current)
 
         scrollLoop.current = window.requestAnimationFrame(tick)
@@ -263,9 +341,25 @@ export function useReorderDrag(options: {
       if (commit && current && stelle !== null) {
         const andere = itemIdsRef.current.filter((id) => id !== current.id)
         const next = [...andere.slice(0, stelle), current.id, ...andere.slice(stelle)]
-        // Nur schreiben, wenn sich die Reihenfolge wirklich ändert.
-        if (next.join('\u0000') !== itemIdsRef.current.join('\u0000')) {
-          onReorderRef.current(next, current.id)
+
+        /*
+         * Geschrieben wird, wenn sich **etwas** ändert – die Reihenfolge oder
+         * der Bereich.
+         *
+         * Nur auf die Reihenfolge zu sehen war der Fehler beim Verschieben in
+         * einen anderen Bereich: Ändert sich der Bereich, die Stelle aber
+         * nicht (die Aufgabe bleibt an ihrem Platz in der flachen Liste), galt
+         * das als „nichts zu tun" – die Aufgabe blieb, wo sie war.
+         */
+        const vorherAbschnitt =
+          current.slots.find((slot) => slot.art === 'zeile' && slot.id === current.id)
+            ?.abschnittId ?? null
+        const reihenfolgeGleich =
+          next.join('\u0000') === itemIdsRef.current.join('\u0000') &&
+          abschnittRef.current === vorherAbschnitt
+
+        if (!reihenfolgeGleich) {
+          onReorderRef.current(next, current.id, abschnittRef.current)
         }
       }
 
@@ -317,9 +411,11 @@ export function useReorderDrag(options: {
         // Das Ziel setzt die Schleife (`scrollTick`) – so gilt dieselbe Rechnung
         // mit und ohne Scrollen.
         letzteY.current = event.clientY
-        const neuesZiel = einfuegestelle(current.rects, current.index, event.clientY)
-        zielRef.current = neuesZiel
-        setZiel(neuesZiel)
+        const ziel = zielAusSlots(current.slots, current.index, event.clientY)
+        zielRef.current = ziel.stelle
+        abschnittRef.current = ziel.abschnittId
+        setZiel(ziel.stelle)
+        setAbschnitt(ziel.abschnittId)
         setOffsetY(event.clientY - current.startY + scrollDelta.current)
       },
 
@@ -356,6 +452,7 @@ export function useReorderDrag(options: {
     draggingId,
     dropBeforeId,
     dropAtEnd,
+    dropSectionId: draggingId === null ? null : abschnitt,
     offsetY,
     getRowHandlers,
     wasDragging: () => didDrag.current,

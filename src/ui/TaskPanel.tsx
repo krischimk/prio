@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
+import { useUndo } from './useUndo'
 import { ListIcon } from './ListIcon'
 import { ListIconPicker } from './ListIconPicker'
 import { useTasks } from '../app/hooks'
@@ -38,13 +39,13 @@ export function TaskPanel({
   lists: LocalList[]
 }) {
   const { repositories } = useWorkspace()
+  const { offer } = useUndo()
   const tasks = useTasks(list.id)
   const [renaming, setRenaming] = useState(false)
   const [name, setName] = useState(list.name)
   const [shareOpen, setShareOpen] = useState(false)
   const [iconOpen, setIconOpen] = useState(false)
   const [sectionsOpen, setSectionsOpen] = useState(false)
-  const [confirmingDelete, setConfirmingDelete] = useState(false)
   /** `null` = geschlossen, sonst die Aufgabe, die verschoben werden soll. */
   const [movingTask, setMovingTask] = useState<LocalTask | null>(null)
 
@@ -52,7 +53,6 @@ export function TaskPanel({
   useBackLayer(renaming, () => setRenaming(false), 'liste-umbenennen')
   useBackLayer(shareOpen, () => setShareOpen(false), 'liste-teilen')
   useBackLayer(sectionsOpen, () => setSectionsOpen(false), 'liste-bereiche')
-  useBackLayer(confirmingDelete, () => setConfirmingDelete(false), 'liste-loeschen')
 
   // Ohne zweite Liste gibt es nichts zu verschieben – dann entfällt der Knopf.
   const kannVerschieben = lists.some((eintrag) => eintrag.id !== list.id)
@@ -139,31 +139,24 @@ export function TaskPanel({
               >
                 Teilen
               </Button>
-              {confirmingDelete ? (
-                <>
-                  <Button
-                    variant="danger" size="sm"
-                    onClick={() => {
-                      void repositories.deleteList(list.id)
-                    }}
-                  >
-                    Wirklich löschen
-                  </Button>
-                  <Button
-                    variant="ghost" size="sm"
-                    onClick={() => setConfirmingDelete(false)}
-                  >
-                    Abbrechen
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  variant="danger" size="sm"
-                  onClick={() => setConfirmingDelete(true)}
-                >
-                  Liste löschen
-                </Button>
-              )}
+              <Button
+                variant="danger" size="sm"
+                onClick={() => {
+                  const id = list.id
+                  const name = list.name
+                  void repositories.deleteList(id).then(() =>
+                    offer({
+                      text: `Liste „${name}“`,
+                      art: 'geloescht',
+                      rueckgaengig: async () => {
+                        await repositories.restoreList(id)
+                      },
+                    }),
+                  )
+                }}
+              >
+                Liste löschen
+              </Button>
             </div>
           </div>
         )}

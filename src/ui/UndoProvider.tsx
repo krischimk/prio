@@ -4,7 +4,7 @@ import { useTask } from '../app/hooks'
 import { useWorkspace } from '../app/useWorkspace'
 import type { LocalTask } from '../domain/types'
 
-import { UndoContext, UNDO_VISIBLE_MS, type UndoContextValue } from './undoContext'
+import { UndoContext, UNDO_VISIBLE_MS, type UndoAngebot, type UndoContextValue } from './undoContext'
 import { Button } from './components/Button'
 import { layer } from './styles'
 
@@ -15,8 +15,12 @@ import { layer } from './styles'
  * diese Leiste wäre ein versehentliches Abhaken nur über die Einstellungen
  * rückgängig zu machen – für den häufigsten Fehlgriff zu umständlich.
  *
- * Hakst du mehrere Aufgaben kurz hintereinander ab, zeigt die Leiste die
- * zuletzt abgehakte; der Timer beginnt jeweils von vorn.
+ * Seit dem Löschen ohne Rückfrage zeigt sie auch gelöschte Dinge: Das Löschen
+ * ist damit genauso leicht zurückzunehmen wie das Abhaken – und die
+ * Bestätigungsdialoge davor sind weg.
+ *
+ * Meldest du mehrere Handlungen kurz hintereinander, zeigt die Leiste die
+ * zuletzt gemeldete; der Timer beginnt jeweils von vorn.
  *
  * Die Leiste merkt sich nur die **Kennung** der Aufgabe und liest den Titel
  * nach (`useTask`). Vorher kopierte sie ihn: Wer die Aufgabe innerhalb der
@@ -26,7 +30,7 @@ import { layer } from './styles'
  */
 export function UndoProvider({ children }: { children: ReactNode }) {
   const { repositories } = useWorkspace()
-  const [offer, setOffer] = useState<{ taskId: string } | null>(null)
+  const [angebot, setAngebot] = useState<UndoAngebot | null>(null)
   const [fehler, setFehler] = useState<string | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -39,35 +43,54 @@ export function UndoProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => clearTimer, [clearTimer])
 
-  const offerUndo = useCallback(
-    (task: LocalTask) => {
+  const offer = useCallback(
+    (neu: UndoAngebot) => {
       clearTimer()
       setFehler(null)
-      setOffer({ taskId: task.id })
+      setAngebot(neu)
       timer.current = setTimeout(() => {
         timer.current = null
-        setOffer(null)
+        setAngebot(null)
       }, UNDO_VISIBLE_MS)
     },
     [clearTimer],
   )
 
-  const value = useMemo<UndoContextValue>(() => ({ offerUndo }), [offerUndo])
+  const offerUndo = useCallback(
+    (task: LocalTask) => {
+      offer({
+        taskId: task.id,
+        art: 'erledigt',
+        rueckgaengig: async () => {
+          await repositories.setTaskCompleted(task.id, false)
+        },
+      })
+    },
+    [offer, repositories],
+  )
+
+  const value = useMemo<UndoContextValue>(() => ({ offerUndo, offer }), [offerUndo, offer])
 
   // Den Titel nachlesen statt kopieren – siehe Kopfkommentar.
-  const task = useTask(offer?.taskId ?? null)
+  const task = useTask(angebot?.taskId ?? null)
+
+  const satz =
+    angebot === null
+      ? ''
+      : (angebot.text ?? `„${task?.title ?? 'Aufgabe'}“`) +
+        (angebot.art === 'erledigt' ? ' erledigt' : ' gelöscht')
 
   const undo = async () => {
-    if (!offer) return
+    if (!angebot) return
     try {
-      await repositories.setTaskCompleted(offer.taskId, false)
+      await angebot.rueckgaengig()
       clearTimer()
-      setOffer(null)
+      setAngebot(null)
       setFehler(null)
     } catch {
       // Etwa, wenn die Aufgabe inzwischen gelöscht ist. Die Leiste bleibt
       // stehen, damit der Druck auf „Rückgängig“ nicht folgenlos wirkt.
-      setFehler('Die Aufgabe lässt sich nicht mehr zurückholen.')
+      setFehler('Das lässt sich nicht mehr zurückholen.')
     }
   }
 
@@ -78,7 +101,7 @@ export function UndoProvider({ children }: { children: ReactNode }) {
   return (
     <UndoContext.Provider value={value}>
       {children}
-      {offer ? (
+      {angebot ? (
         <div className={`safe-bottom pointer-events-none fixed inset-x-0 bottom-0 ${layer.raised} flex justify-center px-4`}>
           {/*
             `fab-clearance` hält Abstand zum runden Plus-Knopf und rechnet aus
@@ -92,7 +115,7 @@ export function UndoProvider({ children }: { children: ReactNode }) {
             className={`${isDesktop ? 'mb-4' : 'fab-clearance'} pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-card border border-line-strong bg-raised px-4 py-3 shadow-lg shadow-page/40`}
           >
             <span className="min-w-0 flex-1 truncate text-body text-ink" role={fehler ? 'alert' : undefined}>
-              {fehler ?? `„${task?.title ?? 'Aufgabe'}“ erledigt`}
+              {fehler ?? satz}
             </span>
             <Button
               variant="primary" size="sm" layout="shrink-0"
