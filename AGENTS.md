@@ -88,6 +88,21 @@ Zwei Fehler aus der Praxis, beide teuer:
 Dazu gehört die Reihenfolge: Ein Zug am Gerät oder ein Test gegen die echte
 Ursache kommt **vor** dem nächsten Release, nicht danach.
 
+### Bibliotheken: erst die Empfehlungen lesen, dann einbauen
+
+Wer eine Bibliothek einsetzt, liest **vor** dem Einbau ihren Abschnitt
+„Recommendations"/„Requirements" und hakt jede Empfehlung einzeln an der Stelle
+ab, an der sie umgesetzt ist. Auslöser: Bei dnd-kit habe ich nur die API
+uebernommen (`useSortable`, `DragOverlay`) und meine eigene Regel
+`touch-action: pan-y` auf der Ziehflaeche mitgeschleppt. Die Dokumentation
+verlangt `touch-action` auf **jedem** ziehbaren Element und dort `none`, wenn
+nicht gescrollt werden soll – auf dem Telefon nahm der Browser die Geste
+deshalb als Scrollen an, und das Ziehen brach nach Millimetern ab. Beim
+tatsaechlichen Nachlesen kamen drei weitere uebergangene Empfehlungen heraus
+(Messstrategie, Kollisionserkennung, Breite der schwebenden Kopie).
+Kurz: Nicht „ich richte mich an der Bibliothek" heisst die API abschreiben,
+sondern ihre Bedingungen einhalten.
+
 ### Keine Regex-Chirurgie an Markup
 
 Aenderungen an JSX werden mit **exakten Textankern** gemacht (oder von Hand),
