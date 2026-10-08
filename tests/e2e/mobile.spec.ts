@@ -203,6 +203,97 @@ test('sortiert eine Aufgabe per Langdruck und Ziehen um', async ({ page }) => {
   expect(await taskTitles(page)).toEqual(['Zweite', 'Erste', 'Dritte'])
 })
 
+test('lässt die Reihenfolge unverändert, wenn die Zeile kaum bewegt wird', async ({ page }) => {
+  await register(page, uniqueEmail('m7b'))
+  await createList(page, 'Reihenfolge')
+  await createTask(page, 'Erste')
+  await createTask(page, 'Zweite')
+  await createTask(page, 'Dritte')
+
+  expect(await taskTitles(page)).toEqual(['Dritte', 'Zweite', 'Erste'])
+
+  /*
+   * Nur ein Stück innerhalb der eigenen Zeile. Vorher galt die nächste Zeile
+   * schon als Ziel, sobald der Finger die eigene Mitte verließ – die Aufgabe
+   * sprang bei der kleinsten Bewegung eine Position weiter.
+   */
+  await dragRowDown(page, 'Zweite', 12)
+
+  expect(await taskTitles(page)).toEqual(['Dritte', 'Zweite', 'Erste'])
+})
+
+test('legt eine gezogene Zeile wieder an ihren Platz zurück', async ({ page }) => {
+  await register(page, uniqueEmail('m7c'))
+  await createList(page, 'Reihenfolge')
+  await createTask(page, 'Erste')
+  await createTask(page, 'Zweite')
+  await createTask(page, 'Dritte')
+
+  const box = await taskRow(page, 'Dritte').boundingBox()
+  if (!box) throw new Error('Zeile "Dritte" nicht gefunden')
+  const x = box.x + box.width / 2
+  const y = box.y + box.height / 2
+
+  // Aufnehmen, ein Stück nach unten, und zurück an den Anfang.
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.waitForTimeout(600)
+  await page.mouse.move(x, y + 60, { steps: 8 })
+  await page.mouse.move(x, y, { steps: 8 })
+  await page.mouse.up()
+  await page.waitForTimeout(300)
+
+  // Wer zurückzieht, will nichts geändert haben.
+  expect(await taskTitles(page)).toEqual(['Dritte', 'Zweite', 'Erste'])
+})
+
+test('scrollt beim Ziehen an den Rand mit', async ({ page }) => {
+  await register(page, uniqueEmail('m7e'))
+  await createList(page, 'Lang')
+  // Genug Zeilen, dass die Liste länger ist als das Fenster.
+  for (let i = 1; i <= 20; i += 1) await createTask(page, `Aufgabe ${i}`)
+
+  const vorher = await taskTitles(page)
+  const gezogen = vorher[0]!
+
+  const box = await taskRow(page, gezogen).boundingBox()
+  if (!box) throw new Error(`Zeile "${gezogen}" nicht gefunden`)
+  const x = box.x + box.width / 2
+  const y = box.y + box.height / 2
+
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.waitForTimeout(600)
+  // An den unteren Rand ziehen und dort **halten**: Ohne mitscrollende Liste
+  // ließe sich die Aufgabe nur innerhalb des sichtbaren Ausschnitts ablegen.
+  await page.mouse.move(x, page.viewportSize()!.height - 40, { steps: 10 })
+  await page.waitForTimeout(1200)
+  await page.mouse.up()
+  await page.waitForTimeout(400)
+
+  const nachher = await taskTitles(page)
+  // Die Reihenfolge der anderen bleibt, die gezogene Aufgabe rutscht nach unten.
+  expect(nachher.filter((titel) => titel !== gezogen)).toEqual(
+    vorher.filter((titel) => titel !== gezogen),
+  )
+  expect(nachher.indexOf(gezogen)).toBeGreaterThan(3)
+})
+
+test('zieht eine mittlere Zeile genau eine Position nach unten', async ({ page }) => {
+  await register(page, uniqueEmail('m7d'))
+  await createList(page, 'Reihenfolge')
+  await createTask(page, 'Erste')
+  await createTask(page, 'Zweite')
+  await createTask(page, 'Dritte')
+
+  expect(await taskTitles(page)).toEqual(['Dritte', 'Zweite', 'Erste'])
+
+  // Die mittlere Zeile über die Mitte der nächsten hinweg ziehen.
+  await dragRowDown(page, 'Zweite', 70)
+
+  expect(await taskTitles(page)).toEqual(['Dritte', 'Erste', 'Zweite'])
+})
+
 test('sortiert bei kurzem Wischen nicht um', async ({ page }) => {
   await register(page, uniqueEmail('m8'))
   await createList(page, 'Reihenfolge')

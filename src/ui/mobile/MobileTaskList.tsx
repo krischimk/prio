@@ -87,7 +87,7 @@ export function MobileTaskList({
                       index += 1
                       return (
                         <Fragment key={task.id}>
-                          {drag.draggingId !== null && drag.dropIndex === index ? <DropIndicator /> : null}
+                          {drag.dropBeforeId === task.id ? <DropIndicator /> : null}
                           <MobileTaskRow
                             task={task}
                             index={index}
@@ -107,7 +107,7 @@ export function MobileTaskList({
             index += 1
             return (
               <Fragment key={task.id}>
-                {drag.draggingId !== null && drag.dropIndex === index ? <DropIndicator /> : null}
+                {drag.dropBeforeId === task.id ? <DropIndicator /> : null}
                 <MobileTaskRow
                   task={task}
                   index={index}
@@ -119,7 +119,7 @@ export function MobileTaskList({
               </Fragment>
             )
           })}
-      {drag.draggingId !== null && drag.dropIndex === flach.length ? <DropIndicator /> : null}
+      {drag.dropAtEnd ? <DropIndicator /> : null}
     </div>
   )
 }
