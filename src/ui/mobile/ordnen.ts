@@ -1,3 +1,6 @@
+/** Der Schluessel der Gruppe ohne Bereich. */
+export const OHNE_BEREICH = 'ohne-bereich'
+
 /**
  * Umsortieren in der Vorschau (reine Funktion).
  *

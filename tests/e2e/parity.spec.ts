@@ -378,7 +378,11 @@ const funktionen: Funktion[] = [
       await page.getByRole('button', { name: 'Teilen', exact: true }).click()
       await page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(mitglied)
       await page.getByRole('button', { name: 'Freigeben' }).click()
-      await expect(page.getByRole('status')).toContainText('Freigabe für')
+      // dnd-kit bringt eine eigene Status-Region fuer Vorleser mit
+      // (`DndLiveRegion-*`); gemeint ist hier unsere Meldung.
+      await expect(page.locator('[role=status]:not([id^="DndLiveRegion"])')).toContainText(
+        'Freigabe für',
+      )
 
       await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
       const erneut = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
@@ -409,7 +413,11 @@ const funktionen: Funktion[] = [
       await page.getByRole('button', { name: 'Teilen', exact: true }).click()
       await page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(mitglied)
       await page.getByRole('button', { name: 'Freigeben' }).click()
-      await expect(page.getByRole('status')).toContainText('Freigabe für')
+      // dnd-kit bringt eine eigene Status-Region fuer Vorleser mit
+      // (`DndLiveRegion-*`); gemeint ist hier unsere Meldung.
+      await expect(page.locator('[role=status]:not([id^="DndLiveRegion"])')).toContainText(
+        'Freigabe für',
+      )
       await page.getByRole('button', { name: 'Schließen' }).click()
 
       await telefon.taskRow(page, 'Müll rausbringen').click()
@@ -438,27 +446,27 @@ const funktionen: Funktion[] = [
       await formular.getByRole('button', { name: 'Speichern' }).click()
 
       // Zugeklappt: eine Zeile. Aufgeklappt: der ganze Text.
-      await page.getByRole('button', { name: 'Mehr' }).click()
-      await expect(page.getByRole('button', { name: 'Weniger' })).toBeVisible()
+      await page.getByTestId('beschreibung-mehr').click()
+      await expect(page.getByTestId('beschreibung-mehr')).toHaveText('Weniger')
       await expect(page.getByTestId('task-description')).toContainText('Zweiter Absatz.')
 
-      await page.getByRole('button', { name: 'Weniger' }).click()
-      await expect(page.getByRole('button', { name: 'Mehr' })).toBeVisible()
+      await page.getByTestId('beschreibung-mehr').click()
+      await expect(page.getByTestId('beschreibung-mehr')).toHaveText('Mehr')
     },
     telefon: async (page) => {
       await telefon.register(page, uniqueEmail('p-beschreibung-t'))
       await telefon.createList(page, 'Haushalt')
       await telefon.createTask(page, 'Einkauf', 'Erster Absatz.\n\nZweiter Absatz.')
 
-      await page.getByRole('button', { name: 'Mehr' }).click()
-      await expect(page.getByRole('button', { name: 'Weniger' })).toBeVisible()
+      await page.getByTestId('beschreibung-mehr').click()
+      await expect(page.getByTestId('beschreibung-mehr')).toHaveText('Weniger')
       await expect(page.getByTestId('task-description')).toContainText('Zweiter Absatz.')
 
       // Das Aufklappen darf die Detailansicht nicht mit öffnen.
       await expect(page.getByRole('dialog', { name: 'Aufgabe' })).toHaveCount(0)
 
-      await page.getByRole('button', { name: 'Weniger' }).click()
-      await expect(page.getByRole('button', { name: 'Mehr' })).toBeVisible()
+      await page.getByTestId('beschreibung-mehr').click()
+      await expect(page.getByTestId('beschreibung-mehr')).toHaveText('Mehr')
     },
   },
   {
@@ -474,7 +482,11 @@ const funktionen: Funktion[] = [
       await page.getByRole('button', { name: 'Teilen', exact: true }).click()
       await page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(mitglied)
       await page.getByRole('button', { name: 'Freigeben' }).click()
-      await expect(page.getByRole('status')).toContainText('Freigabe für')
+      // dnd-kit bringt eine eigene Status-Region fuer Vorleser mit
+      // (`DndLiveRegion-*`); gemeint ist hier unsere Meldung.
+      await expect(page.locator('[role=status]:not([id^="DndLiveRegion"])')).toContainText(
+        'Freigabe für',
+      )
 
       // In der nächsten Liste ist die Adresse kein Mitglied und wird angeboten.
       await breit.createList(page, 'Zweite Liste')
@@ -505,7 +517,11 @@ const funktionen: Funktion[] = [
       await page.getByRole('button', { name: 'Teilen', exact: true }).click()
       await page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(mitglied)
       await page.getByRole('button', { name: 'Freigeben' }).click()
-      await expect(page.getByRole('status')).toContainText('Freigabe für')
+      // dnd-kit bringt eine eigene Status-Region fuer Vorleser mit
+      // (`DndLiveRegion-*`); gemeint ist hier unsere Meldung.
+      await expect(page.locator('[role=status]:not([id^="DndLiveRegion"])')).toContainText(
+        'Freigabe für',
+      )
       await page.getByRole('button', { name: 'Schließen' }).click()
 
       await telefon.createList(page, 'Zweite Liste')

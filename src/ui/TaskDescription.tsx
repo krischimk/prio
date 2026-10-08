@@ -55,6 +55,7 @@ export function TaskDescription({ text, className = '' }: { text: string; classN
         <button
           type="button"
           aria-expanded={offen}
+          data-testid="beschreibung-mehr"
           onClick={(event) => {
             // In der mobilen Zeile liegt die Beschreibung neben dem Knopf
             // „Aufgabe öffnen" – der Klick darf nicht beides auslösen.

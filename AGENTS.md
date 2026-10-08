@@ -88,6 +88,15 @@ Zwei Fehler aus der Praxis, beide teuer:
 Dazu gehört die Reihenfolge: Ein Zug am Gerät oder ein Test gegen die echte
 Ursache kommt **vor** dem nächsten Release, nicht danach.
 
+### Keine Regex-Chirurgie an Markup
+
+Aenderungen an JSX werden mit **exakten Textankern** gemacht (oder von Hand),
+nicht mit regulaeren Ausdruecken ueber Tags. Auslöser: Ein Muster wie
+`<button[^>]*>` endet am ersten `>` – bei `onClick={(event) => {` mitten im
+Attribut. Die Datei war danach kaputt, und der Fehler fiel erst beim
+Typecheck auf. Dasselbe gilt fuer mehrzeilige `replace`-Ketten: erst den
+Treffer pruefen, dann schreiben.
+
 ### Was einen Auftrag wirklich langsam macht
 
 Gemessen, in absteigender Reihenfolge:

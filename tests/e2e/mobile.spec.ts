@@ -221,6 +221,50 @@ test('fragt beim Schließen nach, wenn Änderungen nicht gespeichert sind', asyn
  * (`Input.dispatchTouchEvent`), wie sie das Geraet wirklich schickt.
  */
 
+/*
+ * Umsortieren per Tastatur.
+ *
+ * dnd-kit bringt die Tastatursteuerung mit: Leertaste hebt auf, Pfeiltasten
+ * verschieben, Leertaste legt ab. Fuer die Pruefung ist das der zuverlaessige
+ * Weg – der Langdruck mit der Maus haengt an einem Zeitgeber, den Chromium im
+ * fensterlosen Betrieb drosselt (siehe Notiz oben). Geprueft wird damit
+ * dieselbe Sortier- und Animationslogik wie beim Ziehen.
+ */
+test('sortiert eine Aufgabe per Tastatur um', async ({ page }) => {
+  await register(page, uniqueEmail('m7k'))
+  await createList(page, 'Reihenfolge')
+  for (const titel of ['Erste', 'Zweite', 'Dritte']) await createTask(page, titel)
+
+  await expect.poll(() => taskTitles(page)).toEqual(['Dritte', 'Zweite', 'Erste'])
+
+  // Erst sicherstellen, dass der Griff den Fokus hat – sonst geht die Leertaste
+  // an die Seite statt an die Zeile.
+  await griff(page, 'Dritte').focus()
+  await expect(griff(page, 'Dritte')).toBeFocused()
+  await page.keyboard.press('Space')
+  await page.keyboard.press('ArrowDown')
+  await page.keyboard.press('Space')
+
+  // Eine Position weiter – und gespeichert, nicht nur angezeigt.
+  await expect.poll(() => taskTitles(page)).toEqual(['Zweite', 'Dritte', 'Erste'])
+  await page.reload()
+  await expect(page.getByTestId('app-bar-title')).toHaveText('Reihenfolge')
+  await expect.poll(() => taskTitles(page)).toEqual(['Zweite', 'Dritte', 'Erste'])
+})
+
+/*
+ * In einen **leeren** Bereich geht es per Tastatur nicht: dnd-kit springt mit
+ * den Pfeiltasten von Zeile zu Zeile, und dort steht keine. Geprueft wird
+ * dieser Weg deshalb dort, wo er hingehoert – in der reinen Rechnung
+ * (`tests/unit/reorderDrag.test.ts`, „setzt auch in eine leere Gruppe"). Am
+ * Geraet ist er mit dem Finger erreichbar.
+ */
+
+/** Der Zieh-Griff einer Zeile (Traeger der dnd-kit-Attribute). */
+function griff(page: Page, titel: string) {
+  return taskZeile(page, titel).getByTestId('task-drag')
+}
+
 test('sortiert bei kurzem Wischen nicht um', async ({ page }) => {
   await register(page, uniqueEmail('m8'))
   await createList(page, 'Reihenfolge')
