@@ -172,7 +172,15 @@ export function TaskPanel({
 
       <TaskComposer listId={list.id} />
 
-      <div className="min-h-0 flex-1">
+      {/*
+        Die Liste scrollt **selbst** – nicht die Seite.
+
+        Auslöser: Bei vielen Aufgaben bewegte sich im Web die ganze Seite. Die
+        Spalte hat `h-screen`, aber ohne eigenes Scrollen wuchs der Inhalt
+        darueber hinaus und schob das Fenster. `min-h-0` ist noetig, damit ein
+        Flex-Kind ueberhaupt scrollen darf.
+      */}
+      <div className="scroll-area min-h-0 flex-1 overflow-y-auto">
         <div className={`mb-2 text-meta text-ink-faint ${numeric}`}>
           <span>{formatOpenTasks(openTasks)}</span>
         </div>
