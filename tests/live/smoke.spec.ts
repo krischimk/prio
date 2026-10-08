@@ -92,7 +92,6 @@ test('die veröffentlichte Fassung startet, meldet sich an und gleicht ab', asyn
   // Kein Bestätigungsdialog mehr: Löschen wirkt sofort, die Rückgängig-Leiste
   // ist der Weg zurück.
   await page.getByRole('button', { name: 'Liste löschen' }).click()
-  await page.getByRole('button', { name: 'Löschen', exact: true }).click()
   await expect(page.getByTestId('app-bar-title')).not.toHaveText(listenname)
 
   expect(fehler, `Unerwartete Fehler: ${fehler.join(' | ')}`).toEqual([])
