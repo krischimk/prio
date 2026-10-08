@@ -48,8 +48,17 @@ export function WorkspaceProvider({
         erzeugt = laufzeit
         setRuntime(laufzeit)
       })
-      .catch(() => {
-        if (aktiv) setFehler(true)
+      .catch((fehler: unknown) => {
+        if (!aktiv) return
+        /*
+         * Ohne Spur ist „die App startet nicht" nicht zu finden: Die
+         * Oberfläche zeigt eine Meldung, aber die Ursache – IndexedDB gesperrt,
+         * Speicher voll, Schema kaputt – steht nur hier. Der Werkzeugkasten des
+         * Browsers (bzw. `adb logcat` in der App) ist die einzige Stelle, an der
+         * sie noch auftaucht.
+         */
+        console.error('[prio] Lokale Datenbank ließ sich nicht öffnen:', fehler)
+        setFehler(true)
       })
     return () => {
       aktiv = false
