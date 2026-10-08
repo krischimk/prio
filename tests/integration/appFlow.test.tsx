@@ -79,7 +79,13 @@ describe('App-Integration', () => {
 
     await user.click(screen.getByRole('button', { name: 'Jetzt synchronisieren' }))
 
-    expect(await screen.findByText('Vom Server geändert')).toBeInTheDocument()
+    /*
+     * Großzügiger als die Standardsekunde: Der Abgleich läuft über mehrere
+     * asynchrone Schritte (Push, Pull, Anwenden, Neulesen). Auf einer
+     * ausgelasteten Maschine riß die Sekunde – der Test war damit flaky und hat
+     * einmal einen Commit blockiert.
+     */
+    expect(await screen.findByText('Vom Server geändert', {}, { timeout: 5000 })).toBeInTheDocument()
     await waitFor(() => expect(screen.getByTestId('sync-status')).toHaveTextContent('Alles synchronisiert'))
   })
 
