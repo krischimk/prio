@@ -69,6 +69,23 @@ function findMatches(files: string[], pattern: RegExp): string[] {
   return treffer
 }
 
+/**
+ * Der Attributblock eines Elements: ab `<button` bis zum zugehörigen `>`.
+ *
+ * Zählt geschweifte Klammern mit, damit ein `>` in einem Ausdruck (etwa
+ * `layout={a > b}`) das Ende nicht vortäuscht.
+ */
+function attributBlock(quelle: string, start: number): string {
+  let tiefe = 0
+  for (let i = start; i < quelle.length; i += 1) {
+    const zeichen = quelle[i]
+    if (zeichen === '{') tiefe += 1
+    else if (zeichen === '}') tiefe -= 1
+    else if (zeichen === '>' && tiefe === 0) return quelle.slice(start, i + 1)
+  }
+  return quelle.slice(start)
+}
+
 const sourceFiles = collectSourceFiles(SOURCE_DIR)
 
 describe('UI-Konventionen', () => {
@@ -159,18 +176,25 @@ describe('UI-Konventionen', () => {
     // P52: `Button` und `IconButton` bringen den Ring mit. Eine ganze Zeile,
     // ein Menüpunkt oder der Plus-Knopf haben eigene Formen – an 13 Stellen
     // fehlte der Ring dort, und der Fokus war unsichtbar.
+    //
+    // Geprüft wird der **Attributblock des Elements** (von `<button` bis zum
+    // zugehörigen `>`), nicht ein Fenster von Zeilen: Ein Ring weiter unten
+    // rutschte sonst durch, und ein `link` in einem Kommentar daneben ließ den
+    // Test fälschlich bestehen.
     const treffer: string[] = []
     for (const file of sourceFiles.filter(
       (datei) => datei.endsWith('.tsx') && !datei.includes(`${sep}components${sep}`),
     )) {
-      const zeilen = readFileSync(file, 'utf8').split('\n')
-      zeilen.forEach((zeile, index) => {
-        if (!/<button\b/.test(zeile)) return
-        const umfeld = zeilen.slice(index, index + 12).join('\n')
-        if (!/focusRing|buttonBase|buttonClass\(|link\b/.test(umfeld)) {
-          treffer.push(`${relative(PROJECT_ROOT, file)}:${index + 1}: ${zeile.trim()}`)
+      const quelle = readFileSync(file, 'utf8')
+      for (const fund of quelle.matchAll(/<button\b/g)) {
+        const block = attributBlock(quelle, fund.index)
+          .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+          .replace(/\/\/[^\n]*/g, '')
+        if (!/focusRing|buttonBase|buttonClass\(|\blink\b/.test(block)) {
+          const zeile = quelle.slice(0, fund.index).split('\n').length
+          treffer.push(`${relative(PROJECT_ROOT, file)}:${zeile}`)
         }
-      })
+      }
     }
 
     expect(
