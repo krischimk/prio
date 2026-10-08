@@ -43,12 +43,25 @@ export interface MergeResult<T> {
  * `L` ist der lokale Datensatz (mit `dirty`), `remote` die Serverfassung ohne
  * `dirty` – also genau `Omit<L, 'dirty'>`, siehe `RemoteTask` und Konsorten.
  */
+/**
+ * Übernimmt die Serverfassung als lokalen Datensatz.
+ *
+ * `L` und `Omit<L, 'dirty'>` unterscheiden sich in **genau einem** Feld:
+ * `dirty` gibt es nur lokal. TypeScript kann daraus kein `L` ableiten – es weiß
+ * nicht, dass `LocalOnly` nichts weiter hinzufügt –, deshalb steht die
+ * Umwandlung hier, an **einer** Stelle, mit dieser Begründung. Dreimal dieselbe
+ * Zeile an drei Rückgaben war zweimal zu viel: Wer `LocalOnly` erweitert,
+ * ändert sonst drei Stellen statt einer (und vergisst die dritte).
+ */
+function uebernehmeVonServer<L extends SyncableRow & LocalOnly>(remote: Omit<L, 'dirty'>): L {
+  return { ...remote, dirty: 0 } as unknown as L
+}
 export function resolveMerge<L extends SyncableRow & LocalOnly>(
   local: L | undefined,
   remote: Omit<L, 'dirty'>,
 ): MergeResult<L> {
   if (!local) {
-    return { row: { ...remote, dirty: 0 } as unknown as L, outcome: 'inserted' }
+    return { row: uebernehmeVonServer<L>(remote), outcome: 'inserted' }
   }
 
   const localTime = timeOf(local.updated_at)
@@ -59,12 +72,12 @@ export function resolveMerge<L extends SyncableRow & LocalOnly>(
   }
 
   if (remoteTime > localTime) {
-    return { row: { ...remote, dirty: 0 } as unknown as L, outcome: 'remote-wins' }
+    return { row: uebernehmeVonServer<L>(remote), outcome: 'remote-wins' }
   }
 
   if (local.dirty === 1) {
     return { row: local, outcome: 'local-wins' }
   }
 
-  return { row: { ...remote, dirty: 0 } as unknown as L, outcome: 'unchanged' }
+  return { row: uebernehmeVonServer<L>(remote), outcome: 'unchanged' }
 }
