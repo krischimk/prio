@@ -232,7 +232,17 @@ export function alignReminders(
 }
 
 /** Bringt jede Erinnerung in die Form, die zur Wiederholung passt. */
-function umformen(
+/**
+ * Bringt Erinnerungen in die Form, die zur Wiederholung passt.
+ *
+ * Dieselbe Umrechnung braucht die Oberfläche, wenn im Formular die
+ * Wiederholung umgeschaltet wird: Sie muss sofort sagen, was gespeichert würde.
+ * Deshalb steht sie **einmal** hier und wird exportiert – vorher gab es eine
+ * zweite Fassung in der Oberfläche, und genau die vergaß die Stummschaltung:
+ * Wer eine Erinnerung für sich stummgeschaltet hatte und dann die Wiederholung
+ * umschaltete, verlor sie (`mutedBy` fehlte in der zweiten Fassung).
+ */
+export function umformen(
   reminders: TaskReminder[],
   dueAt: IsoDateTime | null,
   relativ: boolean,

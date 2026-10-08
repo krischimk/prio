@@ -1,18 +1,16 @@
 import { useEffect, useRef } from 'react'
 import { isRecurrence } from '../../domain/recurrence'
-import {
-  MAX_REMINDERS,
-  absoluteFromOffset,
-  offsetFromAbsolute,
-  type TaskReminder,
-} from '../../domain/reminder'
+import { MAX_REMINDERS, umformen, type TaskReminder } from '../../domain/reminder'
 import { reminderSuggestion } from '../reminder'
 
 /**
  * Der Zustand der Erinnerungsliste einer Aufgabe.
  *
  * Aus `ReminderList.tsx` herausgelöst (457 Zeilen, vier Komponenten): Die
- * Komponente zeichnet, was hier entschieden wird. Verhalten unverändert.
+ * Komponente zeichnet, was hier entschieden wird.
+ *
+ * Die Umrechnung beim Formwechsel kommt aus der Domäne (`umformen`) – eine
+ * Fassung, nicht zwei: Die zweite hier vergaß die Stummschaltung.
  */
 export function useReminderRows({
   dueAt,
@@ -57,34 +55,4 @@ export function useReminderRows({
   }
 
   return { relativ, ersetzen, entfernen, hinzufuegen }
-}
-
-/**
- * Bringt eine Liste in die Form, die zur Wiederholung passt.
- *
- * Dieselbe Umrechnung wie in `alignReminders`, nur für die Anzeige: Beim
- * Wechsel der Wiederholung soll im Formular sofort stehen, was gespeichert
- * würde.
- */
-function umformen(
-  reminders: TaskReminder[],
-  dueAt: string | null,
-  relativ: boolean,
-  nowMs: number,
-): TaskReminder[] {
-  const ergebnis: TaskReminder[] = []
-  for (const reminder of reminders) {
-    if (relativ) {
-      const minutes =
-        reminder.form === 'offset' ? reminder.minutes : offsetFromAbsolute(dueAt, reminder.at)
-      if (minutes !== null) ergebnis.push({ form: 'offset', minutes })
-    } else {
-      const at =
-        reminder.form === 'absolute'
-          ? reminder.at
-          : absoluteFromOffset(dueAt, reminder.minutes, nowMs)
-      if (at !== null) ergebnis.push({ form: 'absolute', at })
-    }
-  }
-  return ergebnis
 }
