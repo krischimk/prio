@@ -1,4 +1,13 @@
 import { LocalNotifications } from '@capacitor/local-notifications'
+/*
+ * Der **einzige** Import aus `src/app` in dieser Schicht – und zwar bewusst:
+ * `isNativeApp` ist keine Anwendungslogik, sondern eine Auskunft über die
+ * Laufzeitumgebung (Capacitor-Hülle oder Browser). Sie steht in
+ * `src/app/platform.ts`, weil sie dort zuerst gebraucht wurde. Sie hier
+ * nachzubauen hieße, dieselbe Erkennung zweimal zu pflegen – und eine der
+ * beiden Fassungen wäre irgendwann falsch. Alles andere in `src/reminders`
+ * bleibt bei reinen Funktionen und dem `LocalNotificationsPort`.
+ */
 import { isNativeApp } from '../app/platform'
 import type {
   LocalNotificationsPort,
