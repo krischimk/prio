@@ -68,6 +68,26 @@ nicht mehr – genau dafür steht hier die Stufe selbst. Nachmessen statt glaube
 Größenordnung ab, etwa nach einem Maschinentausch, ist diese Tabelle neu zu
 beurteilen.
 
+### Erst messen, dann ändern – und fragen statt raten
+
+Zwei Fehler aus der Praxis, beide teuer:
+
+* **Bei einem Verhaltensfehler wird erst die Ursache gemessen, dann geändert.**
+  Auslöser: „Die Einfügelinie blitzt beim Langdruck nur kurz auf." Die erste
+  Änderung verkleinerte eine Toleranz – geraten, nicht gemessen. Falsch. Die
+  zweite Runde hat auf dem Emulator gezählt (`gehoben`, `abgebrochen`,
+  `uebernommen`) und die wirkliche Ursache gefunden. Messen heißt hier:
+  `npm run android:emu:eval` auf dem laufenden Gerät, ein Zähler oder eine
+  Ausgabe im Code, oder ein Test, der den Fall nachstellt. **Wenn nach einer
+  Änderung dasselbe gemeldet wird, wird nicht erneut geraten.**
+* **Mehrdeutige Anforderungen werden gefragt, nicht ausgelegt.** Auslöser: „Die
+  Bereichsköpfe müssen verschiebbare Elemente werden." Umgesetzt wurde „Ziel",
+  gemeint war „Ziel **und** umsortierbar". Ein Satz Rückfrage hätte einen
+  ganzen Durchlauf gespart. Fragen kostet eine Minute, Raten einen Auftrag.
+
+Dazu gehört die Reihenfolge: Ein Zug am Gerät oder ein Test gegen die echte
+Ursache kommt **vor** dem nächsten Release, nicht danach.
+
 ### Was einen Auftrag wirklich langsam macht
 
 Gemessen, in absteigender Reihenfolge:

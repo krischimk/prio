@@ -483,9 +483,8 @@ test('löscht eine Liste über die App-Leiste', async ({ page }) => {
   await createList(page, 'Wegwerfliste')
 
   await page.getByTestId('app-bar-title').click()
+  // Kein Zwischenschritt mehr: Der Menüpunkt löscht und bietet die Rücknahme an.
   await page.getByRole('button', { name: 'Liste löschen' }).click()
-  // „Löschen" ist die Tat, „Liste löschen" der Menüpunkt dorthin.
-  await page.getByRole('button', { name: 'Löschen', exact: true }).click()
   await expect(page.getByTestId('undo-bar')).toContainText('Liste „Wegwerfliste“')
 
   await expect(page.getByRole('dialog', { name: 'Liste verwalten' })).toBeHidden()

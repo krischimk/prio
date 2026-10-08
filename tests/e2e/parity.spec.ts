@@ -91,7 +91,6 @@ const funktionen: Funktion[] = [
 
       await page.getByTestId('app-bar-title').click()
       await page.getByRole('button', { name: 'Liste löschen' }).click()
-      await page.getByRole('button', { name: 'Löschen', exact: true }).click()
       await expect(page.getByTestId('undo-bar')).toContainText('Liste „Wegwerfliste“')
 
       await expect(page.getByText('Öffne oben links das Menü und lege eine Liste an.')).toBeVisible()

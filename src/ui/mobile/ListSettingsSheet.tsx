@@ -51,6 +51,27 @@ export function ListSettingsSheet({
   }
 
   /** Führt eine Aktion aus und schließt danach – Fehler bleiben sichtbar. */
+  /*
+   * Loeschen wirkt sofort – ohne eigene Abfrageseite. Der Weg zurueck ist die
+   * Rueckgaengig-Leiste unten; danach stehen Liste und Aufgaben sieben Tage
+   * unter „Wiederherstellen".
+   */
+  const loeschen = async () => {
+    const id = list.id
+    const name = list.name
+    await ausfuehren(async () => {
+      await repositories.deleteList(id)
+      offer({
+        text: `Liste „${name}“`,
+        art: 'geloescht',
+        rueckgaengig: async () => {
+          await repositories.restoreList(id)
+        },
+      })
+      onClose()
+    })
+  }
+
   const ausfuehren = async (aktion: () => Promise<unknown>) => {
     if (busy) return
     setBusy(true)
@@ -110,7 +131,8 @@ export function ListSettingsSheet({
                   </Button>
                   <Button
                     variant="danger" layout="w-full"
-                    onClick={() => setModus('loeschen')}
+                    disabled={busy}
+                    onClick={() => void loeschen()}
                   >
                     Liste löschen
                   </Button>
@@ -156,41 +178,7 @@ export function ListSettingsSheet({
 
           {modus === 'teilen' ? <SharePanel list={list} currentUserId={currentUserId} /> : null}
 
-          {modus === 'loeschen' ? (
-            <div className="space-y-3">
-              <p className="text-body text-ink-soft">
-                Die Liste und alle ihre Aufgaben werden gelöscht. Unten erscheint kurz eine Leiste,
-                mit der sich das zurücknehmen lässt; sonst sind sie noch sieben Tage unter
-                „Wiederherstellen" zu finden.
-              </p>
-              <Button
-                variant="danger" layout="w-full"
-                disabled={busy}
-                onClick={() =>
-                  void ausfuehren(async () => {
-                    const id = list.id
-                    const name = list.name
-                    await repositories.deleteList(id)
-                    offer({
-                      text: `Liste „${name}“`,
-                      art: 'geloescht',
-                      rueckgaengig: async () => {
-                        await repositories.restoreList(id)
-                      },
-                    })
-                  })
-                }
-              >
-                Löschen
-              </Button>
-              <Button
-                variant="secondary" layout="w-full"
-                onClick={() => setModus('menue')}
-              >
-                Abbrechen
-              </Button>
-            </div>
-          ) : null}
+
 
           {modus === 'bereiche' ? (
             <div className="space-y-3">
