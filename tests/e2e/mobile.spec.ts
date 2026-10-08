@@ -21,6 +21,11 @@ test.beforeEach(async ({ request }) => {
 
 /** Titel aller Aufgaben in der angezeigten Reihenfolge. */
 async function taskTitles(page: Page): Promise<string[]> {
+  // `allInnerTexts` wartet nicht: Nach einem Neuladen stand die App-Leiste
+  // bereits, die Zeilen kamen einen Moment später – der Test las dann eine
+  // leere Liste und meldete einen Fehler, den es nicht gab. Deshalb erst
+  // warten, bis die erste Zeile da ist.
+  await expect(page.getByTestId('task-row').first()).toBeVisible()
   return page.getByTestId('task-row').allInnerTexts()
 }
 

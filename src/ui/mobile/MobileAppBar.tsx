@@ -1,6 +1,6 @@
 import { useWorkspace } from '../../app/useWorkspace'
 import { describeSyncState } from '../status/syncStatus'
-import { layer, appBackground, attentionDot, numeric, statusTone } from '../styles'
+import { focusRing, layer, appBackground, attentionDot, numeric, statusTone } from '../styles'
 import { useUpdate } from '../useUpdate'
 import { MenuIcon } from '../icons'
 import { ListIcon } from '../ListIcon'
@@ -72,7 +72,7 @@ export function MobileAppBar({
             type="button"
             onClick={onOpenList}
             aria-label={`Liste „${listName}“ verwalten`}
-            className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-control px-2 py-1 text-title font-medium text-ink active:bg-raised"
+            className={`${focusRing} flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-control px-2 py-1 text-title font-medium text-ink active:bg-raised`}
             data-testid="app-bar-title"
           >
             <ListIcon icon={listIcon} className="h-4 w-4 shrink-0" />
@@ -87,7 +87,7 @@ export function MobileAppBar({
           }}
           aria-label={`${farben.label} – jetzt synchronisieren`}
           title={text}
-          className="rounded-control p-3 active:bg-raised"
+          className={`${focusRing} rounded-control p-3 active:bg-raised`}
         >
           {/*
             Neben der Farbe trägt auch eine Form die Aussage (P14): der Punkt

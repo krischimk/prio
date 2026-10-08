@@ -155,6 +155,30 @@ describe('UI-Konventionen', () => {
    * (`buttonClass('ghost', 'sm')`), nicht angehängt. `extra` bleibt für Layout
    * da – Breite, Außenabstand, Ausrichtung –, und das ist hier erlaubt.
    */
+  it('gibt jedem handgebauten Knopf den gemeinsamen Fokusring', () => {
+    // P52: `Button` und `IconButton` bringen den Ring mit. Eine ganze Zeile,
+    // ein Menüpunkt oder der Plus-Knopf haben eigene Formen – an 13 Stellen
+    // fehlte der Ring dort, und der Fokus war unsichtbar.
+    const treffer: string[] = []
+    for (const file of sourceFiles.filter(
+      (datei) => datei.endsWith('.tsx') && !datei.includes(`${sep}components${sep}`),
+    )) {
+      const zeilen = readFileSync(file, 'utf8').split('\n')
+      zeilen.forEach((zeile, index) => {
+        if (!/<button\b/.test(zeile)) return
+        const umfeld = zeilen.slice(index, index + 12).join('\n')
+        if (!/focusRing|buttonBase|buttonClass\(|link\b/.test(umfeld)) {
+          treffer.push(`${relative(PROJECT_ROOT, file)}:${index + 1}: ${zeile.trim()}`)
+        }
+      })
+    }
+
+    expect(
+      treffer,
+      'Ein handgebauter Knopf braucht `focusRing` aus src/ui/styles.ts – sonst ist der Fokus dort unsichtbar.',
+    ).toEqual([])
+  })
+
   it('baut Knöpfe nur in den Bausteinen zusammen', () => {
     // `buttonClass` ist die Werkbank der Bausteine (`src/ui/components/`). In
     // einer Komponente heißt es `<Button variant="ghost" size="sm">`; die

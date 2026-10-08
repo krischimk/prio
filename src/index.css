@@ -24,14 +24,14 @@
   --color-raised: #262626; /* Hover, Chips, eingelassene Flächen */
   --color-line: #262626; /* Rahmen */
   --color-line-soft: #171717; /* leiser als `line`: Trenner zwischen Zeilen */
-  --color-line-strong: #404040; /* Rahmen von Eingabefeldern */
+  --color-line-strong: #6b6b6b; /* Rahmen von Eingabefeldern – 3,4:1 auf `surface`, vorher #404040 mit 1,7:1 */
 
   /* Schrift, von kräftig nach zurückgenommen */
   --color-ink-strong: #fafafa;
   --color-ink: #f5f5f5;
   --color-ink-soft: #d4d4d4;
   --color-ink-muted: #a3a3a3;
-  --color-ink-faint: #737373;
+  --color-ink-faint: #8f8f8f; /* 4,7:1 auf `raised` – vorher #737373 mit 3,2:1 (nicht lesbar) */
   --color-ink-dim: #525252;
 
   /* Die Akzentfarbe – Auswahl, Handlung, Verweis */
@@ -268,3 +268,21 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+/*
+ * Bewegungsreduktion (P46).
+ *
+ * Die App animiert heute nur Farben; wer im System „Bewegung reduzieren"
+ * gesetzt hat, bekommt auch die nicht. Der Block steht hier, damit eine später
+ * hinzugefügte Bewegung nicht still daran vorbeigeht – `tests/unit/motion.test.ts`
+ * hält ihn fest.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

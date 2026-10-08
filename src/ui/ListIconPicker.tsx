@@ -2,7 +2,7 @@ import { useWorkspace } from '../app/useWorkspace'
 import type { LocalList } from '../domain/types'
 import { groupListIcons } from './listIcons'
 import { ListIcon } from './ListIcon'
-import { cardSoft } from './styles'
+import { cardSoft, focusRing } from './styles'
 import { Button } from './components/Button'
 
 /**
@@ -66,7 +66,7 @@ export function ListIconPicker({
                   aria-label={eintrag.label}
                   aria-pressed={list.icon === eintrag.id}
                   onClick={() => setzen(eintrag.id)}
-                  className={`flex aspect-square items-center justify-center rounded-control border ${
+                  className={`${focusRing} flex aspect-square items-center justify-center rounded-control border ${
                     list.icon === eintrag.id
                       ? 'border-brand bg-brand-tint/60 text-brand-faint'
                       : 'border-line-strong bg-surface text-ink-soft hover:bg-raised'

@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
 import type { LocalList } from '../domain/types'
 import { ListIcon } from './ListIcon'
-import { errorMessage, input } from './styles'
+import { errorMessage, focusRing, input } from './styles'
 import { appBackground } from './styles'
 import { leerListen } from './emptyTexts'
 import { Button } from './components/Button'
@@ -62,7 +62,7 @@ export function Sidebar({
                 type="button"
                 onClick={() => onSelect(list.id)}
                 aria-current={selected ? 'true' : undefined}
-                className={`flex w-full items-center justify-between gap-2 rounded-control px-2 py-2 text-left text-body ${
+                className={`${focusRing} flex w-full items-center justify-between gap-2 rounded-control px-2 py-2 text-left text-body ${
                   selected
                     ? 'bg-brand-tint/60 text-brand-faint'
                     : 'text-ink-soft hover:bg-surface hover:text-ink'

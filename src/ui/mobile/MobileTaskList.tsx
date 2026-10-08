@@ -3,7 +3,7 @@ import { useWorkspace } from '../../app/useWorkspace'
 import { useUndo } from '../useUndo'
 import type { ListSection, LocalTask } from '../../domain/types'
 import { flattenGroups, groupTasks } from '../../domain/sections'
-import { appBackground, layer } from '../styles'
+import { focusRing, appBackground, layer } from '../styles'
 import { leerAufgaben } from '../emptyTexts'
 import { TaskDescription } from '../TaskDescription'
 import { TaskFacts } from '../TaskFacts'
@@ -220,7 +220,7 @@ function MobileTaskRow({
             if (drag.wasDragging()) return
             onOpen(task)
           }}
-          className="min-w-0 text-left select-none"
+          className={`${focusRing} min-w-0 text-left select-none`}
           data-testid="task-row"
         >
           <TaskFacts task={task} currentUserId={currentUserId} dichte="mobil" />

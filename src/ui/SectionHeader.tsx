@@ -1,5 +1,5 @@
 import { ChevronIcon } from './icons'
-import { mutedText } from './styles'
+import { focusRing, mutedText } from './styles'
 
 /**
  * Der Kopf eines Abschnitts in der Aufgabenliste.
@@ -26,7 +26,7 @@ export function SectionHeader({
       type="button"
       aria-expanded={offen}
       onClick={onToggle}
-      className={`flex w-full items-center gap-1.5 py-1 text-left ${className}`}
+      className={`${focusRing} flex w-full items-center gap-1.5 py-1 text-left ${className}`}
       data-testid="section-header"
     >
       <ChevronIcon offen={offen} className={`h-3.5 w-3.5 shrink-0 ${mutedText}`} />

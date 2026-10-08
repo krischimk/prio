@@ -21,7 +21,16 @@ import type { SyncTone } from './status/syncStatus'
  *   es genau eine Stelle dafür gibt.
  */
 
-const focusRing =
+/**
+ * Der Fokusring – sichtbar und überall gleich (P52).
+ *
+ * `Button` und `IconButton` bringen ihn mit; eine ganze Listenzeile, ein
+ * Menüpunkt oder der Plus-Knopf haben eigene Formen und trugen ihn deshalb
+ * nicht: An 13 Stellen war der Fokus damit unsichtbar. Deshalb ist der Ring
+ * exportiert – und `tests/unit/uiConventions.test.ts` verlangt ihn an jedem
+ * handgebauten `<button>`.
+ */
+export const focusRing =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-soft'
 
 /*

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
 import type { LocalList, LocalTask } from '../domain/types'
-import { errorMessage } from './styles'
+import { errorMessage, focusRing } from './styles'
 
 import { Button } from './components/Button'
 import { Sheet } from './components/Sheet'
@@ -68,7 +68,7 @@ export function MoveTaskSheet({
                   void move(list.id)
                 }}
                 disabled={busy}
-                className="w-full border-t border-line px-4 py-3 text-left text-body text-ink-soft active:bg-raised disabled:opacity-50"
+                className={`${focusRing} w-full border-t border-line px-4 py-3 text-left text-body text-ink-soft active:bg-raised disabled:opacity-50`}
               >
                 {list.name}
               </button>

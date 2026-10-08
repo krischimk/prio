@@ -4,7 +4,7 @@ import { useWorkspace } from '../../app/useWorkspace'
 import { describeReminderState } from '../status/reminderStatus'
 import { describeSyncState } from '../status/syncStatus'
 import type { LocalList } from '../../domain/types'
-import { layer, errorMessage, input } from '../styles'
+import { focusRing, layer, errorMessage, input } from '../styles'
 import { BackendLabel } from '../BackendLabel'
 import { ListIcon } from '../ListIcon'
 import { UpdateEntry } from '../UpdateEntry'
@@ -137,7 +137,7 @@ export function MobileDrawer({
                       onClose()
                     }}
                     aria-current={selected ? 'true' : undefined}
-                    className={`flex w-full items-center justify-between gap-2 rounded-control px-3 py-2 text-left text-body ${
+                    className={`${focusRing} flex w-full items-center justify-between gap-2 rounded-control px-3 py-2 text-left text-body ${
                       selected ? 'bg-brand-tint/60 text-brand-faint' : 'text-ink-soft active:bg-surface'
                     }`}
                   >

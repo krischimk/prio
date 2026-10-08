@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { mutedText } from './styles'
+import { focusRing, mutedText } from './styles'
 
 /**
  * Die Beschreibung einer Aufgabe in der Übersicht.
@@ -61,7 +61,7 @@ export function TaskDescription({ text, className = '' }: { text: string; classN
             event.stopPropagation()
             setOffen((vorher) => !vorher)
           }}
-          className={`text-label leading-none underline-offset-2 hover:underline ${mutedText}`}
+          className={`${focusRing} text-label leading-none underline-offset-2 hover:underline ${mutedText}`}
         >
           {offen ? 'Weniger' : 'Mehr'}
         </button>

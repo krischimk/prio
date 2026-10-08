@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
 import type { NetworkMonitor } from '../sync/network'
 import type { RemoteGateway } from '../sync/remoteGateway'
+import { WorkspaceError } from '../ui/WorkspaceError'
 import { WorkspaceLoading } from '../ui/WorkspaceLoading'
 import { WorkspaceContext, type WorkspaceValue } from './workspaceContext'
 import { createWorkspaceRuntime, type WorkspaceRuntime } from './workspaceRuntime'
@@ -28,10 +29,15 @@ export function WorkspaceProvider({
   children: ReactNode
 }) {
   const [runtime, setRuntime] = useState<WorkspaceRuntime | null>(null)
+  /** `true`, wenn die lokale Datenbank nicht geöffnet werden konnte. */
+  const [fehler, setFehler] = useState(false)
+  /** Zähler für „Erneut versuchen“: Er startet den Effekt neu. */
+  const [versuch, setVersuch] = useState(0)
 
   useEffect(() => {
     let aktiv = true
     let erzeugt: WorkspaceRuntime | null = null
+    setFehler(false)
     createWorkspaceRuntime({ userId, gateway, network })
       .then((laufzeit) => {
         if (!aktiv) {
@@ -43,17 +49,18 @@ export function WorkspaceProvider({
         setRuntime(laufzeit)
       })
       .catch(() => {
-        if (aktiv) setRuntime(null)
+        if (aktiv) setFehler(true)
       })
     return () => {
       aktiv = false
       erzeugt?.schliessen()
     }
-  }, [userId, gateway, network])
+  }, [userId, gateway, network, versuch])
 
   // Die Oberfläche erscheint, sobald die lokale Datenbank offen ist. Der erste
   // Abgleich läuft bewusst im Hintergrund weiter – die App darf nie auf eine
   // Serverantwort warten.
+  if (fehler) return <WorkspaceError onRetry={() => setVersuch((zaehler) => zaehler + 1)} />
   if (!runtime) return <WorkspaceLoading />
 
   return <Bereit runtime={runtime}>{children}</Bereit>

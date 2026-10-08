@@ -13,7 +13,7 @@ import { RestoreTasksPanel } from '../RestoreTasksPanel'
 import { TaskDetailSheet } from './TaskDetailSheet'
 import { PlusIcon } from '../icons'
 import { formatOpenTasks } from '../taskCount'
-import { layer, appBackground, numeric } from '../styles'
+import { focusRing, layer, appBackground, numeric } from '../styles'
 
 /**
  * Mobile Oberfläche der App.
@@ -81,7 +81,7 @@ export function MobileWorkspace() {
             type="button"
             onClick={() => setDetail({ task: null })}
             aria-label="Neue Aufgabe"
-            className="pointer-events-auto mb-fab-gap flex h-fab w-fab items-center justify-center rounded-full bg-brand text-on-brand shadow-lg shadow-page/40 active:bg-brand-soft"
+            className={`${focusRing} pointer-events-auto mb-fab-gap flex h-fab w-fab items-center justify-center rounded-full bg-brand text-on-brand shadow-lg shadow-page/40 active:bg-brand-soft`}
           >
             <PlusIcon />
           </button>
