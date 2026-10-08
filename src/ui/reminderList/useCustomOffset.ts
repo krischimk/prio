@@ -6,6 +6,12 @@ import { useState } from 'react'
  * Der Wert bleibt eine **einzige** Minutenzahl (negativ heißt „nachher"); die
  * drei Felder sind nur ihre Anzeige. Deshalb rechnet jede Änderung alle drei
  * neu – sonst liefen Anzeige und gespeicherter Wert auseinander.
+ *
+ * **Warum ein eigener Hook neben `useOffsetChoice`:** Jeder gehört zu genau
+ * einer Komponente – die Auswahl zur Zeile, die Felder zum aufgeklappten
+ * „Eigene …". Zusammengelegt müsste die Zeile den Zustand ihres Kindes halten
+ * und durchreichen. Beim nächsten Anfassen ist das die Frage, die zu stellen
+ * ist (F7 der Kritik).
  */
 export function useCustomOffset({
   value,
