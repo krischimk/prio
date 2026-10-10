@@ -335,6 +335,14 @@ nicht einmal je Änderung. Drei Stufen:
 ### Prüfen im Emulator (Standardweg)
 
 Neue Versionen werden **im Emulator** geprüft, nicht zuerst auf dem Telefon.
+Wenn die Arbeitsumgebung keinen KVM-Zugriff bietet, übernimmt der gezielte
+CI-Lauf dieselbe Prüfung des tatsächlichen APK-Codes:
+`gh workflow run ci.yml --ref <branch> -F android_smoke=true`.
+Er prüft native Kernabläufe und liefert das Artefakt `android-smoke` mit
+Telefonbildern in Hoch- und Querformat. Diese Bilder vor dem Tag herunterladen
+und ansehen. Auslöser: Die lokale Software-Emulation startete Android zwar,
+aber Systemdienst-Abstürze verhinderten eine belastbare Prüfung der App.
+
 Der Emulator läuft auf demselben Rechner. Ist eine Anzeige vorhanden (`DISPLAY`
 gesetzt), erscheint sein Fenster auf dem Desktop und lässt sich wie ein Handy
 bedienen; ohne Anzeige – etwa auf einem Server – startet das Skript ihn

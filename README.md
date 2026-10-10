@@ -1356,6 +1356,13 @@ npm run android:emu:stop     # beendet Emulator und Mock
 npm run android:emu:eval -- 'JSON.stringify(Object.keys(localStorage))'
 ```
 
+Ohne lokalen KVM-Zugriff kann die native Prüfung auf einem GitHub-Runner
+stattfinden: `gh workflow run ci.yml --ref <branch> -F android_smoke=true`.
+Dieser gezielte Lauf baut gegen den Mock, prüft den tatsächlichen
+Android-WebView und hinterlegt Telefonbilder im Artefakt `android-smoke`.
+Die normale CI mit Geschäftslogik-, Browser- und Datenbanktests bleibt ein
+eigener Lauf; die Bilder werden vor einer Veröffentlichung angesehen.
+
 **Zwei Ziele, ein Standard.** `android:emu:install` baut gegen den lokalen Mock
 (`tests/mock-supabase`, Port 54321). Der läuft ohne Konto, legt nichts im echten
 Projekt an und lässt sich beliebig wiederholen – das ist der Weg für „läuft die
