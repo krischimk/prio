@@ -97,35 +97,42 @@ const stempel = new Date().toISOString()
 // Vorgabewert; `owner_id` muss der angemeldete Nutzer sein, sonst greift die
 // Policy für das Anlegen.
 const listenId = crypto.randomUUID()
-const liste = await rest('lists', {
+const liste = await rest('rpc/sync_push', {
   token: a.token,
   method: 'POST',
-  prefer: 'return=representation',
-  body: { id: listenId, name: `RLS-Prüfung ${stempel}`, owner_id: a.id, is_shared: false },
+  body: { p_changes: [{ table: 'lists', expected: null, row: {
+    id: listenId, name: `RLS-Prüfung ${stempel}`, owner_id: a.id,
+    is_shared: false, icon: null, sections: [], keep_completed: false,
+    completion_retention_started_at: stempel,
+    created_at: stempel, updated_at: stempel, deleted_at: null,
+  } }] },
 })
 pruefe(
   'A legt eine Liste an',
-  liste.status === 201,
+  liste.ok && liste.daten?.[0]?.kind === 'written',
   `HTTP ${liste.status}${liste.ok ? '' : ' ' + JSON.stringify(liste.daten).slice(0, 120)}`,
 )
-if (liste.status !== 201) process.exit(1)
+if (!liste.ok || liste.daten?.[0]?.kind !== 'written') process.exit(1)
 
-const aufgabe = await rest('tasks', {
+const aufgabe = await rest('rpc/sync_push', {
   token: a.token,
   method: 'POST',
-  prefer: 'return=representation',
-  body: {
+  body: { p_changes: [{ table: 'tasks', expected: null, row: {
     id: crypto.randomUUID(),
     list_id: listenId,
     title: 'Geheime Aufgabe',
+    description: null, due_at: null,
     completed: false,
+    completed_at: null, completed_expires_at: null, expired_at: null,
+    reopen_context: null, recurrence: null, successor_id: null,
     position: 0,
-    reminders: [],
-  },
+    reminders: [], section_id: null,
+    created_at: stempel, updated_at: stempel, deleted_at: null,
+  } }] },
 })
 pruefe(
   'A legt eine Aufgabe an',
-  aufgabe.status === 201,
+  aufgabe.ok && aufgabe.daten?.[0]?.kind === 'written',
   `HTTP ${aufgabe.status}${aufgabe.ok ? '' : ' ' + JSON.stringify(aufgabe.daten).slice(0, 120)}`,
 )
 
@@ -165,9 +172,22 @@ const bLoeschen = await rest(`lists?id=eq.${listenId}`, {
   body: { deleted_at: stempel },
 })
 pruefe(
-  'B kann die geteilte Liste nicht löschen',
-  bLoeschen.ok && Array.isArray(bLoeschen.daten) && bLoeschen.daten.length === 0,
+  'Direktes App-Schreiben bleibt gesperrt',
+  bLoeschen.status === 403,
   `HTTP ${bLoeschen.status}`,
+)
+
+const bLoeschenGeschuetzt = await rest('rpc/sync_push', {
+  token: b.token,
+  method: 'POST',
+  body: { p_changes: [{ table: 'lists', expected: bNachher.daten[0],
+    row: { ...bNachher.daten[0], deleted_at: stempel, updated_at: stempel },
+  }] },
+})
+pruefe(
+  'B kann die geteilte Liste auch über sync_push nicht löschen',
+  bLoeschenGeschuetzt.ok && bLoeschenGeschuetzt.daten?.[0]?.kind === 'rejected',
+  `HTTP ${bLoeschenGeschuetzt.status}`,
 )
 
 const bFremdeListe = await rest(`lists?id=eq.${'00000000-0000-0000-0000-000000000000'}`, { token: b.token })

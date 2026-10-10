@@ -1002,9 +1002,13 @@ Nutzerwunsch wird sie für diese Testveröffentlichung ausgelassen. Damit
 bleiben Tastatur, Systemleisten und tatsächliche Bedienung auf dem Telefon
 Gegenstand des Nutzertests; die Browserprüfungen ersetzen diese Abnahme nicht.
 
-Vor der Veröffentlichung wird der Cloudbestand gesichert, die Sammelmigration
-eingespielt und der tatsächliche Schema-, Rechte- und Zeitgeberstand geprüft.
-Die neue Sieben-Tage-Regel erhält für bereits erledigte Aufgaben die bestätigte
-Schonfrist ab Einführung. Nach der Web-Veröffentlichung prüft `smoke:live`
+Der Cloudbestand wurde vor der Umstellung gesichert und die Sammelmigration
+eingespielt. Schema, Zugriffsrechte und der erfolgreiche Datenbankjob wurden
+am echten Projekt geprüft; Listen-, Aufgaben- und Mitgliedschaftszahlen blieben
+unverändert. Bereits erledigte Aufgaben haben die bestätigte Schonfrist von
+sieben Tagen ab Einführung erhalten. Die echte Zwei-Konten-Prüfung bestätigt
+geschütztes Anlegen, Teilen, Leserechte und verweigertes Löschen durch Mitglieder;
+das Prüfsystem nutzt dabei denselben geschützten Schreibweg wie die App.
+Nach der Web-Veröffentlichung prüft `smoke:live`
 Anmeldung, Aufgabenanlage und Synchronisation am echten Projekt mit dem
 dedizierten Testkonto. Version, annotierter Tag und APK gehören zusammen.
