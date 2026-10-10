@@ -1,15 +1,18 @@
 import { useState, type FormEvent } from 'react'
-import { useWorkspace } from '../../app/useWorkspace'
-import { useUndo } from '../useUndo'
-import type { LocalList } from '../../domain/types'
-import { ListIcon } from '../ListIcon'
-import { ListIconPicker } from '../ListIconPicker'
-import { SharePanel } from '../SharePanel'
-import { SectionsPanel } from '../SectionsPanel'
-import { errorMessage, input } from '../styles'
+import { useWorkspace } from '../app/useWorkspace'
+import { useUndo } from './useUndo'
+import { useListNameDraft } from './useListNameDraft'
+import { ListOverviewChoice } from './ListOverviewChoice'
+import { ListCompletionChoice } from './ListCompletionChoice'
+import type { LocalList } from '../domain/types'
+import { ListIcon } from './ListIcon'
+import { ListIconPicker } from './ListIconPicker'
+import { SharePanel } from './SharePanel'
+import { SectionsPanel } from './SectionsPanel'
+import { errorMessage, input } from './styles'
 
-import { Button } from '../components/Button'
-import { Sheet } from '../components/Sheet'
+import { Button } from './components/Button'
+import { Sheet } from './components/Sheet'
 
 /**
  * Verwaltung der aktuellen Liste – umbenennen, teilen, löschen oder verlassen.
@@ -23,7 +26,7 @@ import { Sheet } from '../components/Sheet'
  * teilen und löschen. Wer nur Mitglied ist, kann die Liste verlassen.
  */
 
-type Modus = 'menue' | 'umbenennen' | 'symbol' | 'bereiche' | 'teilen' | 'loeschen' | 'verlassen'
+type Modus = 'menue' | 'umbenennen' | 'symbol' | 'bereiche' | 'teilen' | 'verlassen'
 
 export function ListSettingsSheet({
   list,
@@ -37,7 +40,7 @@ export function ListSettingsSheet({
   const { repositories } = useWorkspace()
   const { offer } = useUndo()
   const [modus, setModus] = useState<Modus>('menue')
-  const [name, setName] = useState(list.name)
+  const { name, setName, discard: discardName } = useListNameDraft(list)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -87,7 +90,10 @@ export function ListSettingsSheet({
 
   const umbenennen = (event: FormEvent) => {
     event.preventDefault()
-    void ausfuehren(() => repositories.renameList(list.id, name))
+    void ausfuehren(async () => {
+      await repositories.renameList(list.id, name)
+      discardName()
+    })
   }
 
   return (
@@ -99,10 +105,20 @@ export function ListSettingsSheet({
       leading={<ListIcon icon={list.icon} className="h-5 w-5 shrink-0 text-ink-soft" />}
       onClose={onClose}
       onBack={schliessen}
+      footer={modus !== 'menue' ? <Button variant="secondary" layout="w-full" onClick={() => setModus('menue')}>Zur Übersicht</Button> : undefined}
     >
-      <div className="px-4 py-4">
+      <div className="px-5 py-5">
           {modus === 'menue' ? (
-            <div className="space-y-2">
+            <div className="space-y-5">
+              <section className="space-y-1" aria-label="Persönliche Ansicht">
+              <h3 className="text-meta font-medium text-ink-muted">Nur für dich</h3>
+              <ListOverviewChoice listId={list.id} currentUserId={currentUserId} />
+              </section>
+              <section className="space-y-2 border-t border-line pt-4" aria-label="Gemeinsame Listenregeln">
+              <h3 className="text-meta font-medium text-ink-muted">Für diese Liste</h3>
+              <ListCompletionChoice key={list.id} list={list} currentUserId={currentUserId} />
+              </section>
+              <div className="grid grid-cols-2 gap-2 border-t border-line pt-4">
               {istBesitzer ? (
                 <>
                   <Button
@@ -130,7 +146,7 @@ export function ListSettingsSheet({
                     Teilen
                   </Button>
                   <Button
-                    variant="danger" layout="w-full"
+                    variant="danger" layout="col-span-2 w-full"
                     disabled={busy}
                     onClick={() => void loeschen()}
                   >
@@ -145,13 +161,14 @@ export function ListSettingsSheet({
                   Liste verlassen
                 </Button>
               )}
+              </div>
             </div>
           ) : null}
 
           {modus === 'umbenennen' ? (
             <form onSubmit={umbenennen} className="space-y-3" aria-label="Liste umbenennen">
               <label htmlFor="list-rename" className="block text-meta text-ink-muted">
-                Neuer Name
+                Neuer Listenname
               </label>
               <input
                 id="list-rename"
@@ -166,7 +183,7 @@ export function ListSettingsSheet({
                 </Button>
                 <Button
                   variant="secondary" layout="flex-1"
-                  onClick={() => setModus('menue')}
+                  onClick={() => { discardName(); setModus('menue') }}
                 >
                   Abbrechen
                 </Button>

@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react'
+import { useState } from 'react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { BackLayerProvider } from '../../src/app/BackLayerProvider'
@@ -100,6 +101,65 @@ describe('Sheet', () => {
     expect(auslöser).toHaveFocus()
     auslöser.remove()
   })
+
+  it('hält den Hintergrund beim Schließen eines verschachtelten Dialogs gesperrt und bewahrt vorherige Sperren', async () => {
+    const user = userEvent.setup()
+    const zuvorGesperrt = document.createElement('div')
+    zuvorGesperrt.inert = true
+    document.body.append(zuvorGesperrt)
+    function Dialoge() {
+      const [nested, setNested] = useState(false)
+      return <BackLayerProvider>
+        <div data-testid="hintergrund">Liste</div>
+        <Sheet title="Außen" onClose={vi.fn()}>
+          <button onClick={() => setNested(true)}>Innen öffnen</button>
+        </Sheet>
+        {nested ? <Sheet title="Innen" onClose={() => setNested(false)}><p>Bestätigung</p></Sheet> : null}
+      </BackLayerProvider>
+    }
+    const { unmount } = render(<Dialoge />)
+    const hintergrund = screen.getByTestId('hintergrund')
+    expect(hintergrund.inert).toBe(true)
+    await user.click(screen.getByRole('button', { name: 'Innen öffnen' }))
+    const innen = screen.getByRole('dialog', { name: 'Innen' })
+    expect(screen.getByRole('dialog', { name: 'Außen' }).parentElement!.inert).toBe(true)
+    await user.click(within(innen).getByRole('button', { name: 'Schließen' }))
+    expect(hintergrund.inert).toBe(true)
+    expect(screen.getByRole('dialog', { name: 'Außen' }).parentElement!.inert).toBeFalsy()
+    expect(screen.getByRole('button', { name: 'Innen öffnen' })).toHaveFocus()
+    unmount()
+    expect(hintergrund.inert).toBeFalsy()
+    expect(zuvorGesperrt.inert).toBe(true)
+    zuvorGesperrt.remove()
+  })
+
+  it('gibt den Fokus nach einem Austausch des Auslösers seinem fachlichen Gegenpart zurück', () => {
+    const hintergrund = document.createElement('div')
+    const vorher = document.createElement('button')
+    vorher.dataset.focusKey = 'task:123'
+    hintergrund.append(vorher)
+    document.body.append(hintergrund)
+    vorher.focus()
+    const { unmount } = zeige()
+    const nachher = document.createElement('button')
+    nachher.dataset.focusKey = 'task:123'
+    vorher.replaceWith(nachher)
+    unmount()
+    expect(nachher).toHaveFocus()
+    hintergrund.remove()
+  })
+
+  it('bleibt beim ersten Shift+Tab vom Dialograhmen im Dialog', async () => {
+    const user = userEvent.setup()
+    zeige()
+    expect(screen.getByRole('dialog')).toHaveFocus()
+
+    await user.tab({ shift: true })
+
+    expect(screen.getByRole('button', { name: 'Letzter' })).toHaveFocus()
+    await user.tab()
+    expect(screen.getByRole('button', { name: 'Schließen' })).toHaveFocus()
+  })
 })
 
 /**
@@ -108,6 +168,22 @@ describe('Sheet', () => {
  * `useDialog`.
  */
 describe('Screen', () => {
+  it('hält den Fokus auch ohne erreichbare Bedienelemente', async () => {
+    const user = userEvent.setup()
+    render(
+      <BackLayerProvider>
+        <Screen label="Warten" onClose={vi.fn()} header={<header>Warten</header>}>
+          <p>Wird geladen.</p>
+        </Screen>
+      </BackLayerProvider>,
+    )
+
+    await user.tab({ shift: true })
+    expect(screen.getByRole('dialog')).toHaveFocus()
+    await user.tab()
+    expect(screen.getByRole('dialog')).toHaveFocus()
+  })
+
   it('meldet sich als Dialog mit Namen an und zeigt die Kopfleiste', () => {
     const onClose = vi.fn()
     render(

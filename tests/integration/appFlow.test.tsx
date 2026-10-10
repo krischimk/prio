@@ -74,6 +74,10 @@ describe('App-Integration', () => {
     expect(server.lists.size).toBe(1)
     expect([...server.tasks.values()][0]?.title).toBe('Bericht schreiben')
 
+    // Die Zeile liegt bereits am Server, während Bestätigung und Pull noch
+    // laufen können. Erst danach ist der manuelle Sync-Knopf wieder bedienbar.
+    await waitFor(() => expect(screen.getByTestId('sync-status')).toHaveTextContent('Alles synchronisiert'))
+
     // --- Serveränderung wird beim nächsten Sync übernommen -------------------
     const remoteTask = [...server.tasks.values()][0]
     expect(remoteTask).toBeDefined()
@@ -141,6 +145,8 @@ describe('App-Integration', () => {
     await user.type(screen.getByLabelText('Passwort'), 'geheim123')
     await user.click(screen.getByRole('button', { name: 'Anmelden' }))
 
+    expect(await screen.findByRole('heading', { name: 'Gesamtansicht' })).toBeInTheDocument()
+    await user.click(await screen.findByRole('button', { name: 'Vom anderen Gerät' }))
     expect(await screen.findByTestId('list-title')).toHaveTextContent('Vom anderen Gerät')
     expect(await screen.findByText('Vorhandene Aufgabe')).toBeInTheDocument()
   })

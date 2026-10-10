@@ -2,12 +2,14 @@ import { parseSections, withNewSection, withRenamedSection, withoutSection } fro
 import { newId } from '../../domain/ids'
 import { timeOf } from '../../domain/clock'
 import { compareListsByName, restoreCutoff } from '../../domain/ordering'
+import { completionDeadline, completionExpired } from '../../domain/taskLifecycle'
+import { normalisiereAufgabe } from '../../domain/normalize'
 import type { LocalList, LocalTask } from '../../domain/types'
 import { requireText, ValidationError } from '../validation'
 import type { Kontext } from './context'
 import type { Repositories } from './types'
 
-export function listen(ctx: Kontext): Pick<Repositories, 'createList' | 'renameList' | 'setListIcon' | 'deleteList' | 'getList' | 'listLists' | 'listDeletedLists' | 'restoreList' | 'addListSection' | 'renameListSection' | 'deleteListSection'> {
+export function listen(ctx: Kontext): Pick<Repositories, 'createList' | 'renameList' | 'setListIcon' | 'setListKeepCompleted' | 'deleteList' | 'getList' | 'listLists' | 'listDeletedLists' | 'restoreList' | 'addListSection' | 'renameListSection' | 'deleteListSection'> {
   return {
     async listDeletedLists() {
       const grenze = restoreCutoff(timeOf(ctx.clock.now()))
@@ -36,7 +38,7 @@ export function listen(ctx: Kontext): Pick<Repositories, 'createList' | 'renameL
         const mitgeloescht = await ctx.db.tasks
           .where('list_id')
           .equals(listId)
-          .filter((task) => task.deleted_at === zeitpunkt)
+          .filter((task) => task.deleted_at === zeitpunkt && !completionExpired(normalisiereAufgabe(task), ctx.clock.nowMs()))
           .toArray()
         if (mitgeloescht.length > 0) {
           await ctx.db.tasks.bulkPut(
@@ -52,6 +54,8 @@ export function listen(ctx: Kontext): Pick<Repositories, 'createList' | 'renameL
         // Noch keine Abschnitte – der Plan ist von Anfang an da, nicht erst
         // nach dem ersten Anlegen.
         sections: [],
+        keep_completed: false,
+        completion_retention_started_at: now,
         id: newId(),
         name: requireText(name, 'Der Listenname'),
         owner_id: ownerId,
@@ -71,6 +75,21 @@ export function listen(ctx: Kontext): Pick<Repositories, 'createList' | 'renameL
       const updated: LocalList = { ...list, name: requireText(name, 'Der Listenname'), ...ctx.stamp() }
       await ctx.db.lists.put(updated)
       return updated
+    },
+
+    async setListKeepCompleted(listId, userId, keep) {
+      await ctx.db.transaction('rw', ctx.db.lists, ctx.db.tasks, async () => {
+        const list = await ctx.requireList(listId)
+        if (list.owner_id !== userId) throw new ValidationError('invalid', 'Nur der Besitzer kann diese Listenregel ändern.')
+        if (list.keep_completed === keep) return
+        const now = ctx.clock.now()
+        const tasks = (await ctx.db.tasks.where('list_id').equals(listId).toArray()).map(normalisiereAufgabe)
+        // Bereits Abgelaufenes bekommt durch Umschalten keine neue Frist.
+        const changed = tasks.filter(task => task.completed && !completionExpired(task, ctx.clock.nowMs()))
+          .map(task => ({ ...task, completed_expires_at: completionDeadline(now, keep), ...ctx.stamp() }))
+        await ctx.db.lists.put({ ...list, keep_completed: keep, completion_retention_started_at: keep ? list.completion_retention_started_at : now, ...ctx.stamp() })
+        if (changed.length) await ctx.db.tasks.bulkPut(changed)
+      })
     },
 
     async setListIcon(listId, icon) {

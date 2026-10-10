@@ -70,7 +70,7 @@ export function TaskFields({
   const zeigt = (feld: TaskFieldName) => felder.includes(feld)
 
   return (
-    <>
+    <fieldset disabled={form.busy} className="min-w-0 space-y-3">
       {zeigt('titel') ? (
         <Field id={`${idPrefix}-title`} label="Titel">
           <input
@@ -144,6 +144,6 @@ export function TaskFields({
           onChange={(neu) => form.setzen('reminders', neu)}
         />
       ) : null}
-    </>
+    </fieldset>
   )
 }

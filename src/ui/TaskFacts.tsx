@@ -8,12 +8,6 @@ import { attentionText, dangerText, mutedText, numeric } from './styles'
 export interface TaskFactsProps {
   task: LocalTask
   currentUserId: string
-  /**
-   * `mobil` ist die flache Zeile: größerer Titel, engere Abstände. Die
-   * **Farben** sind in beiden Ansichten dieselben – Dichte darf abweichen, das
-   * Aussehen nicht (`AGENTS.md`).
-   */
-  dichte?: 'breit' | 'mobil'
 }
 
 /**
@@ -27,30 +21,28 @@ export interface TaskFactsProps {
  * Zeile), und auf dem Telefon liegt er in einem Knopf, weil die ganze Zeile
  * antippbar ist.
  */
-export function TaskFacts({ task, currentUserId, dichte = 'breit' }: TaskFactsProps) {
+export function TaskFacts({ task, currentUserId }: TaskFactsProps) {
   const due = task.due_at === null ? null : formatDueLabel(task.due_at, task.completed)
   const wiederholung = describeRecurrence(task.recurrence)
   const erinnerungen = describeReminders(task, currentUserId)
-  const abstand = dichte === 'mobil' ? 'mt-0.5' : 'mt-1'
 
   return (
     <>
       <span
-        className={`block break-words ${
-          dichte === 'mobil' ? 'text-title leading-snug' : 'text-body'
-        } ${task.completed ? `text-ink-faint line-through` : 'text-ink'}`}
+        className={`block break-words text-title leading-snug ${task.completed ? 'text-ink-faint line-through' : 'text-ink'}`}
       >
         {task.title}
       </span>
 
+      {due || wiederholung || erinnerungen.length ? <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
       {due ? (
-        <span className={`${abstand} block text-meta ${numeric} ${due.overdue ? dangerText : mutedText}`}>
+        <span className={`text-meta ${numeric} ${due.overdue ? dangerText : mutedText}`}>
           {due.text}
         </span>
       ) : null}
 
       {wiederholung ? (
-        <span className={`${abstand} flex items-center gap-1 text-meta ${mutedText}`}>
+        <span className={`flex items-center gap-1 text-meta ${mutedText}`}>
           <RepeatIcon className="h-3 w-3 shrink-0" />
           {wiederholung}
         </span>
@@ -59,7 +51,7 @@ export function TaskFacts({ task, currentUserId, dichte = 'breit' }: TaskFactsPr
       {erinnerungen.map((erinnerung, index) => (
         <span
           key={index}
-          className={`${abstand} flex items-center gap-1 text-meta ${numeric} ${
+          className={`flex items-center gap-1 text-meta ${numeric} ${
             erinnerung.afterDue && !erinnerung.muted ? attentionText : mutedText
           }`}
         >
@@ -71,6 +63,7 @@ export function TaskFacts({ task, currentUserId, dichte = 'breit' }: TaskFactsPr
           {erinnerung.text}
         </span>
       ))}
+      </span> : null}
     </>
   )
 }

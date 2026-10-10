@@ -1,3 +1,5 @@
+import { closeListSettings } from './support/helpers'
+import { listAction } from './support/helpers'
 import { expect, test, type Page } from '@playwright/test'
 import { createAccount, createList, register, resetServer, uniqueEmail } from './support/helpers'
 
@@ -35,7 +37,7 @@ test('benennt eine Liste in der breiten Ansicht um', async ({ page }) => {
   await register(page, uniqueEmail('l1'))
   await createList(page, 'Erster Name')
 
-  await page.getByRole('button', { name: 'Umbenennen', exact: true }).click()
+  await listAction(page, 'Umbenennen')
   await page.getByLabel('Neuer Listenname').fill('Zweiter Name')
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
@@ -46,7 +48,7 @@ test('gibt einer Liste in der breiten Ansicht ein Symbol', async ({ page }) => {
   await register(page, uniqueEmail('l2'))
   await createList(page, 'Haushalt')
 
-  await page.getByRole('button', { name: 'Symbol', exact: true }).click()
+  await listAction(page, 'Symbol ändern')
 
   const auswahl = page.getByTestId('icon-picker')
   await expect(auswahl).toBeVisible()
@@ -62,10 +64,11 @@ test('entfernt das Symbol einer Liste in der breiten Ansicht', async ({ page }) 
   await register(page, uniqueEmail('l3'))
   await createList(page, 'Haushalt')
 
-  await page.getByRole('button', { name: 'Symbol', exact: true }).click()
+  await listAction(page, 'Symbol ändern')
   await page.getByTestId('icon-picker').getByRole('button', { name: 'Musik' }).click()
   await expect(titelIcon(page)).toHaveAttribute('data-icon', 'std:music')
 
+  await listAction(page, 'Symbol ändern')
   await page.getByRole('button', { name: 'Symbol entfernen' }).click()
   await expect(titelIcon(page)).toHaveCount(0)
   await expect(seitenleistenIcon(page)).toHaveCount(0)
@@ -77,7 +80,7 @@ test('löscht eine Liste in der breiten Ansicht', async ({ page }) => {
 
   // Kein Bestätigungsdialog mehr: Löschen wirkt sofort, dafür erscheint die
   // Rückgängig-Leiste.
-  await page.getByRole('button', { name: 'Liste löschen', exact: true }).click()
+  await listAction(page, 'Liste löschen')
   await expect(page.getByTestId('undo-bar')).toContainText('Liste „Wegwerfliste“')
 
   await expect(page.getByText('Lege links eine Liste an, um Aufgaben zu erfassen.')).toBeVisible()
@@ -87,7 +90,7 @@ test('teilt eine Liste in der breiten Ansicht', async ({ page }) => {
   await register(page, uniqueEmail('l5'))
   await createList(page, 'Geteilte Liste')
 
-  await page.getByRole('button', { name: 'Teilen', exact: true }).click()
+  await listAction(page, 'Teilen')
 
   await expect(page.getByRole('form', { name: 'Liste teilen' })).toBeVisible()
   await expect(page.getByText('Noch keine Mitglieder.')).toBeVisible()
@@ -106,6 +109,7 @@ test('macht eine Aufgabe in der breiten Ansicht wiederkehrend', async ({ page })
   const eingabe = `${morgen.getFullYear()}-${zweistellig(morgen.getMonth() + 1)}-${zweistellig(morgen.getDate())}T09:00`
 
   const zeile = page.getByTestId('task-list').locator('li').filter({ hasText: 'Zähne putzen' })
+  await closeListSettings(page)
   await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
 
   const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
@@ -163,6 +167,7 @@ test('setzt in der breiten Ansicht einen eigenen Vorlauf für eine wiederkehrend
   await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click()
 
   const zeile = page.getByTestId('task-list').locator('li').filter({ hasText: 'Zähne putzen' })
+  await closeListSettings(page)
   await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
 
   const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
@@ -192,6 +197,7 @@ test('legt in der breiten Ansicht mehrere Erinnerungen an', async ({ page }) => 
   await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click()
 
   const zeile = page.getByTestId('task-list').locator('li').filter({ hasText: 'Medikament' })
+  await closeListSettings(page)
   await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
 
   const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
@@ -217,6 +223,7 @@ test('erlaubt in der breiten Ansicht eine Erinnerung ohne Fälligkeitsdatum', as
   await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click()
 
   const zeile = page.getByTestId('task-list').locator('li').filter({ hasText: 'Jonna anrufen' })
+  await closeListSettings(page)
   await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
 
   const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
@@ -241,6 +248,7 @@ test('schaltet eine Erinnerung in der breiten Ansicht nur für sich stumm', asyn
   await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click()
 
   const zeile = page.getByTestId('task-list').locator('li').filter({ hasText: 'Müll rausbringen' })
+  await closeListSettings(page)
   await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
 
   const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
@@ -254,11 +262,12 @@ test('schaltet eine Erinnerung in der breiten Ansicht nur für sich stumm', asyn
   await formular.getByRole('button', { name: 'Speichern' }).click()
 
   // Erst teilen, dann erscheint der Schalter.
-  await page.getByRole('button', { name: 'Teilen', exact: true }).click()
+  await listAction(page, 'Teilen')
   await page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(emailB)
   await page.getByRole('button', { name: 'Freigeben' }).click()
   await expect(page.getByRole('status')).toContainText('Freigabe für')
 
+  await closeListSettings(page)
   await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
   const erneut = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
   await expect(erneut.getByRole('button', { name: /stummschalten/ })).toHaveCount(2)

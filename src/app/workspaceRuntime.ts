@@ -212,6 +212,8 @@ export async function createWorkspaceRuntime({
   // bewegt hat (etwa beim Start mit bereits vorhandenen Aufgaben).
   void erinnerungenAuffrischen()
   const interval = setInterval(() => {
+    // Fristen laufen auch ohne neue Daten und im Offlinezustand weiter.
+    nurLokaleAenderung()
     if (network.isOnline()) void synchronisieren()
   }, REGELMAESSIGER_ABGLEICH_MS)
   const netzAbmelden = network.subscribe((online) => {

@@ -1,8 +1,12 @@
+import { CLOUD_TABLES, canonicalCloudRow, cloudRowId, type CloudRow, type CloudTable } from '../domain/cloudMerge'
+import { sameData } from '../domain/equality'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type {
   PushPayload,
   RemoteList,
   RemoteListMember,
+  RemoteListPreference,
+  RemoteUserPreference,
   RemoteSnapshot,
   RemoteTask,
 } from '../domain/types'
@@ -12,14 +16,14 @@ import {
   RemoteError,
   type CoMemberContact,
   type PushErgebnis,
-  type PushTabelle,
   type RemoteGateway,
+  type PushBases,
 } from './remoteGateway'
 
 /**
  * Supabase-Implementierung des `RemoteGateway`.
  *
- * Bewusste Entscheidungen für Version 0.1:
+ * Vollständiges paginiertes Lesen und geschütztes Schreiben:
  *
  *  - **Vollständiger Pull statt Delta.** `pull()` lädt alle sichtbaren Zeilen.
  *    Ein inkrementeller Sync über `updated_at > cursor` wäre schneller, hat
@@ -28,64 +32,82 @@ import {
  *    Liste nie nachgeladen. Bei den kleinen Datenmengen eines Prototyps ist
  *    der vollständige Pull die robustere und deutlich einfachere Variante.
  *
- *  - **Upsert ohne Hard Delete.** Löschungen werden als `deleted_at`
- *    übertragen, genau wie lokal.
+ *  - **Geschützter RPC ohne Hard Delete.** `sync_push` prüft Berechtigung und
+ *    den erwarteten Stand atomar. Löschungen bleiben `deleted_at`. Es gibt
+ *    keinen Rückfall auf direkte Tabellen-Schreiboperationen.
  *
  *  - **Keine Supabase-Typgenerierung.** Die Zeilen werden auf die Typen in
  *    `domain/types.ts` abgebildet und dort normalisiert. Ein generiertes
- *    `database.types.ts` wäre der nächste sinnvolle Schritt.
+ *    `database.types.ts` ist für diesen Schreibvertrag nicht erforderlich.
  */
 export function createSupabaseGateway(client: SupabaseClient): RemoteGateway {
   return {
     async pull(): Promise<RemoteSnapshot> {
-      const [lists, members, tasks] = await Promise.all([
-        client.from('lists').select('*'),
-        client.from('list_members').select('*'),
-        client.from('tasks').select('*'),
+      const read = async (table: 'lists' | 'list_members' | 'tasks' | 'list_preferences' | 'user_preferences'): Promise<unknown[]> => {
+        const rows: unknown[] = []
+        for (;;) {
+          let query = client.from(table).select('*', { count: 'exact' })
+          query = table === 'list_members' || table === 'list_preferences' ? query.order('list_id').order('user_id') : query.order('id')
+          const { data, count, error } = await query.range(rows.length, rows.length + 499)
+          throwIfError(error, 'Daten konnten nicht geladen werden.')
+          if (!data?.length) break
+          rows.push(...data)
+          if (count !== null ? rows.length >= count : data.length < 500) break
+        }
+        return rows
+      }
+      const [lists, members, tasks, preferences, userPreferences] = await Promise.all([
+        read('lists'), read('list_members'), read('tasks'), read('list_preferences'), read('user_preferences'),
       ])
 
-      throwIfError(lists.error, 'Listen konnten nicht geladen werden.')
-      throwIfError(members.error, 'Mitgliedschaften konnten nicht geladen werden.')
-      throwIfError(tasks.error, 'Aufgaben konnten nicht geladen werden.')
-
       return {
-        lists: (lists.data ?? []) as RemoteList[],
-        members: (members.data ?? []) as RemoteListMember[],
-        tasks: (tasks.data ?? []) as RemoteTask[],
+        lists: lists as RemoteList[],
+        members: members as RemoteListMember[],
+        tasks: tasks as RemoteTask[],
+        ...(preferences.length ? { preferences: preferences as RemoteListPreference[] } : {}),
+        ...(userPreferences.length ? { userPreferences: userPreferences as RemoteUserPreference[] } : {}),
       }
     },
 
-    async push(payload: PushPayload): Promise<PushErgebnis> {
-      const ergebnis = leeresPushErgebnis()
-
-      const hochladen = async (
-        tabelle: PushTabelle,
-        anfrage: () => PromiseLike<{ error: unknown }>,
-      ) => {
-        if (payload[tabelle].length === 0) return
-        const { error } = await anfrage()
+    async push(payload: PushPayload, bases: PushBases = { lists: {}, members: {}, tasks: {} }): Promise<PushErgebnis> {
+      const result = leeresPushErgebnis()
+      result.konflikte = []
+      const changes = CLOUD_TABLES.flatMap(table => [...(payload[table] ?? [])]
+        .sort((a, b) => cloudRowId(table, a).localeCompare(cloudRowId(table, b)))
+        .map(row => {
+          const expected = bases[table]?.[cloudRowId(table, row)] ?? null
+          // JavaScript liest Zeitpunkte nur auf Millisekunden genau. Der
+          // unveränderliche Erstellzeitpunkt bleibt exakt wie im Serverbestand.
+          return { table, row: expected ? { ...row, created_at: expected.created_at } : row, expected }
+        }))
+      // Begrenzte Anfragen; jedes Ergebnis gehört zu genau einer Zeile.
+      for (let start = 0; start < changes.length; start += 100) {
+        const chunk = changes.slice(start, start + 100)
+        const { data, error, status } = await client.rpc('sync_push', { p_changes: chunk })
         if (error) {
-          ergebnis.fehler.push({ tabelle, error: classifyRemoteError(error) })
-          return
+          for (const table of CLOUD_TABLES) {
+            const ids = chunk.filter(change => change.table === table).map(change => cloudRowId(table, change.row))
+            if (ids.length) result.fehler.push({ tabelle: table, ids, error: classifyRemoteError(error, status) })
+          }
+          break
         }
-        // Die Zeilen sind angekommen – markiert werden sie in der Sync-Engine.
-        ergebnis.hochgeladen[tabelle] = payload[tabelle] as never
+        if (!Array.isArray(data) || data.length !== chunk.length) throw new RemoteError('server', 'sync-protocol', { retryable: true })
+        for (let index = 0; index < chunk.length; index += 1) {
+          const change = chunk[index]
+          const answer = data[index] as { table?: string; id?: string; kind?: string; current?: CloudRow | null; message?: string; code?: string }
+          const id = cloudRowId(change.table, change.row)
+          if (!answer || answer.table !== change.table || answer.id !== id) throw new RemoteError('server', 'sync-protocol', { retryable: true })
+          if (answer.kind === 'written' && answer.current && checkedRow(change.table, id, answer.current) && sameData(canonicalCloudRow(change.table, answer.current), canonicalCloudRow(change.table, change.row))) {
+            ;(result.hochgeladen[change.table] ??= []).push(answer.current as never)
+          } else if (answer.kind === 'conflict' && Object.hasOwn(answer, 'current')) {
+            if (answer.current !== null && !checkedRow(change.table, id, answer.current)) throw new RemoteError('server', 'sync-protocol', { retryable: true })
+            result.konflikte.push({ table: change.table, id, base: change.expected, local: change.row, remote: answer.current ?? null, fields: [] })
+          } else if (answer.kind === 'rejected') {
+            result.fehler.push({ tabelle: change.table, ids: [id], error: classifyRemoteError(answer) })
+          } else throw new RemoteError('server', 'sync-protocol', { retryable: true })
+        }
       }
-
-      // Reihenfolge ist durch Fremdschlüssel vorgegeben: Listen → Mitglieder → Aufgaben.
-      await hochladen('lists', () =>
-        client.from('lists').upsert(payload.lists, { onConflict: 'id' }),
-      )
-      if (ergebnis.fehler.some((eintrag) => eintrag.tabelle === 'lists')) {
-        // Ohne Liste scheitern Mitglieder und Aufgaben ohnehin; sie bleiben dirty.
-        return ergebnis
-      }
-      await hochladen('members', () =>
-        client.from('list_members').upsert(payload.members, { onConflict: 'list_id,user_id' }),
-      )
-      await hochladen('tasks', () => client.from('tasks').upsert(payload.tasks, { onConflict: 'id' }))
-
-      return ergebnis
+      return result
     },
 
     async shareListByEmail(listId: string, email: string): Promise<{ userId: string }> {
@@ -113,6 +135,14 @@ export function createSupabaseGateway(client: SupabaseClient): RemoteGateway {
         .filter((kontakt) => kontakt.userId.length > 0 && kontakt.email.length > 0)
     },
   }
+}
+
+function checkedRow(table: CloudTable, id: string, value: unknown): value is CloudRow {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  try {
+    const row = value as CloudRow
+    return cloudRowId(table, row) === id && Boolean(canonicalCloudRow(table, row))
+  } catch { return false }
 }
 
 function throwIfError(error: unknown, fallbackMessage: string): void {

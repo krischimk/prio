@@ -42,6 +42,10 @@ describe('Mehrere Geräte', () => {
     const list = await deviceA.repositories.createList('Meine Liste', userId)
     const task = await deviceA.repositories.createTask({ listId: list.id, title: 'Aufgabe von A' })
 
+    expect(deviceA.db.name).not.toBe(deviceB.db.name)
+    expect(await deviceB.repositories.listLists()).toEqual([])
+    expect(await deviceB.repositories.getTask(task.id)).toBeUndefined()
+
     // 3. A synchronisiert.
     expect((await deviceA.engine.sync()).kind).toBe('ok')
 
@@ -64,7 +68,7 @@ describe('Mehrere Geräte', () => {
     expect(taskOnA?.description).toBe('Notiz von B')
   })
 
-  it('übernimmt die Serverversion, wenn beide Geräte dieselbe Aufgabe geändert haben', async () => {
+  it('bewahrt beide konkurrierenden Titel bis zu einer bewussten Entscheidung', async () => {
     const server = createFakeServer()
     const userId = 'user-konflikt'
 
@@ -95,13 +99,13 @@ describe('Mehrere Geräte', () => {
     await deviceA.repositories.updateTask(task.id, { title: 'A war später' })
     await deviceA.engine.sync()
 
-    // B holt sich die neuere Version von A.
+    // Die Geräteuhr entscheidet diesen Konflikt nicht.
     await deviceB.engine.sync()
-    expect((await deviceB.repositories.getTask(task.id))?.title).toBe('A war später')
+    expect((await deviceB.repositories.getTask(task.id))?.title).toBe('B war zuerst')
 
-    // Last Write Wins: Nur eine der beiden Änderungen überlebt – bewusste
-    // Vereinfachung für Version 0.1, siehe src/domain/merge.ts.
-    expect(server.taskById(task.id)?.title).toBe('A war später')
+    expect((await deviceA.repositories.getTask(task.id))?.title).toBe('A war später')
+    expect(server.taskById(task.id)?.title).toBe('B war zuerst')
+    expect(await deviceA.repositories.listCloudConflicts()).toHaveLength(1)
   })
 
   it('überträgt Löschungen zwischen Geräten', async () => {

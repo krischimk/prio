@@ -54,13 +54,14 @@ describe('Upgrade der lokalen Datenbank', () => {
     })
     alteVersion.close()
 
-    // Jetzt die App öffnen – sie kennt nur die neue Klasse mit Version 5.
+    // Jetzt die aktuelle App öffnen.
     const db = await openLocalDatabase(userId)
 
-    // Die neueste Fassung: Version 7. Version 6 indizierte `completed_at`,
-    // Version 7 `deleted_at` – beides, damit das Wiederherstellen nicht alle
-    // Zeilen lesen muss.
-    expect(db.verno).toBe(7)
+    // Version 8 ergänzt die persönlichen Tabellen, ohne bestehende Listen
+    // automatisch in die Gesamtansicht aufzunehmen.
+    expect(db.verno).toBe(8)
+    expect(await db.list_preferences.count()).toBe(0)
+    expect(await db.user_preferences.count()).toBe(0)
     expect(await db.tasks.count()).toBe(1)
     expect((await db.tasks.get('task-1'))?.title).toBe('Bestandsaufgabe')
     expect(await db.lists.count()).toBe(1)
@@ -154,10 +155,9 @@ describe('Upgrade der lokalen Datenbank', () => {
 
   it('legt eine frische Datenbank direkt in der neuesten Version an', async () => {
     const db = await openLocalDatabase(createTestUserId('frisch'))
-    // Die neueste Fassung: Version 7. Version 6 indizierte `completed_at`,
-    // Version 7 `deleted_at` – beides, damit das Wiederherstellen nicht alle
-    // Zeilen lesen muss.
-    expect(db.verno).toBe(7)
+    expect(db.verno).toBe(8)
+    expect(await db.list_preferences.count()).toBe(0)
+    expect(await db.user_preferences.count()).toBe(0)
     expect(await db.reminders.count()).toBe(0)
     // Der neue Index ist da – sonst suchte die Wiederherstellung wieder alles
     // zusammen.

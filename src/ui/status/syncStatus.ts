@@ -27,9 +27,17 @@ export function describeSyncState(
   syncing: boolean,
   /** Änderungen, die der Server dauerhaft ablehnt (Ablagefach). */
   rejectedCount = 0,
+  /** Offene Konflikte bleiben auch nach Neustart oder einem Offline-Lauf sichtbar. */
+  conflictCount = 0,
 ): SyncDescription {
   if (syncing) {
     return { text: 'Synchronisiere…', tone: 'pending' }
+  }
+  if (conflictCount > 0) {
+    return {
+      text: `${conflictCount} ${conflictCount === 1 ? 'Änderungskonflikt' : 'Änderungskonflikte'} – deine Eingaben bleiben erhalten.`,
+      tone: 'error',
+    }
   }
   if (!status) {
     return { text: 'Noch nicht synchronisiert.', tone: 'pending' }
@@ -44,9 +52,11 @@ export function describeSyncState(
       return { text: status.message ?? 'Synchronisation fehlgeschlagen.', tone: 'error' }
     case 'partial':
       return {
-        text: `${status.message ?? 'Teilweise synchronisiert.'} (erneuter Versuch folgt)`,
+        text: `${status.message === 'sync-protocol' ? 'Die Cloud-Antwort konnte nicht geprüft werden. Deine Änderungen bleiben gespeichert.' : status.message ?? 'Teilweise synchronisiert.'} (erneuter Versuch folgt)`,
         tone: 'pending',
       }
+    case 'conflict':
+      return { text: 'Änderungskonflikt – deine Eingaben bleiben erhalten.', tone: 'error' }
     case 'ok':
       // Abgelehnte Änderungen sind kein „warten“: Sie gehen nicht von selbst
       // durch. Deshalb stehen sie hier und nicht im Zähler daneben.

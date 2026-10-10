@@ -1,7 +1,13 @@
+import { CLOUD_TABLES, canonicalCloudRow, cloudRowId } from '../../src/domain/cloudMerge'
+import { sameData } from '../../src/domain/equality'
+import { createFixedClock, type Clock } from '../../src/domain/clock'
+import { completionDeadline } from '../../src/domain/taskLifecycle'
 import type {
   PushPayload,
   RemoteList,
   RemoteListMember,
+  RemoteListPreference,
+  RemoteUserPreference,
   RemoteSnapshot,
   RemoteTask,
 } from '../../src/domain/types'
@@ -10,8 +16,8 @@ import {
   leeresPushErgebnis,
   RemoteError,
   type PushErgebnis,
-  type PushTabelle,
   type RemoteGateway,
+  type PushBases,
 } from '../../src/sync/remoteGateway'
 
 /**
@@ -29,9 +35,13 @@ import {
  * testen, ohne echte Cloud.
  */
 export class FakeServer {
+  readonly clock: Clock
+  constructor(clock: Clock = createFixedClock(Date.parse('2026-01-01T10:00:00Z'))) { this.clock = clock }
   readonly lists = new Map<string, RemoteList>()
   readonly members = new Map<string, RemoteListMember>()
   readonly tasks = new Map<string, RemoteTask>()
+  readonly preferences = new Map<string, RemoteListPreference>()
+  readonly userPreferences = new Map<string, RemoteUserPreference>()
 
   /** Registrierte Konten für `shareListByEmail`: E-Mail (klein) → Benutzer-ID. */
   readonly accounts = new Map<string, string>()
@@ -43,6 +53,14 @@ export class FakeServer {
   /** Wenn gesetzt, schlägt jeder Push/Pull mit diesem Fehler fehl. */
   failPushWith: RemoteError | null = null
   failPullWith: RemoteError | null = null
+
+  expireCompleted(): void {
+    for (const [id, task] of this.tasks) {
+      if (task.completed && !task.expired_at && task.completed_expires_at && Date.parse(task.completed_expires_at) <= this.clock.nowMs()) {
+        this.tasks.set(id, { ...task, expired_at: this.clock.now(), deleted_at: this.clock.now(), updated_at: this.clock.now(), title: 'Abgelaufene Aufgabe', description: null, due_at: null, reminders: [], recurrence: null, successor_id: null, section_id: null, reopen_context: null })
+      }
+    }
+  }
 
   /** Erzeugt die Sicht eines Benutzers auf diesen Server. */
   gatewayFor(userId: string): FakeGateway {
@@ -85,6 +103,7 @@ export class FakeGateway implements RemoteGateway {
   async pull(): Promise<RemoteSnapshot> {
     this.server.pullCalls += 1
     if (this.server.failPullWith) throw this.server.failPullWith
+    this.server.expireCompleted()
 
     const visibleLists = [...this.server.lists.values()].filter((list) =>
       this.server.isVisibleList(list, this.userId),
@@ -97,80 +116,89 @@ export class FakeGateway implements RemoteGateway {
         (member) => member.user_id === this.userId || this.isOwner(member.list_id),
       ),
       tasks: [...this.server.tasks.values()].filter((task) => visibleListIds.has(task.list_id)),
+      ...([...this.server.preferences.values()].some(row => row.user_id === this.userId) ? { preferences: [...this.server.preferences.values()].filter(row => row.user_id === this.userId) } : {}),
+      ...(this.server.userPreferences.has(this.userId) ? { userPreferences: [this.server.userPreferences.get(this.userId)!] } : {}),
     }
   }
 
-  async push(payload: PushPayload): Promise<PushErgebnis> {
+  async push(payload: PushPayload, bases: PushBases = { lists: {}, members: {}, tasks: {} }): Promise<PushErgebnis> {
     this.server.pushCalls += 1
-    const ergebnis = leeresPushErgebnis()
-
-    const scheitern = (tabelle: PushTabelle, error: unknown) => {
-      ergebnis.fehler.push({ tabelle, error: classifyRemoteError(error) })
-    }
-
-    if (this.server.failPushWith) {
-      for (const tabelle of ['lists', 'members', 'tasks'] as const) {
-        if (payload[tabelle].length > 0) scheitern(tabelle, this.server.failPushWith)
-      }
-      return ergebnis
-    }
-
-    /*
-     * Dieselben Regeln wie die RLS-Policies in supabase/migrations/0002_rls.sql.
-     * Nur so verhalten sich Tests wie der echte Server.
-     *
-     * Wichtig: **zwei Durchgänge** – erst prüfen, dann schreiben. PostgREST
-     * führt ein `upsert` über ein Array als eine Anweisung aus: Wird eine Zeile
-     * abgelehnt, ist keine geschrieben. Ein zeilenweises Schreiben mit Abbruch
-     * hätte die halbe Tabelle hinterlassen.
-     */
-    try {
-      for (const list of payload.lists) {
-        if (list.owner_id !== this.userId) {
-          throw new RemoteError('server', 'RLS: Nur der Besitzer darf eine Liste ändern.')
+    const result = leeresPushErgebnis()
+    result.konflikte = []
+    for (const table of CLOUD_TABLES) {
+      for (const row of payload[table] ?? []) {
+        const id = cloudRowId(table, row)
+        try {
+          if (this.server.failPushWith) throw this.server.failPushWith
+          this.server.expireCompleted()
+          const store = this.server[table]
+          const existing = store.get(id)
+          if (table === 'lists') {
+            const list = row as RemoteList
+            if (list.owner_id !== this.userId || (existing && (existing as RemoteList).owner_id !== this.userId)) {
+              throw new RemoteError('server', 'RLS: Nur der Besitzer darf eine Liste ändern.')
+            }
+          } else if (table === 'members') {
+            const member = row as RemoteListMember
+            const ownLeave = existing && member.user_id === this.userId && member.deleted_at !== null
+              && member.created_at === existing.created_at
+            if (!this.isOwner(member.list_id) && !ownLeave) throw new RemoteError('server', 'RLS: Nur der Besitzer verwaltet Mitglieder.')
+          } else if (table === 'preferences') {
+            const pref = row as RemoteListPreference
+            const list = this.server.lists.get(pref.list_id)
+            if (pref.user_id !== this.userId || !list || !this.server.isVisibleList(list, this.userId)) throw new RemoteError('server', 'Nur die eigene zugängliche Listenauswahl darf geändert werden.')
+          } else if (table === 'userPreferences') {
+            const pref = row as RemoteUserPreference
+            if (pref.id !== this.userId || !['by_list', 'newest'].includes(pref.overview_mode)) throw new RemoteError('server', 'Ungültige persönliche Einstellung.')
+            const target = pref.default_list_id && this.server.lists.get(pref.default_list_id)
+            if (pref.default_list_id && pref.default_list_id !== (existing as RemoteUserPreference | undefined)?.default_list_id && (!target || !this.server.isVisibleList(target, this.userId))) throw new RemoteError('server', 'Kein Zugriff auf die Standardliste.')
+          } else {
+            const task = row as RemoteTask
+            const target = this.server.lists.get(task.list_id)
+            const source = existing && this.server.lists.get((existing as RemoteTask).list_id)
+            if (!target || !this.server.isVisibleList(target, this.userId) || (existing && (!source || !this.server.isVisibleList(source, this.userId)))) {
+              throw new RemoteError('server', 'RLS: Kein Zugriff auf diese Liste.')
+            }
+          }
+          const expected = bases[table]?.[id] ?? null
+          const actual = existing ? canonicalCloudRow(table, existing) : null
+          if (table === 'tasks' && (existing as RemoteTask | undefined)?.expired_at && !sameData(actual, canonicalCloudRow(table, row))) {
+            result.konflikte.push({ table, id, base: expected, local: row, remote: existing!, fields: [] }); continue
+          }
+          if (!sameData(actual, canonicalCloudRow(table, row)) && !sameData(actual, expected ? canonicalCloudRow(table, expected) : null)) {
+            result.konflikte.push({ table, id, base: expected, local: row, remote: existing ?? null, fields: [] })
+            continue
+          }
+          if (existing && existing.created_at !== row.created_at) throw new RemoteError('server', 'Der Erstellzeitpunkt ist unveränderlich.')
+          let saved = row
+          if (table === 'lists') {
+            const list = row as RemoteList; const old = existing as RemoteList | undefined
+            saved = { ...list, completion_retention_started_at: !old ? new Date(Math.min(Date.parse(list.completion_retention_started_at ?? this.server.clock.now()),this.server.clock.nowMs())).toISOString() : old.keep_completed && !list.keep_completed ? this.server.clock.now() : old.completion_retention_started_at ?? null }
+          } else if (table === 'tasks') {
+            const task = row as RemoteTask; const old = existing as RemoteTask | undefined
+            if (old?.completed && task.completed && old.completed_at !== task.completed_at) throw new RemoteError('server', 'Der Abschlusszeitpunkt bleibt erhalten.')
+            if ((task.expired_at ?? null) !== (old?.expired_at ?? null)) throw new RemoteError('server', 'Der Ablauf gehört dem Server.')
+            const keep = this.server.lists.get(task.list_id)?.keep_completed === true
+            const completedAt = task.completed ? new Date(Math.max(Math.min(Date.parse(task.completed_at!), this.server.clock.nowMs()), Date.parse(this.server.lists.get(task.list_id)?.completion_retention_started_at ?? task.completed_at!))).toISOString() : this.server.clock.now()
+            saved = { ...task, completed_expires_at: !task.completed ? null : old?.completed && old.list_id !== task.list_id ? completionDeadline(this.server.clock.now(), keep) : old?.completed && old.completed_at === task.completed_at ? old.completed_expires_at ?? null : completionDeadline(completedAt, keep) }
+          }
+          store.set(id, structuredClone(saved) as never)
+          if (table === 'lists' && existing && ((existing as RemoteList).keep_completed === true) !== ((row as RemoteList).keep_completed === true)) {
+            for (const [taskId, task] of this.server.tasks) if (task.list_id === id && task.completed && !task.expired_at) {
+              this.server.tasks.set(taskId, { ...task, completed_expires_at: completionDeadline(this.server.clock.now(), (row as RemoteList).keep_completed === true), updated_at: this.server.clock.now() })
+            }
+          }
+          this.server.expireCompleted()
+          const current = store.get(id)!
+          if (sameData(canonicalCloudRow(table, current), canonicalCloudRow(table, row))) {
+            ;(result.hochgeladen[table] ??= []).push(current as never)
+          } else result.konflikte.push({ table, id, base: expected, local: row, remote: current, fields: [] })
+        } catch (cause) {
+          result.fehler.push({ tabelle: table, ids: [id], error: classifyRemoteError(cause) })
         }
-        const existing = this.server.lists.get(list.id)
-        if (existing && existing.owner_id !== this.userId) {
-          throw new RemoteError('server', 'RLS: Diese Liste gehört einem anderen Benutzer.')
-        }
       }
-      for (const list of payload.lists) this.server.lists.set(list.id, list)
-      ergebnis.hochgeladen.lists = payload.lists
-    } catch (error) {
-      scheitern('lists', error)
     }
-    if (ergebnis.fehler.some((eintrag: { tabelle: PushTabelle }) => eintrag.tabelle === 'lists')) {
-      return ergebnis
-    }
-
-    try {
-      for (const member of payload.members) {
-        const list = this.server.lists.get(member.list_id)
-        if (!list) throw new RemoteError('server', 'RLS: Liste nicht gefunden.')
-        if (list.owner_id !== this.userId) {
-          throw new RemoteError('server', 'RLS: Nur der Besitzer verwaltet Mitglieder.')
-        }
-      }
-      for (const member of payload.members) this.server.members.set(memberKey(member), member)
-      ergebnis.hochgeladen.members = payload.members
-    } catch (error) {
-      scheitern('members', error)
-    }
-
-    try {
-      for (const task of payload.tasks) {
-        const list = this.server.lists.get(task.list_id)
-        if (!list || !this.server.isVisibleList(list, this.userId)) {
-          throw new RemoteError('server', 'RLS: Kein Zugriff auf diese Liste.')
-        }
-      }
-      for (const task of payload.tasks) this.server.tasks.set(task.id, task)
-      ergebnis.hochgeladen.tasks = payload.tasks
-    } catch (error) {
-      scheitern('tasks', error)
-    }
-
-    return ergebnis
+    return result
   }
 
   async shareListByEmail(listId: string, email: string): Promise<{ userId: string }> {
@@ -255,8 +283,8 @@ export class OfflineGateway implements RemoteGateway {
     this.calls += 1
     // Kein Netz: nichts geht durch, alles bleibt liegen.
     const ergebnis = leeresPushErgebnis()
-    for (const tabelle of ['lists', 'members', 'tasks'] as const) {
-      if (payload[tabelle].length > 0) {
+    for (const tabelle of CLOUD_TABLES) {
+      if (payload[tabelle]?.length) {
         ergebnis.fehler.push({
           tabelle,
           error: new RemoteError('offline', 'Netzwerk nicht erreichbar.'),
@@ -291,7 +319,7 @@ export function createLazyGateway(server: FakeServer, currentUserId: () => strin
   const resolve = (): FakeGateway => server.gatewayFor(currentUserId())
   return {
     pull: () => resolve().pull(),
-    push: (payload) => resolve().push(payload),
+    push: (payload, bases) => resolve().push(payload, bases),
     shareListByEmail: (listId, email) => resolve().shareListByEmail(listId, email),
     coMemberContacts: () => resolve().coMemberContacts(),
   }

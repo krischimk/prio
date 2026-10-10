@@ -38,6 +38,12 @@ describe('Statusanzeige der Synchronisation', () => {
   it('zeigt vor dem ersten Sync einen Neutralzustand', () => {
     expect(describeSyncState(null, 0, false).text).toBe('Noch nicht synchronisiert.')
   })
+
+  it('bewahrt offene Konflikte auch bei Offline-Zustand und nach Neustart', () => {
+    expect(describeSyncState(status('offline'), 0, false, 0, 1).text).toContain('1 Änderungskonflikt')
+    expect(describeSyncState(null, 0, false, 0, 2).text).toContain('2 Änderungskonflikte')
+    expect(describeSyncState(status('conflict'), 0, true, 0, 2).text).toBe('Synchronisiere…')
+  })
 })
 
 /**

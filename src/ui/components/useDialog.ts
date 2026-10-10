@@ -5,6 +5,37 @@ import { useBackLayer } from '../../app/useBackLayer'
 const FOKUSSIERBAR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
+// Verschachtelte Dialoge können denselben Hintergrund sperren. Erst wenn die
+// letzte Ebene schließt, gilt wieder der ursprüngliche Zustand.
+const backgroundLocks = new WeakMap<HTMLElement, { count: number; previous: boolean }>()
+
+function lockBackground(panel: HTMLElement): () => void {
+  const locked: HTMLElement[] = []
+  let branch = panel
+  while (branch.parentElement) {
+    for (const sibling of branch.parentElement.children) {
+      if (!(sibling instanceof HTMLElement) || sibling === branch || sibling.tagName === 'SCRIPT' || sibling.getAttribute('aria-hidden') === 'true') continue
+      const lock = backgroundLocks.get(sibling) ?? { count: 0, previous: sibling.inert }
+      lock.count += 1
+      backgroundLocks.set(sibling, lock)
+      sibling.inert = true
+      locked.push(sibling)
+    }
+    branch = branch.parentElement
+    if (branch === document.body) break
+  }
+  return () => {
+    for (const element of locked) {
+      const lock = backgroundLocks.get(element)!
+      lock.count -= 1
+      if (lock.count === 0) {
+        element.inert = lock.previous
+        backgroundLocks.delete(element)
+      }
+    }
+  }
+}
+
 export interface DialogOptions {
   /** `false` beim Menü: Es ist immer eingebunden, aber meistens zu. */
   active?: boolean
@@ -49,6 +80,7 @@ export function useDialog<T extends HTMLElement = HTMLDivElement>({
   useEffect(() => {
     if (!active) return
     const vorher = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const focusKey = vorher?.dataset.focusKey
     const bereich = panel.current
     // Der Rahmen bekommt den Fokus – nicht der erste Knopf: Sonst wäre der
     // Schließen-Knopf vorbelegt, und ein versehentliches Enter schlösse den
@@ -56,7 +88,17 @@ export function useDialog<T extends HTMLElement = HTMLDivElement>({
     if (bereich && !bereich.contains(document.activeElement)) {
       bereich.focus()
     }
-    return () => vorher?.focus?.()
+    const unlock = bereich ? lockBackground(bereich) : () => {}
+    return () => {
+      unlock()
+      if (vorher?.isConnected) vorher.focus()
+      else if (focusKey) {
+        // Nach einem Breitenwechsel ist der ursprüngliche Knopf unmontiert.
+        // Sein fachlich gleicher Gegenpart erhält den Fokus.
+        const counterpart = [...document.querySelectorAll<HTMLElement>('[data-focus-key]')].find(element => element.dataset.focusKey === focusKey)
+        counterpart?.focus()
+      }
+    }
   }, [active])
 
   const onKeyDown = (event: KeyboardEvent<T>) => {
@@ -65,13 +107,18 @@ export function useDialog<T extends HTMLElement = HTMLDivElement>({
     // und `offsetParent`/`getClientRects` sind in jsdom leer – die Prüfung wäre
     // dort immer falsch und ließe sich nicht testen.
     const elemente = [...panel.current.querySelectorAll<HTMLElement>(FOKUSSIERBAR)]
-    if (elemente.length === 0) return
+    if (elemente.length === 0) {
+      event.preventDefault()
+      panel.current.focus()
+      return
+    }
     const erstes = elemente[0]
     const letztes = elemente[elemente.length - 1]
-    if (event.shiftKey && document.activeElement === erstes) {
+    const aufRahmen = document.activeElement === panel.current
+    if (event.shiftKey && (document.activeElement === erstes || aufRahmen)) {
       event.preventDefault()
       letztes.focus()
-    } else if (!event.shiftKey && document.activeElement === letztes) {
+    } else if (!event.shiftKey && (document.activeElement === letztes || aufRahmen)) {
       event.preventDefault()
       erstes.focus()
     }

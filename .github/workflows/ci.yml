@@ -20,6 +20,11 @@ on:
     branches: ['**']
   pull_request:
   workflow_dispatch:
+    inputs:
+      android_smoke:
+        description: Nur die native Android-Prüfung mit Telefonbildern ausführen
+        type: boolean
+        default: false
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -27,6 +32,7 @@ concurrency:
 
 jobs:
   quality:
+    if: inputs.android_smoke != true
     name: Typecheck, Lint, Unit-/Integrationstests, Build
     runs-on: ubuntu-latest
     steps:
@@ -58,6 +64,7 @@ jobs:
         run: npm run build
 
   e2e:
+    if: inputs.android_smoke != true
     name: E2E-Tests (Playwright, Teil ${{ matrix.teil }}/2)
     # Zwei Teil-Läufe auf zwei Rechnern: Die Suite selbst bleibt seriell (der
     # Mock hält gemeinsamen Zustand), über Rechner hinweg geht es aber parallel.
@@ -104,20 +111,114 @@ jobs:
             test-results/
           retention-days: 7
 
+  database:
+    if: inputs.android_smoke != true
+    name: Geschützte Schreibvorgänge (PostgreSQL)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: prio-test-only
+          POSTGRES_DB: prio_test_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PRIO_DB_TEST_URL: postgresql://postgres:prio-test-only@127.0.0.1:5432/prio_test_ci
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: PostgreSQL-Client einrichten
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Datenbank-Zeitgeber einrichten
+        run: |
+          docker exec -i ${{ job.services.postgres.id }} bash <<'SETUP'
+          set -e
+          apt-get update
+          apt-get install -y postgresql-16-cron
+          cat >> "$PGDATA/postgresql.conf" <<'CONFIG'
+          shared_preload_libraries='pg_cron'
+          cron.database_name='prio_test_ci'
+          cron.use_background_workers=on
+          CONFIG
+          SETUP
+          docker restart ${{ job.services.postgres.id }}
+          for attempt in $(seq 1 30); do
+            if docker exec ${{ job.services.postgres.id }} pg_isready; then exit 0; fi
+            sleep 1
+          done
+          exit 1
+      - name: Migrationen, Rechte, Konflikte und Retry prüfen
+        run: npm run db:test
+
+  android:
+    name: Android-App im Emulator (manuelle Release-Prüfung)
+    if: inputs.android_smoke == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VITE_SUPABASE_URL: http://127.0.0.1:54321
+      VITE_SUPABASE_PUBLISHABLE_KEY: e2e-publishable-key
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v4
+      - run: npm ci
+      - name: SDK und APK bereitstellen
+        run: |
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+          npm run android:apk
+      # Empfehlung des Emulator-Runners: Ubuntu und KVM-Zugriff explizit
+      # einrichten. Der lokale Sandbox-Lauf hat kein /dev/kvm.
+      - name: KVM für den Emulator freigeben
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Native Kernabläufe und Telefonbilder prüfen
+        uses: reactivecircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808 # v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-linux-hw-accel: false
+          script: node tests/android/smoke.mjs
+      - name: Native Bilder und Protokolle sichern
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-smoke
+          path: test-results/android/
+          retention-days: 14
+
   # Die Web-Fassung. Anders als beim Bauen in Cloudflare selbst läuft sie erst
   # nach den Tests – eine ungeprüfte Fassung kann so nicht online gehen.
   # Der veröffentlichte Stand ist genau das Bundle, das hier gebaut und geprüft
   # wurde.
   deploy:
     name: Web-Fassung zu Cloudflare Pages
-    needs: [quality, e2e]
+    needs: [quality, e2e, database]
     # Jeder Zweig wird veröffentlicht: `main` als Produktion, alles andere als
     # Vorschau-Adresse (<hash>.prio-krischi.pages.dev). Damit lässt sich ein Fix
     # vor dem Zusammenführen ansehen, statt ihn allen sofort hinzustellen.
     #
     # `workflow_dispatch` ist mit dabei, damit sich das auch von Hand auslösen
     # lässt – nützlich, wenn nur geprüft werden soll, ob die Rauchprüfung greift.
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: inputs.android_smoke != true && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     # Eine Zeitgrenze je Job: Hängt ein Schritt (bisher: apt-get im
     # Browser-Installationsschritt), läuft er sonst bis zum GitHub-Limit von

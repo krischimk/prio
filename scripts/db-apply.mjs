@@ -119,11 +119,28 @@ const base = ['-X', '-v', 'ON_ERROR_STOP=1', '-d', dbUrl]
  * wirklich nennt.
  */
 const ERWARTET = [
+  ['lists', 'keep_completed', '0016'],
+  ['lists', 'completion_retention_started_at', '0016'],
+  ['tasks', 'completed_expires_at', '0016'],
+  ['tasks', 'expired_at', '0016'],
+  ['tasks', 'reopen_context', '0016'],
   ['lists', 'sections', '0013'],
   ['tasks', 'section_id', '0013'],
   ['tasks', 'reminders', '0011'],
   ['tasks', 'position', '0005'],
   ['lists', 'icon', '0008'],
+  ['list_preferences', 'list_id', '0015'],
+  ['list_preferences', 'user_id', '0015'],
+  ['list_preferences', 'include_in_overview', '0015'],
+  ['list_preferences', 'created_at', '0015'],
+  ['list_preferences', 'updated_at', '0015'],
+  ['list_preferences', 'deleted_at', '0015'],
+  ['user_preferences', 'id', '0015'],
+  ['user_preferences', 'default_list_id', '0015'],
+  ['user_preferences', 'overview_mode', '0015'],
+  ['user_preferences', 'created_at', '0015'],
+  ['user_preferences', 'updated_at', '0015'],
+  ['user_preferences', 'deleted_at', '0015'],
 ]
 
 if (checkOnly) {
@@ -135,12 +152,12 @@ if (checkOnly) {
       '-c',
       `select table_name as tabelle, ordinal_position as nr, column_name, data_type
          from information_schema.columns
-        where table_schema = 'public' and table_name in ('lists', 'tasks')
+        where table_schema = 'public' and table_name in ('lists', 'tasks', 'list_preferences', 'user_preferences')
         order by table_name, ordinal_position`,
       '-c',
       `select relname as tabelle, relrowsecurity as rls
          from pg_class
-        where relname in ('profiles', 'lists', 'list_members', 'tasks')
+        where relnamespace = 'public'::regnamespace and relname in ('profiles', 'lists', 'list_members', 'tasks', 'list_preferences', 'user_preferences')
         order by relname`,
       '-c',
       `select e.tabelle, e.spalte,
@@ -176,7 +193,27 @@ if (checkOnly) {
   } else {
     console.log('\nAlle erwarteten Spalten sind da.')
   }
-  process.exit((result.status ?? 0) !== 0 || anzahl > 0 ? 1 : 0)
+  const guarded = spawnSync('psql', [...base, '-tAc', `select
+    to_regprocedure('public.sync_push(jsonb)') is not null
+    and has_function_privilege('authenticated','public.sync_push(jsonb)','EXECUTE')
+    and not has_function_privilege('anon','public.sync_push(jsonb)','EXECUTE')
+    and to_regprocedure('private.sync_preference(text,jsonb,jsonb)') is not null
+    and not has_function_privilege('authenticated','private.sync_preference(text,jsonb,jsonb)','EXECUTE')
+    and to_regprocedure('private.expire_completed_tasks()') is not null
+    and not has_function_privilege('authenticated','private.expire_completed_tasks()','EXECUTE')
+    and to_regprocedure('private.expire_completed_in_list(uuid)') is not null
+    and not has_function_privilege('authenticated','private.expire_completed_in_list(uuid)','EXECUTE')
+    and exists (select 1 from information_schema.columns where table_schema='public' and table_name='tasks' and column_name='position' and data_type='double precision')
+    and not exists (select 1 from (values ('lists'),('list_members'),('tasks'),('list_preferences'),('user_preferences')) t(name)
+      where has_table_privilege('authenticated','public.' || t.name,'INSERT,UPDATE,DELETE'))
+    and not exists (select 1 from pg_class where relnamespace='public'::regnamespace
+      and relname in ('lists','list_members','tasks','list_preferences','user_preferences') and not relrowsecurity)`], { encoding: 'utf8' })
+  const protectedWrites = guarded.status === 0 && guarded.stdout.trim() === 't'
+  console.log(protectedWrites ? 'Geschützter Schreibweg aktiv; direkte App-Schreibrechte gesperrt.' : 'Geschützter Schreibweg oder kompatible Spaltentypen fehlen (Migrationen 0014–0016).')
+  const cron = spawnSync('psql', [...base, '-tAc', "select count(*)=1 from cron.job where jobname='prio-expire-completed' and active and schedule='* * * * *' and command like '%private.expire_completed_tasks()%'"] , { encoding: 'utf8' })
+  const scheduled = cron.status === 0 && cron.stdout.trim() === 't'
+  console.log(scheduled ? 'Automatischer Abschlussablauf ist als Datenbankjob aktiv.' : 'Automatischer Abschlussablauf fehlt (Migration 0018).')
+  process.exit(result.status !== 0 || fehlend.status !== 0 || anzahl > 0 || !protectedWrites || !scheduled ? 1 : 0)
 }
 
 if (!existsSync(BUNDLE)) {

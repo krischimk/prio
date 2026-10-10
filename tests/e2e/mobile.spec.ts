@@ -1,3 +1,5 @@
+import { openTaskEditor } from './support/helpers'
+import { listAction } from './support/helpers'
 import { expect, test, type Page } from '@playwright/test'
 import { createAccount, resetServer, uniqueEmail } from './support/helpers'
 import {
@@ -104,7 +106,7 @@ test('öffnet per Antippen die Detailansicht und ändert den Titel', async ({ pa
   await createList(page, 'Haushalt')
   await createTask(page, 'Alter Titel')
 
-  await taskRow(page, 'Alter Titel').click()
+  await openTaskEditor(page, 'Alter Titel')
   await expect(page.getByRole('dialog', { name: 'Aufgabe' })).toBeVisible()
 
   await page.getByLabel('Titel', { exact: true }).fill('Neuer Titel')
@@ -121,7 +123,7 @@ test('löscht eine Aufgabe in der Detailansicht', async ({ page }) => {
   await createList(page, 'Haushalt')
   await createTask(page, 'Wird gelöscht')
 
-  await taskRow(page, 'Wird gelöscht').click()
+  await openTaskEditor(page, 'Wird gelöscht')
   // Kein Bestätigungsdialog mehr: Löschen wirkt sofort, die Leiste bietet den
   // Weg zurück.
   await page.getByRole('button', { name: 'Aufgabe löschen' }).click()
@@ -144,7 +146,7 @@ test('verschiebt eine Aufgabe über die Detailansicht in eine andere Liste', asy
   // In der Liste gibt es dafür keine Geste und keinen Knopf – nur die Zeile.
   await expect(page.getByRole('button', { name: 'In andere Liste verschieben' })).toHaveCount(0)
 
-  await taskRow(page, 'Wandert weiter').click()
+  await openTaskEditor(page, 'Wandert weiter')
   await expect(page.getByRole('dialog', { name: 'Aufgabe' })).toBeVisible()
   await page.getByRole('button', { name: 'In andere Liste verschieben' }).click()
 
@@ -161,8 +163,8 @@ test('verschiebt eine Aufgabe über die Detailansicht in eine andere Liste', asy
   await sheet.getByRole('button', { name: 'Verschieben', exact: true }).click()
   await expect(sheet).toBeHidden()
 
-  // Die Detailansicht bleibt offen; schließen zeigt die leere Quellliste.
-  await page.getByRole('button', { name: 'Schließen' }).click()
+  // Die abgeschlossene Verschiebung schließt den gemeinsamen Editor.
+  await expect(page.getByRole('dialog', { name: 'Aufgabe', exact: true })).toBeHidden()
   await expect(page.getByText('Noch keine Aufgaben in dieser Liste.')).toBeVisible()
 
   // Im Menü auf die andere Liste wechseln – dort liegt sie jetzt.
@@ -186,7 +188,7 @@ test('fragt beim Schließen nach, wenn Änderungen nicht gespeichert sind', asyn
   await createList(page, 'Haushalt')
   await createTask(page, 'Milch')
 
-  await taskRow(page, 'Milch').click()
+  await openTaskEditor(page, 'Milch')
   await page.getByLabel('Titel', { exact: true }).fill('Milch und Brot')
 
   // Über das Kreuz hinaus: Die Änderung ist nicht gespeichert.
@@ -265,9 +267,9 @@ test('benennt eine Liste über die App-Leiste um', async ({ page }) => {
 
   await page.getByTestId('app-bar-title').click()
   await expect(page.getByRole('dialog', { name: 'Liste verwalten' })).toBeVisible()
-  await page.getByRole('button', { name: 'Umbenennen' }).click()
+  await listAction(page, 'Umbenennen')
 
-  await page.getByLabel('Neuer Name').fill('Zweiter Name')
+  await page.getByLabel('Neuer Listenname').fill('Zweiter Name')
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
   await expect(page.getByRole('dialog', { name: 'Liste verwalten' })).toBeHidden()
@@ -279,7 +281,7 @@ test('nimmt eine gelöschte Aufgabe über die Leiste zurück', async ({ page }) 
   await createList(page, 'Haushalt')
   await createTask(page, 'Doch behalten')
 
-  await taskRow(page, 'Doch behalten').click()
+  await openTaskEditor(page, 'Doch behalten')
   await page.getByRole('button', { name: 'Aufgabe löschen' }).click()
 
   // Kein Bestätigungsdialog: Löschen wirkt sofort, die Leiste bietet den Weg
@@ -296,7 +298,7 @@ test('stellt eine gelöschte Aufgabe im Fenster wieder her', async ({ page }) =>
   await createList(page, 'Haushalt')
   await createTask(page, 'Später zurück')
 
-  await taskRow(page, 'Später zurück').click()
+  await openTaskEditor(page, 'Später zurück')
   // Das Löschen schließt die Detailansicht selbst.
   await page.getByRole('button', { name: 'Aufgabe löschen' }).click()
 
@@ -317,7 +319,7 @@ test('löscht eine Liste über die App-Leiste', async ({ page }) => {
 
   await page.getByTestId('app-bar-title').click()
   // Kein Zwischenschritt mehr: Der Menüpunkt löscht und bietet die Rücknahme an.
-  await page.getByRole('button', { name: 'Liste löschen' }).click()
+  await listAction(page, 'Liste löschen')
   await expect(page.getByTestId('undo-bar')).toContainText('Liste „Wegwerfliste“')
 
   await expect(page.getByRole('dialog', { name: 'Liste verwalten' })).toBeHidden()
@@ -535,7 +537,7 @@ test('nimmt einen Vorlauf auf dem Telefon in die Schnellauswahl auf', async ({ p
   await expect(taskRow(page, 'Gießen')).toBeVisible()
 
   // Beim nächsten Mal steht der Wert direkt in der Auswahl.
-  await taskRow(page, 'Gießen').click()
+  await openTaskEditor(page, 'Gießen')
   await expect(page.getByLabel('Erinnerung', { exact: true })).toContainText('4 Std')
 })
 
@@ -577,7 +579,7 @@ test('schaltet eine Erinnerung auf dem Telefon nur für sich stumm', async ({ pa
 
   // Teilen über die Listenverwaltung – dort ist es ein eigener Schritt.
   await page.getByRole('button', { name: /Liste .* verwalten/ }).click()
-  await page.getByRole('button', { name: 'Teilen', exact: true }).click()
+  await listAction(page, 'Teilen')
   await page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(emailB)
   await page.getByRole('button', { name: 'Freigeben' }).click()
   // dnd-kit bringt eine eigene Status-Region fuer Vorleser mit
@@ -587,7 +589,7 @@ test('schaltet eine Erinnerung auf dem Telefon nur für sich stumm', async ({ pa
   )
   await page.getByRole('button', { name: 'Schließen' }).click()
 
-  await taskRow(page, 'Müll rausbringen').click()
+  await openTaskEditor(page, 'Müll rausbringen')
   await expect(page.getByRole('button', { name: /stummschalten/ })).toHaveCount(2)
 
   await page.getByRole('button', { name: 'Erinnerung 1 für mich stummschalten' }).click()
@@ -623,7 +625,7 @@ test('E2E 6: Bereiche ordnen Aufgaben, nehmen sie beim Ziehen auf und klappen zu
   // Aufgaben – und der Test kann so auf jeden Kopf warten, statt auf die
   // Zeitsteuerung des Formulars zu bauen.
   await page.getByTestId('app-bar-title').click()
-  await page.getByRole('button', { name: 'Bereiche' }).click()
+  await listAction(page, 'Bereiche')
   for (const name of ['Obst', 'Getränke']) {
     await page.getByLabel('Neuer Bereich').fill(name)
     await page.getByRole('button', { name: 'Bereich anlegen' }).click()
@@ -633,7 +635,7 @@ test('E2E 6: Bereiche ordnen Aufgaben, nehmen sie beim Ziehen auf und klappen zu
   await page.getByRole('button', { name: 'Schließen' }).click()
 
   // Die erste Aufgabe kommt über das Formular in ihren Bereich.
-  await taskRow(page, 'Äpfel').click()
+  await openTaskEditor(page, 'Äpfel')
   await page.getByLabel('Bereich').selectOption({ label: 'Obst' })
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
@@ -663,7 +665,7 @@ test('E2E 6: Bereiche ordnen Aufgaben, nehmen sie beim Ziehen auf und klappen zu
    * zuverlaessig (siehe Notiz oben). Geprueft wird deshalb der Weg ueber das
    * Formular – die Bereichszuordnung selbst.
    */
-  await taskRow(page, 'Saft').click()
+  await openTaskEditor(page, 'Saft')
   await page.getByLabel('Bereich').selectOption({ label: 'Obst' })
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 

@@ -1,7 +1,7 @@
 {
   "name": "prio",
   "private": true,
-  "version": "0.23.4",
+  "version": "0.24.0",
   "type": "module",
   "description": "Offline-first To-do-App (Prototyp 0.1): React + TypeScript + Vite, Dexie/IndexedDB lokal, Supabase für Auth und Cloud-Sync.",
   "engines": {
@@ -23,6 +23,7 @@
     "db:sql": "node scripts/bundle-migrations.mjs",
     "db:apply": "npm run db:sql && node scripts/db-apply.mjs",
     "db:check": "node scripts/db-apply.mjs --check",
+    "db:test": "npm run db:sql && node scripts/db-test.mjs",
     "android:sync": "npm run build && cap sync android",
     "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug",
     "android:release": "npm run build && cap sync android && cd android && ./gradlew assembleRelease",

@@ -2,6 +2,7 @@ import { useWorkspace } from '../app/useWorkspace'
 import { describeSyncState } from './status/syncStatus'
 import { numeric, statusTone } from './styles'
 import { Button } from './components/Button'
+import { useView } from './useView'
 
 /**
  * Statusanzeige der Synchronisation.
@@ -11,7 +12,8 @@ import { Button } from './components/Button'
  */
 export function SyncIndicator() {
   const { syncStatus, pendingCount, rejectedCount, syncing, runSync } = useWorkspace()
-  const { text, tone } = describeSyncState(syncStatus, pendingCount, syncing, rejectedCount)
+  const { cloudConflicts: conflicts, setConflictsOpen } = useView()
+  const { text, tone } = describeSyncState(syncStatus, pendingCount, syncing, rejectedCount, conflicts.length)
   const farben = statusTone[tone]
 
   return (
@@ -37,6 +39,7 @@ export function SyncIndicator() {
       >
         Jetzt synchronisieren
       </Button>
+      {conflicts.length > 0 ? <Button variant="ghost" size="sm" onClick={() => setConflictsOpen(true)}>Konflikte klären</Button> : null}
     </div>
   )
 }

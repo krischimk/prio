@@ -2,12 +2,15 @@ import { systemClock, type Clock } from '../domain/clock'
 import { isEmptyPayload, toPushPayload } from '../domain/mapping'
 import type { IsoDateTime } from '../domain/types'
 import type { LocalDatabase } from '../db/localDb'
-import { applyRemoteLists, applyRemoteMembers, applyRemoteTasks } from './applyRemote'
+import { acceptCloudRow, readCloudConflicts, readCloudState, readLocalCloudRow, writeCloudState } from '../db/cloudState'
+import { CLOUD_TABLES, cloudRowId, type CloudRow } from '../domain/cloudMerge'
+import { applyRemoteLists, applyRemoteMembers, applyRemoteTasks, applyRemotePreferences } from './applyRemote'
 import {
   classifyRemoteError,
   type PushTabelle,
   type RemoteError,
   type SyncTransport,
+  type PushBases,
 } from './remoteGateway'
 import {
   collectDirty,
@@ -21,32 +24,21 @@ import {
 /**
  * Sync-Engine.
  *
- * Ablauf eines Durchlaufs (bewusst einfach und in dieser Reihenfolge):
+ * Dirty-Zeilen und bestätigte Basis werden gemeinsam gelesen, geschützt
+ * geschrieben und anhand des bestätigten Inhalts bereinigt. Der Drei-Wege-
+ * Vergleich führt unabhängige Felder automatisch zusammen; dafür gibt es
+ * höchstens einen unmittelbaren weiteren Schreibversuch. Widersprechende
+ * Änderungen bleiben lokal erhalten und werden als Konflikt gespeichert.
+ * Danach wird der vollständige Serverbestand gelesen und zusammengeführt.
  *
- *   1. Offline? → sofort abbrechen, nichts anfassen.
- *   2. Alle `dirty`-Zeilen sammeln und zu Supabase hochladen (Upsert).
- *   3. Erfolgreich hochgeladene Zeilen als sauber markieren.
- *   4. Kompletten Serverbestand herunterladen.
- *   5. Heruntergeladene Zeilen zusammenführen (Last Write Wins, siehe `merge.ts`).
- *
- * Erst pushen, dann pullen: Dadurch gewinnt bei gleichem Zeitstempel die
- * lokale Änderung, weil sie bereits auf dem Server liegt.
- *
- * Fehlerverhalten:
- *  - Ein lokaler Fehlschlag beim Push bricht den Pull nicht ab (außer bei
- *    Offline/Auth). So bleiben die Daten wenigstens in einer Richtung aktuell.
- *  - Ein fehlgeschlagener Upload lässt die Zeilen `dirty` – es geht nichts
- *    verloren, der nächste Durchlauf versucht es erneut.
- *
- * Bewusste Vereinfachung: Ein Datensatz, den der Server dauerhaft ablehnt
- * (z. B. weil der Zugriff auf eine gemeinsame Liste entzogen wurde), bleibt
- * dauerhaft in der Queue und wird bei jedem Sync erneut versucht. Für 0.1
- * ist das akzeptabel; ein Ausbau würde abgelehnte Zeilen separat ablegen.
+ * Dauerhafte Ablehnungen werden je Zeile isoliert, vorübergehende Fehler
+ * bleiben erneut versuchbar. Ein Schreibfehler verhindert den Pull nur bei
+ * Offline/Auth. Gerätezeitpunkte bestimmen keinen Konfliktgewinner.
  *
  * Diese Datei hängt nicht von React ab und ist ohne Cloud testbar.
  */
 
-export type SyncStatusKind = 'ok' | 'partial' | 'offline' | 'auth' | 'error'
+export type SyncStatusKind = 'ok' | 'partial' | 'offline' | 'auth' | 'error' | 'conflict'
 
 export interface SyncResult {
   kind: SyncStatusKind
@@ -96,42 +88,35 @@ export function createSyncEngine(options: SyncEngineOptions): SyncEngine {
       return result('offline', null)
     }
 
-    const dirty = await collectDirty(options.db)
-    const payload = toPushPayload(dirty.lists, dirty.members, dirty.tasks)
-
     let pushed = 0
     let pushError: RemoteError | null = null
 
-    if (!isEmptyPayload(payload)) {
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const { payload, bases } = await options.db.transaction('r', [options.db.lists, options.db.tasks, options.db.list_members, options.db.list_preferences, options.db.user_preferences, options.db.meta], async () => {
+        const dirty = await collectDirty(options.db)
+        const payload = toPushPayload(dirty.lists, dirty.members, dirty.tasks, dirty.preferences, dirty.userPreferences)
+        const bases: PushBases = Object.fromEntries(CLOUD_TABLES.map(table => [table, {}]))
+        await Promise.all(CLOUD_TABLES.flatMap(table => (payload[table] ?? []).map(async row => {
+          const id = cloudRowId(table, row)
+          bases[table]![id] = (await readCloudState(options.db, table, id)).base ?? null
+        })))
+        // Zeile und bestätigte Basis gehören zu derselben Momentaufnahme,
+        // auch wenn ein zweiter Browser-Tab gerade synchronisiert.
+        return { payload, bases }
+      })
+      if (isEmptyPayload(payload)) break
       // Für das Ablagefach: welche Zeilen steckten in welcher Tabelle?
-      const kennungen: Record<PushTabelle, Array<{ tabelle: PushTabelle; id: string; updated_at: IsoDateTime }>> = {
-        lists: payload.lists.map((zeile) => ({
-          tabelle: 'lists',
-          id: zeile.id,
-          updated_at: zeile.updated_at,
-        })),
-        members: payload.members.map((zeile) => ({
-          tabelle: 'members',
-          id: `${zeile.list_id}:${zeile.user_id}`,
-          updated_at: zeile.updated_at,
-        })),
-        tasks: payload.tasks.map((zeile) => ({
-          tabelle: 'tasks',
-          id: zeile.id,
-          updated_at: zeile.updated_at,
-        })),
-      }
+      const kennungen = Object.fromEntries(CLOUD_TABLES.map(table => [table,
+        (payload[table] ?? []).map(row => ({ tabelle: table, id: cloudRowId(table, row), updated_at: row.updated_at, row })),
+      ])) as Record<PushTabelle, Array<{ tabelle: PushTabelle; id: string; updated_at: IsoDateTime; row: CloudRow }>>
 
       try {
-        const ergebnis = await options.gateway.push(payload)
+        const ergebnis = await options.gateway.push(payload, bases)
 
         // Nur markieren, was wirklich angekommen ist – der Rest bleibt dirty.
         await markPushed(options.db, ergebnis.hochgeladen)
         await vergissAbgelehnt(options.db, ergebnis.hochgeladen)
-        pushed =
-          ergebnis.hochgeladen.lists.length +
-          ergebnis.hochgeladen.members.length +
-          ergebnis.hochgeladen.tasks.length
+        pushed += CLOUD_TABLES.reduce((sum, table) => sum + (ergebnis.hochgeladen[table]?.length ?? 0), 0)
 
         if (ergebnis.fehler.length > 0) {
           const offline = ergebnis.fehler.find((eintrag) => eintrag.error.kind === 'offline')
@@ -147,16 +132,35 @@ export function createSyncEngine(options: SyncEngineOptions): SyncEngine {
              * dann nichts mehr. Ein einzelner Serverfehler soll sie nicht aus
              * dem Abgleich nehmen.
              */
-            for (const { tabelle, error } of ergebnis.fehler) {
-              await merkeAbgelehnt(options.db, kennungen[tabelle], error.message, at)
+            for (const { tabelle, ids, error } of ergebnis.fehler) {
+              if (error.retryable) continue
+              const rejected = kennungen[tabelle].filter(row => !ids || ids.includes(row.id))
+              await merkeAbgelehnt(options.db, rejected, error.message, at)
             }
             pushError = ergebnis.fehler[0].error
           }
         }
+        for (const conflict of ergebnis.konflikte ?? []) {
+          if (conflict.remote) {
+            await options.db.transaction('rw', [options.db.lists, options.db.tasks, options.db.list_members, options.db.list_preferences, options.db.user_preferences, options.db.meta], async () => {
+              await acceptCloudRow(options.db, conflict.table, conflict.remote!)
+            })
+          } else {
+            await options.db.transaction('rw', [options.db.lists, options.db.tasks, options.db.list_members, options.db.list_preferences, options.db.user_preferences, options.db.meta], async () => {
+              const local = await readLocalCloudRow(options.db, conflict.table, conflict.id)
+              const state = await readCloudState(options.db, conflict.table, conflict.id)
+              if (local) await writeCloudState(options.db, conflict.table, conflict.id, { ...state, conflict: { ...conflict, local: local.row, fields: ['missing'] } })
+            })
+          }
+        }
+        // Ein disjunkter Feldkonflikt wurde lokal zusammengeführt und kann
+        // einmal gegen seine neue Basis versucht werden. Kein endloser Retry.
+        if (!ergebnis.konflikte?.length || pushError) break
       } catch (error) {
         // Eine Implementierung, die wirft (etwa „gar kein Netz“), gilt als
         // vollständiger Fehlschlag – alles bleibt dirty.
         pushError = classifyRemoteError(error)
+        break
       }
     }
 
@@ -174,7 +178,8 @@ export function createSyncEngine(options: SyncEngineOptions): SyncEngine {
       await applyRemoteLists(options.db, snapshot.lists)
       await applyRemoteMembers(options.db, snapshot.members, options.currentUserId)
       await applyRemoteTasks(options.db, snapshot.tasks)
-      pulled = snapshot.lists.length + snapshot.members.length + snapshot.tasks.length
+      await applyRemotePreferences(options.db, snapshot.preferences ?? [], snapshot.userPreferences ?? [], options.currentUserId)
+      pulled = CLOUD_TABLES.reduce((sum, table) => sum + (snapshot[table]?.length ?? 0), 0)
       await writeMeta(options.db, META_LAST_SYNC_AT, at)
     } catch (error) {
       pullError = classifyRemoteError(error)
@@ -196,6 +201,7 @@ export function createSyncEngine(options: SyncEngineOptions): SyncEngine {
       return { kind, pushed, pulled, message, at }
     }
 
+    if ((await readCloudConflicts(options.db)).length > 0) return { kind: 'conflict', pushed, pulled, message: null, at }
     return { kind: 'ok', pushed, pulled, message: null, at }
   }
 

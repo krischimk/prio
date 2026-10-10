@@ -1,6 +1,7 @@
 import { useAuth } from '../auth/useAuth'
 import { useIsDesktop } from '../app/useIsDesktop'
 import { ViewProvider } from './ViewProvider'
+import { TaskDraftProvider } from './TaskDraftProvider'
 import { useView } from './useView'
 import { MobileWorkspace } from './mobile/MobileWorkspace'
 import { BackendLabel } from './BackendLabel'
@@ -13,6 +14,10 @@ import { SyncIndicator } from './SyncIndicator'
 import { TaskPanel } from './TaskPanel'
 import { appBackground } from './styles'
 import { Button } from './components/Button'
+import { CloudConflictsSheet } from './CloudConflictsSheet'
+import { OverviewPanel } from './OverviewPanel'
+import { OverviewDialogs } from './OverviewDialogs'
+import { TaskDialogs } from './TaskDialogs'
 
 /**
  * Wählt zwischen den beiden Oberflächen.
@@ -23,12 +28,26 @@ import { Button } from './components/Button'
  */
 export function WorkspaceScreen() {
   const isDesktop = useIsDesktop()
+  const { state } = useAuth()
+  const userId = state.status === 'authenticated' ? state.user.id : ''
   // Der Ansichtszustand liegt **über** der Verzweigung: Beim Wechsel der Breite
   // tauscht React den Baum aus, und ohne diese Ebene fiele die gewählte Liste
   // auf die erste zurück.
   return (
-    <ViewProvider>{isDesktop ? <DesktopWorkspace /> : <MobileWorkspace />}</ViewProvider>
+    <TaskDraftProvider key={userId}>
+      <ViewProvider userId={userId}><WorkspaceViews isDesktop={isDesktop} /></ViewProvider>
+    </TaskDraftProvider>
   )
+}
+
+function WorkspaceViews({ isDesktop }: { isDesktop: boolean }) {
+  const { cloudConflicts, conflictsOpen, setConflictsOpen } = useView()
+  return <>
+    <div>{isDesktop ? <DesktopWorkspace /> : <MobileWorkspace />}</div>
+    <OverviewDialogs />
+    <TaskDialogs />
+    <CloudConflictsSheet conflicts={cloudConflicts} open={conflictsOpen} onClose={() => setConflictsOpen(false)} />
+  </>
 }
 
 /** Breite Ansicht: Listen links, Aufgaben rechts. */
@@ -50,10 +69,9 @@ function DesktopWorkspace() {
         currentUserId={user?.id ?? ''}
       />
 
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line px-4 py-3">
           <div className="flex items-baseline gap-2">
-            <span className="font-semibold tracking-tight">Prio</span>
             <span className="text-meta text-ink-faint" data-testid="current-user">
               {user?.email}
             </span>
@@ -100,11 +118,9 @@ function DesktopWorkspace() {
         </header>
 
         {selected ? (
-          <TaskPanel list={selected} currentUserId={user?.id ?? ''} lists={lists} />
+          <TaskPanel key={selected.id} list={selected} currentUserId={user?.id ?? ''} />
         ) : (
-          <div className="flex flex-1 items-center justify-center p-6 text-center text-body text-ink-faint">
-            Lege links eine Liste an, um Aufgaben zu erfassen.
-          </div>
+          <OverviewPanel currentUserId={user?.id ?? ''} />
         )}
       </div>
 

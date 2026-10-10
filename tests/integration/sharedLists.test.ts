@@ -3,6 +3,7 @@ import { createShareListAction } from '../../src/sync/shareList'
 import { createFakeServer } from '../support/fakeGateway'
 import { createDevice, type DeviceHarness } from '../support/harness'
 import { createFixedClock } from '../../src/domain/clock'
+import { readCloudState } from '../../src/db/cloudState'
 
 /**
  * Gemeinsame Listen (Integration): der komplette Ablauf aus der Aufgabenstellung.
@@ -115,6 +116,29 @@ describe('Gemeinsame Listen', () => {
 
     // A behält alles.
     expect(await deviceA.repositories.listLists()).toHaveLength(1)
+  })
+
+  it('zeigt nach Rechteentzug keinen unlösbaren Konflikt und bewahrt die eigene Eingabe', async () => {
+    const { userA, userB, deviceA, deviceB, shareFromA } = await createPair()
+    const list = await deviceA.repositories.createList('Projekt', userA)
+    const task = await deviceA.repositories.createTask({ listId: list.id, title: 'Anfang' })
+    await shareFromA(list.id, 'b@example.com')
+    await deviceA.engine.sync()
+    await deviceB.engine.sync()
+    await deviceA.repositories.updateTask(task.id, { title: 'Cloud' })
+    await deviceA.engine.sync()
+    await deviceB.repositories.updateTask(task.id, { title: 'Eigene Eingabe' })
+    await deviceB.engine.sync()
+    expect(await deviceB.repositories.listCloudConflicts()).toHaveLength(1)
+
+    await deviceA.repositories.removeMember(list.id, userB)
+    await deviceA.engine.sync()
+    await deviceB.engine.sync()
+
+    expect(await deviceB.repositories.getTask(task.id)).toBeUndefined()
+    expect(await deviceB.repositories.listCloudConflicts()).toEqual([])
+    const archived = await readCloudState(deviceB.db, 'tasks', task.id)
+    expect(archived.conflict?.local).toMatchObject({ title: 'Eigene Eingabe' })
   })
 
   it('weist eine unberechtigte Änderung an einer fremden Liste zurück, ohne A zu beschädigen', async () => {

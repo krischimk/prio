@@ -867,6 +867,9 @@ describe('Repositories (lokale Geschäftslogik)', () => {
       const listId = await newList()
       await device.db.tasks.put({
         id: 'alt',
+        completed_expires_at: null,
+        expired_at: null,
+        reopen_context: null,
         list_id: listId,
         section_id: null,
         title: 'Aus alter Zeit',
@@ -1075,4 +1078,3 @@ describe('Repositories (lokale Geschäftslogik)', () => {
     ])
   })
 })
-

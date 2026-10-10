@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 /**
- * Die vier benannten Abstandsrollen (P2, §15.2 A2).
+ * Die eingesetzten benannten Abstandsrollen.
  *
  * Sie sind der Unterschied zwischen „p-4 irgendwo" und „das ist das Polster
  * einer Karte". Ohne Prüfung bliebe das eine Absicht: `p-karte` und `p-4`
@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest'
  * Prüfung hält fest, dass die Rollen existieren, auf dem Raster liegen und
  * wirklich benutzt werden.
  */
-const ROLLEN = ['karte', 'zeile', 'abschnitt', 'rand'] as const
+const ROLLEN = ['karte', 'abschnitt', 'rand'] as const
 
 function css(): string {
   return readFileSync(join(process.cwd(), 'src', 'index.css'), 'utf8')
@@ -34,7 +34,7 @@ function quelldateien(): Array<{ pfad: string; inhalt: string }> {
 }
 
 describe('Abstandsrollen', () => {
-  it('definiert die vier Rollen in @theme', () => {
+  it('definiert die eingesetzten Rollen in @theme', () => {
     for (const rolle of ROLLEN) {
       expect(css(), `--spacing-${rolle} fehlt`).toContain(`--spacing-${rolle}:`)
     }
@@ -54,7 +54,6 @@ describe('Abstandsrollen', () => {
       .join('\n')
     for (const [rolle, klasse] of [
       ['karte', 'p-karte'],
-      ['zeile', 'space-y-zeile'],
       ['abschnitt', 'space-y-abschnitt'],
       ['rand', 'p-rand'],
     ] as const) {

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTaskForm } from './useTaskForm'
 import { TaskFields } from './TaskFields'
+import { TaskFormStatus } from './TaskFormStatus'
 import { cardSoft, input } from './styles'
 import { Button } from './components/Button'
 
@@ -25,17 +26,19 @@ export function TaskComposer({ listId }: { listId: string }) {
   })
 
   return (
-    <form onSubmit={form.speichern} className="space-y-3" aria-label="Neue Aufgabe anlegen">
+    <form onSubmit={form.speichern} className="space-y-3 rounded-card border border-line bg-surface p-4" aria-label="Neue Aufgabe anlegen">
       <div className="flex gap-2">
         <label htmlFor="new-task-title" className="sr-only">
           Neue Aufgabe
         </label>
         <input
           id="new-task-title"
+          data-focus-key={`new:${listId}`}
+          disabled={form.busy}
           value={form.werte.title}
           onChange={(event) => form.setzen('title', event.target.value)}
           placeholder="Neue Aufgabe…"
-          className={input}
+          className={`${input} min-w-0 flex-1`}
         />
         <Button
           type="submit"
@@ -56,6 +59,8 @@ export function TaskComposer({ listId }: { listId: string }) {
           />
         </div>
       ) : null}
+
+      <TaskFormStatus form={form} />
 
       <Button
         variant="secondary"

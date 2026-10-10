@@ -9,6 +9,7 @@ import {
   serverState,
   taskItem,
   uniqueEmail,
+  selectList,
 } from './support/helpers'
 
 /**
@@ -58,6 +59,7 @@ test('E2E 3: Aufgabe entsteht offline und wird nach dem Verbindungsaufbau synchr
   try {
     const secondPage = await otherContext.newPage()
     await login(secondPage, email)
+    await selectList(secondPage, 'Offline-Liste')
 
     await expect(secondPage.getByTestId('list-title')).toHaveText('Offline-Liste')
     await expect(taskItem(secondPage, 'Offline-Aufgabe')).toBeVisible()

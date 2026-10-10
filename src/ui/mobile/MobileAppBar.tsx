@@ -2,24 +2,26 @@ import { useWorkspace } from '../../app/useWorkspace'
 import { describeSyncState } from '../status/syncStatus'
 import { focusRing, layer, appBackground, attentionDot, numeric, statusTone } from '../styles'
 import { useUpdate } from '../useUpdate'
-import { MenuIcon } from '../icons'
+import { MenuIcon, SettingsIcon } from '../icons'
 import { ListIcon } from '../ListIcon'
 import { IconButton } from '../components/IconButton'
+import { useView } from '../useView'
 
 /**
  * Obere Leiste der mobilen Ansicht.
  *
  * Links das Menü, in der Mitte der Name der aktuellen Liste, rechts ein
  * kleiner Punkt für den Sync-Zustand. Der Punkt ist gleichzeitig der Knopf
- * "jetzt synchronisieren" – auf dem Telefon ist das die einzige Stelle, an der
- * man den Zustand sehen muss.
+ * "jetzt synchronisieren" beziehungsweise der Zugang zu offenen Konflikten.
  */
 export function MobileAppBar({
+  listId,
   listName,
   listIcon,
   onOpenMenu,
   onOpenList,
 }: {
+  listId: string | null
   listName: string | null
   listIcon: string | null
   onOpenMenu: () => void
@@ -27,7 +29,8 @@ export function MobileAppBar({
   onOpenList: () => void
 }) {
   const { syncStatus, pendingCount, rejectedCount, syncing, runSync } = useWorkspace()
-  const { tone, text } = describeSyncState(syncStatus, pendingCount, syncing, rejectedCount)
+  const { cloudConflicts, setConflictsOpen } = useView()
+  const { tone, text } = describeSyncState(syncStatus, pendingCount, syncing, rejectedCount, cloudConflicts.length)
   /**
    * Was neben dem Punkt steht: die Zahl der wartenden Änderungen oder ein
    * Ausrufezeichen. `null` heißt „nichts zu sagen" – dann bleibt nur der Punkt.
@@ -61,7 +64,7 @@ export function MobileAppBar({
             className="min-w-0 flex-1 truncate text-center text-title font-medium text-ink"
             data-testid="app-bar-title"
           >
-            prio
+            Gesamtansicht
           </span>
         ) : (
           /*
@@ -70,22 +73,25 @@ export function MobileAppBar({
           */
           <button
             type="button"
+            data-focus-key={`settings:list:${listId}`}
             onClick={onOpenList}
             aria-label={`Liste „${listName}“ verwalten`}
-            className={`${focusRing} flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-control px-2 py-1 text-title font-medium text-ink active:bg-raised`}
+            className={`${focusRing} flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-control px-2 py-1 text-title font-medium text-ink active:bg-raised`}
             data-testid="app-bar-title"
           >
             <ListIcon icon={listIcon} className="h-4 w-4 shrink-0" />
             <span className="truncate">{listName}</span>
+            <SettingsIcon className="ml-auto h-4 w-4 shrink-0 text-ink-muted" />
           </button>
         )}
 
         <button
           type="button"
           onClick={() => {
-            void runSync()
+            if (cloudConflicts.length > 0) setConflictsOpen(true)
+            else void runSync()
           }}
-          aria-label={`${farben.label} – jetzt synchronisieren`}
+          aria-label={cloudConflicts.length > 0 ? `${text} Konflikte klären` : `${farben.label} – jetzt synchronisieren`}
           title={text}
           className={`${focusRing} rounded-control p-3 active:bg-raised`}
         >

@@ -76,6 +76,10 @@ export interface LocalList extends SyncableRow, LocalOnly {
    * Ansichtssache je Gerät und wird nicht abgeglichen.
    */
   sections: ListSection[]
+  /** Gemeinsame Listenregel; nur der Besitzer stellt sie ein, zunächst aus. */
+  keep_completed: boolean
+  /** Letzte Einführung/Abschaltung der Aufbewahrung; vom Server bestätigt. */
+  completion_retention_started_at: IsoDateTime | null
   created_at: IsoDateTime
 }
 
@@ -97,6 +101,11 @@ export interface LocalTask extends SyncableRow, LocalOnly {
    * ist. Grundlage für „Aufgaben wiederherstellen“ in den Einstellungen.
    */
   completed_at: IsoDateTime | null
+  /** Bestätigte Löschfrist; null bei dauerhafter Aufbewahrung. */
+  completed_expires_at: IsoDateTime | null
+  /** Endgültiger Ablauf, vom Server gesetzt; kein Papierkorb. */
+  expired_at: IsoDateTime | null
+  reopen_context: TaskReopenContext | null
   /**
    * Wiederholung der Aufgabe: `daily`, `weekly`, `monthly` oder `yearly`.
    *
@@ -156,6 +165,34 @@ export interface LocalListMember extends SyncableRow, LocalOnly {
   created_at: IsoDateTime
 }
 
+export interface TaskReopenContext {
+  list_id: string
+  section_id: string | null
+  previous_id: string | null
+  next_id: string | null
+  successor: Omit<LocalTask, 'dirty' | 'reopen_context'> | null
+}
+
+/** Persönliche, synchronisierte Auswahl für eine einzelne Liste. */
+export interface LocalListPreference extends SyncableRow, LocalOnly {
+  list_id: string
+  user_id: string
+  include_in_overview: boolean
+  created_at: IsoDateTime
+}
+export type RemoteListPreference = Omit<LocalListPreference, 'dirty'>
+
+export type OverviewMode = 'by_list' | 'newest'
+
+/** Persönliche Startansicht; die Standardliste wird ausdrücklich gesetzt. */
+export interface LocalUserPreference extends SyncableRow, LocalOnly {
+  id: string
+  default_list_id: string | null
+  overview_mode: OverviewMode
+  created_at: IsoDateTime
+}
+export type RemoteUserPreference = Omit<LocalUserPreference, 'dirty'>
+
 export interface LocalMeta {
   key: string
   value: string
@@ -195,26 +232,36 @@ export interface LocalReminder {
  * angeblich immer da ist, würde beim Lesen zu einer Lüge – genau dafür steht
  * `parseSections` bereit.
  */
-export type RemoteList = Omit<LocalList, 'dirty' | 'sections'> & {
+export type RemoteList = Omit<LocalList, 'dirty' | 'sections' | 'keep_completed' | 'completion_retention_started_at'> & {
   sections?: ListSection[] | null
+  keep_completed?: boolean
+  completion_retention_started_at?: IsoDateTime | null
 }
 
 /** Eine Aufgabenzeile vom Server; `section_id` fehlt vor Migration 0013. */
-export type RemoteTask = Omit<LocalTask, 'dirty' | 'section_id'> & {
+export type RemoteTask = Omit<LocalTask, 'dirty' | 'section_id' | 'completed_expires_at' | 'expired_at' | 'reopen_context'> & {
   section_id?: string | null
+  completed_expires_at?: IsoDateTime | null
+  expired_at?: IsoDateTime | null
+  reopen_context?: TaskReopenContext | null
 }
 export type RemoteListMember = Omit<LocalListMember, 'dirty'>
 
-export type RemoteTable = 'lists' | 'list_members' | 'tasks'
+export type RemoteTable = 'lists' | 'list_members' | 'tasks' | 'list_preferences' | 'user_preferences'
 
 export interface RemoteSnapshot {
   lists: RemoteList[]
   members: RemoteListMember[]
   tasks: RemoteTask[]
+  /** Fehlt bei älteren Transporten; keine Auswahl bedeutet keine Aufnahme. */
+  preferences?: RemoteListPreference[]
+  userPreferences?: RemoteUserPreference[]
 }
 
 export interface PushPayload {
   lists: RemoteList[]
   members: RemoteListMember[]
   tasks: RemoteTask[]
+  preferences?: RemoteListPreference[]
+  userPreferences?: RemoteUserPreference[]
 }

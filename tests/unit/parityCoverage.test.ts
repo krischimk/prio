@@ -23,6 +23,10 @@ import { SCHREIBEND } from '../../src/app/trackedRepositories'
  * Nutzerweg (sie laufen im Hintergrund oder als Teil eines anderen Eintrags).
  */
 const ABDECKUNG: Record<(typeof SCHREIBEND)[number], string | null> = {
+  setListInOverview: 'Liste in die Gesamtansicht aufnehmen',
+  setListKeepCompleted: 'Abgehakt am Listenende einstellen und wieder öffnen',
+  updateUserPreferences: 'Standardliste und Gesamtansicht wählen',
+  resolveCloudConflict: 'Cloud-Schreibkonflikt klären',
   createList: 'Liste anlegen',
   renameList: 'Liste umbenennen',
   setListIcon: 'Liste mit Symbol versehen und das Symbol wieder entfernen',

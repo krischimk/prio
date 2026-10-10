@@ -217,13 +217,19 @@ nicht einmal je Änderung. Drei Stufen:
   Operation setzt `updated_at` und `dirty = 1` – sonst geht sie beim Sync
   verloren.
 * Gelöscht wird als Soft Delete (`deleted_at`), nie hart.
-* **Der Upload ist je Tabelle, und abgelehnte Zeilen blockieren nichts.**
-  `SyncTransport.push` gibt ein Ergebnis je Tabelle zurück; nur was angekommen
+* **Der Upload entscheidet je Zeile, und abgelehnte Zeilen blockieren nichts.**
+  `SyncTransport.push` gruppiert die Zeilenergebnisse je Tabelle; nur was angekommen
   ist, wird als hochgeladen markiert. Was der Server dauerhaft ablehnt, wandert
   nach ein paar Anläufen in ein Ablagefach (`syncStore`) und zählt nicht mehr als
   „warten“. Vorher war der Upload alles-oder-nichts: eine abgelehnte Zeile hielt
   den ganzen Bestand zurück, und der Zähler wurde nie leer. Auslöser:
   `DESIGN.md` §15.5 C1.
+* **Cloud-Schreiben prüft die bestätigte Basis atomar.** `sync_push` prüft
+  Benutzerrechte und Ausgangsstand unter Sperren; direkte App-Schreibrechte
+  bleiben entzogen, auch beim Wiederholen der Sammelmigration. Die lokale
+  Bestätigung vergleicht den vollständigen Inhalt. Geräteuhren entscheiden
+  keinen Gewinner. Auslöser: Ein späterer alter Upload überschrieb einen
+  neueren Cloudstand; Prüfungen in `cloudWrites.test.ts` und `npm run db:test`.
 * **Die Datenschicht hat einen Bereich je Datei.** `src/db/repositories/`:
   `listen`, `aufgaben`, `mitglieder`, `einstellungen`, dazu `context.ts` für die
   gemeinsamen Helfer, `types.ts` für die Schnittstelle und `index.ts` als
@@ -292,8 +298,8 @@ nicht einmal je Änderung. Drei Stufen:
 * Row Level Security bleibt Pflicht. Neue Tabellen brauchen Policies **und**
   explizite `grant`s an `authenticated` – nicht auf die Vorgaben des Projekts
   verlassen.
-* Zeitstempel kommen vom Client. Kein Trigger, der `updated_at` überschreibt –
-  das würde Last Write Wins aushebeln.
+* Zeitstempel kommen vom Client; Konflikte werden über die bestätigte Basis
+  entschieden. Ein Trigger darf `updated_at` nicht unbemerkt überschreiben.
 * **Der Supabase-Skill gilt nur für allgemeine Supabase-Fragen.** Seine
   Empfehlungen zu Schemaänderungen (`supabase migration new`, `db pull`,
   `db advisors`, MCP-`execute_sql`) beschreiben das CLI-Modell und gelten hier

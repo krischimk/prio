@@ -85,15 +85,42 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
 * Berechtigungen in 0.1: **Besitzer** (verwaltet die Liste und die Mitglieder)
   und **Mitglied** (darf Aufgaben lesen und bearbeiten)
 
+### Gesamtansicht im aktuellen Entwicklungsstand
+
+* Beim Öffnen startet die Gesamtansicht. Bestehende und neue Listen sind
+  zunächst ausgeschlossen; aufgenommen werden sie ausdrücklich in den
+  Listeneinstellungen oder über „Gesamtansicht einstellen“.
+* Die Auswahl ist persönlich. Auch Mitglieder einer geteilten Liste können
+  ihre eigene Auswahl bestimmen.
+* „Nach Listen gruppiert“ erhält die vorhandene Reihenfolge innerhalb der
+  Ursprungsliste; „Neueste zuerst“ mischt die Aufgaben mit sichtbarer Herkunft.
+  Gruppierung ist nur die erste Voreinstellung. Die gewählte Ansicht bleibt
+  nach Neustart erhalten und wird zwischen Geräten synchronisiert.
+* Neue Aufgaben verlangen zunächst eine ausdrückliche Zielliste. Eine unter
+  „Gesamtansicht einstellen“ manuell gewählte Standardliste öffnet den Editor
+  direkt mit sichtbarem Ziel. „Zielliste ändern“ bleibt erreichbar; die zuletzt
+  beim Erstellen ausgewählte Liste wird nicht automatisch zum Default.
+* Alle zugänglichen Ziellisten sind erlaubt. Bei einer ausgeschlossenen Liste
+  erklärt ein Hinweis, dass die neue Aufgabe in ihrer Listenansicht erscheint.
+* Diese persönlichen Einstellungen liegen in `list_preferences` und
+  `user_preferences`; die Cloud braucht Migration 0015. Sie ersetzen keine der
+  gemeinsamen Regeln zu Prioritäten, gleichen Namen oder „Abgehakt“.
+
 ### Aufgaben
 
 * Felder: `id`, `list_id`, `title`, optionale `description`, optionales
   `due_at` (mit Uhrzeit), `completed`, optionale `recurrence`, `successor_id`,
+  `completed_at`, `completed_expires_at`, `expired_at`, `reopen_context`,
   `reminders` (Liste, siehe [Erinnerungen](#erinnerungen)), `created_at`,
   `updated_at`, `deleted_at`
 * Erstellen, bearbeiten, erledigen, in eine andere Liste verschieben, löschen
-* Abgehakte Aufgaben verschwinden aus der Liste und sind sieben Tage lang unter
-  *Einstellungen → Aufgaben wiederherstellen* auffindbar
+* Der Besitzer kann **„Abgehakt am Listenende“** je Liste einschalten; zunächst
+  ist die Einstellung aus. An: dauerhaft aufbewahren, ausschließlich im
+  zunächst eingeklappten Bereich „Abgehakt“ mit Anzahl. Aus: sieben Tage unter
+  „Aufgaben wiederherstellen“, danach endgültig gelöscht.
+* Bei Einführung und Abschalten erhalten bestehende Abschlüsse sieben Tage
+  ab Umstellung. Beim Verschieben erledigter Aufgaben gilt die Zielliste;
+  ohne Aufbewahrung beginnen sieben Tage ab dem Verschieben.
 * Nach dem Abhaken erscheint unten kurz eine Leiste mit „Rückgängig“
 * Erinnerungen: Hat eine Aufgabe ein Fälligkeitsdatum in der Zukunft, plant
   die Android-App eine Benachrichtigung. Details unter
@@ -109,7 +136,9 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
 * Nicht übertragene Änderungen sind als `dirty` markiert
 * Synchronisation: erst hochladen, dann herunterladen, dann zusammenführen
 * Löschungen werden als Soft Delete übertragen
-* Konflikte: **Last Write Wins anhand `updated_at`** (bewusste Vereinfachung)
+* Cloud-Schreiben prüft den zuletzt bestätigten Stand atomar; verschiedene
+  Felder werden automatisch zusammengeführt. Widersprechende Änderungen
+  bleiben erhalten und lassen sich über „Konflikte klären“ vergleichen.
 * Statusanzeige u. a.: „Offline – Änderungen werden später synchronisiert.“
 
 ### PWA
@@ -128,8 +157,10 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
 | UI | React 19, Tailwind CSS 4, Dark Mode als einziger Modus | `src/ui`, `src/App.tsx` |
 | Lokale Datenbank | Dexie 4 auf IndexedDB, eine Datenbank pro Benutzer | `src/db` |
 | Geschäftslogik | Validierung, Soft Delete, `dirty`-Markierung | `src/db/repositories.ts` |
+| Aufgabenbearbeitung | Reine Eingabeprüfung und Feldkonflikte; atomare lokale Speicherung im Repository | `src/domain/taskEdit.ts`, `src/db/repositories/aufgaben.ts` |
 | Sync-Engine | Orchestrierung Push/Pull, Fehlerbehandlung, Status | `src/sync/syncEngine.ts` |
-| Konfliktlogik | Last Write Wins, reine Funktion | `src/domain/merge.ts` |
+| Konfliktlogik | Drei-Wege-Vergleich, reine Funktion; bestätigte Basis und Konflikte lokal | `src/domain/cloudMerge.ts`, `src/db/cloudState.ts` |
+| Cloud-Schreibschutz | Atomare Basis-/Rechteprüfung, Ergebnis je Zeile; direkte Tabellen-Schreibrechte gesperrt | `supabase/migrations/0014_guarded_sync.sql` |
 | Cloud-Schnittstelle | Interface `RemoteGateway`, Implementierung mit Supabase | `src/sync/remoteGateway.ts`, `src/sync/supabaseGateway.ts` |
 | Auth | Interface `AuthPort`, Implementierung mit Supabase Auth | `src/auth` |
 | Datenbanksicherheit | Row Level Security, SQL-Migrationen | `supabase/migrations` |
@@ -279,6 +310,8 @@ npm test                 # Unit- und Integrationstests (Vitest)
 npm run test:unit        # nur Unit-Tests
 npm run test:integration # nur Integrationstests
 npm run test:e2e         # E2E im echten Browser (Playwright, startet Mock-Server)
+PRIO_DB_TEST_URL=postgresql://localhost/prio_test_local npm run db:test
+                        # echte, wegwerfbare lokale PostgreSQL-Datenbank
 
 npm run test:watch       # Vitest im Watch-Modus
 ```
@@ -298,9 +331,11 @@ Commit. Bewusst übergehen lässt er sich mit `git commit --no-verify`.
 
 | Datei | Inhalt |
 | --- | --- |
-| `merge.test.ts` | Last-Write-Wins in allen Varianten inkl. Soft Delete |
+| `cloudMerge.test.ts` | Drei-Wege-Vergleich, unabhängige Felder, gekoppelte Änderungen, Löschung und unbekannte Basis |
 | `mapping.test.ts` | Umwandlung lokal ↔ Supabase, Zeitstempel-Normalisierung |
 | `repositories.test.ts` | Aufgabe erstellen/bearbeiten/erledigen/löschen, Listen, Mitglieder, `dirty`-Markierung |
+| `taskWrites.test.ts` | Gleichzeitige lokale Bearbeitung, Abhaken, Verschieben, Umsortieren, Löschen und Erstellen |
+| `taskEdit.test.ts`, `taskForm.test.tsx`, `taskQuery.test.tsx` | Browserunabhängige Validierung, Feldkonflikte, Entwurfszuordnung, doppelte Submit-Ereignisse und Lesefehler |
 | `syncStore.test.ts` | Aufbau und Bereinigung lokaler Sync-Einträge |
 | `syncStatus.test.ts` | Texte der Statusanzeige, u. a. die Offline-Meldung |
 | `supabaseGateway.test.ts` | Supabase-Zugriffe gegen einen gemockten Client, Fehlerklassifikation |
@@ -311,17 +346,29 @@ Commit. Bewusst übergehen lässt er sich mit `git commit --no-verify`.
 | --- | --- |
 | `syncScenarios.test.ts` | Die Szenarien 1–6 aus der Aufgabe (offline erstellen, online hochladen, Serverausfall, Serverversion neuer, lokale Version neuer, offline löschen) |
 | `multiDevice.test.ts` | Gerät A → Gerät B → Bearbeitung zurück → Konfliktfall → Löschung |
+| `cloudWrites.test.ts` | Geschützte Cloud-Änderungen, Uhrversatz, bewusste Konfliktwahl, alte Offline-Daten und vorübergehende Fehler |
 | `sharedLists.test.ts` | Gemeinsame Liste: teilen, Aufgaben beider Seiten, Mitglied entfernen, unberechtigte Änderung |
 | `appFlow.test.tsx` | Die echte App in jsdom: Registrieren, Liste anlegen, Aufgabe speichern, Sync auslösen, Serveränderung übernehmen, Offline-Zustand |
 
 Alle Integrationstests nutzen **echtes Dexie** über `fake-indexeddb` und einen
 In-Memory-Ersatz für Supabase, der auch die RLS-Sichtbarkeitsregeln nachbildet.
+Jedes über den Geräte-Harness erzeugte Gerät hat eine eigene Datenbank, auch
+bei identischer Benutzerkennung. Daten erscheinen auf dem zweiten Gerät erst
+nach dem Abgleich; sie werden nicht über den App-Datenbankcache geteilt.
+
+`npm run db:test` spielt die echten Migrationen in eine ausschließlich lokale
+`prio_test_*`-Datenbank ein und prüft Rechte, Konflikte, Wiederholbarkeit und
+parallele Verbindungen. **Dabei werden die Schemas dieser Testdatenbank neu
+angelegt.** Das Skript verweigert andere Namen und entfernte Hosts. PostgreSQL
+und `psql` sind dafür nötig; die CI stellt einen eigenen PostgreSQL-Dienst
+bereit. Es werden keine Produktionszugänge gebraucht.
 
 ### E2E-Tests (`tests/e2e`)
 
 | Test | Inhalt |
 | --- | --- |
 | `tasks.spec.ts` | E2E 1: registrieren, Aufgabe erstellen und sehen; erneut anmelden; E2E 2: bearbeiten, erledigen, löschen |
+| `foundation.spec.ts` | Listen-/Ansichtswechsel mit Entwürfen, Behalten/Verwerfen, Feldkonflikte zwischen zwei Geräten und Ende der Entwurfssitzung |
 | `offline.spec.ts` | E2E 3: Netzwerk aus, Aufgabe erstellen, Netzwerk an, Sync, zweites Gerät sieht die Aufgabe |
 | `shared-list.spec.ts` | E2E 4: A teilt mit B, B erstellt Aufgabe, A sieht sie; E2E 4b: B wird entfernt und verliert den Zugriff |
 | `mobile.spec.ts` | Die Abläufe auf dem Telefon (390 × 844): Menü statt Seitenleiste, Antippen statt Knöpfe, Langdruck zum Verschieben |
@@ -413,7 +460,7 @@ interface Task {
   due_at: string | null // ISO-8601 mit Uhrzeit (UTC) – Basis für spätere Erinnerungen
   completed: boolean
   created_at: string
-  updated_at: string    // Grundlage für Last Write Wins
+  updated_at: string    // Änderungszeitpunkt, entscheidet keinen Konfliktgewinner
   deleted_at: string | null // Soft Delete
   dirty?: 0 | 1         // nur lokal: noch nicht hochgeladen
 }
@@ -434,19 +481,53 @@ niemals fremde, noch nicht hochgeladene Datensätze übertragen.
 Ein Durchlauf (`src/sync/syncEngine.ts`):
 
 1. **Offline?** Dann sofort abbrechen – es wird nichts angefasst.
-2. **Push:** alle Zeilen mit `dirty = 1` sammeln und per Upsert hochladen
-   (Reihenfolge: Listen → Mitgliedschaften → Aufgaben).
+2. **Push:** übertragbare Zeilen mit `dirty = 1` und ihre bestätigte Basis in
+   einer gemeinsamen lokalen Momentaufnahme lesen. `sync_push` prüft Basis
+   und Benutzerrechte unter Datenbanksperren (Listen → Mitgliedschaften →
+   Aufgaben). Es antwortet je Zeile: gespeichert, Konflikt oder abgelehnt.
 3. **Aufräumen:** erfolgreich übertragene Zeilen als sauber markieren – aber nur,
-   wenn sie sich währenddessen nicht erneut geändert haben.
-4. **Pull:** den sichtbaren Serverbestand vollständig herunterladen.
-5. **Merge:** pro Datensatz entscheidet `resolveMerge` (siehe `src/domain/merge.ts`):
-   * kein lokaler Datensatz → Serverversion übernehmen
-   * lokale Version jünger → lokal behalten und hochladen
-   * Serverversion jünger → Serverversion übernehmen
-   * gleicher Zeitstempel → die noch nicht hochgeladene lokale Änderung gewinnt
+   wenn der vollständige synchronisierte Inhalt weiterhin dem Upload entspricht.
+   Der Vergleich und das Zurücksetzen sind atomar. Ein gleicher Zeitstempel
+   genügt nicht: Mehrere Änderungen können in derselben Millisekunde erfolgen.
+4. **Merge:** `mergeCloudRow` vergleicht Basis, lokale Eingabe und Cloudstand.
+   Unabhängige Felder werden automatisch verbunden und einmal direkt erneut
+   geschrieben. Termin/Wiederholung/Erinnerungen/Abschluss/Seriennachfolger
+   bilden eine Gruppe, Liste/Bereich/Reihenfolge eine weitere. Löschung gegen
+   gleichzeitige Bearbeitung betrifft den ganzen Datensatz.
+5. **Pull:** den sichtbaren Bestand nach Primärschlüssel geordnet in Seiten
+   herunterladen. Saubere lokale Zeilen übernehmen die Cloudfassung auch bei
+   identischem oder älterem Zeitstempel. Schmutzige Zeilen werden nach derselben
+   Drei-Wege-Regel behandelt.
 
-Erst pushen, dann pullen: Dadurch gewinnt bei gleichem Zeitstempel die lokale
-Änderung, weil sie bereits auf dem Server liegt.
+Geräteuhren bestimmen keinen Gewinner. Bestätigte Serverzeilen werden exakt
+als Basis in der vorhandenen lokalen `meta`-Tabelle bewahrt; die Anzeige nutzt
+weiter normalisierte Zeitpunkte. Das erhält auch serverseitige Mikrosekunden
+im unveränderlichen Erstellzeitpunkt. Zusätzliche Entitätsfelder oder eine
+zweite lokale Datenquelle sind dafür nicht nötig.
+
+**Konflikte:** Die eigene Eingabe bleibt lokal. Der Status bietet in beiden
+Ansichten „Konflikte klären“; die Übersicht öffnet sich auf Wunsch. „Cloudstand
+übernehmen“ ersetzt die lokale Änderung. „Meine Änderungen verwenden“ erhält
+die eigenen geänderten Felder bzw. Gruppen und unabhängige Cloud-Felder. Ohne
+bekannten Ausgangsstand wird ausdrücklich eine vollständige Fassung gewählt.
+Eine inzwischen veraltete Auswahl wird abgewiesen. Routinemäßige Übertragungen
+brauchen keine zusätzlichen Bestätigungsdialoge.
+
+**Ablehnungen:** Gültige Zeilen werden weiter übertragen. Nur dauerhafte
+Ablehnungen zählen zur Quarantäne; Netzwerk-, Rate-Limit- und vorübergehende
+Serverfehler bleiben erneut versuchbar. Der vollständige abgelehnte Inhalt
+wird gespeichert. Ein neuer Inhalt wird auch bei gleichem Zeitstempel erneut
+versucht. Alte Quarantänevermerke ohne Inhalt blockieren das neue Protokoll
+nicht. Ein allgemeiner Export-/Wiederaufnahmeweg für entzogene Listenrechte
+ist noch offen.
+
+**Auslieferung:** Dieser lokale Stand braucht die vollständige Sammelmigration
+einschließlich `0014`–`0018`. `0014` sperrt direkte Schreiboperationen älterer
+Apps; `0018` richtet den unabhängigen Ablaufjob ein. App-Update und Migration müssen
+koordiniert geliefert werden; vor der Migration bleibt der neue Client beim
+geschützten Schreiben stehen und bewahrt seine Eingaben. Der Übergang ist in
+[supabase/README.md](supabase/README.md) beschrieben. Ein alter Client kann den
+Schutz nach der Migration nicht umgehen.
 
 Ausgelöst wird ein Sync:
 
@@ -615,8 +696,11 @@ Sync-Pfad für Einstellungen, den es noch nicht gibt.
 
 ## Mobile Oberfläche
 
-Auf Bildschirmen unter 768 px zeigt die App eine eigene, für das Telefon
-gebaute Ansicht. Ab 768 px bleibt die breite Ansicht mit Seitenleiste.
+Im Browser beginnt die breite Ansicht mit Seitenleiste ab 768 px, in der
+nativen App ab 1024 px. Darunter verwendet Prio ihre Telefonansicht. Der
+gemeinsame Aufgabeneditor bleibt beim Breitenwechsel geöffnet und behält
+ungespeicherte Eingaben. Auch kurze breite Fenster behalten einen scrollbar
+erreichbaren Aufgabenbereich.
 
 ```
 ┌──────────────────────────────┐
@@ -629,7 +713,7 @@ gebaute Ansicht. Ab 768 px bleibt die breite Ansicht mit Seitenleiste.
 │    15.02.2027, 18:30         │    darunter Fälligkeit
 │ ☐  Wohnung saugen            │
 ├──────────────────────────────┤
-│             (+)              │  ← neuer Eintrag
+│              Neue Aufgabe ＋ │  ← neuer Eintrag
 └──────────────────────────────┘
 ```
 
@@ -650,20 +734,20 @@ ersten immer identisch.
 | Punkt oben rechts | Sync-Zustand; Antippen synchronisiert sofort |
 | Zurück-Taste | schließt zuerst Detailansicht, Liste oder Menü, sonst Hintergrund |
 
-In der Liste selbst gibt es **keine** Bedienelemente und **keine** Gesten außer
-dem Antippen: keine Bearbeiten- oder Löschen-Knöpfe, kein Kontextmenü. Die
-Zeile ist der Knopf. Alles Weitere – auch das Verschieben in eine andere Liste –
-liegt gebündelt in der Detailansicht.
+Der Titel öffnet den gemeinsamen Editor, die Checkbox erledigt die Aufgabe.
+Beschreibung und Metadaten bleiben direkt lesbar. Verschieben, Löschen und
+„Reihenfolge ändern“ liegen im Editor. Umsortieren ist damit auch ohne Ziehen
+möglich; der Langdruck bleibt ein zusätzlicher Weg auf dem Telefon.
 
 ### Listen verwalten
 
 Eine Liste lässt sich **umbenennen**, **teilen**, **löschen** und – wenn sie
 jemand anderem gehört – **verlassen**.
 
-In der breiten Ansicht stehen die Knöpfe neben dem Listentitel, auf dem Telefon
-öffnet ein Tippen auf den Listennamen in der App-Leiste eine eigene Ansicht.
-Das ist dasselbe Muster wie bei Aufgaben: antippen öffnet die Details, und dort
-wird auch gelöscht.
+„Liste verwalten“ neben dem Listentitel öffnet die gemeinsamen Einstellungen.
+Auf dem Telefon erreicht man dieselbe Ansicht durch Tippen auf den Listennamen
+in der App-Leiste. Dort stehen die persönliche Aufnahme in die Gesamtansicht,
+die gemeinsame Aufbewahrungsregel und die Listenaktionen.
 
 **Ein Symbol pro Liste.** 60 Symbole stehen zur Auswahl – von Haushalt, Arbeit
 und Einkauf über Klettern, Fels und Nähen bis zu T-Shirt, Klavier und Torii. Sie
@@ -716,35 +800,74 @@ setzen zwei Richtlinien das durch:
 Verlassen ist ein Soft Delete der eigenen Mitgliedschaft. Der nächste Abgleich
 räumt die fremde Liste samt Aufgaben lokal weg (`applyRemoteMembers`).
 
+### Ungespeicherte Eingaben und Aufgabenbearbeitung
+
+Neue Aufgabenentwürfe gehören zu ihrer Liste, Bearbeitungsentwürfe zur
+Aufgabenkennung. Auch ein begonnener Listenname bleibt bei seiner Liste.
+Listenwechsel und Wechsel zwischen Telefon- und breiter Ansicht behalten
+diese Eingaben während der laufenden Sitzung. Gespeichert wird erst mit
+„Hinzufügen“ bzw. „Speichern“. Abmelden oder ein Neustart beendet die
+Entwurfssitzung; Entwürfe werden nicht in die Cloud übertragen.
+
+Beim Schließen des Aufgabeneditores lassen sich geänderte Eingaben auf beiden
+Oberflächen behalten, verwerfen oder weiterbearbeiten. Gespeicherte Aufgaben
+und Listennamen liest die Oberfläche weiterhin über die Datenbank-Hooks.
+
+Die Aufgabenbearbeitung schickt nur tatsächlich geänderte Felder. In einer
+lokalen Transaktion prüft sie den aktuellen Stand gegen die Entwurfsbasis.
+Änderungen an anderen Feldern bleiben erhalten; Änderungen am selben Feld
+melden einen Konflikt. Termin, Wiederholung und Erinnerungen gehören wegen
+ihrer gegenseitigen Abhängigkeit zu einer Konfliktgruppe. Bei einem Fehler
+bleibt die Eingabe erhalten. „Aktuellen Stand laden“ ersetzt sie bewusst.
+Der Cloud-Abgleich schützt zusätzlich den bestätigten Serverstand; die beiden
+Prüfungen behandeln unterschiedliche Konkurrenzsituationen.
+
 ### Erledigen und Wiederherstellen
 
-Abhaken lässt die Aufgabe sofort aus der Liste verschwinden – in beiden
-Ansichten. Damit ein versehentliches Abhaken nicht ärgerlich wird, gibt es zwei
-Wege zurück:
+Abhaken entfernt die Aufgabe sofort aus dem offenen Teil der Liste. Der Besitzer
+stellt die gemeinsame Aufbewahrungsregel in beiden Ansichten ein:
 
 * **Die Leiste unten** erscheint direkt nach dem Abhaken für fünf Sekunden mit
   einem „Rückgängig“-Knopf. Hakst du mehrere Aufgaben kurz hintereinander ab,
   zeigt sie die zuletzt abgehakte.
-* **Einstellungen → Aufgaben wiederherstellen** zeigt alles, was in den letzten
-  **sieben Tagen** abgehakt wurde, zuletzt abgehaktes zuerst, mit der Liste und
-  dem Zeitpunkt. Auf dem Telefon über das Menü, in der breiten Ansicht über
-  „Wiederherstellen“ im Kopfbereich.
-* **Wiederkehrende Aufgaben** sind nicht ausgenommen: Auch ihre abgehakte
-  Fassung bleibt sieben Tage auffindbar, während der Nachfolger offen in der
-  Liste steht. Eine Regel für alle, kein Sonderfall.
+* **„Abgehakt am Listenende“ an:** Dauerhaft erhalten, ausschließlich im Bereich
+  „Abgehakt“ am Ende dieser Liste. Er beginnt eingeklappt mit der Anzahl.
+  „Wieder öffnen“ ist dort erreichbar. Es gilt keine Sieben-Tage-Grenze.
+* **Einstellung aus, der Default:** Unter „Aufgaben wiederherstellen“ erreichbar,
+  solange die siebentägige Frist läuft. Danach endgültig entfernt, ohne zweite
+  Papierkorbfrist. Auf dem Telefon über das Menü, breit über „Wiederherstellen“.
+* **Umstellung:** Bereits erledigte Aufgaben erhalten bei Einführung und beim
+  Abschalten sieben Tage ab Umstellung. Der ursprüngliche Abhakzeitpunkt bleibt
+  erhalten. Bei einer erledigten Aufgabe, die die Liste wechselt, gilt die
+  Zielliste: dauerhafte Aufbewahrung oder sieben Tage ab dem Verschieben.
+  Ein bereits abgelaufener Abschluss lässt sich nicht mehr verschieben.
+* **Wiederkehrende Aufgaben** folgen derselben Aufbewahrungsregel; ihr erzeugter
+  nächster Termin bleibt eine eigene Aufgabe.
 
-Grundlage ist das Feld `completed_at`: Es wird beim Abhaken gesetzt und beim
-Wiederöffnen wieder geleert (`setTaskCompleted` in `src/db/repositories.ts`).
-Das Fenster ist `RESTORE_WINDOW_DAYS` an derselben Stelle.
+`completed_at` bewahrt den Abschlusszeitpunkt, `completed_expires_at` die
+gesonderte bestätigte Frist. Wiederöffnen leert beide. Der Cloud-Schreibweg
+berechnet die Frist verbindlich; seine Antwort wird automatisch übernommen,
+ohne zusätzliche Bestätigungsdialoge.
 
-> **Aufpassen beim Wiederherstellen einer wiederkehrenden Aufgabe.** Der Knopf
-> öffnet nicht nur die alte Fassung, er nimmt auch ihren Nachfolger zurück –
-> sonst stünde dieselbe Aufgabe doppelt da. Das ist dieselbe Mechanik wie
-> „Rückgängig" direkt nach dem Abhaken, nur eben auch noch Tage später.
+Neue Abschlüsse speichern die ursprüngliche Gruppe und beide offenen Nachbarn.
+Wiederöffnen setzt die Aufgabe nach den gültigen Vorgänger, sonst vor den
+gültigen Nachfolger, sonst ans Gruppenende. Bei entfernter Gruppe fällt sie in
+den ungruppierten Teil. Nachbarn in andere Listen/Gruppen werden nicht verfolgt.
+Bei alten Abschlüssen ohne Anker bleibt nur ihre vorhandene relative Position.
 
-Nach den sieben Tagen ist eine Aufgabe **nicht gelöscht**, nur nicht mehr über
-die Oberfläche erreichbar. Sie bleibt in der Datenbank und wird weiterhin
-synchronisiert.
+Beim Wiederöffnen einer wiederkehrenden Aufgabe wird nur ein nachweislich
+unveränderter, noch offener nächster Termin zurückgenommen. Bearbeitete,
+verschobene, umsortierte oder bereits erledigte nächste Termine bleiben
+erhalten. Dann können beide Aufgaben offen sein. Bei alten Abschlüssen ohne
+gesicherten Ausgangsstand bleibt der nächste Termin ebenfalls erhalten.
+
+Ein Datenbankjob entfernt den fachlichen Inhalt abgelaufener Abschlüsse auch
+bei geschlossener App. Er läuft minütlich; Lesen und Schreiben prüfen die Frist
+zusätzlich. Ein technischer Löschvermerk bleibt für den Abgleich erhalten,
+damit ältere Offline-Daten die Aufgabe nicht wiederbeleben. Manuell gelöschte
+Aufgaben und Listen behalten ihren gesonderten Wiederherstellen-Ablauf.
+Die Einführung in die Produktionscloud ist noch nicht erfolgt; siehe
+[Datenbankumstellung](supabase/README.md#aufbewahrung-und-endgültiger-ablauf).
 
 ### Wiederkehrende Aufgaben
 
@@ -762,13 +885,13 @@ als erledigt stehen – so bleibt nachvollziehbar, wann etwas zuletzt getan wurd
 * **Kein Rückstand:** Liegt der Termin längst in der Vergangenheit, wird so weit
   vorgerückt, bis er in der Zukunft liegt. Eine seit drei Wochen fällige
   Wochenaufgabe springt also auf nächste Woche.
-* **Rückgängig nimmt den Nachfolger zurück.** Sonst stünde die Aufgabe doppelt
-  in der Liste – einmal offen, einmal als Nachfolger. Ein bereits erledigter
-  Nachfolger bleibt dabei unangetastet.
-* **Die abgehakte Fassung bleibt auffindbar.** Sie steht wie jede andere
-  abgehakte Aufgabe sieben Tage lang unter „Aufgaben wiederherstellen" – auch
-  dann, wenn der Nachfolger bereits existiert. Wiederherstellen holt sie zurück
-  und nimmt den Nachfolger mit (siehe [Erledigen und
+* **Rückgängig nimmt unveränderte Nachfolger zurück.** Zwischenzeitlich
+  bearbeitete, verschobene, umsortierte oder erledigte Nachfolger bleiben
+  erhalten. Der gesicherte Ausgangsstand schützt spätere Arbeit auch bei
+  identischen Zeitstempeln.
+* **Die abgehakte Fassung folgt der Listenregel.** Dauerhaft unter „Abgehakt“
+  oder bis zum Fristablauf unter „Aufgaben wiederherstellen“, auch wenn der
+  Nachfolger bereits existiert (siehe [Erledigen und
   Wiederherstellen](#erledigen-und-wiederherstellen)).
 * **Die Kennung des Nachfolgers wird berechnet**, nicht zufällig gewürfelt – aus
   Aufgabe und nächstem Termin. Hakst du dieselbe Aufgabe auf zwei Geräten
@@ -895,12 +1018,13 @@ Theme dabei von `Theme.AppCompat.Light` oder `DayNight`, ist dieser Streifen
 Diese Punkte sind Absicht, nicht Versehen. Sie sind auch im Code an der
 jeweiligen Stelle kommentiert.
 
-1. **Last Write Wins anhand von Client-Zeitstempeln.** Bearbeiten zwei Geräte
-   denselben Datensatz, geht die ältere Änderung verloren. Zusätzlich ist die
-   Uhr des Geräts die Konfliktquelle: Geht eine Uhr falsch, gewinnt dieses
-   Gerät dauerhaft. Keine CRDTs, kein 3-Wege-Merge, kein Feld-Merge.
-   *Ausbau:* Server-Zeitstempel oder Versionsnummer pro Zeile – betrifft nur
-   `src/domain/merge.ts` und die Spalten.
+1. **Geschützter Zeilenaustausch, noch keine Cloud-Fachbefehle.** Migration
+   `0014` schützt atomar einzelne Zeilen gegen veraltete Änderungen. Ein Batch
+   isoliert Ablehnungen; zusammengehörige Operationen wie Abschluss plus
+   Seriennachfolger sind damit noch kein gemeinsamer Cloud-Befehl mit
+   Alles-oder-nichts-Garantie. Dafür und für MCP fehlen gemeinsame Fachbefehle,
+   Benutzerautorisierung und gespeicherte Mutationsquittungen. Ein exakt
+   gleicher Zeilen-Retry ist bereits idempotent.
 
 2. **Vollständiger Pull statt Delta.** Ein inkrementeller Sync über
    `updated_at > cursor` hätte eine heikle Lücke: Wird jemand zu einer bereits
@@ -908,8 +1032,10 @@ jeweiligen Stelle kommentiert.
    würde die Liste nie nachgeladen. Bei den kleinen Datenmengen eines Prototyps
    ist der vollständige Pull die robustere und deutlich einfachere Variante.
 
-3. **`updated_at` kommt vom Client, nicht aus einem Trigger.** Sonst wäre der
-   Server immer „neuer“ und lokale Änderungen könnten nie gewinnen.
+3. **`updated_at` kommt vom Client.** Es ist ein Änderungszeitpunkt; der
+   Schreibschutz vergleicht den bestätigten Inhalt und entscheidet unabhängig
+   von Geräteuhren. Ein Servertrigger darf die bestätigte Eingabe nicht
+   unbemerkt verändern.
 
 4. **Teilen erfordert eine Verbindung.** Nur der Server kennt die Zuordnung
    E-Mail → Benutzer-ID. Vor dem Teilen wird deshalb erst synchronisiert, damit
@@ -1193,7 +1319,7 @@ hielte sich eine ältere Fassung für aktuell).
   als Ereignis an die Oberfläche weiter – inklusive der Begründung, etwa „Der
   Server hat mit 404 geantwortet." Ohne das bliebe ein Fehlschlag unbemerkt,
   weil das Anstoßen des Downloads sofort bestätigt wird.
-* Ab Android 8 muss prio einmal erlaubt werden, Apps zu installieren. Fehlt die
+* Ab Android 8 muss Prio einmal erlaubt werden, Apps zu installieren. Fehlt die
   Erlaubnis, öffnet die App die passende Einstellungsseite.
 
 > **Voraussetzung: Das Repository ist öffentlich.** GitHub beantwortet anonyme

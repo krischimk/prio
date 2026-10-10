@@ -6,6 +6,7 @@ import { IconButton } from './IconButton'
 import { useDialog } from './useDialog'
 
 export interface SheetProps {
+  role?: 'dialog' | 'alertdialog'
   /** Der Name des Dialogs für Vorleseprogramme. Fehlt er, gilt `title`. */
   label?: string
   title: ReactNode
@@ -48,6 +49,7 @@ export interface SheetProps {
  * Zahl an neun Stellen im Code.
  */
 export function Sheet({
+  role = 'dialog',
   label,
   title,
   subtitle,
@@ -79,7 +81,7 @@ export function Sheet({
 
       <div
         ref={panel}
-        role="dialog"
+        role={role}
         aria-modal="true"
         aria-label={label ?? (typeof title === 'string' ? title : undefined)}
         tabIndex={-1}

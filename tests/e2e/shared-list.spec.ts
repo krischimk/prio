@@ -1,14 +1,17 @@
 import { expect, test } from '@playwright/test'
 import {
+  closeListSettings,
   createList,
   createTask,
   login,
+  listAction,
   logout,
   register,
   resetServer,
   serverState,
   taskItem,
   uniqueEmail,
+  selectList,
 } from './support/helpers'
 
 /**
@@ -43,7 +46,7 @@ test('E2E 4: Benutzer A teilt eine Liste mit Benutzer B', async ({ browser, requ
     await createList(pageA, 'Projekt gemeinsam')
 
     // 2. A gibt die Liste per E-Mail-Adresse frei.
-    await pageA.getByRole('button', { name: 'Teilen', exact: true }).click()
+    await listAction(pageA, 'Teilen')
     await pageA.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(emailB)
     await pageA.getByRole('button', { name: 'Freigeben' }).click()
     await expect(pageA.getByRole('status')).toContainText(`Freigabe für ${emailB} gespeichert.`)
@@ -58,7 +61,7 @@ test('E2E 4: Benutzer A teilt eine Liste mit Benutzer B', async ({ browser, requ
     await pageB.getByLabel('Passwort', { exact: true }).fill('geheim123')
     await pageB.getByRole('button', { name: 'Anmelden', exact: true }).click()
 
-    await expect(pageB.getByTestId('list-title')).toHaveText('Projekt gemeinsam')
+    await selectList(pageB, 'Projekt gemeinsam')
     await expect(pageB.getByText('geteilt').first()).toBeVisible()
 
     // 4. B erstellt eine Aufgabe.
@@ -70,6 +73,7 @@ test('E2E 4: Benutzer A teilt eine Liste mit Benutzer B', async ({ browser, requ
       .toEqual(['Aufgabe von B'])
 
     // 5. A sieht die Änderung nach dem nächsten Sync.
+    await closeListSettings(pageA)
     await pageA.getByRole('button', { name: 'Jetzt synchronisieren' }).click()
     await expect(taskItem(pageA, 'Aufgabe von B')).toBeVisible()
 
@@ -78,7 +82,7 @@ test('E2E 4: Benutzer A teilt eine Liste mit Benutzer B', async ({ browser, requ
     //    Serverfunktion `co_member_contacts` gäbe es hier nichts vorzuschlagen,
     //    weil Mitglieder lokal nur über ihre Benutzer-ID geführt werden.
     await createList(pageB, 'Liste von B')
-    await pageB.getByRole('button', { name: 'Teilen', exact: true }).click()
+    await listAction(pageB, 'Teilen')
 
     const vorschlag = pageB.getByRole('button', { name: emailA })
     await expect(vorschlag).toBeVisible()
@@ -111,7 +115,7 @@ test('E2E 4b: nach dem Entfernen sieht Benutzer B die gemeinsame Liste nicht meh
 
     await register(pageA, emailA)
     await createList(pageA, 'Nur kurz geteilt')
-    await pageA.getByRole('button', { name: 'Teilen', exact: true }).click()
+    await listAction(pageA, 'Teilen')
     await pageA.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(emailB)
     await pageA.getByRole('button', { name: 'Freigeben' }).click()
     await expect(pageA.getByRole('status')).toContainText('Freigabe für')
@@ -120,7 +124,7 @@ test('E2E 4b: nach dem Entfernen sieht Benutzer B die gemeinsame Liste nicht meh
     await pageB.getByLabel('E-Mail', { exact: true }).fill(emailB)
     await pageB.getByLabel('Passwort', { exact: true }).fill('geheim123')
     await pageB.getByRole('button', { name: 'Anmelden', exact: true }).click()
-    await expect(pageB.getByTestId('list-title')).toHaveText('Nur kurz geteilt')
+    await selectList(pageB, 'Nur kurz geteilt')
 
     // A entfernt B.
     await pageA.getByRole('button', { name: 'Entfernen' }).click()
@@ -168,13 +172,13 @@ test('E2E 5: der Abgleich läuft nicht in einer Schleife, wenn ein Kontakt bekan
     // A teilt eine Liste mit B: damit kennt B gleich einen Kontakt.
     await register(pageA, emailA)
     await createList(pageA, 'Gemeinsame Liste')
-    await pageA.getByRole('button', { name: 'Teilen', exact: true }).click()
+    await listAction(pageA, 'Teilen')
     await pageA.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(emailB)
     await pageA.getByRole('button', { name: 'Freigeben' }).click()
     await expect(pageA.getByRole('status')).toContainText(`Freigabe für ${emailB} gespeichert.`)
 
     await login(pageB, emailB)
-    await expect(pageB.getByTestId('list-title')).toHaveText('Gemeinsame Liste')
+    await selectList(pageB, 'Gemeinsame Liste')
 
     let abrufe = 0
     pageB.on('request', (anfrage) => {

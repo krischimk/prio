@@ -196,8 +196,16 @@ create policy tasks_delete_member on public.tasks
 -- -----------------------------------------------------------------------------
 grant usage on schema public to authenticated;
 
-grant select, insert, update, delete on public.lists to authenticated;
-grant select, insert, update, delete on public.list_members to authenticated;
-grant select, insert, update, delete on public.tasks to authenticated;
+grant select on public.lists, public.list_members, public.tasks to authenticated;
+-- Die Sammeldatei wird vollständig wiederholt. Eine bereits aktivierte
+-- Basisprüfung (0014) darf dabei auch zwischen zwei Dateien nicht umgehbar sein.
+do $$
+begin
+  if to_regprocedure('public.sync_push(jsonb)') is null then
+    grant insert, update, delete on public.lists, public.list_members, public.tasks to authenticated;
+  else
+    revoke insert, update, delete, truncate on public.lists, public.list_members, public.tasks from public, anon, authenticated;
+  end if;
+end;
+$$;
 grant select on public.profiles to authenticated;
-

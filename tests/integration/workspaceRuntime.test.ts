@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createWorkspaceRuntime, type WorkspaceRuntime } from '../../src/app/workspaceRuntime'
 import { FakeNetworkMonitor } from '../support/fakeAuth'
 import { createFakeServer } from '../support/fakeGateway'
+import { deleteLocalDatabase } from '../../src/db/localDb'
 
 /**
  * Die Laufzeit des Arbeitsbereichs (Integration).
@@ -17,8 +18,9 @@ import { createFakeServer } from '../support/fakeGateway'
 describe('Arbeitsbereich-Laufzeit', () => {
   const laufzeiten: WorkspaceRuntime[] = []
 
-  afterEach(() => {
+  afterEach(async () => {
     for (const laufzeit of laufzeiten.splice(0)) laufzeit.schliessen()
+    await deleteLocalDatabase('user-laufzeit')
   })
 
   async function starte() {

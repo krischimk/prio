@@ -66,6 +66,11 @@ export function formatCompletedLabel(completedAt: string): string {
   return `abgehakt am ${formatDateTime(completedAt)}`
 }
 
+/** Erstellzeitpunkt, mit derselben Schreibweise in beiden Ansichten. */
+export function formatCreatedLabel(createdAt: string): string {
+  return `Erstellt: ${formatDateTime(createdAt)}`
+}
+
 export function formatDueLabel(dueAt: string, completed: boolean): DueLabel {
   const zeitpunkt = formatDateTime(dueAt)
   const overdue = !completed && isOverdue(dueAt)

@@ -5,10 +5,12 @@ import {
   AUFGABEN_FELDER,
   LISTEN_FELDER,
   MITGLIEDER_FELDER,
+  LISTENAUSWAHL_FELDER,
+  STARTANSICHT_FELDER,
   NUR_LOKALE_FELDER,
 } from '../../src/domain/fields'
-import { toRemoteList, toRemoteMember, toRemoteTask } from '../../src/domain/mapping'
-import { localList, localMember, localTask } from '../support/factories'
+import { toRemoteList, toRemoteMember, toRemoteTask, toRemotePreference, toRemoteUserPreference } from '../../src/domain/mapping'
+import { localList, localMember, localTask, localListPreference, localUserPreference } from '../support/factories'
 
 /**
  * Der Feldkatalog (unit).
@@ -45,6 +47,8 @@ describe('Feldkatalog', () => {
     expect([...listenFelder].sort()).toEqual([...ohneLokales(LISTEN_FELDER)].sort())
     expect([...aufgabenFelder].sort()).toEqual([...ohneLokales(AUFGABEN_FELDER)].sort())
     expect([...mitgliederFelder].sort()).toEqual([...ohneLokales(MITGLIEDER_FELDER)].sort())
+    expect(Object.keys(toRemotePreference(localListPreference())).sort()).toEqual(ohneLokales(LISTENAUSWAHL_FELDER).sort())
+    expect(Object.keys(toRemoteUserPreference(localUserPreference())).sort()).toEqual(ohneLokales(STARTANSICHT_FELDER).sort())
   })
 
   it('findet jedes Feld in einer Migration wieder', () => {
@@ -55,6 +59,8 @@ describe('Feldkatalog', () => {
       ['lists', LISTEN_FELDER],
       ['tasks', AUFGABEN_FELDER],
       ['list_members', MITGLIEDER_FELDER],
+      ['list_preferences', LISTENAUSWAHL_FELDER],
+      ['user_preferences', STARTANSICHT_FELDER],
     ] as const) {
       for (const feld of felder) {
         if (NUR_LOKALE_FELDER.includes(feld as 'dirty')) continue
@@ -71,12 +77,12 @@ describe('Feldkatalog', () => {
 
   it('prüft auch die Erwartung des Prüfskripts gegen den Katalog', () => {
     const skript = readFileSync(join(process.cwd(), 'scripts', 'db-apply.mjs'), 'utf8')
-    const bloecke = [...skript.matchAll(/\['(lists|tasks|list_members)',\s*'([a-z_]+)',\s*'(\d{4})'\]/g)]
+    const bloecke = [...skript.matchAll(/\['(lists|tasks|list_members|list_preferences|user_preferences)',\s*'([a-z_]+)',\s*'(\d{4})'\]/g)]
 
     expect(bloecke.length).toBeGreaterThan(0)
     for (const [, tabelle, spalte] of bloecke) {
       const felder: readonly string[] =
-        tabelle === 'lists' ? LISTEN_FELDER : tabelle === 'tasks' ? AUFGABEN_FELDER : MITGLIEDER_FELDER
+        tabelle === 'lists' ? LISTEN_FELDER : tabelle === 'tasks' ? AUFGABEN_FELDER : tabelle === 'list_members' ? MITGLIEDER_FELDER : tabelle === 'list_preferences' ? LISTENAUSWAHL_FELDER : STARTANSICHT_FELDER
       expect(felder, `${tabelle}.${spalte} steht nicht im Feldkatalog`).toContain(spalte)
     }
   })

@@ -1,3 +1,4 @@
+import { openTaskEditor } from './support/helpers'
 import { expect, test } from '@playwright/test'
 import {
   createList,
@@ -8,6 +9,7 @@ import {
   resetServer,
   taskItem,
   uniqueEmail,
+  selectList,
 } from './support/helpers'
 
 /**
@@ -47,6 +49,9 @@ test('E2E 1b: nach erneutem Anmelden sind die Daten wieder da (Sitzung + lokale 
   await logout(page)
   await login(page, email)
 
+  await expect(page.getByRole('heading', { name: 'Gesamtansicht', exact: true })).toBeVisible()
+  await selectList(page, 'Arbeit')
+
   await expect(page.getByTestId('list-title')).toHaveText('Arbeit')
   await expect(taskItem(page, 'Bleibt erhalten')).toBeVisible()
 })
@@ -59,7 +64,7 @@ test('E2E 2: Benutzer bearbeitet und erledigt eine Aufgabe', async ({ page }) =>
   await createTask(page, 'Erster Titel')
 
   // Bearbeiten
-  await taskItem(page, 'Erster Titel').getByRole('button', { name: 'Bearbeiten' }).click()
+  await openTaskEditor(page, 'Erster Titel')
   const form = page.getByRole('form', { name: 'Aufgabe bearbeiten: Erster Titel' })
   await form.getByLabel('Titel', { exact: true }).fill('Neuer Titel')
   await form.getByLabel('Beschreibung (optional)', { exact: true }).fill('Mit Notiz')
@@ -81,6 +86,7 @@ test('E2E 2: Benutzer bearbeitet und erledigt eine Aufgabe', async ({ page }) =>
   await expect(taskItem(page, 'Neuer Titel')).toBeVisible()
 
   // Löschen
-  await taskItem(page, 'Neuer Titel').getByRole('button', { name: /Aufgabe löschen/ }).click()
+  await openTaskEditor(page, 'Neuer Titel')
+  await page.getByRole('dialog', { name: 'Aufgabe', exact: true }).getByRole('button', { name: 'Aufgabe löschen' }).click()
   await expect(page.getByText('Noch keine Aufgaben in dieser Liste.')).toBeVisible()
 })

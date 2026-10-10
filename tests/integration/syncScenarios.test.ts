@@ -189,35 +189,23 @@ describe('Sync-Szenarien', () => {
    * ging gar nichts durch, alles blieb `dirty`, und der Zähler „N Änderungen
    * warten“ wurde nie leer – alle 30 Sekunden derselbe Datenberg.
    */
-  it('lädt hoch, was geht, und meldet nur die abgelehnte Tabelle', async () => {
-    // Eine Liste, die dem Benutzer nicht gehört: Der Server weist die Tabelle
-    // „lists“ ab (RLS). Die Aufgaben hängen aber an einer Liste, die ohne die
-    // abgelehnte Liste nicht existiert – sie können deshalb (noch) nicht gehen,
-    // und genau das sagt das Ergebnis.
+  it('eine abgelehnte Zeile blockiert weder eine gültige Liste noch deren Aufgabe', async () => {
+    // Fremde und eigene Zeilen in derselben Tabelle: Nur die fremde scheitert.
     await device.repositories.createList('Fremde Liste', 'user-andere')
     const eigene = await device.repositories.createList('Eigene Liste', userId)
     await device.repositories.createTask({ listId: eigene.id, title: 'Geht durch' })
 
     const result = await device.engine.sync()
 
-    expect(result.pushed).toBe(0)
-    expect([...server.lists.values()]).toEqual([])
-    // Nichts ist verloren: Beide Listen und die Aufgabe bleiben vorgemerkt.
-    expect(await countDirty(device.db)).toBe(3)
+    expect(result.pushed).toBe(2)
+    expect([...server.lists.values()].map(row => row.id)).toEqual([eigene.id])
+    expect([...server.tasks.values()].map(row => row.title)).toEqual(['Geht durch'])
+    expect(await countDirty(device.db)).toBe(1)
     expect(await countAbgelehnt(device.db)).toBe(0)
   })
 
   it('legt eine dauerhaft abgelehnte Zeile nach ein paar Versuchen beiseite', async () => {
-    /*
-     * Eigene Uhr, die bei jedem Lesen weiterläuft.
-     *
-     * Der Stand einer Zeile (`updated_at`) ist die Kennung dafür, ob sie sich
-     * geändert hat. Mit einer festen Testuhr trüge eine Umbenennung denselben
-     * Zeitstempel wie der abgelehnte Stand – die Zeile bliebe beiseite, obwohl
-     * sie neu ist. Zwei Änderungen in derselben Millisekunde sind auch in
-     * Wirklichkeit derselbe Stand; dann hilft der nächste Sync nach einer
-     * späteren Änderung.
-     */
+    // Eigener Testbestand; Ablehnungen gehören zum vollständigen Inhalt.
     const uhr = createFixedClock()
     const eigenes = await createDevice({
       userId,
@@ -244,10 +232,8 @@ describe('Sync-Szenarien', () => {
     expect(await countDirty(device.db)).toBe(0)
     expect((await device.repositories.getList(liste.id))?.name).toBe('Haushalt')
 
-    // Und eine neue lokale Änderung wird wieder versucht – die Uhr läuft
-    // dabei weiter, sonst trüge sie denselben Stand wie der abgelehnte.
+    // Ein anderer Inhalt wird auch ohne Änderung des Zeitstempels versucht.
     server.failPushWith = null
-    uhr.advance(1000)
     await device.repositories.renameList(liste.id, 'Haushalt neu')
     await device.engine.sync()
     expect(await countAbgelehnt(device.db)).toBe(0)

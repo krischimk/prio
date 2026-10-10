@@ -1,35 +1,22 @@
-import { useCallback, useState, type FormEvent } from 'react'
+import { useContext, useEffect, useRef, type FormEvent } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
-import type { TaskReminder } from '../domain/reminder'
+import { sameData } from '../domain/equality'
+import { taskEditBase, TaskEditConflict, type TaskEditInput } from '../domain/taskEdit'
 import type { LocalTask } from '../domain/types'
+import { TaskDraftContext, type TaskDraft, type TaskFormWerte } from './taskDraftContext'
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from './datetime'
 
-/** Die Felder eines Aufgabenformulars – in der Form, in der sie getippt werden. */
-export interface TaskFormWerte {
-  title: string
-  description: string
-  /** Als `datetime-local`-Wert, so wie das Feld ihn führt. */
-  dueAt: string
-  recurrence: string
-  reminders: TaskReminder[]
-  sectionId: string | null
-}
-
+export type { TaskFormWerte } from './taskDraftContext'
 export interface TaskForm {
   werte: TaskFormWerte
   setzen: <F extends keyof TaskFormWerte>(feld: F, wert: TaskFormWerte[F]) => void
-  /** Leert das Formular – für das Anlegen mehrerer Aufgaben hintereinander. */
   zuruecksetzen: () => void
-  /** Die Fälligkeit als Zeitpunkt, wie `ReminderList` und `RecurrenceSelect` ihn brauchen. */
   dueIso: string | null
   busy: boolean
+  error: string | null
+  /** Ersetzt den Entwurf bewusst durch den über Hooks gelesenen Stand. */
+  neuLaden: (() => void) | null
   speichern: (event: FormEvent) => Promise<void>
-  /**
-   * `true`, wenn im Formular etwas anders steht als beim Öffnen.
-   *
-   * Gebraucht wird das beim Schließen über das Kreuz: Die Änderungen sind dann
-   * nicht gespeichert, und das soll nicht stillschweigend passieren.
-   */
   geaendert: boolean
 }
 
@@ -44,54 +31,41 @@ function werteVon(task: LocalTask | null): TaskFormWerte {
   }
 }
 
-/**
- * Der Zustand eines Aufgabenformulars – einmal, für alle drei Formulare.
- *
- * Dieselben Felder, dieselben Umwandlungen (`datetime-local` ↔ Zeitpunkt),
- * dieselbe Prüfung („ohne Titel speichern wir nicht") und dieselbe Sperre
- * während des Schreibens standen vorher dreimal im Code: in der Aufgabenzeile,
- * in der Detailansicht und in der Eingabezeile. Sie waren schon
- * auseinandergelaufen – das Anlegen in der breiten Ansicht konnte weniger als
- * das auf dem Telefon.
- *
- * Das **Aussehen** gehört nicht hierher: `TaskFields` rendert die Felder, der
- * Rahmen (Karte, Blatt, Eingabezeile) bleibt beim Aufrufer.
- */
-export function useTaskForm({
-  task,
-  listId,
-  onSaved,
-}: {
-  /** `null` legt eine neue Aufgabe an. */
+/** Formularverhalten und Umwandlungen; Fachprüfung kommt aus taskEdit. */
+export function useTaskForm({ task, listId, onSaved }: {
   task: LocalTask | null
   listId: string
-  /** Wird nach erfolgreichem Speichern gerufen – schließen bzw. leeren. */
   onSaved: () => void
 }): TaskForm {
   const { repositories } = useWorkspace()
-  const [werte, setWerte] = useState<TaskFormWerte>(() => werteVon(task))
-  /**
-   * Der Stand beim Öffnen – daran wird „geändert" gemessen.
-   *
-   * Als Zustand, nicht als Ref: Gelesen wird er beim Rendern, und ein Ref
-   * gehört nicht dorthin (er löst kein Neuzeichnen aus).
-   */
-  const [start, setStart] = useState<TaskFormWerte>(() => werteVon(task))
-  const [busy, setBusy] = useState(false)
+  const drafts = useContext(TaskDraftContext)
+  const key = task ? `task:${task.id}` : `new:${listId}`
+  const activeKey = useRef<string | null>(null)
+  useEffect(() => {
+    activeKey.current = key
+    return () => { activeKey.current = null }
+  }, [key])
+  if (!drafts) throw new Error('useTaskForm braucht einen TaskDraftProvider.')
+  const initial: TaskDraft = {
+    taskId: task?.id ?? null,
+    listId: task?.list_id ?? listId,
+    werte: werteVon(task),
+    start: werteVon(task),
+    base: task ? taskEditBase(task) : null,
+    busy: false,
+    error: null,
+    conflict: false,
+  }
+  const draft = drafts.drafts[key] ?? initial
+  const { werte, start, busy, error } = draft
 
-  const setzen = useCallback(<F extends keyof TaskFormWerte>(feld: F, wert: TaskFormWerte[F]) => {
-    setWerte((alte) => ({ ...alte, [feld]: wert }))
-  }, [])
-
-  const zuruecksetzen = useCallback(() => {
-    setStart(werteVon(null))
-    setWerte(werteVon(null))
-  }, [])
-
+  const setzen = <F extends keyof TaskFormWerte>(feld: F, wert: TaskFormWerte[F]) => {
+    drafts.change(key, draft, previous => ({ ...previous, werte: { ...previous.werte, [feld]: wert } }))
+  }
+  const zuruecksetzen = () => drafts.discard(key)
   const speichern = async (event: FormEvent) => {
     event.preventDefault()
-    if (busy || werte.title.trim().length === 0) return
-    setBusy(true)
+    if (werte.title.trim().length === 0 || !drafts.beginSave(key, draft)) return
     try {
       const eingabe = {
         title: werte.title,
@@ -101,26 +75,34 @@ export function useTaskForm({
         reminders: werte.reminders,
         sectionId: werte.sectionId,
       }
-      if (task === null) {
-        await repositories.createTask({ listId, ...eingabe })
+      if (draft.taskId === null) {
+        await repositories.createTask({ listId: draft.listId, ...eingabe })
       } else {
-        await repositories.updateTask(task.id, eingabe)
+        const patch: TaskEditInput = {}
+        if (werte.title !== start.title) patch.title = eingabe.title
+        if (werte.description !== start.description) patch.description = eingabe.description
+        if (werte.dueAt !== start.dueAt) patch.dueAt = eingabe.dueAt
+        if (werte.recurrence !== start.recurrence) patch.recurrence = eingabe.recurrence
+        if (!sameData(werte.reminders, start.reminders)) patch.reminders = eingabe.reminders
+        if (werte.sectionId !== start.sectionId) patch.sectionId = eingabe.sectionId
+        await repositories.updateTask(draft.taskId, patch, { base: draft.base ?? undefined })
       }
-      onSaved()
-    } finally {
-      setBusy(false)
+      drafts.saved(key)
+      // Ein später Abschluss darf keinen inzwischen anderen Editor schließen.
+      if (activeKey.current === key) onSaved()
+    } catch (cause) {
+      const conflict = cause instanceof TaskEditConflict
+      const message = conflict
+        ? 'Die Aufgabe wurde inzwischen geändert. Deine Eingaben bleiben erhalten. Lade den aktuellen Stand, bevor du weiterbearbeitest.'
+        : cause instanceof Error ? cause.message : 'Speichern ist fehlgeschlagen. Bitte versuche es erneut.'
+      drafts.failed(key, message, conflict)
     }
   }
-
   return {
-    werte,
-    setzen,
-    zuruecksetzen,
-    dueIso: fromDateTimeLocalValue(werte.dueAt),
-    busy,
+    werte, setzen, zuruecksetzen,
+    dueIso: fromDateTimeLocalValue(werte.dueAt), busy, error,
+    neuLaden: task && draft.conflict ? () => drafts.change(key, initial, () => initial) : null,
     speichern,
-    // Ein Vergleich der Werte, kein zweites Buchführungsfeld: So kann die
-    // Anzeige nicht auseinanderlaufen.
-    geaendert: JSON.stringify(werte) !== JSON.stringify(start),
+    geaendert: !sameData(werte, start),
   }
 }

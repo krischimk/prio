@@ -33,6 +33,26 @@ export function PlusIcon({ className = 'h-7 w-7' }: { className?: string }) {
   )
 }
 
+export function EditIcon({ className = 'h-5 w-5' }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
+    <path d="m15 5 4 4M4 20l4-1 12-12a2.8 2.8 0 0 0-4-4L4 15z" />
+  </svg>
+}
+
+export function SettingsIcon({ className = 'h-5 w-5' }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
+    <path d="M4 6h16M4 12h16M4 18h16" />
+    <path d="M8 3v6M16 9v6M10 15v6" />
+  </svg>
+}
+
+export function OverviewIcon({ className = 'h-5 w-5' }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
+    <rect x="3" y="3" width="7" height="7" rx="2" /><rect x="14" y="3" width="7" height="7" rx="2" />
+    <rect x="3" y="14" width="7" height="7" rx="2" /><rect x="14" y="14" width="7" height="7" rx="2" />
+  </svg>
+}
+
 export function CloseIcon({ className = 'h-5 w-5' }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>

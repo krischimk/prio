@@ -57,9 +57,9 @@ const buttonBase = `inline-flex items-center justify-center gap-2 rounded-contro
 
 const buttonSizes = {
   /** Der Standardknopf. */
-  md: 'px-3 py-2.5 text-body',
+  md: 'min-h-11 px-4 py-2.5 text-body',
   /** Kompakt – Kopfzeilen, dichte Bereiche. */
-  sm: 'px-2 py-1 text-meta',
+  sm: 'min-h-8 px-2 py-1.5 text-meta',
   /** Blockknopf: gleiche Schrift, mehr Höhe für die Trefferfläche. */
   block: 'px-3 py-3 text-body',
   /** Nur ein Symbol (rundum gleiche Polsterung). */
@@ -67,8 +67,8 @@ const buttonSizes = {
 } as const
 
 const buttonVariants = {
-  primary: 'bg-brand text-on-brand hover:bg-brand-soft',
-  secondary: 'border border-line-strong bg-surface text-ink hover:bg-raised',
+  primary: 'bg-brand text-on-brand hover:bg-brand-hover active:bg-brand-hover',
+  secondary: 'border border-line bg-surface text-ink hover:border-line-strong hover:bg-raised active:bg-raised',
   ghost: 'text-ink-muted hover:bg-raised hover:text-ink',
   /**
    * Ein Bediensymbol ohne Rahmen. `active:` ist die Rückmeldung auf dem
@@ -103,7 +103,7 @@ export function buttonClass(
 
 
 
-export const input = `w-full rounded-control border border-line-strong bg-surface px-3 py-2 text-body text-ink placeholder:text-ink-faint ${focusRing}`
+export const input = `min-h-11 min-w-0 w-full rounded-control border border-line-strong bg-surface px-3 py-2.5 text-body text-ink placeholder:text-ink-faint ${focusRing}`
 
 /**
  * Schmales Feld für die Zahlen einer eigenen Vorlaufzeit.
@@ -137,7 +137,7 @@ export const layer = {
   top: 'z-60',
 } as const
 
-/** Der Grund hinter allem: reines Schwarz, kein Grau. */
+/** Der gemeinsame Grund hinter allen Ansichten. */
 export const appBackground = 'bg-page'
 
 /** Eine Karte: Panels, aufgeklappte Bereiche, Dialoginhalte. */
@@ -154,7 +154,7 @@ export const cardSoft = 'rounded-card border border-line bg-surface/40 p-3'
 
 /** Der leere Zustand: gestrichelter Rahmen statt einer Fläche. */
 export const emptyState =
-  'rounded-card border border-dashed border-line px-3 py-6 text-center text-body text-ink-faint'
+  'rounded-card border border-line bg-surface/40 px-5 py-10 text-center text-body text-ink-muted'
 
 export const link = `rounded-control text-brand-soft underline-offset-2 hover:underline ${focusRing}`
 

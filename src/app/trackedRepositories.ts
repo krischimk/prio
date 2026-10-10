@@ -31,9 +31,13 @@ import type { Repositories } from '../db/repositories'
 
 /** Schreibende Operationen: lösen Abgleich und Neuladen aus. */
 export const SCHREIBEND = [
+  'setListInOverview',
+  'updateUserPreferences',
+  'resolveCloudConflict',
   'createList',
   'renameList',
   'setListIcon',
+  'setListKeepCompleted',
   'addListSection',
   'renameListSection',
   'deleteListSection',
@@ -60,10 +64,14 @@ export const NUR_LOKAL = [
 
 /** Reine Lesezugriffe – hier darf nichts gezählt werden. */
 export const LESEND = [
+  'listListPreferences',
+  'getUserPreferences',
+  'listCloudConflicts',
   'getList',
   'listLists',
   'getTask',
   'listTasks',
+  'listCompletedTasks',
   'listRestorableTasks',
   'listMembers',
   'listReminderPresets',

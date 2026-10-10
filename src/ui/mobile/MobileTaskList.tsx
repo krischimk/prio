@@ -24,14 +24,13 @@ import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
 import type { DraggableAttributes } from '@dnd-kit/core'
 import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities/useSyntheticListeners'
 import { CSS } from '@dnd-kit/utilities'
-import { useWorkspace } from '../../app/useWorkspace'
-import { useUndo } from '../useUndo'
 import type { ListSection, LocalTask } from '../../domain/types'
 import { groupTasks } from '../../domain/sections'
 import { focusRing, appBackground, layer } from '../styles'
 import { leerAufgaben } from '../emptyTexts'
 import { TaskDescription } from '../TaskDescription'
 import { TaskFacts } from '../TaskFacts'
+import { TaskCheckbox } from '../TaskCheckbox'
 import { SectionHeader } from '../SectionHeader'
 import { useCollapsedSections } from '../collapsedSections'
 import { OHNE_BEREICH, ordneUm } from './ordnen'
@@ -431,29 +430,17 @@ function MobileTaskRow({
   /** Die schwebende Kopie: ohne Kennung, ohne Zieh-Griffe, ohne Zeigerereignisse. */
   klon?: boolean
 }) {
-  const { repositories } = useWorkspace()
-  const { offerUndo } = useUndo()
-
   return (
     <li
       ref={klon ? undefined : setNodeRef}
       data-task-row={klon ? undefined : true}
       data-id={klon ? undefined : task.id}
       style={klon ? undefined : style}
-      className={`flex items-start gap-3 border-b border-line-soft ${appBackground} px-4 py-3 ${
+      className={`flex items-start gap-2 border-b border-line-soft ${appBackground} px-3 py-2 ${
         klon ? layer.row + ' shadow-lg shadow-page/50' : isDragging || istAktiv === task.id ? 'opacity-0' : ''
       }`}
     >
-      <input
-        type="checkbox"
-        className="mt-0.5 h-5 w-5 shrink-0 accent-brand"
-        checked={task.completed}
-        aria-label={`Aufgabe erledigen: ${task.title}`}
-        onChange={(event) => {
-          void repositories.setTaskCompleted(task.id, event.target.checked)
-          if (event.target.checked) offerUndo(task)
-        }}
-      />
+      <TaskCheckbox task={task} />
 
       {/*
         Die Zieh-Griffe und der Klick zum Öffnen liegen auf dem ganzen Bereich
@@ -476,10 +463,11 @@ function MobileTaskRow({
             if (isDragging) return
             onOpenTask(task)
           }}
-          className={`${focusRing} min-w-0 text-left`}
+          className={`${focusRing} min-h-11 min-w-0 rounded-control py-2 text-left`}
           data-testid={klon ? undefined : 'task-row'}
+          data-focus-key={klon ? undefined : `task:${task.id}`}
         >
-          <TaskFacts task={task} currentUserId={currentUserId} dichte="mobil" />
+          <TaskFacts task={task} currentUserId={currentUserId} />
         </button>
         {task.description ? (
           <TaskDescription text={task.description} className="mt-0.5" />

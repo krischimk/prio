@@ -6,6 +6,7 @@ import { errorMessage, focusRing, input } from './styles'
 import { appBackground } from './styles'
 import { leerListen } from './emptyTexts'
 import { Button } from './components/Button'
+import { OverviewIcon } from './icons'
 
 /**
  * Seitenleiste mit allen sichtbaren Listen.
@@ -22,7 +23,7 @@ export function Sidebar({
 }: {
   lists: LocalList[]
   selectedListId: string | null
-  onSelect: (listId: string) => void
+  onSelect: (listId: string | null) => void
   currentUserId: string
 }) {
   const { repositories } = useWorkspace()
@@ -48,9 +49,17 @@ export function Sidebar({
 
   return (
     <aside
-      className={`h-screen w-72 shrink-0 overflow-y-auto border-r border-line ${appBackground} p-4`}
+      className={`h-screen w-64 shrink-0 overflow-y-auto border-r border-line ${appBackground} p-5`}
       aria-label="Listen"
     >
+      <div className="mb-8 flex items-center gap-3 px-2">
+        <span className="flex h-8 w-8 items-center justify-center rounded-control bg-brand text-title font-semibold text-on-brand" aria-hidden="true">P</span>
+        <span className="text-heading font-semibold tracking-tight text-ink-strong">Prio</span>
+      </div>
+      <button type="button" onClick={() => onSelect(null)} aria-current={selectedListId === null ? 'page' : undefined}
+        className={`${focusRing} mb-6 flex min-h-11 w-full items-center gap-3 rounded-control px-3 py-3 text-left text-body ${selectedListId === null ? 'bg-brand-tint text-brand-faint' : 'text-ink-soft hover:bg-surface'}`}>
+        <OverviewIcon />Gesamtansicht
+      </button>
       <h2 className="mb-3 text-meta font-semibold uppercase tracking-wide text-ink-faint">Listen</h2>
 
       <ul className="mb-4 space-y-1" data-testid="list-of-lists">
@@ -62,9 +71,9 @@ export function Sidebar({
                 type="button"
                 onClick={() => onSelect(list.id)}
                 aria-current={selected ? 'true' : undefined}
-                className={`${focusRing} flex w-full items-center justify-between gap-2 rounded-control px-2 py-2 text-left text-body ${
+                className={`${focusRing} flex min-h-11 w-full items-center justify-between gap-2 rounded-control px-3 py-2 text-left text-body ${
                   selected
-                    ? 'bg-brand-tint/60 text-brand-faint'
+                    ? 'bg-brand-tint text-brand-faint'
                     : 'text-ink-soft hover:bg-surface hover:text-ink'
                 }`}
               >
@@ -107,9 +116,6 @@ export function Sidebar({
         ) : null}
       </form>
 
-      <p className="mt-4 text-meta text-ink-faint">
-        Änderungen werden lokal gespeichert und später synchronisiert.
-      </p>
     </aside>
   )
 }

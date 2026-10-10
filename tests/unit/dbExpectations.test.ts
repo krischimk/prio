@@ -62,8 +62,10 @@ describe('Erwartete Spalten in db:check', () => {
         new RegExp(`\\b${erwartung.tabelle}\\b`, 'i').test(sql),
         `${erwartung.migration} nennt die Tabelle ${erwartung.tabelle} nicht`,
       ).toBe(true)
+      const tableBody = new RegExp(`create table(?: if not exists)? public\\.${erwartung.tabelle}\\s*\\(([\\s\\S]*?)\\n\\);`, 'i').exec(sql)?.[1] ?? ''
       expect(
-        new RegExp(`add column(?: if not exists)?\\s+"?${erwartung.spalte}"?\\b`, 'i').test(sql),
+        new RegExp(`add column(?: if not exists)?\\s+"?${erwartung.spalte}"?\\b`, 'i').test(sql)
+          || new RegExp(`^\\s*${erwartung.spalte}\\s+\\w+`, 'm').test(tableBody),
         `${erwartung.migration} legt die Spalte ${erwartung.spalte} nicht an`,
       ).toBe(true)
     },

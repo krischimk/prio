@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { appBackground, layer } from '../styles'
 import { useDialog } from './useDialog'
+import { useIsDesktop } from '../../app/useIsDesktop'
 
 export interface ScreenProps {
   /** Der Name des Dialogs für Vorleseprogramme. */
@@ -28,8 +29,11 @@ export interface ScreenProps {
  */
 export function Screen({ label, onClose, onBack, name = 'flaeche', header, children }: ScreenProps) {
   const { panel, onKeyDown } = useDialog<HTMLDivElement>({ onClose, onBack, name })
+  const isDesktop = useIsDesktop()
 
   return (
+    <div className={`fixed inset-0 ${layer.screen} flex ${isDesktop ? 'items-center justify-center p-6' : ''}`}>
+    {isDesktop ? <div className="absolute inset-0 bg-page/70 backdrop-blur-sm" aria-hidden="true" onClick={onClose} /> : null}
     <div
       ref={panel}
       role="dialog"
@@ -37,10 +41,11 @@ export function Screen({ label, onClose, onBack, name = 'flaeche', header, child
       aria-label={label}
       tabIndex={-1}
       onKeyDown={onKeyDown}
-      className={`fixed inset-0 ${layer.screen} flex flex-col outline-none ${appBackground}`}
+      className={`relative flex min-h-0 w-full flex-col outline-none ${appBackground} ${isDesktop ? 'max-h-[90dvh] max-w-2xl overflow-hidden rounded-sheet border border-line shadow-2xl shadow-page/50' : 'h-dvh'}`}
     >
       {header}
       {children}
+    </div>
     </div>
   )
 }

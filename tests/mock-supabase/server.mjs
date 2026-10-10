@@ -20,7 +20,7 @@ import { createServer } from 'node:http'
 
 const PORT = Number(process.argv[2] ?? process.env.MOCK_SUPABASE_PORT ?? 54321)
 
-/** @type {{users: Map<string, any>, sessions: Map<string, string>, refreshTokens: Map<string, string>, lists: Map<string, any>, members: Map<string, any>, tasks: Map<string, any>}} */
+/** @type {{users: Map<string, any>, sessions: Map<string, string>, refreshTokens: Map<string, string>, lists: Map<string, any>, members: Map<string, any>, tasks: Map<string, any>, preferences: Map<string, any>, userPreferences: Map<string, any>}} */
 let state = emptyState()
 
 function emptyState() {
@@ -31,10 +31,19 @@ function emptyState() {
     lists: new Map(),
     members: new Map(), // `${list_id}:${user_id}` -> row
     tasks: new Map(),
+    preferences: new Map(),
+    userPreferences: new Map(),
   }
 }
 
 const memberKey = (listId, userId) => `${listId}:${userId}`
+
+function canonical(value) {
+  if (Array.isArray(value)) return value.map(canonical)
+  if (value && typeof value === 'object') return Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])]))
+  return value
+}
+
 
 function canAccessList(userId, list) {
   if (!list) return false
@@ -42,6 +51,15 @@ function canAccessList(userId, list) {
   if (list.deleted_at !== null) return false
   const membership = state.members.get(memberKey(list.id, userId))
   return Boolean(membership) && membership.deleted_at === null
+}
+
+function expireCompleted() {
+  const now = new Date().toISOString()
+  for (const [id, task] of state.tasks) {
+    if (task.completed && !task.expired_at && task.completed_expires_at && Date.parse(task.completed_expires_at) <= Date.now()) {
+      state.tasks.set(id, { ...task, expired_at: now, deleted_at: now, updated_at: now, title: 'Abgelaufene Aufgabe', description: null, due_at: null, reminders: [], recurrence: null, successor_id: null, section_id: null, reopen_context: null })
+    }
+  }
 }
 
 function publicUser(user) {
@@ -155,6 +173,8 @@ async function handle(request, response) {
       lists: [...state.lists.values()],
       members: [...state.members.values()],
       tasks: [...state.tasks.values()],
+      preferences: [...state.preferences.values()],
+      userPreferences: [...state.userPreferences.values()],
     })
     return
   }
@@ -259,10 +279,8 @@ async function handleTable(table, request, response, url) {
     return
   }
 
-  const storeFor = () =>
-    table === 'lists' ? state.lists : table === 'list_members' ? state.members : state.tasks
-
   if (request.method === 'GET') {
+    expireCompleted()
     const rows =
       table === 'lists'
         ? [...state.lists.values()].filter((list) => canAccessList(user.id, list))
@@ -271,62 +289,24 @@ async function handleTable(table, request, response, url) {
               (member) =>
                 member.user_id === user.id || state.lists.get(member.list_id)?.owner_id === user.id,
             )
+          : table === 'list_preferences'
+            ? [...state.preferences.values()].filter(pref => pref.user_id === user.id)
+          : table === 'user_preferences'
+            ? [...state.userPreferences.values()].filter(pref => pref.id === user.id)
           : [...state.tasks.values()].filter((task) =>
               canAccessList(user.id, state.lists.get(task.list_id)),
             )
-    send(response, 200, rows, { 'Content-Range': `0-${Math.max(rows.length - 1, 0)}/${rows.length}` })
+    const composite = table === 'list_members' || table === 'list_preferences'
+    const ordered = rows.sort((a,b) => (composite ? memberKey(a.list_id,a.user_id) : a.id).localeCompare(composite ? memberKey(b.list_id,b.user_id) : b.id))
+    const start=Number(url.searchParams.get('offset') ?? 0)
+    const limit=Number(url.searchParams.get('limit') ?? rows.length)
+    const page=ordered.slice(start,start+limit)
+    send(response, 200, page, { 'Content-Range': `${start}-${Math.max(start+page.length-1,start)}/${rows.length}` })
     return
   }
 
   if (request.method === 'POST') {
-    const body = await readBody(request)
-    const rows = Array.isArray(body) ? body : [body]
-
-    // Dieselben Regeln wie in supabase/migrations/0002_rls.sql.
-    for (const row of rows) {
-      if (table === 'lists') {
-        const existing = state.lists.get(row.id)
-        if (row.owner_id !== user.id || (existing && existing.owner_id !== user.id)) {
-          sendPostgrestError(
-            response,
-            403,
-            'new row violates row-level security policy for table "lists"',
-            '42501',
-          )
-          return
-        }
-      }
-      if (table === 'list_members') {
-        const list = state.lists.get(row.list_id)
-        if (!list || list.owner_id !== user.id) {
-          sendPostgrestError(
-            response,
-            403,
-            'new row violates row-level security policy for table "list_members"',
-            '42501',
-          )
-          return
-        }
-      }
-      if (table === 'tasks' && !canAccessList(user.id, state.lists.get(row.list_id))) {
-        sendPostgrestError(
-          response,
-          403,
-          'new row violates row-level security policy for table "tasks"',
-          '42501',
-        )
-        return
-      }
-    }
-
-    for (const row of rows) {
-      const store = storeFor()
-      const key = table === 'list_members' ? memberKey(row.list_id, row.user_id) : row.id
-      store.set(key, row)
-    }
-
-    void url
-    send(response, 201)
+    sendPostgrestError(response,403,'Diese App-Version benötigt den geschützten Schreibweg.','42501')
     return
   }
 
@@ -338,6 +318,57 @@ async function handleRpc(name, request, response) {
   if (!user) {
     sendPostgrestError(response, 401, 'JWT expired', 'PGRST301')
     return
+  }
+
+  if (name === 'sync_push') {
+    const body = await readBody(request)
+    const result=[]
+    for (const change of body?.p_changes ?? []) {
+      const {table,row,expected}=change
+      const id=table === 'members' || table === 'preferences' ? memberKey(row.list_id,row.user_id) : row.id
+      const store=state[table]
+      expireCompleted()
+      const current=store?.get(id)
+      const rejected=(message,code='42501')=>result.push({table,id,kind:'rejected',message,code})
+      if (!store) { rejected('Ungültige Tabelle.','22023'); continue }
+      if (table === 'lists' && (row.owner_id !== user.id || (current && current.owner_id !== user.id))) { rejected('Nur der Besitzer darf die Liste ändern.'); continue }
+      if (table === 'members') {
+        const ownLeave=current && row.user_id === user.id && row.deleted_at !== null && row.created_at === current.created_at
+        if (state.lists.get(row.list_id)?.owner_id !== user.id && !ownLeave) { rejected('Diese Mitgliedschaft darfst du nicht ändern.'); continue }
+      }
+      if (table === 'tasks' && (!canAccessList(user.id,state.lists.get(row.list_id)) || (current && !canAccessList(user.id,state.lists.get(current.list_id))))) { rejected('Kein Zugriff auf die Aufgabe.'); continue }
+      if (table === 'preferences' && (row.user_id !== user.id || !canAccessList(user.id,state.lists.get(row.list_id)))) { rejected('Nur deine eigene Listenauswahl darf geändert werden.'); continue }
+      if (table === 'userPreferences' && (row.id !== user.id || !['by_list','newest'].includes(row.overview_mode))) { rejected('Ungültige persönliche Einstellung.'); continue }
+      if (table === 'userPreferences' && row.default_list_id && row.default_list_id !== current?.default_list_id && !canAccessList(user.id,state.lists.get(row.default_list_id))) { rejected('Kein Zugriff auf die Standardliste.'); continue }
+      if ((table==='tasks' && !row.title?.trim()) || (table==='lists' && !row.name?.trim())) { rejected('Name darf nicht leer sein.','23514'); continue }
+      if (current && row.created_at !== current.created_at) { rejected('Der Erstellzeitpunkt ist unveränderlich.','22023'); continue }
+      if (table === 'tasks' && current?.expired_at && JSON.stringify(canonical(current)) !== JSON.stringify(canonical(row))) {
+        result.push({table,id,kind:'conflict',current}); continue
+      }
+      if (JSON.stringify(canonical(current ?? null)) !== JSON.stringify(canonical(row)) && JSON.stringify(canonical(current ?? null)) !== JSON.stringify(canonical(expected ?? null))) {
+        result.push({table,id,kind:'conflict',current:current ?? null}); continue
+      }
+      let saved=row
+      const now=new Date().toISOString()
+      if (table === 'lists') {
+        saved={...row,completion_retention_started_at:!current ? new Date(Math.min(Date.parse(row.completion_retention_started_at ?? now),Date.now())).toISOString() : current.keep_completed && !row.keep_completed ? now : current.completion_retention_started_at ?? null}
+      } else if (table === 'tasks') {
+        if (current?.completed && row.completed && current.completed_at !== row.completed_at) { rejected('Der Abschlusszeitpunkt bleibt erhalten.','22023'); continue }
+        if ((row.expired_at ?? null) !== (current?.expired_at ?? null)) { rejected('Der Ablauf gehört dem Server.','22023'); continue }
+        const keep=state.lists.get(row.list_id)?.keep_completed === true
+        const expires=from=>keep ? null : new Date(Date.parse(from)+7*24*60*60*1000).toISOString()
+        saved={...row,completed_expires_at:!row.completed ? null : current?.completed && current.list_id !== row.list_id ? expires(now) : current?.completed && current.completed_at === row.completed_at ? current.completed_expires_at ?? null : expires(new Date(Math.max(Math.min(Date.parse(row.completed_at),Date.now()),Date.parse(state.lists.get(row.list_id)?.completion_retention_started_at ?? row.completed_at))).toISOString())}
+      }
+      store.set(id,saved)
+      if (table === 'lists' && current && current.keep_completed !== row.keep_completed) {
+        for (const [taskId,task] of state.tasks) if (task.list_id === id && task.completed && !task.expired_at) {
+          state.tasks.set(taskId,{...task,completed_expires_at:row.keep_completed ? null : new Date(Date.now()+7*24*60*60*1000).toISOString(),updated_at:now})
+        }
+      }
+      expireCompleted()
+      result.push({table,id,kind:JSON.stringify(canonical(store.get(id))) === JSON.stringify(canonical(row)) ? 'written' : 'conflict',current:store.get(id)})
+    }
+    send(response,200,result); return
   }
 
   // Adressen der Personen, mit denen der Aufrufer eine Liste teilt. Dieselbe

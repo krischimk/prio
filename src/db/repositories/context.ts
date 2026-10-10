@@ -6,8 +6,9 @@
  * Frage „welche Liste gibt es denn?" wäre an vier Stellen zu beantworten.
  */
 import type { Clock } from '../../domain/clock'
-import { normalisiereListe } from '../../domain/normalize'
+import { normalisiereAufgabe, normalisiereListe } from '../../domain/normalize'
 import type { LocalList, LocalTask } from '../../domain/types'
+import { completionExpired } from '../../domain/taskLifecycle'
 import type { LocalDatabase } from '../localDb'
 import { ValidationError } from '../validation'
 
@@ -34,7 +35,7 @@ async function requireList(listId: string): Promise<LocalList> {
     if (!list || list.deleted_at !== null) {
       throw new ValidationError('not-found', 'Diese Liste existiert nicht mehr.')
     }
-    return list
+    return mitAbschnittsplan(list)
   }
 
 async function requireTask(taskId: string): Promise<LocalTask> {
@@ -42,7 +43,9 @@ async function requireTask(taskId: string): Promise<LocalTask> {
     if (!task || task.deleted_at !== null) {
       throw new ValidationError('not-found', 'Diese Aufgabe existiert nicht mehr.')
     }
-    return task
+    const normalized = normalisiereAufgabe(task)
+    if (completionExpired(normalized, clock.nowMs())) throw new ValidationError('not-found', 'Diese Aufgabe ist endgültig abgelaufen.')
+    return normalized
   }
   return { db, clock, mitAbschnittsplan, stamp, requireList, requireTask }
 }

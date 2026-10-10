@@ -1,7 +1,6 @@
-import { fromRemoteList, fromRemoteMember, fromRemoteTask } from '../domain/mapping'
-import { resolveMerge, type MergeOutcome } from '../domain/merge'
-import type { RemoteList, RemoteListMember, RemoteTask } from '../domain/types'
+import type { RemoteList, RemoteListMember, RemoteListPreference, RemoteTask, RemoteUserPreference } from '../domain/types'
 import type { LocalDatabase } from '../db/localDb'
+import { acceptCloudRow } from '../db/cloudState'
 
 /**
  * Übernahme heruntergeladener Serverdaten in die lokale Datenbank.
@@ -25,7 +24,7 @@ export function emptyStats(): ApplyStats {
   return { inserted: 0, remoteWins: 0, localWins: 0, unchanged: 0 }
 }
 
-function addOutcome(stats: ApplyStats, outcome: MergeOutcome): void {
+function addOutcome(stats: ApplyStats, outcome: Awaited<ReturnType<typeof acceptCloudRow>>): void {
   if (outcome === 'inserted') stats.inserted += 1
   else if (outcome === 'remote-wins') stats.remoteWins += 1
   else if (outcome === 'local-wins') stats.localWins += 1
@@ -34,13 +33,9 @@ function addOutcome(stats: ApplyStats, outcome: MergeOutcome): void {
 
 export async function applyRemoteLists(db: LocalDatabase, remote: RemoteList[]): Promise<ApplyStats> {
   const stats = emptyStats()
-  await db.transaction('rw', db.lists, async () => {
+  await db.transaction('rw', db.lists, db.meta, async () => {
     for (const remoteList of remote) {
-      const local = await db.lists.get(remoteList.id)
-      const { row, outcome } = resolveMerge(local, fromRemoteList(remoteList))
-      if (outcome !== 'unchanged') {
-        await db.lists.put(row)
-      }
+      const outcome = await acceptCloudRow(db, 'lists', remoteList)
       addOutcome(stats, outcome)
     }
   })
@@ -49,7 +44,7 @@ export async function applyRemoteLists(db: LocalDatabase, remote: RemoteList[]):
 
 export async function applyRemoteTasks(db: LocalDatabase, remote: RemoteTask[]): Promise<ApplyStats> {
   const stats = emptyStats()
-  await db.transaction('rw', db.lists, db.tasks, async () => {
+  await db.transaction('rw', db.lists, db.tasks, db.meta, async () => {
     for (const remoteTask of remote) {
       // Aufgaben ohne lokal bekannte Liste werden übersprungen. Das kann bei
       // RLS-Verletzungen oder halb übertragenen Snapshots passieren und würde
@@ -57,15 +52,23 @@ export async function applyRemoteTasks(db: LocalDatabase, remote: RemoteTask[]):
       const parent = await db.lists.get(remoteTask.list_id)
       if (!parent) continue
 
-      const local = await db.tasks.get(remoteTask.id)
-      const { row, outcome } = resolveMerge(local, fromRemoteTask(remoteTask))
-      if (outcome !== 'unchanged') {
-        await db.tasks.put(row)
-      }
+      const outcome = await acceptCloudRow(db, 'tasks', remoteTask)
       addOutcome(stats, outcome)
     }
   })
   return stats
+}
+
+/** Persönliche Einstellungen werden nur für den angemeldeten Benutzer gelesen. */
+export async function applyRemotePreferences(db: LocalDatabase, preferences: RemoteListPreference[], userPreferences: RemoteUserPreference[], userId: string): Promise<void> {
+  await db.transaction('rw', db.list_preferences, db.user_preferences, db.meta, async () => {
+    for (const row of preferences) {
+      if (row.user_id === userId) await acceptCloudRow(db, 'preferences', row)
+    }
+    for (const row of userPreferences) {
+      if (row.id === userId) await acceptCloudRow(db, 'userPreferences', row)
+    }
+  })
 }
 
 /**
@@ -87,7 +90,7 @@ export async function applyRemoteMembers(
   currentUserId: string,
 ): Promise<ApplyStats> {
   const stats = emptyStats()
-  await db.transaction('rw', db.lists, db.list_members, db.tasks, async () => {
+  await db.transaction('rw', db.lists, db.list_members, db.tasks, db.meta, async () => {
     for (const remoteMember of remote) {
       const isSelf = remoteMember.user_id === currentUserId
 
@@ -104,12 +107,7 @@ export async function applyRemoteMembers(
         continue
       }
 
-      const key: [string, string] = [remoteMember.list_id, remoteMember.user_id]
-      const local = await db.list_members.get(key)
-      const { row, outcome } = resolveMerge(local, fromRemoteMember(remoteMember))
-      if (outcome !== 'unchanged') {
-        await db.list_members.put(row)
-      }
+      const outcome = await acceptCloudRow(db, 'members', remoteMember)
       addOutcome(stats, outcome)
     }
   })

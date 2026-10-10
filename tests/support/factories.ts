@@ -1,5 +1,5 @@
 import { createFixedClock } from '../../src/domain/clock'
-import type { LocalList, LocalListMember, LocalTask, RemoteList, RemoteTask, RemoteListMember } from '../../src/domain/types'
+import type { LocalList, LocalListMember, LocalListPreference, LocalUserPreference, LocalTask, RemoteList, RemoteTask, RemoteListMember } from '../../src/domain/types'
 
 /** Fabriken für Testdaten. Alle Werte sind überschreibbar. */
 
@@ -17,6 +17,9 @@ export function localTask(overrides: Partial<LocalTask> = {}): LocalTask {
     due_at: null,
     completed: false,
     completed_at: null,
+    completed_expires_at: null,
+    expired_at: null,
+    reopen_context: null,
     recurrence: null,
     successor_id: null,
     reminders: [],
@@ -42,6 +45,8 @@ export function localList(overrides: Partial<LocalList> = {}): LocalList {
     is_shared: false,
     icon: null,
     sections: [],
+    keep_completed: false,
+    completion_retention_started_at: null,
     created_at: T0,
     updated_at: T0,
     deleted_at: null,
@@ -73,3 +78,11 @@ export function remoteMember(overrides: Partial<RemoteListMember> = {}): RemoteL
 }
 
 export { createFixedClock }
+
+export function localListPreference(overrides: Partial<LocalListPreference> = {}): LocalListPreference {
+  return { list_id: 'list-1', user_id: 'user-1', include_in_overview: false, created_at: T0, updated_at: T0, deleted_at: null, dirty: 0, ...overrides }
+}
+
+export function localUserPreference(overrides: Partial<LocalUserPreference> = {}): LocalUserPreference {
+  return { id: 'user-1', default_list_id: null, overview_mode: 'by_list', created_at: T0, updated_at: T0, deleted_at: null, dirty: 0, ...overrides }
+}

@@ -1,13 +1,17 @@
 import { normalizeIso } from './clock'
-import { normalisiereAufgabe, normalisiereListe, normalisiereMitglied } from './normalize'
+import { normalisiereAufgabe, normalisiereListe, normalisiereMitglied, normalisiereListenauswahl, normalisiereStartansicht } from './normalize'
 import { parseSections } from './sections'
 import type {
   LocalList,
   LocalListMember,
+  LocalListPreference,
+  LocalUserPreference,
   LocalTask,
   PushPayload,
   RemoteList,
   RemoteListMember,
+  RemoteListPreference,
+  RemoteUserPreference,
   RemoteTask,
 } from './types'
 
@@ -17,8 +21,8 @@ import type {
  * Zwei Aufgaben:
  *  1. `dirty` entfernen bzw. ergänzen – dieses Feld existiert nur lokal und
  *     darf niemals an Supabase gesendet werden.
- *  2. Zeitstempel normalisieren, damit Last-Write-Wins über Zeitzonen und
- *     unterschiedliche Formatierungen (`+00:00` vs. `Z`) hinweg stabil ist.
+ *  2. Zeitstempel für lokale Vergleiche und Anzeige normalisieren. Der genaue
+ *     bestätigte Serverstand bleibt separat als Schreibbasis erhalten.
  */
 
 export function toRemoteList(local: LocalList): RemoteList {
@@ -29,6 +33,8 @@ export function toRemoteList(local: LocalList): RemoteList {
     is_shared: local.is_shared,
     icon: local.icon,
     sections: parseSections(local.sections),
+    keep_completed: local.keep_completed === true,
+    completion_retention_started_at: normalizeIso(local.completion_retention_started_at ?? null),
     created_at: normalizeIso(local.created_at),
     updated_at: normalizeIso(local.updated_at),
     deleted_at: normalizeIso(local.deleted_at),
@@ -49,6 +55,9 @@ export function toRemoteTask(local: LocalTask): RemoteTask {
     due_at: normalizeIso(local.due_at),
     completed: local.completed,
     completed_at: normalizeIso(local.completed_at),
+    completed_expires_at: normalizeIso(local.completed_expires_at ?? null),
+    expired_at: normalizeIso(local.expired_at ?? null),
+    reopen_context: local.reopen_context ?? null,
     recurrence: local.recurrence,
     successor_id: local.successor_id,
     reminders: local.reminders,
@@ -83,18 +92,39 @@ export function fromRemoteMember(remote: RemoteListMember) {
   return normalisiereMitglied(remote)
 }
 
+export function toRemotePreference(local: LocalListPreference): RemoteListPreference {
+  const { dirty: _dirty, ...row } = normalisiereListenauswahl(local)
+  return row
+}
+
+export function fromRemotePreference(remote: RemoteListPreference): LocalListPreference {
+  return normalisiereListenauswahl(remote)
+}
+
+export function toRemoteUserPreference(local: LocalUserPreference): RemoteUserPreference {
+  const { dirty: _dirty, ...row } = normalisiereStartansicht(local)
+  return row
+}
+export function fromRemoteUserPreference(remote: RemoteUserPreference): LocalUserPreference {
+  return normalisiereStartansicht(remote)
+}
+
 export function toPushPayload(
   lists: LocalList[],
   members: LocalListMember[],
   tasks: LocalTask[],
+  preferences: LocalListPreference[] = [],
+  userPreferences: LocalUserPreference[] = [],
 ): PushPayload {
   return {
     lists: lists.map(toRemoteList),
     members: members.map(toRemoteMember),
     tasks: tasks.map(toRemoteTask),
+    ...(preferences.length ? { preferences: preferences.map(toRemotePreference) } : {}),
+    ...(userPreferences.length ? { userPreferences: userPreferences.map(toRemoteUserPreference) } : {}),
   }
 }
 
 export function isEmptyPayload(payload: PushPayload): boolean {
-  return payload.lists.length === 0 && payload.members.length === 0 && payload.tasks.length === 0
+  return payload.lists.length === 0 && payload.members.length === 0 && payload.tasks.length === 0 && !payload.preferences?.length && !payload.userPreferences?.length
 }

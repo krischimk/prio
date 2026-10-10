@@ -5,7 +5,9 @@
  * importieren, was sie beschreiben.
  */
 import type { TaskReminder } from '../../domain/reminder'
-import type { LocalList, LocalListMember, LocalTask, ShareContact } from '../../domain/types'
+import type { TaskEditInput, TaskEditOptions } from '../../domain/taskEdit'
+import type { LocalList, LocalListMember, LocalListPreference, LocalTask, LocalUserPreference, OverviewMode, ShareContact } from '../../domain/types'
+import type { CloudConflict } from '../../domain/cloudMerge'
 
 export interface CreateTaskInput {
   listId: string
@@ -19,17 +21,15 @@ export interface CreateTaskInput {
   reminders?: TaskReminder[]
 }
 
-export interface UpdateTaskInput {
-  title?: string
-  /** Der Abschnitt der Aufgabe; `null` heißt „ohne Bereich". */
-  sectionId?: string | null
-  description?: string | null
-  dueAt?: string | null
-  recurrence?: string | null
-  reminders?: TaskReminder[]
-}
+export type UpdateTaskInput = TaskEditInput
 
 export interface Repositories {
+  listListPreferences(userId: string): Promise<LocalListPreference[]>
+  setListInOverview(listId: string, userId: string, included: boolean): Promise<void>
+  getUserPreferences(userId: string): Promise<LocalUserPreference | undefined>
+  updateUserPreferences(userId: string, patch: { defaultListId?: string | null; overviewMode?: OverviewMode }): Promise<void>
+  listCloudConflicts(): Promise<CloudConflict[]>
+  resolveCloudConflict(conflict: CloudConflict, choice: 'local' | 'remote'): Promise<void>
   // Listen
   createList(name: string, ownerId: string): Promise<LocalList>
   renameList(listId: string, name: string): Promise<LocalList>
@@ -40,6 +40,7 @@ export interface Repositories {
    * Kennung zeigt die Oberfläche einfach als „kein Symbol“ an.
    */
   setListIcon(listId: string, icon: string | null): Promise<LocalList>
+  setListKeepCompleted(listId: string, userId: string, keep: boolean): Promise<void>
   deleteList(listId: string): Promise<void>
   getList(listId: string): Promise<LocalList | undefined>
   /** Gelöschte Listen der letzten Tage – für „Wiederherstellen". */
@@ -64,7 +65,7 @@ export interface Repositories {
 
   // Aufgaben
   createTask(input: CreateTaskInput): Promise<LocalTask>
-  updateTask(taskId: string, patch: UpdateTaskInput): Promise<LocalTask>
+  updateTask(taskId: string, patch: UpdateTaskInput, options?: TaskEditOptions): Promise<LocalTask>
   setTaskCompleted(taskId: string, completed: boolean): Promise<LocalTask>
   /** Verschiebt eine Aufgabe in eine andere Liste (beide müssen zugänglich sein). */
   moveTask(taskId: string, targetListId: string, zielAbschnitt?: string | null): Promise<LocalTask>
@@ -85,6 +86,8 @@ export interface Repositories {
   restoreTask(taskId: string): Promise<void>
   /** Offene Aufgaben einer Liste, in der vom Benutzer bestimmten Reihenfolge. */
   listTasks(listId: string): Promise<LocalTask[]>
+  /** Dauerhaft aufbewahrte erledigte Aufgaben der dafür aktivierten Liste. */
+  listCompletedTasks(listId: string): Promise<LocalTask[]>
   /**
    * Abgehakte Aufgaben aller Listen, die noch wiederhergestellt werden können –
    * zuletzt abgehakte zuerst.

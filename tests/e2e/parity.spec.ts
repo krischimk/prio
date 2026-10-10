@@ -1,7 +1,11 @@
+import { openTaskEditor } from './support/helpers'
+import { listAction, openListSettings, closeListSettings } from './support/helpers'
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 import * as breit from './support/helpers'
 import { createAccount, resetServer, uniqueEmail } from './support/helpers'
 import * as telefon from './support/mobile'
+import { createCloudConflict } from './support/cloudConflict'
+import { openOverview, overviewSettings } from './support/overview'
 
 /**
  * Oberflächenparität: Jede Funktion muss in beiden Ansichten erreichbar sein.
@@ -38,6 +42,119 @@ function inTagen(tage: number): string {
 
 const funktionen: Funktion[] = [
   {
+    name: 'Abgehakt am Listenende einstellen und wieder öffnen',
+    breit: async page => {
+      await breit.register(page, uniqueEmail('p-completed-b'))
+      await breit.createList(page, 'Haushalt')
+      await breit.createTask(page, 'Wohnung saugen')
+      await openListSettings(page)
+      await expect(page.getByLabel('Abgehakt am Listenende')).not.toBeChecked()
+      await page.getByLabel('Abgehakt am Listenende').check()
+      await closeListSettings(page)
+      await breit.taskItem(page, 'Wohnung saugen').getByRole('checkbox').click()
+      const section = page.getByRole('region', { name: 'Abgehakt', exact: true })
+      const header = section.getByRole('button', { name: 'Abgehakt 1' })
+      await expect(header).toHaveAttribute('aria-expanded', 'false')
+      await header.click()
+      await section.getByRole('button', { name: 'Wieder öffnen' }).click()
+      await expect(breit.taskItem(page, 'Wohnung saugen')).toBeVisible()
+    },
+    telefon: async page => {
+      await telefon.register(page, uniqueEmail('p-completed-t'))
+      await telefon.createList(page, 'Haushalt')
+      await telefon.createTask(page, 'Wohnung saugen')
+      await page.getByTestId('app-bar-title').click()
+      const settings = page.getByRole('dialog', { name: 'Liste verwalten' })
+      await expect(settings.getByLabel('Abgehakt am Listenende')).not.toBeChecked()
+      await settings.getByLabel('Abgehakt am Listenende').check()
+      await settings.getByRole('button', { name: 'Schließen', exact: true }).click()
+      await page.getByLabel('Aufgabe erledigen: Wohnung saugen').click()
+      const section = page.getByRole('region', { name: 'Abgehakt', exact: true })
+      const header = section.getByRole('button', { name: 'Abgehakt 1' })
+      await expect(header).toHaveAttribute('aria-expanded', 'false')
+      await header.click()
+      await section.getByRole('button', { name: 'Wieder öffnen' }).click()
+      await expect(telefon.taskRow(page, 'Wohnung saugen')).toBeVisible()
+    },
+  },
+  {
+    name: 'Liste in die Gesamtansicht aufnehmen',
+    breit: async page => {
+      await breit.register(page, uniqueEmail('p-overview-b'))
+      await breit.createList(page, 'Einkaufen')
+      await breit.createTask(page, 'Milch')
+      await openListSettings(page)
+      await expect(page.getByLabel('In Gesamtansicht aufnehmen')).not.toBeChecked()
+      await page.getByLabel('In Gesamtansicht aufnehmen').check()
+      await expect(page.getByLabel('In Gesamtansicht aufnehmen')).toBeChecked()
+      await closeListSettings(page)
+      await openOverview(page, false)
+      await expect(page.getByTestId('overview-task')).toContainText('Milch')
+    },
+    telefon: async page => {
+      await telefon.register(page, uniqueEmail('p-overview-t'))
+      await telefon.createList(page, 'Einkaufen')
+      await telefon.createTask(page, 'Milch')
+      await page.getByTestId('app-bar-title').click()
+      const sheet = page.getByRole('dialog', { name: 'Liste verwalten' })
+      await expect(sheet.getByLabel('In Gesamtansicht aufnehmen')).not.toBeChecked()
+      await sheet.getByLabel('In Gesamtansicht aufnehmen').check()
+      await expect(sheet.getByLabel('In Gesamtansicht aufnehmen')).toBeChecked()
+      await sheet.getByRole('button', { name: 'Schließen', exact: true }).click()
+      await openOverview(page, true)
+      await expect(page.getByTestId('overview-task')).toContainText('Milch')
+    },
+  },
+  {
+    name: 'Standardliste und Gesamtansicht wählen',
+    breit: async page => {
+      await breit.register(page, uniqueEmail('p-preferences-b'))
+      await breit.createList(page, 'Arbeit')
+      await openOverview(page, false)
+      const sheet = await overviewSettings(page)
+      await sheet.getByLabel('Standardliste für neue Aufgaben').selectOption({ label: 'Arbeit' })
+      await expect(sheet.getByLabel('Standardliste für neue Aufgaben')).not.toHaveValue('')
+      await sheet.getByRole('button', { name: 'Schließen', exact: true }).click()
+      await page.getByLabel('Ansicht der Gesamtansicht').selectOption('newest')
+      await expect(page.getByLabel('Ansicht der Gesamtansicht')).toHaveValue('newest')
+      await page.reload()
+      await expect(page.getByLabel('Ansicht der Gesamtansicht')).toHaveValue('newest')
+      await page.getByRole('button', { name: 'Neue Aufgabe', exact: true }).click()
+      await expect(page.getByRole('dialog', { name: 'Neue Aufgabe', exact: true })).toContainText('Liste: Arbeit')
+    },
+    telefon: async page => {
+      await telefon.register(page, uniqueEmail('p-preferences-t'))
+      await telefon.createList(page, 'Arbeit')
+      await openOverview(page, true)
+      const sheet = await overviewSettings(page)
+      await sheet.getByLabel('Standardliste für neue Aufgaben').selectOption({ label: 'Arbeit' })
+      await expect(sheet.getByLabel('Standardliste für neue Aufgaben')).not.toHaveValue('')
+      await sheet.getByRole('button', { name: 'Schließen', exact: true }).click()
+      await page.getByLabel('Ansicht der Gesamtansicht').selectOption('newest')
+      await expect(page.getByLabel('Ansicht der Gesamtansicht')).toHaveValue('newest')
+      await page.reload()
+      await expect(page.getByLabel('Ansicht der Gesamtansicht')).toHaveValue('newest')
+      await page.getByRole('button', { name: 'Neue Aufgabe', exact: true }).click()
+      await expect(page.getByRole('dialog', { name: 'Neue Aufgabe', exact: true })).toContainText('Liste: Arbeit')
+    },
+  },
+  {
+    name: 'Cloud-Schreibkonflikt klären',
+    breit: async (page,request) => {
+      const sheet=await createCloudConflict(page,request,false)
+      await sheet.getByRole('button',{name:'Cloudstand übernehmen',exact:true}).click()
+      await expect(sheet).toContainText('Alle Konflikte sind geklärt.')
+      await expect(breit.taskItem(page,'Cloud-Titel')).toContainText('Unabhängige Cloud-Notiz')
+    },
+    telefon: async (page,request) => {
+      const sheet=await createCloudConflict(page,request,true)
+      await sheet.getByRole('button',{name:'Meine Änderungen verwenden',exact:true}).click()
+      await expect(sheet).toContainText('Alle Konflikte sind geklärt.')
+      await expect.poll(async()=> (await breit.serverState(request)).tasks[0].title).toBe('Meine Offline-Eingabe')
+      expect((await breit.serverState(request)).tasks[0].description).toBe('Unabhängige Cloud-Notiz')
+    },
+  },
+  {
     name: 'Liste anlegen',
     breit: async (page) => {
       await breit.register(page, uniqueEmail('p-anlegen-b'))
@@ -54,7 +171,7 @@ const funktionen: Funktion[] = [
       await breit.register(page, uniqueEmail('p-umbenennen-b'))
       await breit.createList(page, 'Erster Name')
 
-      await page.getByRole('button', { name: 'Umbenennen', exact: true }).click()
+      await listAction(page, 'Umbenennen')
       await page.getByLabel('Neuer Listenname').fill('Zweiter Name')
       await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
@@ -66,8 +183,8 @@ const funktionen: Funktion[] = [
 
       await page.getByTestId('app-bar-title').click()
       await expect(page.getByRole('dialog', { name: 'Liste verwalten' })).toBeVisible()
-      await page.getByRole('button', { name: 'Umbenennen' }).click()
-      await page.getByLabel('Neuer Name').fill('Zweiter Name')
+      await listAction(page, 'Umbenennen')
+      await page.getByLabel('Neuer Listenname').fill('Zweiter Name')
       await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
       await expect(page.getByTestId('app-bar-title')).toHaveText('Zweiter Name')
@@ -80,7 +197,7 @@ const funktionen: Funktion[] = [
       await breit.createList(page, 'Wegwerfliste')
 
       // Direkt löschen; die Rückgängig-Leiste ist der Weg zurück.
-      await page.getByRole('button', { name: 'Liste löschen', exact: true }).click()
+      await listAction(page, 'Liste löschen')
       await expect(page.getByTestId('undo-bar')).toContainText('Liste „Wegwerfliste“')
 
       await expect(page.getByText('Lege links eine Liste an, um Aufgaben zu erfassen.')).toBeVisible()
@@ -90,7 +207,7 @@ const funktionen: Funktion[] = [
       await telefon.createList(page, 'Wegwerfliste')
 
       await page.getByTestId('app-bar-title').click()
-      await page.getByRole('button', { name: 'Liste löschen' }).click()
+      await listAction(page, 'Liste löschen')
       await expect(page.getByTestId('undo-bar')).toContainText('Liste „Wegwerfliste“')
 
       await expect(page.getByText('Öffne oben links das Menü und lege eine Liste an.')).toBeVisible()
@@ -102,12 +219,13 @@ const funktionen: Funktion[] = [
       await breit.register(page, uniqueEmail('p-symbol-b'))
       await breit.createList(page, 'Haushalt')
 
-      await page.getByRole('button', { name: 'Symbol', exact: true }).click()
+      await listAction(page, 'Symbol ändern')
       await page.getByTestId('icon-picker').getByRole('button', { name: 'Haushalt' }).click()
 
       const symbol = page.getByTestId('list-title').locator('..').getByTestId('list-icon')
       await expect(symbol).toHaveAttribute('data-icon', 'std:home')
 
+      await listAction(page, 'Symbol ändern')
       await page.getByRole('button', { name: 'Symbol entfernen' }).click()
       await expect(symbol).toHaveCount(0)
     },
@@ -148,14 +266,14 @@ const funktionen: Funktion[] = [
       await breit.createList(page, 'Einkauf')
       await breit.createTask(page, 'Äpfel')
 
-      await page.getByRole('button', { name: 'Bereiche' }).click()
+      await listAction(page, 'Bereiche')
       await page.getByLabel('Neuer Bereich').fill('Obst')
       await page.getByRole('button', { name: 'Bereich anlegen' }).click()
 
       // Der Kopf steht sofort da – ein leerer Bereich wäre sonst unsichtbar.
       await expect(bereichsKopf(page, 'Obst')).toBeVisible()
 
-      await breit.taskItem(page, 'Äpfel').getByRole('button', { name: 'Bearbeiten' }).click()
+      await openTaskEditor(page, 'Äpfel')
       const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
       await formular.getByLabel('Bereich').selectOption({ label: 'Obst' })
       await formular.getByRole('button', { name: 'Speichern' }).click()
@@ -171,7 +289,7 @@ const funktionen: Funktion[] = [
       // Bereiche stehen in den Listeneinstellungen – ein Tippen auf den
       // Listennamen öffnet sie.
       await page.getByTestId('app-bar-title').click()
-      await page.getByRole('button', { name: 'Bereiche' }).click()
+      await listAction(page, 'Bereiche')
       await page.getByLabel('Neuer Bereich').fill('Obst')
       await page.getByRole('button', { name: 'Bereich anlegen' }).click()
       await page.getByRole('button', { name: 'Zurück' }).click()
@@ -179,7 +297,7 @@ const funktionen: Funktion[] = [
 
       await expect(bereichsKopf(page, 'Obst')).toBeVisible()
 
-      await telefon.taskRow(page, 'Äpfel').click()
+      await openTaskEditor(page, 'Äpfel')
       await page.getByLabel('Bereich').selectOption({ label: 'Obst' })
       await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
@@ -194,7 +312,7 @@ const funktionen: Funktion[] = [
       await breit.createList(page, 'Haushalt')
       await breit.createTask(page, 'Alter Titel')
 
-      await breit.taskItem(page, 'Alter Titel').getByRole('button', { name: 'Bearbeiten' }).click()
+      await openTaskEditor(page, 'Alter Titel')
       const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
       await formular.getByLabel('Titel', { exact: true }).fill('Neuer Titel')
       await formular.getByLabel('Beschreibung (optional)', { exact: true }).fill('Mit Notiz')
@@ -209,7 +327,7 @@ const funktionen: Funktion[] = [
       await telefon.createList(page, 'Haushalt')
       await telefon.createTask(page, 'Alter Titel')
 
-      await telefon.taskRow(page, 'Alter Titel').click()
+      await openTaskEditor(page, 'Alter Titel')
       await expect(page.getByRole('dialog', { name: 'Aufgabe' })).toBeVisible()
       await page.getByLabel('Titel', { exact: true }).fill('Neuer Titel')
       await page.getByLabel('Beschreibung (optional)', { exact: true }).fill('Mit Notiz')
@@ -299,7 +417,7 @@ const funktionen: Funktion[] = [
       await breit.createList(page, 'Routinen')
       await breit.createTask(page, 'Zähne putzen')
 
-      await breit.taskItem(page, 'Zähne putzen').getByRole('button', { name: 'Bearbeiten' }).click()
+      await openTaskEditor(page, 'Zähne putzen')
       const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
       await formular.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
       await formular.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
@@ -312,7 +430,7 @@ const funktionen: Funktion[] = [
       await telefon.createList(page, 'Routinen')
       await telefon.createTask(page, 'Zähne putzen')
 
-      await telefon.taskRow(page, 'Zähne putzen').click()
+      await openTaskEditor(page, 'Zähne putzen')
       await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
       await page.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
       await page.getByRole('button', { name: 'Speichern', exact: true }).click()
@@ -327,7 +445,7 @@ const funktionen: Funktion[] = [
       await breit.createList(page, 'Routinen')
       await breit.createTask(page, 'Medikament')
 
-      await breit.taskItem(page, 'Medikament').getByRole('button', { name: 'Bearbeiten' }).click()
+      await openTaskEditor(page, 'Medikament')
       const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
       await formular.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
       await formular.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
@@ -344,7 +462,7 @@ const funktionen: Funktion[] = [
       await telefon.createList(page, 'Routinen')
       await telefon.createTask(page, 'Medikament')
 
-      await telefon.taskRow(page, 'Medikament').click()
+      await openTaskEditor(page, 'Medikament')
       await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
       await page.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
       await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
@@ -367,7 +485,8 @@ const funktionen: Funktion[] = [
       await breit.createTask(page, 'Müll rausbringen')
 
       const zeile = breit.taskItem(page, 'Müll rausbringen')
-      await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
+      await closeListSettings(page)
+  await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
       const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
       await formular.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
       await formular.getByRole('button', { name: 'Weitere Erinnerung' }).click()
@@ -375,7 +494,7 @@ const funktionen: Funktion[] = [
       await formular.getByRole('button', { name: 'Speichern' }).click()
 
       // In einer eigenen Liste gäbe es niemanden, für den der Schalter gilt.
-      await page.getByRole('button', { name: 'Teilen', exact: true }).click()
+      await listAction(page, 'Teilen')
       await page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(mitglied)
       await page.getByRole('button', { name: 'Freigeben' }).click()
       // dnd-kit bringt eine eigene Status-Region fuer Vorleser mit
@@ -384,7 +503,8 @@ const funktionen: Funktion[] = [
         'Freigabe für',
       )
 
-      await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
+      await closeListSettings(page)
+  await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
       const erneut = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
       await expect(erneut.getByRole('button', { name: /stummschalten/ })).toHaveCount(2)
       await erneut.getByRole('button', { name: 'Erinnerung 1 für mich stummschalten' }).click()
@@ -403,14 +523,14 @@ const funktionen: Funktion[] = [
       await telefon.createList(page, 'Haushalt')
       await telefon.createTask(page, 'Müll rausbringen')
 
-      await telefon.taskRow(page, 'Müll rausbringen').click()
+      await openTaskEditor(page, 'Müll rausbringen')
       await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
       await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
       await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
       await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
       await page.getByTestId('app-bar-title').click()
-      await page.getByRole('button', { name: 'Teilen', exact: true }).click()
+      await listAction(page, 'Teilen')
       await page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(mitglied)
       await page.getByRole('button', { name: 'Freigeben' }).click()
       // dnd-kit bringt eine eigene Status-Region fuer Vorleser mit
@@ -420,7 +540,7 @@ const funktionen: Funktion[] = [
       )
       await page.getByRole('button', { name: 'Schließen' }).click()
 
-      await telefon.taskRow(page, 'Müll rausbringen').click()
+      await openTaskEditor(page, 'Müll rausbringen')
       await expect(page.getByRole('button', { name: /stummschalten/ })).toHaveCount(2)
       await page.getByRole('button', { name: 'Erinnerung 1 für mich stummschalten' }).click()
       await expect(
@@ -438,7 +558,7 @@ const funktionen: Funktion[] = [
       await breit.createList(page, 'Haushalt')
       await breit.createTask(page, 'Einkauf')
 
-      await breit.taskItem(page, 'Einkauf').getByRole('button', { name: 'Bearbeiten' }).click()
+      await openTaskEditor(page, 'Einkauf')
       const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
       await formular
         .getByLabel('Beschreibung (optional)', { exact: true })
@@ -479,7 +599,7 @@ const funktionen: Funktion[] = [
       await breit.createList(page, 'Erste Liste')
 
       // Erst das Teilen erzeugt den Vorschlag.
-      await page.getByRole('button', { name: 'Teilen', exact: true }).click()
+      await listAction(page, 'Teilen')
       await page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(mitglied)
       await page.getByRole('button', { name: 'Freigeben' }).click()
       // dnd-kit bringt eine eigene Status-Region fuer Vorleser mit
@@ -495,7 +615,7 @@ const funktionen: Funktion[] = [
       // offen – ein zweiter Klick würde es also schließen.
       const teilenFormular = page.getByRole('form', { name: 'Liste teilen' })
       if (!(await teilenFormular.isVisible())) {
-        await page.getByRole('button', { name: 'Teilen', exact: true }).click()
+        await listAction(page, 'Teilen')
       }
       await expect(teilenFormular).toBeVisible()
 
@@ -514,7 +634,7 @@ const funktionen: Funktion[] = [
       await telefon.createList(page, 'Erste Liste')
 
       await page.getByTestId('app-bar-title').click()
-      await page.getByRole('button', { name: 'Teilen', exact: true }).click()
+      await listAction(page, 'Teilen')
       await page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(mitglied)
       await page.getByRole('button', { name: 'Freigeben' }).click()
       // dnd-kit bringt eine eigene Status-Region fuer Vorleser mit
@@ -526,7 +646,7 @@ const funktionen: Funktion[] = [
 
       await telefon.createList(page, 'Zweite Liste')
       await page.getByTestId('app-bar-title').click()
-      await page.getByRole('button', { name: 'Teilen', exact: true }).click()
+      await listAction(page, 'Teilen')
 
       const vorschlag = page.getByRole('button', { name: mitglied })
       await expect(vorschlag).toBeVisible()
@@ -562,7 +682,8 @@ const funktionen: Funktion[] = [
       await breit.createList(page, 'Haushalt')
       await breit.createTask(page, 'Bericht')
 
-      await page.getByRole('button', { name: 'Aufgabe verschieben: Bericht' }).click()
+      await openTaskEditor(page, 'Bericht')
+      await page.getByRole('button', { name: 'In andere Liste verschieben' }).click()
       const blatt = page.getByRole('dialog', { name: 'Aufgabe verschieben' })
       await expect(blatt).toBeVisible()
       // Die eigene Liste steht mit in der Auswahl und ist angehakt.
@@ -591,7 +712,7 @@ const funktionen: Funktion[] = [
       await telefon.createList(page, 'Haushalt')
       await telefon.createTask(page, 'Bericht')
 
-      await telefon.taskRow(page, 'Bericht').click()
+      await openTaskEditor(page, 'Bericht')
       await expect(page.getByRole('dialog', { name: 'Aufgabe' })).toBeVisible()
       await page.getByRole('button', { name: 'In andere Liste verschieben' }).click()
 
@@ -606,8 +727,7 @@ const funktionen: Funktion[] = [
       await blatt.getByRole('button', { name: 'Verschieben', exact: true }).click()
       await expect(blatt).toBeHidden()
 
-      // Die Detailansicht bleibt offen; geschlossen ist die Quellliste leer.
-      await page.getByRole('button', { name: 'Schließen' }).click()
+      await expect(page.getByRole('dialog', { name: 'Aufgabe', exact: true })).toBeHidden()
       await expect(page.getByText('Noch keine Aufgaben in dieser Liste.')).toBeVisible()
 
       await telefon.openMenu(page)

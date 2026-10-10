@@ -1,6 +1,6 @@
 import Dexie, { type Table } from 'dexie'
 import type { TaskReminder } from '../domain/reminder'
-import type { LocalList, LocalListMember, LocalMeta, LocalReminder, LocalTask } from '../domain/types'
+import type { LocalList, LocalListMember, LocalListPreference, LocalMeta, LocalReminder, LocalTask, LocalUserPreference } from '../domain/types'
 
 /**
  * Lokale Datenbank (IndexedDB via Dexie).
@@ -27,6 +27,8 @@ export function localDbName(userId: string): string {
 export class LocalDatabase extends Dexie {
   lists!: Table<LocalList, string>
   list_members!: Table<LocalListMember, [string, string]>
+  list_preferences!: Table<LocalListPreference, [string, string]>
+  user_preferences!: Table<LocalUserPreference, string>
   tasks!: Table<LocalTask, string>
   meta!: Table<LocalMeta, string>
   reminders!: Table<LocalReminder, string>
@@ -176,6 +178,13 @@ export class LocalDatabase extends Dexie {
       tasks: 'id, list_id, updated_at, dirty, completed_at, deleted_at',
       meta: 'key',
       reminders: '[taskId+at], taskId, notificationId, at',
+    })
+
+    // Eine fehlende Auswahl bedeutet „aus“. Bestehende Listen werden beim
+    // Update deshalb weder automatisch aktiviert noch umgeschrieben.
+    this.version(8).stores({
+      list_preferences: '[list_id+user_id], list_id, user_id, dirty, updated_at',
+      user_preferences: 'id, dirty, updated_at',
     })
   }
 }

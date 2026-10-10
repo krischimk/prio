@@ -1,4 +1,5 @@
 import type { PushPayload, RemoteSnapshot } from '../domain/types'
+import type { CloudConflict, CloudRow, CloudTable } from '../domain/cloudMerge'
 
 /**
  * Abstraktion der Cloud-Schnittstelle.
@@ -18,11 +19,13 @@ export type RemoteFailureKind =
 
 export class RemoteError extends Error {
   readonly kind: RemoteFailureKind
+  readonly retryable: boolean
 
-  constructor(kind: RemoteFailureKind, message: string, options?: { cause?: unknown }) {
+  constructor(kind: RemoteFailureKind, message: string, options?: { cause?: unknown; retryable?: boolean }) {
     super(message, options)
     this.name = 'RemoteError'
     this.kind = kind
+    this.retryable = options?.retryable ?? kind !== 'server'
   }
 }
 
@@ -38,25 +41,26 @@ export interface SyncTransport {
   /** Lädt den kompletten sichtbaren Serverbestand. */
   pull(): Promise<RemoteSnapshot>
   /**
-   * Lädt lokale Änderungen hoch (idempotent über Upsert).
-   *
-   * **Je Tabelle getrennt.** Vorher war der Upload alles-oder-nichts: Lehnte
-   * der Server eine einzige Zeile ab, ging gar nichts durch, alles blieb
-   * `dirty` und der Zähler „N Änderungen warten“ wurde nie leer. Jetzt sagt das
-   * Ergebnis, welche Tabellen angekommen sind – der Rest darf weiterlaufen.
+   * Schreibt jede Zeile gegen ihren bestätigten Ausgangsstand. Ergebnis und
+   * Ablehnung gehören zu einzelnen Zeilen, gruppiert nach Tabelle. Ein Retry
+   * mit identischem Inhalt ist idempotent; veraltete Änderungen sind Konflikte.
    */
-  push(payload: PushPayload): Promise<PushErgebnis>
+  push(payload: PushPayload, bases?: PushBases): Promise<PushErgebnis>
 }
 
+/** Zuletzt bestätigter Stand je Zeile; null erlaubt ausschließlich das Anlegen. */
+export type PushBases = Partial<Record<PushTabelle, Record<string, CloudRow | null>>>
+
 /** Die drei Tabellen, die hochgeladen werden – in dieser Reihenfolge (Fremdschlüssel). */
-export type PushTabelle = 'lists' | 'members' | 'tasks'
+export type PushTabelle = CloudTable
 
 /** Was ein Upload geschafft hat und was nicht. */
 export interface PushErgebnis {
   /** Die Zeilen, die tatsächlich angekommen sind. */
   hochgeladen: PushPayload
-  /** Die gescheiterten Tabellen mit ihrem Fehler – alles darin bleibt `dirty`. */
-  fehler: Array<{ tabelle: PushTabelle; error: RemoteError }>
+  /** Fehler mit betroffenen IDs; ohne IDs betrifft der Fehler die ganze Tabelle. */
+  fehler: Array<{ tabelle: PushTabelle; ids?: string[]; error: RemoteError }>
+  konflikte?: CloudConflict[]
 }
 
 export function leeresPushErgebnis(): PushErgebnis {
@@ -107,13 +111,13 @@ export interface CoMemberContact {
  * als Datenfehler behandelt werden – die lokalen Änderungen bleiben dann in
  * der Queue und werden später erneut versucht.
  */
-export function classifyRemoteError(error: unknown): RemoteError {
+export function classifyRemoteError(error: unknown, responseStatus?: number): RemoteError {
   if (error instanceof RemoteError) return error
 
   const name = typeof error === 'object' && error !== null && 'name' in error ? String(error.name) : ''
   const message = messageOf(error)
   const lower = message.toLowerCase()
-  const status = statusOf(error)
+  const status = statusOf(error) ?? responseStatus
   const code = codeOf(error)
 
   if (status === 401 || code === 'PGRST301' || name === 'AuthSessionMissingError' || lower.includes('invalid jwt')) {
@@ -125,7 +129,9 @@ export function classifyRemoteError(error: unknown): RemoteError {
   if (name === 'AuthRetryableFetchError' || isNetworkFailure(lower)) {
     return new RemoteError('offline', message, { cause: error })
   }
-  return new RemoteError('server', message, { cause: error })
+  return new RemoteError('server', message, { cause: error, retryable:
+    (status !== undefined && (status >= 500 || status === 429)) || ['40001', '40P01', '57014', '53300', 'PGRST202', 'PGRST204'].includes(code ?? '') || (code ?? '').startsWith('XX'),
+  })
 }
 
 /**

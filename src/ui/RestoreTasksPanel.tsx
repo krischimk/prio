@@ -5,13 +5,14 @@ import { formatCompletedLabel } from './datetime'
 
 import { Button } from './components/Button'
 import { Sheet } from './components/Sheet'
+import { useState } from 'react'
 
 /**
  * „Aufgaben wiederherstellen“ in den Einstellungen.
  *
  * Abgehakte Aufgaben verschwinden sofort aus der Liste, bleiben hier aber noch
- * `RESTORE_WINDOW_DAYS` Tage auffindbar – zuletzt abgehakte zuerst. Danach sind
- * sie nicht gelöscht, nur nicht mehr über die Oberfläche erreichbar.
+ * sieben Tage auffindbar; die bestätigte Frist läuft bei Umstellung neu an.
+ * Dauerhaft aufbewahrte Aufgaben gehören ausschließlich an ihr Listenende.
  *
  * Gelöschte Aufgaben und Listen stehen darunter: Seit das Löschen keine
  * Rückfrage mehr stellt, ist das der zweite Weg zurück – neben der kurzen
@@ -28,6 +29,16 @@ export function RestoreTasksPanel({ open, onClose }: { open: boolean; onClose: (
   const deletedTasks = useDeletedTasks(open)
   const deletedLists = useDeletedLists(open)
   const lists = useLists()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function restore(action: () => Promise<unknown>) {
+    if (busy) return
+    setBusy(true); setError(null)
+    try { await action() }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'Die Wiederherstellung ist fehlgeschlagen.') }
+    finally { setBusy(false) }
+  }
 
   if (!open) return null
 
@@ -37,9 +48,10 @@ export function RestoreTasksPanel({ open, onClose }: { open: boolean; onClose: (
     <Sheet
       name="aufgaben-wiederherstellen"
       title="Aufgaben wiederherstellen"
-      subtitle={`Abgehakt oder gelöscht in den letzten ${RESTORE_WINDOW_DAYS} Tagen`}
+      subtitle={`Erledigte Aufgaben bis zum Fristablauf; manuell Gelöschtes ${RESTORE_WINDOW_DAYS} Tage`}
       onClose={onClose}
     >
+          {error ? <p role="alert" className="px-4 py-3 text-body text-danger">{error}</p> : null}
           {tasks.length === 0 ? (
             <p className="px-4 py-8 text-center text-body text-ink-faint" data-testid="restore-empty">
               In diesem Zeitraum wurde nichts abgehakt.
@@ -60,8 +72,9 @@ export function RestoreTasksPanel({ open, onClose }: { open: boolean; onClose: (
                   </div>
                   <Button
                     variant="primary" size="sm" layout="shrink-0"
+                    disabled={busy}
                     onClick={() => {
-                      void repositories.setTaskCompleted(task.id, false)
+                      void restore(() => repositories.setTaskCompleted(task.id, false))
                     }}
                   >
                     Wiederherstellen
@@ -92,8 +105,9 @@ export function RestoreTasksPanel({ open, onClose }: { open: boolean; onClose: (
                 </div>
                 <Button
                   variant="primary" size="sm" layout="shrink-0"
+                  disabled={busy}
                   onClick={() => {
-                    void repositories.restoreList(liste.id)
+                    void restore(() => repositories.restoreList(liste.id))
                   }}
                 >
                   Wiederherstellen
@@ -113,8 +127,9 @@ export function RestoreTasksPanel({ open, onClose }: { open: boolean; onClose: (
                 </div>
                 <Button
                   variant="primary" size="sm" layout="shrink-0"
+                  disabled={busy}
                   onClick={() => {
-                    void repositories.restoreTask(task.id)
+                    void restore(() => repositories.restoreTask(task.id))
                   }}
                 >
                   Wiederherstellen

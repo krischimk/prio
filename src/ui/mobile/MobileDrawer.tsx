@@ -14,6 +14,7 @@ import { leerListen } from '../emptyTexts'
 import { IconButton } from '../components/IconButton'
 import { Button } from '../components/Button'
 import { useDialog } from '../components/useDialog'
+import { useView } from '../useView'
 
 /**
  * Ausklappbares Menü der mobilen Ansicht.
@@ -35,7 +36,7 @@ export function MobileDrawer({
   onClose: () => void
   lists: LocalList[]
   selectedListId: string | null
-  onSelectList: (listId: string) => void
+  onSelectList: (listId: string | null) => void
   currentUserId: string
   onOpenRestore: () => void
 }) {
@@ -54,6 +55,7 @@ export function MobileDrawer({
   const [name, setName] = useState('')
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { cloudConflicts, setConflictsOpen } = useView()
 
   // Zurück-Taste, Escape, Fokus und Rolle kommen aus `useDialog` – dasselbe
   // Verhalten wie bei Blatt und Detailansicht. `active: open`, weil das Menü
@@ -63,7 +65,7 @@ export function MobileDrawer({
   if (!open) return null
 
   const email = state.status === 'authenticated' ? state.user.email : ''
-  const sync = describeSyncState(syncStatus, pendingCount, syncing, rejectedCount)
+  const sync = describeSyncState(syncStatus, pendingCount, syncing, rejectedCount, cloudConflicts.length)
   const reminders = describeReminderState(reminderStatus)
 
   const createList = async (event: FormEvent) => {
@@ -124,6 +126,10 @@ export function MobileDrawer({
         </div>
 
         <section className="px-4 pb-4" aria-label="Listen">
+          <button type="button" aria-current={selectedListId === null ? 'page' : undefined} onClick={() => { onSelectList(null); onClose() }}
+            className={`${focusRing} mb-3 w-full rounded-control px-3 py-3 text-left text-body ${selectedListId === null ? 'bg-brand-tint/60 text-brand-faint' : 'text-ink-soft active:bg-surface'}`}>
+            Gesamtansicht
+          </button>
           <h2 className="mb-2 text-meta font-semibold uppercase tracking-wide text-ink-faint">Listen</h2>
           <ul className="space-y-1">
             {lists.map((list) => {
@@ -186,8 +192,19 @@ export function MobileDrawer({
             Synchronisation
           </h2>
           <p className={`text-meta text-ink-muted ${numeric}`} data-testid="drawer-sync">
-            {sync.text}
+            <span data-testid="sync-status">{sync.text}</span>
           </p>
+          {cloudConflicts.length > 0 ? (
+            <Button
+              variant="secondary" layout="mt-2 w-full"
+              onClick={() => {
+                onClose()
+                setConflictsOpen(true)
+              }}
+            >
+              Konflikte klären
+            </Button>
+          ) : null}
           <Button
             variant="secondary" layout="mt-2 w-full"
             onClick={() => {

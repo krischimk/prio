@@ -27,10 +27,12 @@ export function MoveTaskSheet({
   task,
   lists,
   onClose,
+  onMoved,
 }: {
   task: LocalTask
   lists: LocalList[]
   onClose: () => void
+  onMoved?: () => void
 }) {
   const { repositories } = useWorkspace()
   const [zielListeId, setZielListeId] = useState(task.list_id)
@@ -58,6 +60,7 @@ export function MoveTaskSheet({
     setError(null)
     try {
       await repositories.moveTask(task.id, zielListeId, zielAbschnitt)
+      onMoved?.()
       onClose()
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Verschieben fehlgeschlagen.')

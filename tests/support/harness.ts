@@ -1,5 +1,5 @@
 import { createRepositories, type Repositories } from '../../src/db/repositories'
-import { deleteLocalDatabase, openLocalDatabase, type LocalDatabase } from '../../src/db/localDb'
+import { LocalDatabase } from '../../src/db/localDb'
 import { createFixedClock } from '../../src/domain/clock'
 import { createSyncEngine, type SyncEngine } from '../../src/sync/syncEngine'
 import type { RemoteGateway } from '../../src/sync/remoteGateway'
@@ -27,7 +27,10 @@ export async function createDevice(options: {
   clock?: TestClock
 }): Promise<DeviceHarness> {
   const clock = options.clock ?? createFixedClock()
-  const db = await openLocalDatabase(options.userId)
+  // Auch zwei Geräte desselben Kontos haben voneinander unabhängige Bestände.
+  // Der App-Cache nach Benutzerkennung würde hier dasselbe Objekt zurückgeben.
+  const db = new LocalDatabase(`prio-test-device-${options.userId}-${crypto.randomUUID()}`)
+  await db.open()
   const repositories = createRepositories(db, clock)
   const engine = createSyncEngine({
     db,
@@ -43,8 +46,7 @@ export async function createDevice(options: {
     engine,
     clock,
     async dispose() {
-      db.close()
-      await deleteLocalDatabase(options.userId)
+      await db.delete()
     },
   }
 }

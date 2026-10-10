@@ -1,4 +1,4 @@
-import type { LocalList, LocalListMember, LocalTask } from './types'
+import type { LocalList, LocalListMember, LocalListPreference, LocalTask, LocalUserPreference } from './types'
 
 /**
  * Die Felder jeder Entität – an **einer** Stelle.
@@ -34,6 +34,8 @@ export const LISTEN_FELDER = [
   'is_shared',
   'icon',
   'sections',
+  'keep_completed',
+  'completion_retention_started_at',
   'created_at',
   'updated_at',
   'deleted_at',
@@ -48,6 +50,9 @@ export const AUFGABEN_FELDER = [
   'due_at',
   'completed',
   'completed_at',
+  'completed_expires_at',
+  'expired_at',
+  'reopen_context',
   'recurrence',
   'successor_id',
   'reminders',
@@ -68,13 +73,20 @@ export const MITGLIEDER_FELDER = [
   'dirty',
 ] as const satisfies readonly (keyof LocalListMember)[]
 
+export const LISTENAUSWAHL_FELDER = ['list_id', 'user_id', 'include_in_overview', 'created_at', 'updated_at', 'deleted_at', 'dirty'] as const satisfies readonly (keyof LocalListPreference)[]
+export const STARTANSICHT_FELDER = ['id', 'default_list_id', 'overview_mode', 'created_at', 'updated_at', 'deleted_at', 'dirty'] as const satisfies readonly (keyof LocalUserPreference)[]
+
 // Wenn eine dieser Zusicherungen fehlschlägt, nennt der Fehler das Feld.
 const _listen: FelderGenau<LocalList, typeof LISTEN_FELDER> = true
 const _aufgaben: FelderGenau<LocalTask, typeof AUFGABEN_FELDER> = true
 const _mitglieder: FelderGenau<LocalListMember, typeof MITGLIEDER_FELDER> = true
+const _listenauswahl: FelderGenau<LocalListPreference, typeof LISTENAUSWAHL_FELDER> = true
+const _startansicht: FelderGenau<LocalUserPreference, typeof STARTANSICHT_FELDER> = true
 void _listen
 void _aufgaben
 void _mitglieder
+void _listenauswahl
+void _startansicht
 
 /** Nur lokal: Diese Felder verlassen das Gerät nie. */
 export const NUR_LOKALE_FELDER = ['dirty'] as const
