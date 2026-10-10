@@ -1,5 +1,5 @@
 /** Prüft das tatsächliche APK/WebView, ohne Cloudzugang oder private Daten. */
-import { chromium, expect } from '@playwright/test'
+import { _android, expect } from '@playwright/test'
 import { execFileSync, spawn } from 'node:child_process'
 import { closeSync, mkdirSync, openSync, readFileSync, writeFileSync } from 'node:fs'
 import assert from 'node:assert/strict'
@@ -11,7 +11,7 @@ const pause = () => new Promise(resolve => setTimeout(resolve, 1000))
 const mockLog = openSync(`${output}/mock.log`, 'w')
 const mock = spawn(process.execPath, ['tests/mock-supabase/server.mjs', '54321'], { stdio: ['ignore', mockLog, mockLog] })
 closeSync(mockLog)
-let browser
+let device
 let page
 const errors = []
 const snapshot = async name => {
@@ -30,24 +30,18 @@ try {
   adb('reverse', 'tcp:54321', 'tcp:54321')
   adb('install', '-r', 'android/app/build/outputs/apk/debug/app-debug.apk')
   adb('shell', 'am', 'start', '-n', 'de.krischi.prio/.MainActivity')
-  let socket
-  for (let attempt = 0; attempt < 60; attempt += 1) {
-    try {
-      const pid = adb('shell', 'pidof', '-s', 'de.krischi.prio')
-      if (pid) socket = adb('shell', 'cat', '/proc/net/unix').match(new RegExp(`webview_devtools_remote_${pid}\\b`))?.[0]
-    } catch { /* Der App-Prozess startet noch. */ }
-    if (socket) break
-    await pause()
-  }
-  assert.ok(socket, 'Die APK hat kein laufendes WebView bereitgestellt.')
-  adb('forward', 'tcp:9222', `localabstract:${socket}`)
-  browser = await chromium.connectOverCDP('http://127.0.0.1:9222')
-  page = browser.contexts()[0].pages()[0]
+  // Die dokumentierte Android-Anbindung unterstützt WebViews ohne die
+  // Browser-Kontextverwaltung eines vollständigen Desktop-Chrome.
+  device = (await _android.devices())[0]
+  assert.ok(device, 'Kein Android-Emulator erreichbar.')
+  adb('shell', 'svc', 'power', 'stayon', 'true')
+  page = await (await device.webView({ pkg: 'de.krischi.prio' }, { timeout: 60_000 })).page()
   page.setDefaultTimeout(30_000)
   page.on('pageerror', error => errors.push(error.message))
   await expect(page.getByRole('heading', { name: 'Prio', exact: true })).toBeVisible({ timeout: 60_000 })
   assert.equal(await page.evaluate(() => window.Capacitor.getPlatform()), 'android')
-  const info = await page.evaluate(() => window.Capacitor.Plugins.App.getInfo())
+  const nativeVersion = adb('shell', 'dumpsys', 'package', 'de.krischi.prio').match(/versionName=(\S+)/)?.[1]
+  const info = { id: 'de.krischi.prio', version: nativeVersion, model: device.model() }
   const version = JSON.parse(readFileSync('package.json', 'utf8')).version
   assert.equal(info.version, version, 'Geprüft wird die aktuelle APK-Version.')
   await snapshot('anmeldung')
@@ -97,8 +91,7 @@ try {
   writeFileSync(`${output}/ergebnis.json`, JSON.stringify({ version, native: info, checks: ['APK-Start', 'Registrierung', 'Listenregeln', 'Aufgabe speichern', 'Abhaken und Wiederöffnen', 'Synchronisation', 'Gesamtansicht', 'Querformat'], errors }, null, 2))
   console.log('Native Android-Kernabläufe bestanden.')
 } finally {
-  try { await snapshot('letzter-zustand'); writeFileSync(`${output}/logcat.txt`, adb('logcat', '-d')) } catch { /* Ursprünglichen Prüfungsfehler erhalten. */ }
-  if (browser) await browser.close()
-  try { adb('forward', '--remove', 'tcp:9222') } catch { /* Vor einem Startfehler gibt es keinen Anschluss. */ }
+  try { await snapshot('letzter-zustand'); writeFileSync(`${output}/logcat.txt`, adb('logcat', '-d', '-t', '1000')) } catch { /* Ursprünglichen Prüfungsfehler erhalten. */ }
+  if (device) await device.close()
   mock.kill()
 }

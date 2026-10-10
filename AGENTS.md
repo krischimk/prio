@@ -343,7 +343,7 @@ Telefonbildern in Hoch- und Querformat. Diese Bilder vor dem Tag herunterladen
 und ansehen. Auslöser: Die lokale Software-Emulation startete Android zwar,
 aber Systemdienst-Abstürze verhinderten eine belastbare Prüfung der App.
 
-Der Emulator läuft auf demselben Rechner. Ist eine Anzeige vorhanden (`DISPLAY`
+Der lokale Emulator läuft auf demselben Rechner. Ist eine Anzeige vorhanden (`DISPLAY`
 gesetzt), erscheint sein Fenster auf dem Desktop und lässt sich wie ein Handy
 bedienen; ohne Anzeige – etwa auf einem Server – startet das Skript ihn
 fensterlos, und es bleibt der Screenshot zur Beurteilung.

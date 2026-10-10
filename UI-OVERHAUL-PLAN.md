@@ -984,3 +984,27 @@ Für einen Trendvergleich existiert bislang nur dieser erste Snapshot.
 
 Der Stand bleibt eine unveröffentlichte Arbeitsfassung auf
 `feature/ui-foundation`. Für eine Auslieferung gelten die bisherigen Tore.
+
+## 17. Freigegebene Testfassung 0.24.0
+
+Der Nutzer hat die Veröffentlichung zum eigenen Testen ausdrücklich freigegeben.
+Das Paket umfasst die oben beschriebene erste UI-Fassung und ihre fachlichen
+Grundlagen. Weitere Gestaltungsänderungen folgen nach gesammeltem Feedback;
+die noch offenen Featurepakete bleiben außerhalb dieser Veröffentlichung.
+
+Die lokale Abnahme umfasst `npm run ci` mit 551 Unit-/Integrationstests,
+alle 122 Browserfälle, den Produktionsbuild sowie die angesehenen Telefon-
+und Querformatbilder. Die Android-APK wurde gebaut und ihre Signatur mit
+0.23.4 verglichen; die Update-Installation auf 0.24.0 gelang ohne Deinstallation.
+Eine zuverlässige native Bedienprüfung konnte wegen Emulator- und
+Testanbindungsproblemen nicht abgeschlossen werden. Auf ausdrücklichen
+Nutzerwunsch wird sie für diese Testveröffentlichung ausgelassen. Damit
+bleiben Tastatur, Systemleisten und tatsächliche Bedienung auf dem Telefon
+Gegenstand des Nutzertests; die Browserprüfungen ersetzen diese Abnahme nicht.
+
+Vor der Veröffentlichung wird der Cloudbestand gesichert, die Sammelmigration
+eingespielt und der tatsächliche Schema-, Rechte- und Zeitgeberstand geprüft.
+Die neue Sieben-Tage-Regel erhält für bereits erledigte Aufgaben die bestätigte
+Schonfrist ab Einführung. Nach der Web-Veröffentlichung prüft `smoke:live`
+Anmeldung, Aufgabenanlage und Synchronisation am echten Projekt mit dem
+dedizierten Testkonto. Version, annotierter Tag und APK gehören zusammen.
