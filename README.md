@@ -93,15 +93,28 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
 * Die Auswahl ist persönlich. Auch Mitglieder einer geteilten Liste können
   ihre eigene Auswahl bestimmen.
 * „Nach Listen gruppiert“ erhält die vorhandene Reihenfolge innerhalb der
-  Ursprungsliste; „Neueste zuerst“ mischt die Aufgaben mit sichtbarer Herkunft.
+  Ursprungsliste. Ziehen ändert diese Reihenfolge auch in der Originalansicht;
+  ein Zug in einen anderen Listenblock verschiebt die Aufgabe tatsächlich
+  dorthin. „Neueste zuerst“ mischt die Aufgaben mit sichtbarer Herkunft und
+  bietet keine manuelle Ziehsortierung.
   Gruppierung ist nur die erste Voreinstellung. Die gewählte Ansicht bleibt
   nach Neustart erhalten und wird zwischen Geräten synchronisiert.
-* Neue Aufgaben verlangen zunächst eine ausdrückliche Zielliste. Eine unter
-  „Gesamtansicht einstellen“ manuell gewählte Standardliste öffnet den Editor
-  direkt mit sichtbarem Ziel. „Zielliste ändern“ bleibt erreichbar; die zuletzt
-  beim Erstellen ausgewählte Liste wird nicht automatisch zum Default.
+* Auf dem Desktop werden neue Aufgaben in beiden Ansichten direkt im sichtbaren
+  Titelfeld mit Enter angelegt. In der Gesamtansicht wird zuvor ausdrücklich
+  eine Zielliste ausgewählt; eine manuell gesetzte Standardliste ist vorausgewählt.
+  Ohne Standardliste ist nach dem Hinzufügen erneut eine Auswahl nötig.
+  Auf dem Telefon öffnet der feste Knopf „Neue Aufgabe“ in beiden Ansichten
+  denselben Editor; die Gesamtansicht fragt bei Bedarf zuerst nach der Zielliste.
+  Die zuletzt gewählte Zielliste wird nicht automatisch zum Default. Entwürfe
+  bleiben ihrer Zielliste zugeordnet, auch beim Wechsel zwischen den Ansichten.
 * Alle zugänglichen Ziellisten sind erlaubt. Bei einer ausgeschlossenen Liste
   erklärt ein Hinweis, dass die neue Aufgabe in ihrer Listenansicht erscheint.
+* Aufgabenzeilen, Bereiche und „Abgehakt“ kommen in beiden Ansichten aus
+  `TaskList`/`TaskRow`. Zugeklappte Bereiche werden auf demselben Gerät je
+  Ursprungsliste gemeinsam gemerkt. Bei eingeschaltetem „Abgehakt“ erscheinen
+  erledigte Aufgaben auch in der Gesamtansicht: gruppiert am Ende ihres
+  Listenblocks, bei „Neueste zuerst“ gesammelt am Ende mit Herkunft. Der
+  Bereich ist zunächst eingeklappt und zeigt die Anzahl.
 * Diese persönlichen Einstellungen liegen in `list_preferences` und
   `user_preferences`; die Cloud braucht Migration 0015. Sie ersetzen keine der
   gemeinsamen Regeln zu Prioritäten, gleichen Namen oder „Abgehakt“.
@@ -912,14 +925,19 @@ würde aber bei jeder neuen Aufgabe den halben Bestand als geändert markieren.
 Aufgaben aus der Zeit vor der Reihenfolge-Funktion stehen auf 0 und werden von
 einer neuen Aufgabe ebenfalls überholt.
 
-**Umsortieren:** Zeile gedrückt halten (rund 0,4 s), dann ziehen. Eine blaue
-Linie zeigt, wo die Aufgabe landen würde. Bewegt sich der Finger vorher um mehr
-als zehn Pixel, war es ein Wischversuch und die Liste scrollt wie gewohnt.
+**Umsortieren:** Auf dem Telefon die Aufgabenfläche rechts vom Kästchen rund
+0,4 Sekunden halten, dann ziehen. Kurzes Wischen scrollt; mehr als sechs Pixel
+Bewegung vor dem Langdruck bricht die Aktivierung ab. Mit Maus oder Stift
+genügen sechs Pixel gezielte Bewegung. Die Nachbarn machen bereits während
+des Ziehens animiert Platz. Escape bricht ab, ohne etwas zu speichern.
 
-Beim Umsortieren werden die Positionen der betroffenen Liste auf 1 … n
-neu vergeben (`reorderTasks`). Geschrieben werden nur Aufgaben, deren Position
-sich tatsächlich ändert – der Rest bleibt unangetastet und wird auch nicht
-erneut hochgeladen.
+`placeTask` speichert Liste, Bereich und Position atomar vor dem gewählten
+Nachbarn; normalerweise ändert sich nur die gezogene Aufgabe. Die bestätigte
+Ausgangsposition verhindert, dass ein inzwischen erfolgtes Verschieben oder
+Abhaken überschrieben wird. Andere Bearbeitungen bleiben erhalten. Fehlt der
+Zielbereich oder Nachbar inzwischen, wird ohne Teilschreibung abgebrochen.
+Nur bei erschöpfter Zahlengenauigkeit wird der betroffene Zielbereich neu
+nummeriert. „Reihenfolge ändern“ benutzt dieselbe Operation.
 
 Datensätze aus der Zeit vor dieser Funktion haben die Position 0. Bei
 Gleichstand greifen die früheren Regeln (Erledigt-Status, Fälligkeit,
@@ -937,10 +955,10 @@ Zahl daneben bleibt sichtbar, damit man sieht, ob sich das Aufklappen lohnt.
 (`tasks.section_id`). Bewusst keine eigene Tabelle: Ein Abschnitt besteht nur
 aus Name und Stelle in der Reihenfolge, und eine eigene Tabelle bräuchte eigene
 Policies, eigene Grants und einen eigenen Abgleichsweg. Der Preis steht
-ausdrücklich dabei: Der Plan einer Liste wird als Ganzes abgeglichen (Last
-Write Wins). Zwei Personen, die gleichzeitig Bereiche derselben Liste ändern,
-sehen am Ende den Stand des späteren Schreibens – bei einem Handvoll Namen
-vertretbar, bei Hunderten nicht.
+ausdrücklich dabei: Der Plan einer Liste wird als Ganzes abgeglichen. Auch hier
+prüft die Cloud die bestätigte Ausgangsbasis; widersprechende gleichzeitige
+Änderungen werden als Konflikt geklärt und nicht von der späteren Geräteuhr
+entschieden.
 
 Der Verweis einer Aufgabe ist kein Fremdschlüssel (der Abschnitt lebt in einem
 JSON-Array). Ein Verweis ins Leere wird wie „ohne Bereich" angezeigt; beim
@@ -950,15 +968,34 @@ die Aufgaben bleiben und fallen nach „ohne Bereich".
 **Bedienung.** Angelegt, umbenannt und gelöscht werden Bereiche in der breiten
 Ansicht über den Knopf *Bereiche* im Kopfbereich, auf dem Telefon in den
 Listeneinstellungen (Tippen auf den Listennamen). Zugeordnet wird eine Aufgabe
-im Bearbeiten-Formular bzw. in der Detailansicht; auf dem Telefon geht es auch
+im Bearbeiten-Formular bzw. in der Detailansicht; in beiden Ansichten geht es auch
 durch **Ziehen**: Die Aufgabe landet in dem Bereich, in dem ihre neue
 Nachbarzeile steht.
 
-> **Eine Einschränkung, ehrlich benannt:** In einen **leeren** Bereich lässt
-> sich nichts ziehen – es gibt keine Nachbarzeile, an der sich der Bereich
-> erkennen ließe. Die erste Aufgabe kommt deshalb über das Formular hinein;
-> danach geht auch dorthin das Ziehen. Ein Ablegen auf dem Bereichskopf selbst
-> wäre die nächste Ausbaustufe.
+Leere Bereiche und der unbeschriftete Teil ohne Bereich bleiben Ablageziele.
+Während des Ziehens wird die freie Zielfläche sichtbar. Ein zugeklappter
+Zielbereich wird für die Vorschau geöffnet; seine gemerkte Klappstellung bleibt
+erhalten.
+
+**dnd-kit:** Die aktuelle React-API (`@dnd-kit/react` 0.5) ersetzt die
+Legacy-Pakete vollständig. Die [Mehrgruppen-Anleitung](https://dndkit.com/react/guides/multiple-sortable-lists/)
+und die [Zustandsregeln](https://dndkit.com/react/guides/sortable-state-management/)
+sind in `TaskList.tsx` konkret umgesetzt:
+
+| Empfehlung | Umsetzung |
+| --- | --- |
+| Eindeutige ID, Index, Gruppe und Typregeln | Aufgaben-ID; Gruppe aus Listen- und Bereichs-ID; nur Aufgaben als Quelle/Ziel |
+| Leere Container erreichbar, Aufgaben bevorzugt | `useDroppable` mit niedriger Kollisionspriorität für jeden Bereich einschließlich des kopflosen Teils |
+| Ziele passend zur gewünschten Präzision erkennen | `pointerIntersection` für Aufgaben und Bereiche; die überlappende Ziehkopie blockiert damit keinen Bereichskopf. Der Tastaturweg setzt dieselbe virtuelle Zeigerposition. |
+| Passende Sensoren je Eingabegerät; Tastatur erhalten | Konfigurierter `PointerSensor`; Leertaste startet Tastatur-Ziehen, Enter öffnet den Editor, Pfeile/Escape/Abschluss behalten ihre Standards |
+| Standards für Feedback und automatisches Scrollen erhalten | Standardplugins; die Bibliothek hält die schwebende Zeile und ihre Breite |
+| React und automatische DOM-Sortierung nicht gleichzeitig dieselbe Gruppe ändern | `move` führt die Vorschau; `onDragOver.preventDefault()` verhindert die zusätzliche DOM-Umsortierung; `useSortable` animiert die Positionsänderungen |
+| Neulesen während einer Ziehgeste zurückstellen | Momentaufnahme ausschließlich für die laufende Interaktion; danach wieder Datenbank-Hook |
+| Abbruch nimmt Vorschau zurück; erst Loslassen schreibt | `onDragEnd` prüft Abbruch und Ziel; `placeTask` schreibt atomar |
+
+`tests/e2e/drag.spec.ts` prüft echte Maus-, Touch- und Tastaturgesten, animiertes
+Platzmachen, leere und zugeklappte Ziele, Abbruch und Wechsel zwischen Listen. Der frühere
+Test für unbenutzte selbstgebaute Ziehberechnungen entfällt.
 
 Zugeklappt oder offen ist **Ansichtssache je Gerät**: Das steht in
 `localStorage` und wird nicht abgeglichen.

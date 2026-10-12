@@ -10,6 +10,16 @@ import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterEach } from 'vitest'
 
+// jsdom hat keine Layoutbeobachtung. Die echten Maße und Ziehgesten werden
+// im Browser geprüft; App-Integration braucht nur den Observer-Lebenszyklus.
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  globalThis.ResizeObserver = class implements ResizeObserver {
+    observe(_target: Element, _options?: ResizeObserverOptions) {}
+    unobserve(_target: Element) {}
+    disconnect() {}
+  }
+}
+
 // Ohne `globals: true` registriert Testing Library sein automatisches
 // Aufräumen nicht selbst – ohne diesen Aufruf würden sich gerenderte
 // Komponenten zwischen Tests ansammeln.

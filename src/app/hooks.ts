@@ -82,17 +82,17 @@ export function useOverviewPreferences(userId: string): OverviewPreferencesQuery
   return { ...result, retry }
 }
 
-/** Nur Aufgaben der ausdrücklich aktivierten Listen; die Liste bleibt ihre Heimat. */
-export function useOverviewTasks(listIds: string[]): { status: 'loading' | 'ready' | 'error'; tasks: LocalTask[]; retry: () => void } {
+/** Derselbe abgegrenzte Leser für einzelne Listen und die Gesamtansicht. */
+function useScopedTasks(listIds: string[], completed = false): { status: 'loading' | 'ready' | 'error'; tasks: LocalTask[]; retry: () => void } {
   const { repositories, dataVersion } = useWorkspace()
-  const scope = JSON.stringify(listIds)
+  const scope = JSON.stringify([completed, listIds])
   const [attempt, setAttempt] = useState(0)
   const [result, setResult] = useState<{ scope: string; status: 'ready' | 'error'; tasks: LocalTask[] }>({ scope: '[]', status: 'ready', tasks: [] })
   useEffect(() => {
     let active = true
-    const ids: string[] = JSON.parse(scope)
-    Promise.all(ids.map(id => repositories.listTasks(id))).then(groups => {
-      if (active) setResult({ scope, status: 'ready', tasks: groups.flat().filter(task => !task.completed) })
+    const [done, ids]: [boolean, string[]] = JSON.parse(scope)
+    Promise.all(ids.map(id => done ? repositories.listCompletedTasks(id) : repositories.listTasks(id))).then(groups => {
+      if (active) setResult({ scope, status: 'ready', tasks: groups.flat().filter(task => task.completed === done) })
     }).catch(() => {
       if (active) setResult(previous => ({ scope, status: 'error', tasks: previous.scope === scope ? previous.tasks : [] }))
     })
@@ -102,6 +102,8 @@ export function useOverviewTasks(listIds: string[]): { status: 'loading' | 'read
   return result.scope === scope ? { ...result, retry } : { status: 'loading', tasks: [], retry }
 }
 
+export function useTasksQuery(listIds: string[]) { return useScopedTasks(listIds) }
+
 export function useCloudConflicts(): CloudConflict[] {
   const { repositories, dataVersion } = useWorkspace()
   const [conflicts, setConflicts] = useState<CloudConflict[]>([])
@@ -110,31 +112,10 @@ export function useCloudConflicts(): CloudConflict[] {
 }
 
 export function useTasks(listId: string | null): LocalTask[] {
-  const { repositories, dataVersion } = useWorkspace()
-  const [tasks, setTasks] = useState<LocalTask[]>([])
-  useEffect(
-    () => subscribe(() => (listId === null ? Promise.resolve([]) : repositories.listTasks(listId)), setTasks),
-    [repositories, dataVersion, listId],
-  )
-  return tasks
+  return useTasksQuery(listId === null ? [] : [listId]).tasks
 }
 
-export function useCompletedTasks(listId: string): { status: 'loading' | 'ready' | 'error'; tasks: LocalTask[]; retry: () => void } {
-  const { repositories, dataVersion } = useWorkspace()
-  const [attempt, setAttempt] = useState(0)
-  const [result, setResult] = useState<{ listId: string; status: 'ready' | 'error'; tasks: LocalTask[] }>({ listId: '', status: 'ready', tasks: [] })
-  useEffect(() => {
-    let active = true
-    repositories.listCompletedTasks(listId).then(tasks => {
-      if (active) setResult({ listId, status: 'ready', tasks })
-    }).catch(() => {
-      if (active) setResult(previous => ({ listId, status: 'error', tasks: previous.listId === listId ? previous.tasks : [] }))
-    })
-    return () => { active = false }
-  }, [repositories, dataVersion, listId, attempt])
-  const retry = () => setAttempt(value => value + 1)
-  return result.listId === listId ? { ...result, retry } : { status: 'loading', tasks: [], retry }
-}
+export function useCompletedTasks(listId: string | string[]) { return useScopedTasks(Array.isArray(listId) ? listId : [listId], true) }
 
 /**
  * Gelöschte Aufgaben der letzten Tage – zuletzt gelöschte zuerst.

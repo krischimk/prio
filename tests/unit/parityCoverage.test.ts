@@ -40,6 +40,7 @@ const ABDECKUNG: Record<(typeof SCHREIBEND)[number], string | null> = {
   updateTask: 'Aufgabe bearbeiten: Titel und Beschreibung',
   setTaskCompleted: 'Aufgabe abhaken und rückgängig machen',
   moveTask: 'Aufgabe in eine andere Liste verschieben',
+  placeTask: 'Aufgabenreihenfolge ändern',
   // Umsortieren läuft über Ziehen bzw. Tippen in der Zeile; beide Ansichten
   // haben dafür einen Weg, aber keinen eigenen Paritätseintrag.
   reorderTasks: null,

@@ -207,59 +207,8 @@ test('fragt beim Schließen nach, wenn Änderungen nicht gespeichert sind', asyn
   expect(await taskTitles(page)).toEqual(['Milch'])
 })
 
-/*
- * Die Zieh-Gesten selbst werden hier **nicht** automatisch geprueft.
- *
- * Auslöser: Der Langdruck greift im fensterlosen Chromium unzuverlaessig – auch
- * mit zwei Sekunden Wartezeit und anschliessender Abfrage blieb die schwebende
- * Kopie in rund einem Drittel der Laeufe aus. Ein Test, der zufaellig rot wird,
- * ist schlimmer als keiner: Er verdeckt echte Fehler.
- *
- * Deterministisch geprueft sind die Bausteine, aus denen das Ziehen besteht:
- * `tests/unit/reorderDrag.test.ts` (Ziel aus der Geometrie, Umsortierung,
- * Bereichswechsel) und `tests/unit/reorderDragHook.test.tsx` (Aufnehmen,
- * Vorschau, Systemabbruch, Wisch-Abbruch). Die Geste am Geraet prueft der
- * Nutzer; der naechste Schritt ist ein Pruefstand ueber CDP-Touch-Ereignisse
- * (`Input.dispatchTouchEvent`), wie sie das Geraet wirklich schickt.
- */
-
-/*
- * Umsortieren (Geste **und** Tastatur) wird hier nicht automatisch geprueft.
- *
- * Beides laeuft im fensterlosen Chromium unzuverlaessig: Der Langdruck haengt an
- * einem Zeitgeber, den Chromium drosselt, und die Tastatursteuerung von dnd-kit
- * verliert im ersten Anlauf die Leertaste, wenn die Seite nicht im Vordergrund
- * ist. Ein Test, der zufaellig rot wird, verdeckt echte Fehler – deshalb ist er
- * hier nicht.
- *
- * Deterministisch geprueft sind die Bausteine: `tests/unit/reorderDrag.test.ts`
- * (Reihenfolge, Bereichswechsel, leere Gruppe). Die Geste am Geraet prueft der
- * Nutzer. Naechster Schritt fuer einen Pruefstand: CDP-Touch-Ereignisse
- * (`Input.dispatchTouchEvent`), wie sie das Geraet wirklich schickt.
- */
-
-
-test('sortiert bei kurzem Wischen nicht um', async ({ page }) => {
-  await register(page, uniqueEmail('m8'))
-  await createList(page, 'Reihenfolge')
-  await createTask(page, 'Erste')
-  await createTask(page, 'Zweite')
-
-  // Zuletzt angelegt steht oben.
-  expect(await taskTitles(page)).toEqual(['Zweite', 'Erste'])
-
-  // Zu kurz für den Langdruck – das ist ein Scrollversuch.
-  const box = await taskRow(page, 'Zweite').boundingBox()
-  if (box) {
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
-    await page.mouse.down()
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 120, { steps: 8 })
-    await page.mouse.up()
-    await page.waitForTimeout(200)
-  }
-
-  expect(await taskTitles(page)).toEqual(['Zweite', 'Erste'])
-})
+// Reale Maus-/Touch-Gesten, Animationen und der Scrollversuch werden in
+// drag.spec.ts gegen denselben gemeinsamen Listenbaustein geprüft.
 
 test('benennt eine Liste über die App-Leiste um', async ({ page }) => {
   await register(page, uniqueEmail('m10'))
@@ -582,9 +531,9 @@ test('schaltet eine Erinnerung auf dem Telefon nur für sich stumm', async ({ pa
   await listAction(page, 'Teilen')
   await page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(emailB)
   await page.getByRole('button', { name: 'Freigeben' }).click()
-  // dnd-kit bringt eine eigene Status-Region fuer Vorleser mit
-  // (`DndLiveRegion-*`); gemeint ist hier unsere Meldung.
-  await expect(page.locator('[role=status]:not([id^="DndLiveRegion"])')).toContainText(
+  // Die Freigabemeldung gehört zur Listenverwaltung, unabhängig von anderen
+  // Statusregionen (etwa den Ziehhinweisen für Vorleseprogramme).
+  await expect(page.getByRole('dialog', { name: 'Liste verwalten', exact: true }).getByRole('status')).toContainText(
     'Freigabe für',
   )
   await page.getByRole('button', { name: 'Schließen' }).click()
@@ -642,29 +591,20 @@ test('E2E 6: Bereiche ordnen Aufgaben, nehmen sie beim Ziehen auf und klappen zu
   const kopf = (name: string) => page.getByTestId('section-header').filter({ hasText: name })
   await expect(kopf('Obst')).toContainText('1')
 
-  // Aufgaben ohne Bereich stehen oben – **mit** eigenem Kopf, seit sich dorthin
-  // ziehen laesst: Eine leere Gruppe hat sonst kein Ziel. Darunter die Bereiche
-  // in ihrer Reihenfolge. Der Kopf wird gross dargestellt, verglichen wird
-  // deshalb kleingeschrieben.
+  // Aufgaben ohne Bereich stehen oben ohne beschrifteten Kopf. Der kopflose
+  // Teil bleibt trotzdem ein Ablageziel, auch wenn er leer ist (drag.spec.ts).
   const koepfe = (await page.getByTestId('section-header').allInnerTexts()).map((text) =>
     text.toLowerCase(),
   )
-  expect(koepfe).toHaveLength(3)
-  expect(koepfe[0]).toContain('ohne bereich')
-  expect(koepfe[1]).toContain('obst')
-  expect(koepfe[2]).toContain('getränke')
+  expect(koepfe).toHaveLength(2)
+  expect(koepfe[0]).toContain('obst')
+  expect(koepfe[1]).toContain('getränke')
 
   // Die Bereiche stehen **unter** den Aufgaben ohne Bereich: „Milch" und
   // „Saft" zuerst (zuletzt angelegt), dann „Äpfel" im Bereich „Obst".
   expect(await taskTitles(page)).toEqual(['Milch', 'Saft', 'Äpfel'])
 
-  /*
-   * „Saft" kommt über das Formular in den Bereich „Obst".
-   *
-   * Hier stand ein Zug; die Geste selbst ist im fensterlosen Chromium nicht
-   * zuverlaessig (siehe Notiz oben). Geprueft wird deshalb der Weg ueber das
-   * Formular – die Bereichszuordnung selbst.
-   */
+  // Hier die Zuordnung über das Formular; der Ziehweg steht in drag.spec.ts.
   await openTaskEditor(page, 'Saft')
   await page.getByLabel('Bereich').selectOption({ label: 'Obst' })
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()

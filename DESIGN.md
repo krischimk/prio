@@ -1,6 +1,6 @@
 # Design für Prio
 
-Stand: 10. Oktober 2026. Dies ist die Arbeitsgrundlage für den begonnenen
+Stand: 12. Oktober 2026. Dies ist die Arbeitsgrundlage für den begonnenen
 UI-Umbau. Sie trennt überprüfbares Verhalten von veränderbaren Stilwerten.
 Der Lieferumfang und die noch offenen Produktentscheidungen stehen in
 [UI-OVERHAUL-PLAN.md](UI-OVERHAUL-PLAN.md). Arbeits-, Daten- und Release-Regeln
@@ -20,6 +20,7 @@ stehen in [AGENTS.md](AGENTS.md).
 | **D8 Lesbarkeit und Ziele**: Normaler Text erreicht 4,5:1, identifikationsrelevante Markierungen 3:1. Häufige Touch-Aktionen haben mindestens 44 × 44 CSS-Pixel Trefferfläche. | Größe einer Trefferfläche ist unabhängig vom visuellen Gewicht einer Aktion. | Farbpaare werden gerechnet; tatsächliche Ziele, 200 % Schrift sowie Telefon-Hoch-/Querformat werden gerendert. Kompakte Hilfsaktionen dürfen 32 Pixel hoch sein; sie ersetzen keine Touch-Hauptaktion. |
 | **D9 Zuverlässige Rückmeldung**: Speichern reagiert auf den lokal erreichten Zustand; Sync meldet die Cloudübertragung gesondert. Fehler erklären Ursache und nächste wirksame Handlung. | Ein deaktivierter Knopf allein beweist weder Persistierung noch Konfliktschutz. | Offline, Schreibfehler, konkurrierende Änderung, Wiederholung und Serverablehnung. Entwurf bleibt bei Fehlern erhalten. Upload-Bestätigung ist eine interne Bestätigung, kein zusätzlicher Benutzerdialog. |
 | **D10 Kleine gemeinsame Bausteine**: Wiederkehrende Bedeutung und Verhalten werden gemeinsam geändert. Nicht mehr verwendete Varianten werden entfernt. | Vermeidet lokales Auseinanderlaufen und ein Designframework ohne Verbraucher. | Kitchen für Bausteine, Quelltextkonventionen und konkrete Browserabläufe. Normale Layoutwerte bleiben bei der bestehenden Skala. |
+| **D11 Eine Listenbedienung**: Einzel- und gruppierte Gesamtansicht verwenden dieselben Aufgabenzeilen, Bereiche, Erfassung und Ziehvorschau. Ein Zug ändert die wirkliche Liste, Gruppe und Reihenfolge; erst Loslassen speichert, Escape verwirft. | Zwei Implementierungen erzeugten unterschiedliches Verhalten und gefüllte Zielbereiche ohne Platzmachen. | `TaskList`/`TaskRow`; echte Ziehgesten, Nachbaranimationen, leere kopflose Ziele, Abbruch und synchronisierte Positionen (`drag`, `taskPlacement`). Geteilte Klappstellung, Entwürfe je Zielliste und „Abgehakt“ in beiden Ansichten (`overview`). |
 
 Die Kontrastschwellen beziehen sich auf [WCAG 2.2: Kontrast](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html).
 Dialogverhalten folgt dem [WAI-Dialogmuster](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/),

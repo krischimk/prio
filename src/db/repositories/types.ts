@@ -8,6 +8,7 @@ import type { TaskReminder } from '../../domain/reminder'
 import type { TaskEditInput, TaskEditOptions } from '../../domain/taskEdit'
 import type { LocalList, LocalListMember, LocalListPreference, LocalTask, LocalUserPreference, OverviewMode, ShareContact } from '../../domain/types'
 import type { CloudConflict } from '../../domain/cloudMerge'
+import type { TaskPlacement } from '../../domain/taskPlacement'
 
 export interface CreateTaskInput {
   listId: string
@@ -69,6 +70,8 @@ export interface Repositories {
   setTaskCompleted(taskId: string, completed: boolean): Promise<LocalTask>
   /** Verschiebt eine Aufgabe in eine andere Liste (beide müssen zugänglich sein). */
   moveTask(taskId: string, targetListId: string, zielAbschnitt?: string | null): Promise<LocalTask>
+  /** Liste, Bereich und Nachbarposition werden gemeinsam geprüft und geschrieben. */
+  placeTask(taskId: string, placement: TaskPlacement): Promise<LocalTask>
   /**
    * Setzt die Reihenfolge innerhalb einer Liste neu.
    * `orderedTaskIds` enthält alle Aufgaben der Liste in der gewünschten

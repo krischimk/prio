@@ -3,14 +3,15 @@ import { useCompletedTasks } from '../app/hooks'
 import { useWorkspace } from '../app/useWorkspace'
 import { SectionHeader } from './SectionHeader'
 import { Button } from './components/Button'
-import { formatCompletedLabel } from './datetime'
+import { compareRestorable } from '../domain/ordering'
+import type { LocalList } from '../domain/types'
 import { useView } from './useView'
-import { focusRing } from './styles'
+import { TaskRow } from './TaskRow'
 
-export function CompletedTasksSection({ listId }: { listId: string }) {
+export function CompletedTasksSection({ lists, currentUserId, showOrigin = false, overview = false }: { lists: LocalList[]; currentUserId: string; showOrigin?: boolean; overview?: boolean }) {
   const { repositories } = useWorkspace()
   const { setTaskDetail } = useView()
-  const query = useCompletedTasks(listId)
+  const query = useCompletedTasks(lists.map(list => list.id))
   const [open, setOpen] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -28,17 +29,10 @@ export function CompletedTasksSection({ listId }: { listId: string }) {
       <Button variant="secondary" onClick={query.retry}>Erneut versuchen</Button>
     </div> : null}
     {open && query.status === 'ready' ? query.tasks.length === 0 ? <p className="py-3 text-body text-ink-muted">Noch nichts abgehakt.</p> : <ul>
-      {query.tasks.map(task => <li key={task.id} className="flex items-start gap-3 border-b border-line py-3 last:border-b-0">
-        <div className="min-w-0 flex-1">
-          <button type="button" data-focus-key={`task:${task.id}`} aria-label={`Aufgabe bearbeiten: ${task.title}`}
-            className={`${focusRing} min-h-11 w-full rounded-control text-left text-body text-ink-muted`}
-            onClick={() => setTaskDetail({ taskId: task.id, listId: task.list_id })}>
-            <span className="break-words">{task.title}</span>
-          </button>
-          {task.completed_at ? <p className="text-meta text-ink-faint">{formatCompletedLabel(task.completed_at)}</p> : null}
-        </div>
-        <Button variant="secondary" size="sm" disabled={busyId !== null} onClick={() => void reopen(task.id)}>Wieder öffnen</Button>
-      </li>)}
+      {[...query.tasks].sort(compareRestorable).map(task => <TaskRow key={task.id} task={task} currentUserId={currentUserId}
+        origin={showOrigin ? lists.find(list => list.id === task.list_id)?.name : undefined}
+        onOpen={row => setTaskDetail({ taskId: row.id, listId: row.list_id, fromOverview: overview })}
+        action={<Button variant="secondary" size="sm" disabled={busyId !== null} onClick={() => void reopen(task.id)}>Wieder öffnen</Button>} />)}
     </ul> : null}
     {error ? <p role="alert">{error}</p> : null}
   </section>

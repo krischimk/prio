@@ -265,7 +265,7 @@ test('schaltet eine Erinnerung in der breiten Ansicht nur für sich stumm', asyn
   await listAction(page, 'Teilen')
   await page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(emailB)
   await page.getByRole('button', { name: 'Freigeben' }).click()
-  await expect(page.getByRole('status')).toContainText('Freigabe für')
+  await expect(page.getByRole('dialog', { name: 'Liste verwalten', exact: true }).getByRole('status')).toContainText('Freigabe für')
 
   await closeListSettings(page)
   await zeile.getByRole('button', { name: 'Bearbeiten' }).click()

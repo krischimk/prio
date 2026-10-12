@@ -1012,3 +1012,87 @@ das Prüfsystem nutzt dabei denselben geschützten Schreibweg wie die App.
 Nach der Web-Veröffentlichung prüft `smoke:live`
 Anmeldung, Aufgabenanlage und Synchronisation am echten Projekt mit dem
 dedizierten Testkonto. Version, annotierter Tag und APK gehören zusammen.
+
+## 18. Gemeinsame Listenbedienung nach dem ersten Nutzertest
+
+Ausgangspunkt ist der frisch geprüfte Stand `main`/`origin/main` auf
+`6839ce0` (0.24.0): saubere Arbeitskopie, nach dem Abrufen kein Unterschied
+zum Remote. Die Umsetzung entsteht auf `feature/shared-task-lists`.
+
+Die Kritik, dass Einzel- und Gesamtansicht unterschiedliche Bedienmodelle
+und zwei Fehlerquellen erzeugten, ist im Quelltext und im Browser bestätigt.
+Die Gesamtansicht hatte eigene Aufgabenzeilen und Bereiche. Die mobile
+Ziehvorschau verschob nur Kennungen; `section_id` blieb dabei unverändert,
+sodass gefüllte Zielbereiche keinen Platz machten. Neu erzeugte
+`SortableContext.items` konnten zudem die Nachbaranimation auf null setzen.
+
+### Bestätigter Umfang
+
+- Ein `TaskList` und eine `TaskRow` tragen Aufgaben, Bereiche, Ziehvorschau
+  und „Abgehakt“ in beiden Ansichten, auf Desktop und Telefon. Die vorherigen
+  Desktop-/Mobilvarianten und ihre unbenutzte Sortierberechnung entfallen.
+- Auf dem Desktop steht in beiden Ansichten ein Titelfeld; Enter legt an.
+  Die Gesamtansicht verlangt eine ausdrückliche Zielliste, bis eine persönliche,
+  synchronisierte Standardliste manuell gesetzt wurde. Nach jeder Anlage ohne
+  Standardliste wird erneut ausgewählt. Alle zugänglichen Listen bleiben
+  wählbar, ausgeschlossene mit Hinweis. Entwürfe gehören ihrer Liste und
+  wechseln beim Umschalten zwischen den Ansichten nicht das Ziel.
+- In der gruppierten Gesamtansicht ändert Ziehen die tatsächliche Reihenfolge
+  und Bereichszuordnung der Ursprungsliste. Ein Zug in einen anderen
+  Listenblock wechselt tatsächlich die Liste. „Neueste zuerst“ bleibt ein
+  anderer Darstellungsmodus mit Herkunft und ohne manuelle Ziehsortierung.
+- Benannte Bereiche teilen ihre lokale Klappstellung zwischen Einzel- und
+  Gesamtansicht. Der ungruppierte Teil hat keinen beschrifteten Kopf und bleibt
+  auch leer ein Ablageziel. Ein zugeklapptes Ziel öffnet für die Vorschau,
+  behält danach aber seine gemerkte Klappstellung.
+- „Abgehakt“ bleibt eine zunächst ausgeschaltete Listeneinstellung. Bei
+  eingeschalteter Einstellung ist der Bereich in beiden Ansichten erreichbar,
+  zunächst eingeklappt mit Anzahl. Gruppiert steht er am Listenblockende;
+  chronologisch am Gesamtansichtsende mit Herkunft. Die bestätigten
+  Aufbewahrungs-, Ablauf-, Verschiebe- und Wiederöffnungsregeln bleiben erhalten.
+- Der feste mobile Knopf zum Anlegen gilt für beide Ansichten. Die mobile
+  Seite scrollt als Ganzes; eine unscrollbare innere Fläche darf Wischgesten
+  nicht abfangen. Der Desktop behält den begrenzten scrollbaren Arbeitsbereich.
+
+### Bibliothek und Schreibung
+
+Die aktuelle React-API von dnd-kit ersetzt die Legacy-Pakete vollständig.
+Die Empfehlungen der aktuellen Sortable-, Sensor-, Feedback- und
+Mehrgruppen-Dokumentation wurden gelesen; die Zuordnung zur Implementierung
+steht im README. Die Browserprüfung stellte zusätzlich fest, dass die alte
+Aufgabenfläche ein direkt benachbartes zugeklapptes Ziel durch bloße
+Überlappung verdrängte. `pointerIntersection` richtet die Erkennung deshalb
+an der Zeigerposition aus; der Tastaturweg ist ebenfalls geprüft.
+
+Die Vorschau benutzt `move` und die Animationen von `useSortable`. React führt
+die Gruppen; die zusätzliche automatische DOM-Umsortierung wird für diese
+Interaktion unterbunden. Das verhindert, dass React und Bibliothek dieselbe
+Zeile gleichzeitig in unterschiedliche Eltern verschieben. Eine laufende
+Geste hält eine begrenzte Momentaufnahme; anschließend liefert wieder allein
+der Datenbank-Hook den Bestand. Abbruch schreibt nichts. Mit Tastatur startet
+die Leertaste das Ziehen; Enter öffnet die Aufgabe zum Bearbeiten.
+
+`placeTask` liest innerhalb einer Transaktion den aktuellen Aufgabenstand,
+prüft die ursprüngliche Position sowie verfügbare Liste, Gruppe und Nachbar
+und schreibt nur die Platzierung. Zwischenzeitliche Titel-/Notizänderungen
+bleiben erhalten. Meist wird ausschließlich die bewegte Aufgabe geändert;
+bei erschöpfter Zahlengenauigkeit nur die betroffene Zielgruppe neu nummeriert.
+Verwaiste Bereichsverweise zählen dabei wie in der Anzeige zum ungruppierten
+Teil. „Reihenfolge ändern“ verwendet denselben Schreibweg. Es gibt keine neuen
+persistenten Felder und keine zusätzliche Migration in dieser Etappe.
+
+### Grenze und Abnahme
+
+Diese Etappe gleicht die vorhandene Listenbedienung an. Prioritäten,
+Checklisten, Matrix, optionale Eltern-Kind-Aufgaben und MCP bleiben ihre
+jeweiligen nachfolgenden Pakete. Die visuellen Prioritätsregeln und die Formel
+werden hier nicht vorweggenommen.
+
+Die Abnahme umfasst Geschäftslogik und Datenzugriff, Erfassung mit Enter und
+Zielliste, erhaltene Entwürfe, gemeinsame Klappstellung und „Abgehakt“ sowie
+Maus, echte Touch-Ereignisse, Tastatur, Nachbaranimationen, leere und
+zugeklappte Ziele, Abbruch und Wechsel zwischen Listen. Dazu gehören
+Produktionsbuild, die gesamte Browser-Suite einschließlich PWA/Altbestand
+und die angesehenen Telefon-, Querformat- und Desktopbilder. Freigabemeldungen
+werden in Tests über ihre Listenverwaltung gefunden, unabhängig von der
+internen Statusregion der Ziehbibliothek.

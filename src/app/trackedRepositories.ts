@@ -46,6 +46,7 @@ export const SCHREIBEND = [
   'updateTask',
   'setTaskCompleted',
   'moveTask',
+  'placeTask',
   'reorderTasks',
   'deleteTask',
   'markListShared',

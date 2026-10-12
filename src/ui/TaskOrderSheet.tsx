@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { useTasks } from '../app/hooks'
 import { useWorkspace } from '../app/useWorkspace'
 import type { LocalTask } from '../domain/types'
+import { taskLocation } from '../domain/taskPlacement'
+import { groupTasks } from '../domain/sections'
+import { useView } from './useView'
 import { Button } from './components/Button'
 import { Sheet } from './components/Sheet'
 import { errorBox, input } from './styles'
@@ -10,7 +13,10 @@ import { errorBox, input } from './styles'
 export function TaskOrderSheet({ task, onClose }: { task: LocalTask; onClose: () => void }) {
   const tasks = useTasks(task.list_id)
   const { repositories } = useWorkspace()
-  const peers = tasks.filter(row => row.section_id === task.section_id && row.id !== task.id)
+  const { lists } = useView()
+  const sections = lists.find(list => list.id === task.list_id)?.sections ?? []
+  const group = groupTasks(tasks, sections).find(group => group.tasks.some(row => row.id === task.id))
+  const peers = group?.tasks.filter(row => row.id !== task.id) ?? []
   const [beforeId, setBeforeId] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -19,10 +25,8 @@ export function TaskOrderSheet({ task, onClose }: { task: LocalTask; onClose: ()
     setBusy(true); setError(null)
     try {
       if (beforeId && !peers.some(row => row.id === beforeId)) throw new Error('Die gewählte Nachbaraufgabe ist nicht mehr verfügbar. Wähle die Position erneut.')
-      const ids = peers.map(row => row.id)
-      ids.splice(beforeId ? ids.indexOf(beforeId) : ids.length, 0, task.id)
-      // Andere Gruppen behalten ihre relative Reihenfolge und ihre Positionen.
-      await repositories.reorderTasks(task.list_id, ids)
+      await repositories.placeTask(task.id, { listId: task.list_id, sectionId: group?.section?.id ?? null,
+        beforeTaskId: beforeId || null, expected: taskLocation(task) })
       onClose()
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Die Reihenfolge konnte nicht gespeichert werden.')

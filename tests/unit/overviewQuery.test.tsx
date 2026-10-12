@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useOverviewPreferences, useOverviewTasks } from '../../src/app/hooks'
+import { useOverviewPreferences, useTasksQuery } from '../../src/app/hooks'
 import { localList, localTask, localUserPreference } from '../support/factories'
 
 const workspace = vi.hoisted(() => ({ repositories: { listLists: vi.fn(), listListPreferences: vi.fn(), getUserPreferences: vi.fn(), listTasks: vi.fn() }, dataVersion: 0 }))
@@ -38,7 +38,7 @@ describe('Gesamtansicht lesen', () => {
     let release!: (tasks: ReturnType<typeof localTask>[]) => void
     workspace.repositories.listTasks.mockImplementationOnce(() => new Promise(resolve => { release = resolve }))
       .mockResolvedValueOnce([localTask({ list_id: 'b', id: 'b' }), localTask({ list_id: 'b', id: 'done', completed: true })])
-    const { result, rerender } = renderHook(({ ids }) => useOverviewTasks(ids), { initialProps: { ids: ['a'] } })
+    const { result, rerender } = renderHook(({ ids }) => useTasksQuery(ids), { initialProps: { ids: ['a'] } })
     rerender({ ids: ['b'] })
     expect(result.current.tasks).toEqual([])
     await waitFor(() => expect(result.current.tasks.map(task => task.id)).toEqual(['b']))

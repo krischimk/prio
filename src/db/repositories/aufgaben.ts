@@ -6,10 +6,11 @@ import { isRecurrence, nextOccurrence, successorId } from '../../domain/recurren
 import { alignReminders } from '../../domain/reminder'
 import { newId } from '../../domain/ids'
 import { normalisiereAufgabe } from '../../domain/normalize'
-import { parseSections } from '../../domain/sections'
+import { groupTasks, parseSections } from '../../domain/sections'
 import { compareRestorable, compareTasks, restoreCutoff } from '../../domain/ordering'
 import { captureReopenContext, completionDeadline, completionExpired, reopenPlacement, successorSnapshot } from '../../domain/taskLifecycle'
 import type { LocalTask } from '../../domain/types'
+import { insertionPosition, taskLocation } from '../../domain/taskPlacement'
 import { optionalText, requireText, ValidationError } from '../validation'
 import type { Kontext } from './context'
 import type { Repositories } from './types'
@@ -64,7 +65,7 @@ async function wiederOeffnen(ctx: Kontext, task: LocalTask, now: string): Promis
   return geoeffnet
 }
 
-export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updateTask' | 'setTaskCompleted' | 'moveTask' | 'reorderTasks' | 'deleteTask' | 'getTask' | 'listTasks' | 'listCompletedTasks' | 'listRestorableTasks' | 'listDeletedTasks' | 'restoreTask'> {
+export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updateTask' | 'setTaskCompleted' | 'moveTask' | 'placeTask' | 'reorderTasks' | 'deleteTask' | 'getTask' | 'listTasks' | 'listCompletedTasks' | 'listRestorableTasks' | 'listDeletedTasks' | 'restoreTask'> {
   return {
 
     async createTask(input) {
@@ -250,6 +251,34 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
           completed_expires_at: wechselt && task.completed ? completionDeadline(ctx.clock.now(), liste.keep_completed) : task.completed_expires_at,
           ...ctx.stamp(),
         }
+        await ctx.db.tasks.put(updated)
+        return updated
+      })
+    },
+
+    async placeTask(taskId, placement) {
+      return ctx.db.transaction('rw', ctx.db.lists, ctx.db.tasks, async () => {
+        const task = await ctx.requireTask(taskId)
+        await ctx.requireList(task.list_id)
+        const list = await ctx.requireList(placement.listId)
+        if (task.completed || (placement.expected && !sameData(taskLocation(task), placement.expected))) {
+          throw new ValidationError('not-found', 'Die Aufgabe wurde inzwischen verschoben oder abgehakt. Versuche es erneut.')
+        }
+        if (placement.sectionId !== null && !list.sections.some(section => section.id === placement.sectionId)) {
+          throw new ValidationError('not-found', 'Der Zielbereich ist nicht mehr verfügbar. Versuche es erneut.')
+        }
+        const rows = (await ctx.db.tasks.where('list_id').equals(list.id).toArray()).map(normalisiereAufgabe)
+          .filter(row => row.id !== task.id && row.deleted_at === null && !row.completed).sort(compareTasks)
+        const peers = groupTasks(rows, list.sections).find(group => (group.section?.id ?? null) === placement.sectionId)!.tasks
+        const index = placement.beforeTaskId === null ? peers.length : peers.findIndex(row => row.id === placement.beforeTaskId)
+        if (index < 0) throw new ValidationError('not-found', 'Die gewählte Nachbaraufgabe ist nicht mehr verfügbar. Versuche es erneut.')
+        let position = insertionPosition(peers, index)
+        if (position === null) {
+          // Nur der betroffene Bereich wird bei erschöpfter Zahlengenauigkeit neu nummeriert.
+          await ctx.db.tasks.bulkPut(peers.map((row, i) => ({ ...row, position: i < index ? i + 1 : i + 2, ...ctx.stamp() })))
+          position = index + 1
+        }
+        const updated: LocalTask = { ...task, list_id: list.id, section_id: placement.sectionId, position, ...ctx.stamp() }
         await ctx.db.tasks.put(updated)
         return updated
       })
