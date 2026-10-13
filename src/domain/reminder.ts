@@ -7,30 +7,21 @@ import type { IsoDateTime } from './types'
  *
  * Die Absicht des Benutzers steht an der Aufgabe, die Buchhaltung der
  * tatsächlich geplanten Alarme bleibt lokal (`reminders`-Tabelle). Eine Aufgabe
- * kann **mehrere** Erinnerungen haben, und für alle gilt dieselbe Regel:
- *
- *   **Die Form folgt der Wiederholung.**
- *
- *   * einmalige Aufgabe  → absolute Zeitpunkte („9:00 und nochmal 17:00")
- *   * wiederkehrende     → Vorläufe („1 Tag vorher und 1 Std vorher")
- *
- * Warum keine andere Aufteilung: Eine absolute Erinnerung an einer
- * wiederkehrenden Aufgabe feuerte genau einmal und wäre ab der zweiten
- * Ausführung falsch. Ein Vorlauf an einer einmaligen Aufgabe könnte nichts, was
- * ein absoluter Zeitpunkt nicht auch könnte.
+ * kann mehrere Erinnerungen tragen. Feste Zeitpunkte bleiben unabhängig;
+ * Vorlagen wie „10 Minuten vorher“ bleiben an die Fälligkeit gebunden, auch
+ * bei einmaligen Aufgaben. Eine Serie benötigt Vorläufe, damit jede Ausführung
+ * erinnert wird. Ohne Fälligkeit werden Vorläufe gegen den bisherigen Termin
+ * in feste, noch zukünftige Zeitpunkte umgerechnet.
  *
  * Diese Datei kennt weder Datenbank noch Oberfläche und ist damit vollständig
  * testbar.
  */
 
-export type ReminderForm = 'none' | 'absolute' | 'relative'
-
 /**
  * Eine einzelne Erinnerung.
  *
- * Die Form steht ausdrücklich mit dabei, obwohl sie sich aus der Wiederholung
- * ergibt: So ist ein Datensatz auch dann eindeutig zu lesen, wenn er von Hand
- * verbogen wurde oder aus einer Fassung stammt, die die Regel anders zog.
+ * Die Form speichert die Absicht: einen festen Moment oder einen Abstand zur
+ * Fälligkeit. Beide dürfen bei einer einmaligen Aufgabe nebeneinander stehen.
  */
 export type TaskReminder = { mutedBy?: string[] } & (
   | { form: 'absolute'; at: IsoDateTime }
@@ -71,14 +62,6 @@ const MAX_OFFSET_MINUTES = 5 * 365 * 24 * 60
  * Hunderten von Terminen zu fluten.
  */
 export const MAX_REMINDERS = 10
-
-export function reminderFormFor(
-  recurrence: string | null,
-  dueAt: IsoDateTime | null,
-): ReminderForm {
-  if (dueAt === null) return 'none'
-  return isRecurrence(recurrence) ? 'relative' : 'absolute'
-}
 
 /**
  * `true`, wenn diese Person die Erinnerung nicht bekommen will.
@@ -188,13 +171,10 @@ export function reminderTimeOf(
  * Oberflächen rufen dieselbe Funktion über die Repositories auf, und ein
  * fehlerhaftes Formular kann keine widersprüchlichen Daten erzeugen.
  *
- * Umgesetzt wird nur, wenn das Formular zur Liste **nichts sagt**
- * (`undefined`). Sagt es etwas – auch eine leere Liste –, gilt das wörtlich.
- *
- * Wechselt die Form und das Formular hat die Liste nicht mitgeschickt, wird
- * jede Erinnerung einzeln umgerechnet, damit die Momente erhalten bleiben.
- * Was sich nicht umrechnen lässt, fällt weg: Eine Erinnerung, die in der
- * Vergangenheit läge, ist keine.
+ * Ohne ausdrückliche Erinnerungsliste bleiben die bisherigen Einträge erhalten.
+ * Eine leere Liste löscht sie. Serien benötigen Vorläufe; ohne Fälligkeit
+ * werden diese gegen den bisherigen Termin in feste Zeitpunkte umgerechnet.
+ * Einmalige Aufgaben mit Fälligkeit behalten beide Formen und ihre Bindung.
  */
 export function alignReminders(
   previous: ReminderFields | null,
@@ -206,43 +186,23 @@ export function alignReminders(
   // Ohne Fälligkeit gibt es nichts fortzuschreiben – weder eine Wiederholung
   // noch einen Vorlauf.
   const recurrence = dueAt !== null && isRecurrence(next.recurrence) ? next.recurrence : null
-  const relativ = recurrence !== null
-
-  const vorherRelativ =
-    previous !== null && previous.due_at !== null && isRecurrence(previous.recurrence)
-  const formWechselt = vorherRelativ !== relativ
-
   // Beim Entfernen der Fälligkeit gibt es nur noch die alte als Bezugspunkt.
   const bezug = dueAt ?? previous?.due_at ?? null
 
-  let roh: TaskReminder[]
-  if (next.reminders !== undefined) {
-    roh = next.reminders
-  } else if (formWechselt) {
-    roh = umformen(previous?.reminders ?? [], bezug, relativ, nowMs)
-  } else {
-    roh = previous?.reminders ?? []
-  }
+  const roh = next.reminders ?? previous?.reminders ?? []
+  const forcedForm = recurrence !== null ? 'offset' : dueAt === null ? 'absolute' : null
 
   return {
     due_at: dueAt,
     recurrence,
-    reminders: normalisieren(roh, bezug, relativ, nowMs),
+    reminders: normalisieren(roh, bezug, forcedForm, nowMs),
   }
 }
 
-/** Bringt jede Erinnerung in die Form, die zur Wiederholung passt. */
 /**
- * Bringt Erinnerungen in die Form, die zur Wiederholung passt.
- *
- * Dieselbe Umrechnung braucht die Oberfläche, wenn im Formular die
- * Wiederholung umgeschaltet wird: Sie muss sofort sagen, was gespeichert würde.
- * Deshalb steht sie **einmal** hier und wird exportiert – vorher gab es eine
- * zweite Fassung in der Oberfläche, und genau die vergaß die Stummschaltung:
- * Wer eine Erinnerung für sich stummgeschaltet hatte und dann die Wiederholung
- * umschaltete, verlor sie (`mutedBy` fehlte in der zweiten Fassung).
+ * Rechnet in die verlangte Form um und erhält die Stummschaltungen.
  */
-export function umformen(
+function umformen(
   reminders: TaskReminder[],
   dueAt: IsoDateTime | null,
   relativ: boolean,
@@ -273,13 +233,14 @@ export function umformen(
 function normalisieren(
   reminders: TaskReminder[],
   dueAt: IsoDateTime | null,
-  relativ: boolean,
+  forcedForm: TaskReminder['form'] | null,
   nowMs: number,
 ): TaskReminder[] {
   const ergebnis: TaskReminder[] = []
   const gesehen = new Set<string>()
 
-  for (const reminder of umformen(reminders, dueAt, relativ, nowMs)) {
+  const prepared = forcedForm === null ? reminders : umformen(reminders, dueAt, forcedForm === 'offset', nowMs)
+  for (const reminder of prepared) {
     if (reminder.form === 'offset' && !isPlausibleOffset(reminder.minutes)) continue
     const schluessel =
       reminder.form === 'offset' ? `o:${reminder.minutes}` : `a:${normalizeIso(reminder.at)}`

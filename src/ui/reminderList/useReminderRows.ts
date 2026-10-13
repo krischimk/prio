@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { isRecurrence } from '../../domain/recurrence'
-import { MAX_REMINDERS, umformen, type TaskReminder } from '../../domain/reminder'
+import { MAX_REMINDERS, alignReminders, type TaskReminder } from '../../domain/reminder'
+import { sameData } from '../../domain/equality'
 import { reminderSuggestion } from '../reminder'
 
 /**
@@ -9,7 +10,7 @@ import { reminderSuggestion } from '../reminder'
  * Aus `ReminderList.tsx` herausgelöst (457 Zeilen, vier Komponenten): Die
  * Komponente zeichnet, was hier entschieden wird.
  *
- * Die Umrechnung beim Formwechsel kommt aus der Domäne (`umformen`) – eine
+ * Die Ausrichtung kommt aus der Domäne (`alignReminders`) – eine
  * Fassung, nicht zwei: Die zweite hier vergaß die Stummschaltung.
  */
 export function useReminderRows({
@@ -26,20 +27,21 @@ export function useReminderRows({
   const relativ = isRecurrence(recurrence) && dueAt !== null
 
   /*
-   * Wechselt die Form, wandert jede Erinnerung mit.
+   * Fälligkeit und Wiederholung richten Erinnerungen wie beim Speichern aus.
    *
    * Sonst stünde im Formular etwas anderes, als beim Speichern herauskäme. Das
    * Repository rechnet zwar ebenfalls um, aber nur wenn das Formular zur Liste
    * nichts sagt; hier sagt es etwas, und deshalb muss es das Richtige sagen.
    */
-  const vorherRelativ = useRef(relativ)
+  const previous = useRef({ dueAt, recurrence })
   useEffect(() => {
-    if (vorherRelativ.current === relativ) return
-    vorherRelativ.current = relativ
-    onChange(umformen(reminders, dueAt, relativ, Date.now()))
-    // Absichtlich nur am Formwechsel aufgehängt; die Liste ist die Quelle.
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, [relativ])
+    const before = previous.current
+    if (before.dueAt === dueAt && before.recurrence === recurrence) return
+    previous.current = { dueAt, recurrence }
+    const next = alignReminders({ due_at: before.dueAt, recurrence: before.recurrence, reminders },
+      { due_at: dueAt, recurrence }, Date.now()).reminders
+    if (!sameData(next, reminders)) onChange(next)
+  }, [dueAt, recurrence, reminders, onChange])
 
   const ersetzen = (index: number, neu: TaskReminder) => {
     onChange(reminders.map((eintrag, i) => (i === index ? neu : eintrag)))
@@ -51,7 +53,7 @@ export function useReminderRows({
 
   const hinzufuegen = () => {
     if (reminders.length >= MAX_REMINDERS) return
-    onChange([...reminders, reminderSuggestion(recurrence, dueAt, Date.now(), reminders)])
+    onChange([...reminders, reminderSuggestion(dueAt, Date.now(), reminders)])
   }
 
   return { relativ, ersetzen, entfernen, hinzufuegen }

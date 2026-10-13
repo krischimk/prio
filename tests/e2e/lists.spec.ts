@@ -1,3 +1,4 @@
+import { addReminder, fillDateTime, setDueAt } from './support/taskForms'
 import { closeListSettings } from './support/helpers'
 import { listAction } from './support/helpers'
 import { expect, test, type Page } from '@playwright/test'
@@ -113,7 +114,7 @@ test('macht eine Aufgabe in der breiten Ansicht wiederkehrend', async ({ page })
   await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
 
   const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
-  await formular.getByLabel('Fällig am (optional)', { exact: true }).fill(eingabe)
+  await setDueAt(formular, eingabe)
   await formular.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
   await formular.getByRole('button', { name: 'Speichern' }).click()
 
@@ -171,11 +172,11 @@ test('setzt in der breiten Ansicht einen eigenen Vorlauf für eine wiederkehrend
   await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
 
   const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
-  await formular.getByLabel('Fällig am (optional)', { exact: true }).fill(morgenUm(9))
-  await expect(formular.getByText('Keine. Eine Fälligkeit erinnert nicht von selbst.')).toBeVisible()
+  await setDueAt(formular, morgenUm(9))
+  await expect(formular.getByLabel('Erinnerung', { exact: true })).toHaveCount(0)
 
   await formular.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
-  await formular.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+  await addReminder(formular)
 
   // Die Form folgt der Wiederholung: relativer Vorlauf statt Zeitpunkt.
   const erinnerung = formular.getByLabel('Erinnerung', { exact: true })
@@ -201,15 +202,15 @@ test('legt in der breiten Ansicht mehrere Erinnerungen an', async ({ page }) => 
   await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
 
   const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
-  await formular.getByLabel('Fällig am (optional)', { exact: true }).fill(morgenUm(9))
+  await setDueAt(formular, morgenUm(9))
   await formular.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
 
-  await formular.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+  await addReminder(formular)
   await formular.getByLabel('Erinnerung', { exact: true }).selectOption('1440')
-  await formular.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+  await addReminder(formular)
   await formular.getByLabel('Erinnerung', { exact: true }).nth(1).selectOption('60')
 
-  await expect(formular.getByText('2 Termine')).toBeVisible()
+  await expect(formular.getByLabel('Erinnerung', { exact: true })).toHaveCount(2)
   await formular.getByRole('button', { name: 'Speichern' }).click()
 
   await expect(zeile.getByText('Erinnert:')).toHaveCount(2)
@@ -227,10 +228,10 @@ test('erlaubt in der breiten Ansicht eine Erinnerung ohne Fälligkeitsdatum', as
   await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
 
   const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
-  await formular.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+  await addReminder(formular)
   await expect(formular.getByLabel('Erinnerung am', { exact: true })).toBeVisible()
 
-  await formular.getByLabel('Erinnerung am', { exact: true }).fill(morgenUm(17))
+  await fillDateTime(formular, 'Erinnerung am', morgenUm(17))
   await formular.getByRole('button', { name: 'Speichern' }).click()
 
   await expect(zeile).toContainText('Erinnert:')
@@ -252,9 +253,9 @@ test('schaltet eine Erinnerung in der breiten Ansicht nur für sich stumm', asyn
   await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
 
   const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
-  await formular.getByLabel('Fällig am (optional)', { exact: true }).fill(morgenUm(9))
-  await formular.getByRole('button', { name: 'Weitere Erinnerung' }).click()
-  await formular.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+  await setDueAt(formular, morgenUm(9))
+  await addReminder(formular)
+  await addReminder(formular)
 
   // Eine eigene Liste kennt kein Stummschalten – es gäbe niemanden, für den es
   // gilt.

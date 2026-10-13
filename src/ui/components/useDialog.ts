@@ -3,7 +3,19 @@ import { useBackLayer } from '../../app/useBackLayer'
 
 /** Alles, was den Fokus bekommen kann – für die Fokusfalle. */
 const FOKUSSIERBAR =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])'
+
+/** Native Sichtbarkeit ohne Layoutmessung, auch in der Testumgebung. */
+function erreichbar(element: HTMLElement): boolean {
+  if (element.closest('[hidden], [inert]')) return false
+  for (let ancestor = element.parentElement; ancestor; ancestor = ancestor.parentElement) {
+    if (ancestor instanceof HTMLDetailsElement && !ancestor.open) {
+      const summary = ancestor.querySelector(':scope > summary')
+      if (!summary?.contains(element)) return false
+    }
+  }
+  return true
+}
 
 // Verschachtelte Dialoge können denselben Hintergrund sperren. Erst wenn die
 // letzte Ebene schließt, gilt wieder der ursprüngliche Zustand.
@@ -103,10 +115,9 @@ export function useDialog<T extends HTMLElement = HTMLDivElement>({
 
   const onKeyDown = (event: KeyboardEvent<T>) => {
     if (event.key !== 'Tab' || !panel.current) return
-    // Bewusst ohne Sichtbarkeitsfilter: In einem Dialog ist der Inhalt sichtbar,
-    // und `offsetParent`/`getClientRects` sind in jsdom leer – die Prüfung wäre
-    // dort immer falsch und ließe sich nicht testen.
-    const elemente = [...panel.current.querySelectorAll<HTMLElement>(FOKUSSIERBAR)]
+    // Zuklappen nimmt Aktionen aus der Tabfolge; summary bleibt erreichbar.
+    // Layoutmessungen wie offsetParent wären in jsdom dagegen immer leer.
+    const elemente = [...panel.current.querySelectorAll<HTMLElement>(FOKUSSIERBAR)].filter(erreichbar)
     if (elemente.length === 0) {
       event.preventDefault()
       panel.current.focus()

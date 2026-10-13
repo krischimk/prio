@@ -9,11 +9,10 @@ import type { LocalList, LocalTask } from '../domain/types'
  * sich das Verhalten vollständig und schnell testen.
  *
  * Regeln:
- *  - **Wann** erinnert wird, steht an der Aufgabe: als Liste von Vorläufen
- *    (wiederkehrende Aufgaben, vorzeichenbehaftet – negativ heißt *nach* der
- *    Fälligkeit) oder absoluten Zeitpunkten (einmalige). Die Form folgt der
- *    Wiederholung und wird in `alignReminders` festgelegt.
- *  - **Jede Erinnerung wird ein eigener Termin.** Eine Aufgabe mit „1 Tag
+ *  - **Wann** erinnert wird, steht an jeder Erinnerung: als Vorlauf zur
+ *    Fälligkeit oder fester Zeitpunkt. Einmalige Aufgaben erlauben beides,
+ *    Serien brauchen Vorläufe. `alignReminders` hält diese Regeln fest.
+ *  - Jeder unterschiedliche Zeitpunkt wird ein Termin. Eine Aufgabe mit „1 Tag
  *    vorher" und „1 Std vorher" plant zwei Benachrichtigungen.
  *  - **Stummgeschaltete Erinnerungen werden für diese Person übersprungen**,
  *    für alle anderen aber weiter geplant – siehe `isMutedFor`.
@@ -44,12 +43,12 @@ export interface ReminderCandidate {
 export function reminderTimesFor(task: LocalTask, viewerId: string | null = null): string[] {
   // Die Zeile kommt vom Leserand (`normalize.ts`), `reminders` ist also eine
   // Liste – auch bei einer Aufgabe aus einer älteren Fassung.
-  return task.reminders
+  return [...new Set(task.reminders
     // Wer stummgeschaltet hat, wird nicht geweckt. Ohne Kennung (Tests, alte
     // Aufrufer) gilt jede Erinnerung als gewünscht.
     .filter((reminder) => viewerId === null || !isMutedFor(reminder, viewerId))
     .map((reminder) => reminderTimeOf(reminder, task.due_at))
-    .filter((at): at is string => at !== null)
+    .filter((at): at is string => at !== null))]
 }
 
 export function planReminders(

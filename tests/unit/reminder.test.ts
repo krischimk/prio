@@ -7,7 +7,6 @@ import {
   offsetFromAbsolute,
   isMutedFor,
   parseReminders,
-  reminderFormFor,
   reminderTimeOf,
   withMuted,
   type ReminderFields,
@@ -15,11 +14,8 @@ import {
 } from '../../src/domain/reminder'
 
 /**
- * Die eine Regel: **Die Form der Erinnerungen folgt der Wiederholung.**
- *
- * Einmalige Aufgaben tragen absolute Zeitpunkte, wiederkehrende Vorläufe. Diese
- * Datei prüft die Regel, die Übergänge und das Lesen fremder Daten – den Ort,
- * an dem so ein Umbau erfahrungsgemäß still etwas verliert.
+ * Vorlagen folgen der Fälligkeit; feste Zeitpunkte bleiben unabhängig.
+ * Serien brauchen Vorläufe, einmalige Aufgaben erlauben beide Formen.
  */
 
 const NOW = Date.parse('2026-01-01T12:00:00.000Z')
@@ -40,22 +36,19 @@ function ziel(overrides: Partial<ReminderTarget> = {}): ReminderTarget {
   return { due_at: DUE, recurrence: null, ...overrides }
 }
 
-describe('Form der Erinnerungen', () => {
-  it('ist relativ, sobald die Aufgabe wiederkehrend ist', () => {
-    expect(reminderFormFor('daily', DUE)).toBe('relative')
-  })
-
-  it('ist absolut bei einmaligen Aufgaben', () => {
-    expect(reminderFormFor(null, DUE)).toBe('absolute')
-  })
-
-  it('ist keine, wenn es keine Fälligkeit gibt', () => {
-    expect(reminderFormFor('daily', null)).toBe('none')
-    expect(reminderFormFor(null, null)).toBe('none')
-  })
-})
-
 describe('Erinnerungen ausrichten', () => {
+  it('erhält bei einmaligen Aufgaben die Bindung einer Vorlage und einen unabhängigen festen Zeitpunkt', () => {
+    const reminders = [{ form: 'offset' as const, minutes: 10, mutedBy: ['a'] }, { form: 'absolute' as const, at: VORHER }]
+    let current = alignReminders(null, ziel({ reminders }), NOW)
+    expect(current.reminders).toEqual(reminders)
+    for (const due of ['2026-01-02T11:00:00.000Z', '2026-01-02T13:00:00.000Z']) {
+      current = alignReminders(current, ziel({ due_at: due }), NOW)
+      expect(current.reminders).toEqual(reminders)
+      expect(reminderTimeOf(current.reminders[0], current.due_at)).toBe(new Date(Date.parse(due) - 10 * 60000).toISOString())
+      expect(reminderTimeOf(current.reminders[1], current.due_at)).toBe(VORHER)
+    }
+  })
+
   it('lässt absolute Zeitpunkte einer einmaligen Aufgabe stehen', () => {
     const ergebnis = alignReminders(
       null,
@@ -162,7 +155,7 @@ describe('Erinnerungen ausrichten', () => {
     ])
   })
 
-  it('rechnet beim Abschalten der Wiederholung alle Vorläufe um', () => {
+  it('erhält beim Abschalten der Wiederholung die Bindung der Vorläufe', () => {
     const vorher = felder({
       recurrence: 'daily',
       reminders: [
@@ -173,12 +166,13 @@ describe('Erinnerungen ausrichten', () => {
     const ergebnis = alignReminders(vorher, ziel({ recurrence: null }), NOW)
 
     expect(ergebnis.reminders).toEqual([
-      { form: 'absolute', at: VORHER },
-      { form: 'absolute', at: DUE },
+      { form: 'offset', minutes: 90 },
+      { form: 'offset', minutes: 0 },
     ])
+    expect(ergebnis.reminders.map(reminder => reminderTimeOf(reminder, ergebnis.due_at))).toEqual([VORHER, DUE])
   })
 
-  it('verwirft beim Abschalten, was schon vorbei wäre', () => {
+  it('erhält einen bereits vergangenen Vorlauf beim Abschalten für eine spätere Terminänderung', () => {
     const vorher = felder({
       due_at: '2026-01-01T11:00:00.000Z',
       recurrence: 'daily',
@@ -189,7 +183,7 @@ describe('Erinnerungen ausrichten', () => {
       ziel({ due_at: '2026-01-01T11:00:00.000Z', recurrence: null }),
       NOW,
     )
-    expect(ergebnis.reminders).toEqual([])
+    expect(ergebnis.reminders).toEqual([{ form: 'offset', minutes: 0 }])
   })
 
   /**
@@ -338,7 +332,7 @@ describe('Stummschalten je Person', () => {
       recurrence: 'daily',
       reminders: [{ form: 'offset', minutes: 90, mutedBy: ['a'] }],
     })
-    const ergebnis = alignReminders(vorher, ziel({ recurrence: null }), NOW)
+    const ergebnis = alignReminders(vorher, ziel({ due_at: null, recurrence: null }), NOW)
 
     expect(ergebnis.reminders).toEqual([
       { form: 'absolute', at: VORHER, mutedBy: ['a'] },

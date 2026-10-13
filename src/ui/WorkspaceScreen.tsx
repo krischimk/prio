@@ -13,11 +13,14 @@ import { Sidebar } from './Sidebar'
 import { SyncIndicator } from './SyncIndicator'
 import { TaskPanel } from './TaskPanel'
 import { appBackground } from './styles'
-import { Button } from './components/Button'
+import { IconButton } from './components/IconButton'
 import { CloudConflictsSheet } from './CloudConflictsSheet'
 import { OverviewPanel } from './OverviewPanel'
 import { OverviewDialogs } from './OverviewDialogs'
 import { TaskDialogs } from './TaskDialogs'
+import { TaskDragProvider } from './TaskDragProvider'
+import { DownloadIcon, LogoutIcon, RestoreIcon } from './icons'
+import { isNativeApp } from '../app/platform'
 
 /**
  * Wählt zwischen den beiden Oberflächen.
@@ -42,12 +45,12 @@ export function WorkspaceScreen() {
 
 function WorkspaceViews({ isDesktop }: { isDesktop: boolean }) {
   const { cloudConflicts, conflictsOpen, setConflictsOpen } = useView()
-  return <>
+  return <TaskDragProvider>
     <div>{isDesktop ? <DesktopWorkspace /> : <MobileWorkspace />}</div>
     <OverviewDialogs />
     <TaskDialogs />
     <CloudConflictsSheet conflicts={cloudConflicts} open={conflictsOpen} onClose={() => setConflictsOpen(false)} />
-  </>
+  </TaskDragProvider>
 }
 
 /** Breite Ansicht: Listen links, Aufgaben rechts. */
@@ -80,48 +83,48 @@ function DesktopWorkspace() {
           <div className="flex flex-wrap items-center gap-3">
             <ReminderIndicator />
             <SyncIndicator />
-            <Button
-              variant="ghost" size="sm"
+            <IconButton
+              aria-label="Wiederherstellen"
+              title="Abgehakte und gelöschte Aufgaben wiederherstellen"
               onClick={() => setRestoreOpen(true)}
             >
-              Wiederherstellen
-            </Button>
+              <RestoreIcon />
+            </IconButton>
             {/*
               Ein Knopf statt eines eigenen Fensters: Ist eine Fassung
               verfügbar, wird sie von hier aus gleich installiert. Der Zustand
               steht als Titel bereit (Vorleseprogramme, Mauszeiger).
             */}
-            <Button
+            {isNativeApp() ? <IconButton
               data-testid="update-button"
+              aria-label={updateVerfuegbar ? `Update ${update.release.version} installieren` : 'Nach Updates suchen'}
               title={updateBeschreibung.text}
-              variant={updateVerfuegbar ? 'attention' : 'ghost'} size="sm"
+              variant={updateVerfuegbar ? 'attention' : 'icon'}
               disabled={installing || update.status === 'checking'}
               onClick={() => {
                 void (updateVerfuegbar ? install() : check())
               }}
             >
-              {updateVerfuegbar
-                ? `Update ${update.release.version} installieren`
-                : update.status === 'checking'
-                  ? 'Suche …'
-                  : 'Nach Updates suchen'}
-            </Button>
-            <Button
-              variant="ghost" size="sm"
+              <DownloadIcon />
+            </IconButton> : null}
+            <IconButton
+              aria-label="Abmelden"
               onClick={() => {
                 void signOut()
               }}
             >
-              Abmelden
-            </Button>
+              <LogoutIcon />
+            </IconButton>
           </div>
         </header>
 
+        <main key={selectedListId ?? 'overview'} className="scroll-area min-h-0 flex-1 overflow-y-auto">
         {selected ? (
           <TaskPanel key={selected.id} list={selected} currentUserId={user?.id ?? ''} />
         ) : (
           <OverviewPanel currentUserId={user?.id ?? ''} />
         )}
+        </main>
       </div>
 
       <RestoreTasksPanel open={restoreOpen} onClose={() => setRestoreOpen(false)} />

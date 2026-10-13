@@ -57,8 +57,8 @@ export function TaskDescription({ text, className = '' }: { text: string; classN
           aria-expanded={offen}
           data-testid="beschreibung-mehr"
           onClick={(event) => {
-            // In der mobilen Zeile liegt die Beschreibung neben dem Knopf
-            // „Aufgabe öffnen" – der Klick darf nicht beides auslösen.
+            // Die Beschreibung liegt in der Aufgabenfläche; dieser Knopf
+            // klappt nur den Text auf und öffnet nicht zusätzlich den Editor.
             event.stopPropagation()
             setOffen((vorher) => !vorher)
           }}

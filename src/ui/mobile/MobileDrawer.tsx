@@ -9,7 +9,8 @@ import { BackendLabel } from '../BackendLabel'
 import { ListIcon } from '../ListIcon'
 import { UpdateEntry } from '../UpdateEntry'
 import { CloseIcon } from '../icons'
-import { appBackground, numeric } from '../styles'
+import { appBackground, numeric, statusTone } from '../styles'
+import { isNativeApp } from '../../app/platform'
 import { leerListen } from '../emptyTexts'
 import { IconButton } from '../components/IconButton'
 import { Button } from '../components/Button'
@@ -191,7 +192,7 @@ export function MobileDrawer({
           <h2 className="mb-2 text-meta font-semibold uppercase tracking-wide text-ink-faint">
             Synchronisation
           </h2>
-          <p className={`text-meta text-ink-muted ${numeric}`} data-testid="drawer-sync">
+          <p className={`text-meta ${statusTone[sync.tone].text} ${numeric}`} data-testid="drawer-sync">
             <span data-testid="sync-status">{sync.text}</span>
           </p>
           {cloudConflicts.length > 0 ? (
@@ -243,10 +244,10 @@ export function MobileDrawer({
           </Button>
         </section>
 
-        <section className="border-t border-line px-4 py-4" aria-label="Updates">
+        {isNativeApp() ? <section className="border-t border-line px-4 py-4" aria-label="Updates">
           <h3 className="text-meta font-medium uppercase tracking-wide text-ink-faint">Updates</h3>
           <UpdateEntry />
-        </section>
+        </section> : null}
 
         <div className="mt-auto border-t border-line px-4 py-4">
           <Button

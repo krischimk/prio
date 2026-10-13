@@ -18,6 +18,7 @@ export function SectionHeader({
   hervorgehoben = false,
   gruppe,
   handlers,
+  muted = false,
 }: {
   name: string
   anzahl: number
@@ -32,6 +33,8 @@ export function SectionHeader({
   gruppe?: string
   /** Zieh-Griffe: Der Kopf laesst sich greifen, um Bereiche umzusortieren. */
   handlers?: Record<string, unknown>
+  /** Abgehakt gehört zum Listenende und steht leiser als offene Bereiche. */
+  muted?: boolean
 }) {
   return (
     <button
@@ -51,7 +54,7 @@ export function SectionHeader({
       <ChevronIcon offen={offen} className={`h-3.5 w-3.5 shrink-0 ${mutedText}`} />
       <span
         className={`text-label font-semibold tracking-wide uppercase ${
-          hervorgehoben ? 'text-brand-faint' : 'text-ink-soft'
+          hervorgehoben ? 'text-brand-faint' : muted ? 'text-ink-muted' : 'text-ink-soft'
         }`}
       >
         {name}

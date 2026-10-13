@@ -25,6 +25,16 @@ function Ebene({ name, anfangsOffen = true }: { name: string; anfangsOffen?: boo
 }
 
 describe('Escape und der Zurück-Stapel', () => {
+  it('lässt einen bereits verarbeiteten Tastendruck beim inneren Bedienelement', async () => {
+    const user = userEvent.setup()
+    render(<BackLayerProvider><Ebene name="Editor" /><input aria-label="Kalender" onKeyDown={event => { if (event.key === 'Escape') event.preventDefault() }} /></BackLayerProvider>)
+    await user.click(screen.getByLabelText('Kalender'))
+    await user.keyboard('{Escape}')
+    expect(screen.getByText('Editor: offen')).toBeInTheDocument()
+    screen.getByLabelText('Kalender').blur()
+    await user.keyboard('{Escape}')
+    expect(screen.getByText('Editor: zu')).toBeInTheDocument()
+  })
   it('schließt eine offene Ebene', async () => {
     const user = userEvent.setup()
     render(

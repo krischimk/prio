@@ -612,7 +612,7 @@ describe('Repositories (lokale Geschäftslogik)', () => {
       expect(geaendert.reminders).toEqual([{ form: 'offset', minutes: 90 }])
     })
 
-    it('macht aus Vorläufen Zeitpunkte, sobald die Wiederholung wegfällt', async () => {
+    it('erhält die gebundene Vorlage beim Abschalten und bei späteren Terminänderungen', async () => {
       const listId = await newList()
       const task = await device.repositories.createTask({
         listId,
@@ -624,7 +624,10 @@ describe('Repositories (lokale Geschäftslogik)', () => {
 
       const geaendert = await device.repositories.updateTask(task.id, { recurrence: null })
 
-      expect(geaendert.reminders).toEqual([{ form: 'absolute', at: FRUEHER }])
+      expect(geaendert.reminders).toEqual([{ form: 'offset', minutes: 90 }])
+      const verschoben = await device.repositories.updateTask(task.id, { dueAt: '2099-01-16T18:30:00.000Z' })
+      expect(verschoben.reminders).toEqual([{ form: 'offset', minutes: 90 }])
+      expect((await device.db.tasks.get(task.id))?.reminders).toEqual([{ form: 'offset', minutes: 90 }])
     })
 
     it('leert die Liste, wenn sie ausdrücklich geleert wird', async () => {

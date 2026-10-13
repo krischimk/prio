@@ -49,7 +49,7 @@ export async function createTask(page: Page, title: string, description?: string
   await expect(page.getByRole('dialog', { name: 'Neue Aufgabe' })).toBeVisible()
   await page.getByLabel('Titel', { exact: true }).fill(title)
   if (description) {
-    await page.getByLabel('Beschreibung (optional)', { exact: true }).fill(description)
+    await page.getByLabel('Beschreibung', { exact: true }).fill(description)
   }
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
   await expect(page.getByRole('dialog', { name: 'Neue Aufgabe' })).toBeHidden()
@@ -60,26 +60,12 @@ export function taskRow(page: Page, title: string) {
   return page.getByTestId('task-row').filter({ hasText: title })
 }
 
-/**
- * Die ganze Zeile samt Beschreibung.
- *
- * Die Beschreibung liegt **neben** dem Knopf „Aufgabe öffnen" – ein Knopf kann
- * keinen Knopf enthalten, und der Schalter „Mehr" darf die Detailansicht nicht
- * mit öffnen. Für Zusicherungen über die Zeile als Ganzes (Titel *und*
- * Beschreibung) ist deshalb das Listenelement richtig.
- */
-/**
- * Die **Zeile** einer Aufgabe (nicht der innere Knopf).
- *
- * Fuer Masse wichtig: Der Knopf ist nur so hoch wie der Titel, die Zeile ist
- * etwa doppelt so hoch. Ueber den Knopf und seinen Vorfahren gesucht, damit die
- * Zuordnung eindeutig bleibt – `filter({ hasText })` traf sonst die erste Zeile.
- */
+/** Die ganze Zeile samt Beschreibung, über ihren exakten Titel gefunden. */
 export function taskZeile(page: Page, title: string) {
   return page
     .getByTestId('task-row')
     // Exakt, nicht als Teilstring: „Erste" steckt sonst auch in „Dreizehnte" –
     // und ein Treffer auf die falsche Zeile verschiebt das Ziel um eine Zeile.
-    .filter({ hasText: new RegExp(`^${title}$`) })
+    .filter({ has: page.getByText(title, { exact: true }) })
     .locator('xpath=ancestor::*[@data-task-row]')
 }

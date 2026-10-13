@@ -49,7 +49,7 @@ test('E2E 4: Benutzer A teilt eine Liste mit Benutzer B', async ({ browser, requ
     await listAction(pageA, 'Teilen')
     await pageA.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(emailB)
     await pageA.getByRole('button', { name: 'Freigeben' }).click()
-    await expect(pageA.getByRole('status')).toContainText(`Freigabe für ${emailB} gespeichert.`)
+    await expect(pageA.getByRole('dialog', { name: 'Liste verwalten' }).getByRole('status')).toContainText(`Freigabe für ${emailB} gespeichert.`)
 
     await expect
       .poll(async () => (await serverState(request)).members.length)
@@ -118,7 +118,7 @@ test('E2E 4b: nach dem Entfernen sieht Benutzer B die gemeinsame Liste nicht meh
     await listAction(pageA, 'Teilen')
     await pageA.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(emailB)
     await pageA.getByRole('button', { name: 'Freigeben' }).click()
-    await expect(pageA.getByRole('status')).toContainText('Freigabe für')
+    await expect(pageA.getByRole('dialog', { name: 'Liste verwalten' }).getByRole('status')).toContainText('Freigabe für')
 
     await pageB.reload()
     await pageB.getByLabel('E-Mail', { exact: true }).fill(emailB)
@@ -175,7 +175,7 @@ test('E2E 5: der Abgleich läuft nicht in einer Schleife, wenn ein Kontakt bekan
     await listAction(pageA, 'Teilen')
     await pageA.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(emailB)
     await pageA.getByRole('button', { name: 'Freigeben' }).click()
-    await expect(pageA.getByRole('status')).toContainText(`Freigabe für ${emailB} gespeichert.`)
+    await expect(pageA.getByRole('dialog', { name: 'Liste verwalten' }).getByRole('status')).toContainText(`Freigabe für ${emailB} gespeichert.`)
 
     await login(pageB, emailB)
     await selectList(pageB, 'Gemeinsame Liste')

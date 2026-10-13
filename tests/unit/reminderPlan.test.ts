@@ -5,12 +5,11 @@ import { localList, localTask } from '../support/factories'
 /**
  * Planung der Erinnerungen (unit).
  *
- * Seit Erinnerung und Fälligkeit getrennt sind, entscheidet die **Form** der
- * Aufgabe, wann erinnert wird:
+ * Die Form jeder Erinnerung entscheidet, wann erinnert wird:
  *
- *   einmalig     → absolute Zeitpunkte
- *   wiederkehrend → Vorläufe gegenüber der Fälligkeit, vorzeichenbehaftet –
- *                   negativ heißt *nach* der Fälligkeit
+ *   absolute → fester Zeitpunkt, unabhängig von späteren Terminänderungen
+ *   offset   → Vorlauf gegenüber der Fälligkeit, auch bei einmaligen Aufgaben;
+ *              ein negativer Wert heißt *nach* der Fälligkeit
  *
  * **Jede Erinnerung wird ein eigener Termin.** Eine Aufgabe ohne Erinnerung
  * erinnert nicht, auch wenn sie eine Fälligkeit hat.
@@ -43,6 +42,11 @@ function wiederkehrend(offsets: number[], overrides: Parameters<typeof localTask
 }
 
 describe('Erinnerungen planen', () => {
+  it('plant gebundene Vorlagen einer einmaligen Aufgabe neu und fasst gleiche Zeitpunkte zusammen', () => {
+    const task = einmalig({ due_at: SOON, reminders: [{ form: 'offset', minutes: 0 }, { form: 'absolute', at: SOON }] })
+    expect(planReminders([task], lists, NOW).map(entry => entry.at)).toEqual([SOON])
+    expect(planReminders([{ ...task, due_at: LATER }], lists, NOW).map(entry => entry.at)).toEqual([SOON, LATER])
+  })
   it('plant eine einmalige Aufgabe zu ihrem absoluten Zeitpunkt', () => {
     const tasks = [einmalig({ id: 't1', title: 'Bericht' })]
     expect(planReminders(tasks, lists, NOW)).toEqual([

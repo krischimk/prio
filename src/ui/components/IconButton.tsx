@@ -1,10 +1,11 @@
 import type { ButtonHTMLAttributes } from 'react'
 import { buttonClass, type ButtonVariant } from '../styles'
+import { Hint } from './Hint'
 
 /** Die Symbol-Varianten: normal, heller, zurückgenommen, aktiv. */
 export type IconButtonVariant = Extract<
   ButtonVariant,
-  'icon' | 'iconBright' | 'iconMuted' | 'iconActive'
+  'icon' | 'iconBright' | 'iconMuted' | 'iconActive' | 'primary' | 'danger' | 'attention'
 >
 
 /**
@@ -35,7 +36,10 @@ export function IconButton({
   variant = 'icon',
   layout = '',
   type = 'button',
+  title,
   ...rest
 }: IconButtonProps) {
-  return <button {...rest} type={type} className={buttonClass(variant, 'icon', layout)} />
+  return <Hint text={title ?? rest['aria-label']}>
+    <button {...rest} type={type} className={buttonClass(variant, 'icon', layout)} />
+  </Hint>
 }

@@ -67,7 +67,7 @@ test('E2E 2: Benutzer bearbeitet und erledigt eine Aufgabe', async ({ page }) =>
   await openTaskEditor(page, 'Erster Titel')
   const form = page.getByRole('form', { name: 'Aufgabe bearbeiten: Erster Titel' })
   await form.getByLabel('Titel', { exact: true }).fill('Neuer Titel')
-  await form.getByLabel('Beschreibung (optional)', { exact: true }).fill('Mit Notiz')
+  await form.getByLabel('Beschreibung', { exact: true }).fill('Mit Notiz')
   await form.getByRole('button', { name: 'Speichern' }).click()
 
   await expect(taskItem(page, 'Neuer Titel')).toBeVisible()

@@ -1096,3 +1096,114 @@ Produktionsbuild, die gesamte Browser-Suite einschließlich PWA/Altbestand
 und die angesehenen Telefon-, Querformat- und Desktopbilder. Freigabemeldungen
 werden in Tests über ihre Listenverwaltung gefunden, unabhängig von der
 internen Statusregion der Ziehbibliothek.
+
+## 19. Weniger Dauertext und übereinstimmende Bedienflächen
+
+Nutzerfeedback vom 13. Oktober 2026 auf dem lokalen Stand `bbde49b`.
+Diese Sammlung ändert die Oberfläche und erhält die bisherigen fachlichen
+Aufbewahrungs-, Sync- und Konfliktregeln. Neue Datenbankfelder sind dafür nicht
+nötig.
+
+### Entscheidungen und Grenze
+
+- „Abgehakt am Listenende“ bleibt eine zunächst ausgeschaltete Listeneinstellung.
+  Eingeschaltet bleiben Abschlüsse dauerhaft erhalten. Nur ihr Abhakzeitpunkt
+  wandert in einen Hover-/Fokushinweis; ohne Maus ist er im Editor unter
+  „Mehr Optionen“ erreichbar. Fälligkeit und Erinnerungszeiten bleiben sichtbar.
+  Der Bereichskopf steht grau und zunächst eingeklappt.
+- Optionale Felder und seltene Aktionen beanspruchen Platz beim Bearbeiten:
+  Beschreibungs-Platzhalter im Feld, textabhängige Höhe, kompakte Terminzeile,
+  vollständige Kalender-/Wiederholungsfelder nach Klick, Benachrichtigung als
+  Einladung statt „Keine“-Absatz. Bereich, Reihenfolge, Status und alternativer
+  Listenwechsel stehen unter „Mehr Optionen“.
+- Deutsche Datumsformate, Montag als Wochenbeginn und 24-Stunden-Uhr gelten in
+  denselben Bausteinen für Fälligkeit und Erinnerungen. Die Speicherung bleibt
+  UTC; bearbeitet wird in der lokalen Gerätezeitzone. Für einmalige Erinnerungen
+  bleiben Vorlagen wie „10 Min vorher“ an die Fälligkeit gebunden, auch nach
+  Speichern, Neustart und späteren Terminänderungen. Eigene feste Zeitpunkte
+  bleiben unabhängig. Das Foto mit Formatierungsleiste begründet den aufklappbaren Aufbau;
+  ein Rich-Text-Datenmodell ist nicht Teil dieser Sammlung.
+- Die Aufgabenfläche hellt beim Darüberfahren auf und umfasst die Beschreibung.
+  „Mehr“, Checkbox und andere Knöpfe bleiben eigene Aktionen. Der dauerhafte
+  Stift entfällt. Die breite Ansicht bietet rechts Löschen beim Hover/Fokus mit dem
+  vorhandenen Rückgängig-Weg.
+- Unter „Abgehakt“ öffnet die angehakte Checkbox eine Aufgabe wieder. Ihr
+  Hover-/Fokushinweis benennt die Aktion; der zusätzliche Knopf entfällt.
+- Ausschließlich die breite Webansicht erhält linke Listen als Ablageziele.
+  Ein solcher Zug legt die Aufgabe am Zielende ohne Bereich ab und erhält ihre
+  übrigen Daten. Die chronologische Gesamtansicht erlaubt diesen Listenwechsel,
+  ihre Reihenfolge bleibt nach Erstellzeitpunkt bestimmt.
+- Die Gesamtansicht erlaubt Titelerfassung vor der Zielentscheidung. Enter ohne
+  Ziel öffnet die Auswahl; eine manuell festgelegte Standardliste ist weiterhin
+  die einzige automatische Vorauswahl. Eine freie Eingabe verdrängt keinen
+  vorhandenen Listenentwurf: Beide bleiben erhalten und umschaltbar.
+- Die Erfassung öffnet Zusatzfelder bei Fokus oder vorhandener Eingabe, bietet
+  ein Plus neben „Hinzufügen“ und führt über „Weitere Einstellungen“ zum Editor.
+  Die Sortierwahl liegt rechts über den Aufgaben. Die Desktop-Scrollfläche reicht
+  bis an den Fensterrand.
+- Der wechselnde Desktop-Syncsatz steht im Hinweis; im mobilen Menü bleibt der
+  Status farbig ausgeschrieben. Der Aufgabeneditor trägt keine Syncverwaltung.
+  Die APK-Updateprüfung ist in der Webfassung verborgen.
+
+### Ursachen und Abschlusskriterien
+
+Der erste Browser-Regressionsfall scheiterte auf dem Ausgangsstand: Ein Klick
+auf die Beschreibung öffnete die Aufgabe nicht, da sie außerhalb des Griffs
+lag. Die Datei `TaskRow` enthält nun die vollständige Aufgabenfläche;
+`TaskDragProvider` verbindet sie mit den externen Ablagezielen, ohne eine
+zweite Verschiebe-Fachlogik einzuführen. Geschrieben wird weiterhin mit der
+atomaren `placeTask`-Operation.
+
+Aufgezeichnete Drag-Ereignisse haben zwei weitere Ursachen eingegrenzt:
+Beim Touch-Ende wurde die bereits sichtbare Reihenfolge nochmals umsortiert;
+Loslassen übernimmt nun genau die Vorschau. Beim Mauszug blieb dasselbe Ziel
+aktiv, obwohl der Zeiger von seiner unteren in die obere Hälfte wechselte.
+Die Vorschau folgt deshalb auch `onDragMove` und dessen neuer Position
+`event.to`; `position.current` enthält in diesem Ereignis noch den vorigen
+Schritt. Maus, Touch und Tastatur prüfen diese Regeln gemeinsam.
+
+Die vollständige Regression hat außerdem die Tabfolge der zugeklappten
+Optionen eingegrenzt: Die Fokusführung zählte bislang versteckte Aktionen mit.
+Sie berücksichtigt nun native `summary`-Elemente und den Zustand der
+`details`-Vorfahren; ein Unit-Test prüft beide Zustände, die Browserprüfung
+die gesamte Tabfolge auf beiden Ansichten. Breitenänderungen am automatisch
+wachsenden Beschreibungsfeld werden außerhalb der ResizeObserver-Zustellung
+angewendet. Die schwebende Aufgabenzeile bleibt durch die dokumentierte
+Fenstergrenze lesbar, auch beim Ziehen weit nach links.
+
+Die neuen Regeln D12–D14 in `DESIGN.md` formulieren die Prinzipien für weitere
+Oberflächenarbeit. Abschluss verlangt:
+
+1. Deutsche Kalender- und Zeiteingabe einschließlich Tastatur, ungültiger Eingabe
+   und verschachteltem Escape; wiederkehrende und einmalige Erinnerungen samt
+   Vorlagen bleiben speicher- und bearbeitbar.
+2. Klick und Ziehen von der Beschreibung, unabhängige Beschreibungs-Schalter,
+   animiertes Platzmachen sowie Listenwechsel über die Seitenleiste mit Abbruch
+   und erhaltenen Daten.
+3. Titelerfassung ohne vorheriges Ziel, ausdrückliche Zielwahl, manueller Default
+   und zwei erhaltene Entwürfe bei Kollision; gespeicherte Änderungen erscheinen
+   in derselben Original-/Gesamtansicht.
+4. Daueraufbewahrung bei aktivierter Einstellung, unveränderte Sieben-Tage-Regel
+   bei ausgeschalteter Einstellung und Abhakzeitpunkt im Hinweis.
+5. `npm run ci`, sämtliche E2E-Dateien und angesehene Telefonbilder im Hoch- und
+   Querformat. Diese Sammlung wird zunächst lokal zum Testen bereitgestellt.
+
+### Prüfergebnis vom 14. Oktober 2026
+
+`npm run ci` besteht mit 567 Unit-/Integrationstests, Typecheck, Lint,
+Skriptprüfung und Produktionsbuild. Alle 154 Browsertests bestehen, einschließlich
+der PWA-Prüfung gegen den Produktionsbuild und des Update-Wegs für Altbestand.
+Die Bilder von Kalender, Editor und „Abgehakt“ wurden in Telefon-Hoch- und
+Querformat angesehen; ebenso Editor und Seitenleisten-Zug in der breiten Ansicht.
+
+Die Erinnerungsprüfung speichert eine einmalige Aufgabe mit gebundenem Vorlauf
+und zusätzlichem festen Zeitpunkt, startet neu und ändert die Fälligkeit zweimal:
+Der Vorlauf wandert mit, der feste Zeitpunkt bleibt erhalten. Wiederöffnen über
+die Checkbox erhält auch inzwischen bearbeitete Folgetermine wiederkehrender
+Aufgaben. Listenwechsel, Abbruch und Löschen mit Rückgängig bestehen gemeinsam
+mit den bestehenden Maus-, Touch- und Tastaturfällen.
+
+Die Sammlung liegt auf `feature/shared-task-lists` und ist lokal zum Testen
+bereitgestellt. Sie ist noch nicht veröffentlicht; eine native APK-Prüfung und
+ein Release gehören zur späteren Auslieferung. Die neuen Erinnerungsregeln
+verwenden die bereits vorhandenen JSON-Formen und benötigen keine Schemaänderung.

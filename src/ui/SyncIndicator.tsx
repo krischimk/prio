@@ -1,8 +1,9 @@
 import { useWorkspace } from '../app/useWorkspace'
 import { describeSyncState } from './status/syncStatus'
-import { numeric, statusTone } from './styles'
-import { Button } from './components/Button'
+import { statusTone } from './styles'
 import { useView } from './useView'
+import { IconButton } from './components/IconButton'
+import { AlertIcon, SyncIcon } from './icons'
 
 /**
  * Statusanzeige der Synchronisation.
@@ -16,30 +17,17 @@ export function SyncIndicator() {
   const { text, tone } = describeSyncState(syncStatus, pendingCount, syncing, rejectedCount, conflicts.length)
   const farben = statusTone[tone]
 
-  return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-meta">
-      {/*
-        `min-w-0` ist hier entscheidend: Ein Flex-Element schrumpft sonst nicht
-        unter die Breite seines längsten Wortes. Servermeldungen können ein
-        solches Wort sein – dann ließ sich die Leiste nur seitlich lesen.
-        `break-words` erlaubt zusätzlich den Umbruch mitten im Wort.
-      */}
-      <span className="flex min-w-0 items-center gap-2">
-        <span className={`h-2 w-2 shrink-0 rounded-full ${farben.dot}`} aria-hidden="true" />
-        <span data-testid="sync-status" className={`min-w-0 break-words ${numeric} ${farben.text}`}>
-          {text}
-        </span>
-      </span>
-      <Button
-        variant="ghost" size="sm"
-        onClick={() => {
-          void runSync()
-        }}
-        disabled={syncing}
-      >
-        Jetzt synchronisieren
-      </Button>
-      {conflicts.length > 0 ? <Button variant="ghost" size="sm" onClick={() => setConflictsOpen(true)}>Konflikte klären</Button> : null}
-    </div>
-  )
+  return <div className="flex items-center gap-1">
+    <span data-testid="sync-status" role="status" className="sr-only">{text}</span>
+    <IconButton aria-label="Jetzt synchronisieren"
+      title={`${text} Klicken, um jetzt zu synchronisieren.`}
+      disabled={syncing} layout="relative"
+      onClick={() => { void runSync() }}>
+      <SyncIcon />
+      <span className={`absolute right-1 top-1 h-2 w-2 rounded-full ${farben.dot}`} aria-hidden="true" />
+    </IconButton>
+    {conflicts.length > 0 ? <IconButton aria-label="Konflikte klären" variant="attention"
+      title={`${conflicts.length} offene ${conflicts.length === 1 ? 'Änderung' : 'Änderungen'} prüfen und entscheiden, welche Fassung erhalten bleibt.`}
+      onClick={() => setConflictsOpen(true)}><AlertIcon /></IconButton> : null}
+  </div>
 }

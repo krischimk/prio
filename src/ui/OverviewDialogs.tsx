@@ -6,8 +6,10 @@ import { ListOverviewChoice } from './ListOverviewChoice'
 import { Sheet } from './components/Sheet'
 import { Button } from './components/Button'
 import { errorBox, input } from './styles'
-
-const exclusionHint = (name: string) => `„${name}“ ist nicht in der Gesamtansicht. Deine neue Aufgabe wird dort gespeichert und erscheint in dieser Listenansicht.`
+import { Screen } from './components/Screen'
+import { IconButton } from './components/IconButton'
+import { CloseIcon } from './icons'
+import { TaskComposer } from './TaskComposer'
 
 function OverviewSettings({ userId }: { userId: string }) {
   const { overview, setOverviewSettingsOpen } = useView()
@@ -54,29 +56,13 @@ function OverviewSettings({ userId }: { userId: string }) {
 }
 
 function OverviewTarget() {
-  const { overview, setOverviewCreating, setTaskDetail } = useView()
-  const defaultId = overview.userPreference?.default_list_id ?? null
-  const [listId, setListId] = useState(overview.lists.some(list => list.id === defaultId) ? defaultId! : '')
-  const list = overview.lists.find(entry => entry.id === listId)
-  const included = overview.preferences.some(row => row.list_id === listId && row.include_in_overview)
-  return <Sheet title="Zielliste wählen" name="overview-target" onClose={() => setOverviewCreating(false)}>
-    <form className="space-y-4 p-4" onSubmit={event => {
-      event.preventDefault()
-      if (!list) return
-      setTaskDetail({ taskId: null, listId: list.id, fromOverview: true }); setOverviewCreating(false)
-    }}>
-      <label className="block space-y-2 text-body text-ink">
-        <span>Zielliste</span>
-        <select className={input} aria-label="Zielliste" value={list?.id ?? ''} onChange={event => setListId(event.target.value)}>
-          <option value="">Bitte auswählen</option>
-          {overview.lists.map(entry => <option key={entry.id} value={entry.id}>{entry.name}</option>)}
-        </select>
-      </label>
-      {defaultId && !overview.lists.some(entry => entry.id === defaultId) ? <p role="status" className="text-body text-ink-muted">Deine Standardliste ist nicht mehr verfügbar. Bitte wähle die Zielliste ausdrücklich.</p> : null}
-      {list && !included ? <p role="status" className="text-body text-ink-muted">{exclusionHint(list.name)}</p> : null}
-      <Button type="submit" variant="primary" disabled={!list}>Weiter</Button>
-    </form>
-  </Sheet>
+  const { setOverviewCreating } = useView()
+  const close = () => setOverviewCreating(false)
+  return <Screen label="Neue Aufgabe" name="overview-create" onClose={close} header={<div className="safe-top border-b border-line">
+    <header className="flex min-h-16 items-center gap-2 px-2 py-1"><IconButton aria-label="Schließen" onClick={close}><CloseIcon /></IconButton><h2 className="text-title font-medium text-ink">Neue Aufgabe</h2></header>
+  </div>}>
+    <div className="scroll-area min-h-0 flex-1 overflow-y-auto p-4"><TaskComposer autoFocus onCreated={close} /></div>
+  </Screen>
 }
 
 /** Die Gesamtansicht verwendet denselben Aufgabeneditor wie jede Listenansicht. */
@@ -87,7 +73,7 @@ export function OverviewDialogs() {
   return <>
     {overviewSettingsOpen ? <OverviewSettings userId={userId} /> : null}
     {overviewCreating && overview.status === 'ready' ? <OverviewTarget /> : null}
-    {overviewCreating && overview.status !== 'ready' ? <Sheet title="Zielliste wählen" onClose={() => setOverviewCreating(false)}>
+    {overviewCreating && overview.status !== 'ready' ? <Sheet title="Neue Aufgabe" onClose={() => setOverviewCreating(false)}>
       <div className="space-y-3 p-5"><p role="status">Die verfügbaren Listen müssen zuerst geladen werden.</p><Button variant="secondary" onClick={overview.retry}>Erneut versuchen</Button></div>
     </Sheet> : null}
   </>

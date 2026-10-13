@@ -1,3 +1,4 @@
+import { setDueAt } from './support/taskForms'
 import { expect, test, type Page } from '@playwright/test'
 import * as desktop from './support/helpers'
 import * as phone from './support/mobile'
@@ -31,7 +32,7 @@ for (const mobile of [false,true]) test.describe(mobile ? 'Abgehakt Telefon' : '
       else await desktop.taskItem(page,'Serie').getByRole('button',{name:'Bearbeiten'}).click()
     }
     await edit()
-    await page.getByLabel('Fällig am (optional)',{exact:true}).fill(new Date(Date.now()+86400000).toISOString().slice(0,16))
+    await setDueAt(page, new Date(Date.now()+86400000).toISOString().slice(0,16))
     await page.getByLabel('Wiederholung',{exact:true}).selectOption('daily')
     await page.getByRole('button',{name:'Speichern',exact:true}).click()
     await page.getByLabel('Aufgabe erledigen: Serie',{exact:true}).click()
@@ -41,7 +42,9 @@ for (const mobile of [false,true]) test.describe(mobile ? 'Abgehakt Telefon' : '
     await page.getByRole('button',{name:'Speichern',exact:true}).click()
     const section=page.getByRole('region',{name:'Abgehakt',exact:true})
     await section.getByRole('button',{name:'Abgehakt 1'}).click()
-    await section.getByRole('button',{name:'Wieder öffnen',exact:true}).click()
+    const reopen=section.getByRole('checkbox',{name:'Aufgabe wieder öffnen: Serie',exact:true})
+    await expect(reopen).toBeChecked()
+    await reopen.click()
     await expect(page.getByLabel('Aufgabe erledigen: Serie',{exact:true})).toBeVisible()
     await expect(page.getByLabel('Aufgabe erledigen: Nächster Termin geändert',{exact:true})).toBeVisible()
     await expect.poll(async()=> (await desktop.serverState(request)).tasks.filter(task=>!task.completed && task.deleted_at===null).length).toBe(2)
@@ -67,6 +70,15 @@ for (const mobile of [false,true]) test.describe(mobile ? 'Abgehakt Telefon' : '
     await panel.getByRole('button',{name:'Schließen',exact:true}).click()
     await section.getByRole('button',{name:'Abgehakt 1'}).click()
     await expect(section).toContainText('Schon lange erledigt')
+    await expect(section.getByText('Wieder öffnen', { exact: true })).toHaveCount(0)
+    if (!mobile) {
+      await expect(page.getByRole('tooltip')).toHaveCount(0)
+      await section.getByRole('button', { name: 'Aufgabe bearbeiten: Schon lange erledigt', exact: true }).hover()
+      await expect(page.getByRole('tooltip')).toContainText(/abgehakt am \d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}/)
+      await expect(section).not.toContainText('abgehakt am')
+      await section.getByRole('checkbox', { name: 'Aufgabe wieder öffnen: Schon lange erledigt', exact: true }).hover()
+      await expect(page.getByRole('tooltip')).toContainText('Aufgabe wieder öffnen')
+    }
     if(mobile) {
       await page.screenshot({path:info.outputPath('completed-phone.png'),fullPage:true})
       await page.setViewportSize({width:740,height:360})

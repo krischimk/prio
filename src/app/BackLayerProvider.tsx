@@ -31,7 +31,9 @@ export function BackLayerProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
+      // Ein verschachtelter Kalender/Popover kann Escape bereits verarbeitet
+      // haben. Derselbe Tastendruck darf danach nicht noch den Editor schließen.
+      if (event.key !== 'Escape' || event.defaultPrevented) return
       // Bewusst ohne `minimizeApp`: Escape beendet die App nicht, es schließt
       // nur die oberste offene Ebene.
       stack.handle()

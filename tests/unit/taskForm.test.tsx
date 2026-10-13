@@ -1,10 +1,11 @@
 import { act, renderHook } from '@testing-library/react'
-import type { FormEvent, ReactNode } from 'react'
+import { useContext, type FormEvent, type ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Repositories } from '../../src/db/repositories'
 import type { LocalTask } from '../../src/domain/types'
 import { TaskDraftProvider } from '../../src/ui/TaskDraftProvider'
 import { useTaskForm } from '../../src/ui/useTaskForm'
+import { TaskDraftContext } from '../../src/ui/taskDraftContext'
 import { createFakeServer } from '../support/fakeGateway'
 import { createDevice, type DeviceHarness } from '../support/harness'
 
@@ -49,6 +50,32 @@ describe('Aufgabenentwürfe und Speichern', () => {
     expect(result.current.werte.title).toBe('')
     rerender({ task: null, listId: other.id })
     expect(result.current.werte.title).toBe('Bericht')
+  })
+
+  it('ordnet eine freie Eingabe zu und erhält dabei den vorhandenen Listenentwurf', async () => {
+    const onSaved = vi.fn()
+    const { result, rerender } = renderHook(({ target }: { target: string }) => ({
+      form: useTaskForm({ task: null, listId: target, onSaved }),
+      drafts: useContext(TaskDraftContext)!,
+    }), { wrapper, initialProps: { target: listId } })
+    act(() => result.current.form.setzen('title', 'Listenentwurf'))
+    act(() => result.current.form.setzen('description', 'Seine eigene Notiz'))
+    rerender({ target: '' })
+    act(() => result.current.form.setzen('title', 'Freie Eingabe'))
+    act(() => result.current.drafts.assignUnassignedDraft(listId))
+    rerender({ target: listId })
+    expect(result.current.form.werte.title).toBe('Freie Eingabe')
+    expect(result.current.form.werte.description).toBe('')
+    const original = Object.entries(result.current.drafts.drafts).find(([, draft]) => draft.werte.title === 'Listenentwurf')!
+    expect(original[1].listId).toBe(listId)
+    expect(result.current.drafts.drafts['new:']).toBeUndefined()
+    act(() => result.current.drafts.activateNewDraft(listId, original[0]))
+    expect(result.current.form.werte.description).toBe('Seine eigene Notiz')
+    await act(async () => { await result.current.form.speichern(event) })
+    expect(result.current.form.werte.title).toBe('Freie Eingabe')
+    await act(async () => { await result.current.form.speichern(event) })
+    expect((await repositories.listTasks(listId)).map(task => task.title).sort()).toEqual(['Freie Eingabe', 'Listenentwurf'])
+    expect(onSaved).toHaveBeenCalledTimes(2)
   })
 
   it('hält gleichnamige Aufgabenentwürfe getrennt und verwirft ausdrücklich', async () => {

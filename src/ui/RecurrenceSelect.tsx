@@ -22,28 +22,24 @@ export function RecurrenceSelect({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="mb-1 block text-meta text-ink-muted">
+      <label htmlFor={id} className="sr-only">
         Wiederholung
       </label>
       <select
         id={id}
         value={value}
         disabled={disabled}
+        title="Wiederholung: Nach dem Abhaken wird der nächste Termin angelegt."
         onChange={(event) => onChange(event.target.value)}
         className={`${input} disabled:cursor-not-allowed disabled:opacity-50`}
       >
-        <option value="">Keine</option>
+        <option value="">Einmalig</option>
         {RECURRENCES.map((art) => (
           <option key={art} value={art}>
             {RECURRENCE_LABELS[art]}
           </option>
         ))}
       </select>
-      {disabled ? (
-        <p className="mt-1 text-meta text-ink-faint">
-          Nur mit Fälligkeitsdatum möglich – sonst gibt es nichts fortzuschreiben.
-        </p>
-      ) : null}
     </div>
   )
 }

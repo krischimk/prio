@@ -16,9 +16,7 @@ export function MobileWorkspace() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const create = () => {
     if (selected) { setTaskDetail({ taskId: null, listId: selected.id }); return }
-    const defaultId = overview.userPreference?.default_list_id
-    if (defaultId && overview.lists.some(list => list.id === defaultId)) setTaskDetail({ taskId: null, listId: defaultId, fromOverview: true })
-    else setOverviewCreating(true)
+    setOverviewCreating(true)
   }
   const userId = state.status === 'authenticated' ? state.user.id : ''
   return <div className={`min-h-screen ${appBackground} text-ink`}>

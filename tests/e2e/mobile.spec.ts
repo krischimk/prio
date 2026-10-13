@@ -1,3 +1,4 @@
+import { addReminder, fillDateTime, moreOptions, setDueAt } from './support/taskForms'
 import { openTaskEditor } from './support/helpers'
 import { listAction } from './support/helpers'
 import { expect, test, type Page } from '@playwright/test'
@@ -110,7 +111,7 @@ test('öffnet per Antippen die Detailansicht und ändert den Titel', async ({ pa
   await expect(page.getByRole('dialog', { name: 'Aufgabe' })).toBeVisible()
 
   await page.getByLabel('Titel', { exact: true }).fill('Neuer Titel')
-  await page.getByLabel('Beschreibung (optional)', { exact: true }).fill('Mit Notiz')
+  await page.getByLabel('Beschreibung', { exact: true }).fill('Mit Notiz')
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
   await expect(page.getByRole('dialog', { name: 'Aufgabe' })).toBeHidden()
@@ -148,6 +149,7 @@ test('verschiebt eine Aufgabe über die Detailansicht in eine andere Liste', asy
 
   await openTaskEditor(page, 'Wandert weiter')
   await expect(page.getByRole('dialog', { name: 'Aufgabe' })).toBeVisible()
+  await moreOptions(page)
   await page.getByRole('button', { name: 'In andere Liste verschieben' }).click()
 
   const sheet = page.getByRole('dialog', { name: 'Aufgabe verschieben' })
@@ -336,7 +338,7 @@ test('legt beim Abhaken einer wiederkehrenden Aufgabe den nächsten Termin an', 
 
   await page.getByRole('button', { name: 'Neue Aufgabe' }).click()
   await page.getByLabel('Titel', { exact: true }).fill('Zähne putzen')
-  await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
+  await setDueAt(page, inTagen(1))
   await page.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
@@ -367,7 +369,7 @@ test('nimmt den Nachfolger beim Rückgängigmachen zurück', async ({ page }) =>
 
   await page.getByRole('button', { name: 'Neue Aufgabe' }).click()
   await page.getByLabel('Titel', { exact: true }).fill('Zähne putzen')
-  await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
+  await setDueAt(page, inTagen(1))
   await page.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
@@ -384,9 +386,9 @@ test('erlaubt eine Wiederholung erst mit Fälligkeitsdatum', async ({ page }) =>
   await createList(page, 'Routinen')
 
   await page.getByRole('button', { name: 'Neue Aufgabe' }).click()
-  await expect(page.getByLabel('Wiederholung', { exact: true })).toBeDisabled()
+  await expect(page.getByLabel('Wiederholung', { exact: true })).toHaveCount(0)
 
-  await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
+  await setDueAt(page, inTagen(1))
   await expect(page.getByLabel('Wiederholung', { exact: true })).toBeEnabled()
 })
 
@@ -396,13 +398,13 @@ test('setzt auf dem Telefon einen eigenen Vorlauf für eine wiederkehrende Aufga
 
   await page.getByRole('button', { name: 'Neue Aufgabe' }).click()
   await page.getByLabel('Titel', { exact: true }).fill('Zähne putzen')
-  await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
+  await setDueAt(page, inTagen(1))
 
   // Eine Fälligkeit setzt keine Erinnerung – sie ist eine eigene Angabe.
-  await expect(page.getByText('Keine. Eine Fälligkeit erinnert nicht von selbst.')).toBeVisible()
+  await expect(page.getByLabel('Erinnerung', { exact: true })).toHaveCount(0)
 
   await page.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
-  await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+  await addReminder(page)
 
   // Die Form folgt der Wiederholung: relativer Vorlauf, vorbelegt mit
   // „Zur Fälligkeit".
@@ -426,19 +428,19 @@ test('legt auf dem Telefon mehrere Erinnerungen an', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Neue Aufgabe' }).click()
   await page.getByLabel('Titel', { exact: true }).fill('Medikament')
-  await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
+  await setDueAt(page, inTagen(1))
   await page.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
 
   // Erste Erinnerung: ein Tag vorher.
-  await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+  await addReminder(page)
   await page.getByLabel('Erinnerung', { exact: true }).selectOption('1440')
 
   // Zweite Erinnerung: eine Stunde vorher.
-  await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+  await addReminder(page)
   await expect(page.getByLabel('Erinnerung', { exact: true })).toHaveCount(2)
   await page.getByLabel('Erinnerung', { exact: true }).nth(1).selectOption('60')
 
-  await expect(page.getByText('2 Termine')).toBeVisible()
+  await expect(page.getByLabel('Erinnerung', { exact: true })).toHaveCount(2)
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
   // Beide stehen als eigene Zeile unter der Aufgabe.
@@ -451,12 +453,12 @@ test('entfernt auf dem Telefon eine von zwei Erinnerungen', async ({ page }) => 
 
   await page.getByRole('button', { name: 'Neue Aufgabe' }).click()
   await page.getByLabel('Titel', { exact: true }).fill('Gießen')
-  await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
+  await setDueAt(page, inTagen(1))
   await page.getByLabel('Wiederholung', { exact: true }).selectOption('weekly')
 
-  await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+  await addReminder(page)
   await page.getByLabel('Erinnerung', { exact: true }).selectOption('1440')
-  await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+  await addReminder(page)
   await page.getByLabel('Erinnerung', { exact: true }).nth(1).selectOption('60')
 
   await page.getByRole('button', { name: 'Erinnerung 1 entfernen' }).click()
@@ -472,9 +474,9 @@ test('nimmt einen Vorlauf auf dem Telefon in die Schnellauswahl auf', async ({ p
 
   await page.getByRole('button', { name: 'Neue Aufgabe' }).click()
   await page.getByLabel('Titel', { exact: true }).fill('Gießen')
-  await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
+  await setDueAt(page, inTagen(1))
   await page.getByLabel('Wiederholung', { exact: true }).selectOption('weekly')
-  await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+  await addReminder(page)
   await page.getByLabel('Erinnerung', { exact: true }).selectOption('custom')
   await page.getByLabel('Stunden vorher oder nachher', { exact: true }).fill('4')
 
@@ -499,10 +501,10 @@ test('erlaubt auf dem Telefon eine Erinnerung ohne Fälligkeitsdatum', async ({ 
 
   // Ohne Fälligkeit gibt es nichts, worauf sich ein Vorlauf beziehen könnte –
   // die Erinnerung ist dann ein absoluter Zeitpunkt.
-  await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+  await addReminder(page)
   await expect(page.getByLabel('Erinnerung am', { exact: true })).toBeVisible()
 
-  await page.getByLabel('Erinnerung am', { exact: true }).fill(inTagen(2))
+  await fillDateTime(page, 'Erinnerung am', inTagen(2))
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
   const zeile = taskRow(page, 'Jonna anrufen')
@@ -519,9 +521,9 @@ test('schaltet eine Erinnerung auf dem Telefon nur für sich stumm', async ({ pa
 
   await page.getByRole('button', { name: 'Neue Aufgabe' }).click()
   await page.getByLabel('Titel', { exact: true }).fill('Müll rausbringen')
-  await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
-  await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
-  await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+  await setDueAt(page, inTagen(1))
+  await addReminder(page)
+  await addReminder(page)
 
   await expect(page.getByRole('button', { name: /stummschalten/ })).toHaveCount(0)
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
@@ -585,6 +587,7 @@ test('E2E 6: Bereiche ordnen Aufgaben, nehmen sie beim Ziehen auf und klappen zu
 
   // Die erste Aufgabe kommt über das Formular in ihren Bereich.
   await openTaskEditor(page, 'Äpfel')
+  await moreOptions(page)
   await page.getByLabel('Bereich').selectOption({ label: 'Obst' })
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
@@ -606,6 +609,7 @@ test('E2E 6: Bereiche ordnen Aufgaben, nehmen sie beim Ziehen auf und klappen zu
 
   // Hier die Zuordnung über das Formular; der Ziehweg steht in drag.spec.ts.
   await openTaskEditor(page, 'Saft')
+  await moreOptions(page)
   await page.getByLabel('Bereich').selectOption({ label: 'Obst' })
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 

@@ -285,6 +285,27 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+.date-time-clock {
+  padding-left: 2.75rem;
+}
+
+.reminder-controls {
+  container-type: inline-size;
+}
+
+.reminder-timing-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 0.5rem;
+}
+
+@container (min-width: 32rem) {
+  .reminder-timing-fields {
+    grid-template-columns: minmax(0, 1fr) 12rem;
+  }
+}
+
 /*
  * Bewegungsreduktion (P46).
  *

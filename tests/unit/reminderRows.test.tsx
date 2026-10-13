@@ -10,7 +10,7 @@ import type { TaskReminder } from '../../src/domain/reminder'
  * umschaltet, darf sie nicht verlieren. Genau das passierte: Die Oberfläche
  * hatte eine **zweite** Fassung der Umrechnung, und die ließ `mutedBy` weg; das
  * Repository nimmt die Liste aus dem Formular wörtlich, weil das Formular etwas
- * gesagt hat. Jetzt gibt es nur noch `umformen` in `src/domain/reminder.ts`.
+ * gesagt hat. Jetzt richtet `alignReminders` beide Wege gemeinsam aus.
  */
 describe('useReminderRows', () => {
   /*
@@ -56,7 +56,8 @@ describe('useReminderRows', () => {
 
     rerender({ recurrence: null })
 
-    const neu = onChange.mock.calls[0][0] as TaskReminder[]
-    expect(neu[0]).toMatchObject({ form: 'absolute', mutedBy: ['ich'] })
+    // Einmalige Aufgaben erlauben den bereits gebundenen, stummen Vorlauf.
+    // Ohne Umrechnung bleibt die ursprüngliche Angabe vollständig erhalten.
+    expect(onChange).not.toHaveBeenCalled()
   })
 })

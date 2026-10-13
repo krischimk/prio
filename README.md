@@ -100,13 +100,19 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
   Gruppierung ist nur die erste Voreinstellung. Die gewählte Ansicht bleibt
   nach Neustart erhalten und wird zwischen Geräten synchronisiert.
 * Auf dem Desktop werden neue Aufgaben in beiden Ansichten direkt im sichtbaren
-  Titelfeld mit Enter angelegt. In der Gesamtansicht wird zuvor ausdrücklich
-  eine Zielliste ausgewählt; eine manuell gesetzte Standardliste ist vorausgewählt.
-  Ohne Standardliste ist nach dem Hinzufügen erneut eine Auswahl nötig.
-  Auf dem Telefon öffnet der feste Knopf „Neue Aufgabe“ in beiden Ansichten
-  denselben Editor; die Gesamtansicht fragt bei Bedarf zuerst nach der Zielliste.
+  Titelfeld mit Enter angelegt. Beschreibung und Termin klappen beim Arbeiten
+  mit dem Titelfeld auf; „Weitere Einstellungen“ öffnet den Aufgabeneditor.
+  In der Gesamtansicht kann zuerst geschrieben werden. Erst das Hinzufügen
+  verlangt eine ausdrückliche Zielliste, solange keine manuell gesetzte
+  Standardliste vorausgewählt ist. Ohne Standardliste ist nach dem Hinzufügen
+  erneut eine Auswahl nötig. Auf dem Telefon öffnet „Neue Aufgabe“ in der
+  Gesamtansicht dieselbe Erfassung mit bereits fokussiertem Titelfeld;
+  in einer einzelnen Liste ist das Ziel bereits bestimmt.
   Die zuletzt gewählte Zielliste wird nicht automatisch zum Default. Entwürfe
   bleiben ihrer Zielliste zugeordnet, auch beim Wechsel zwischen den Ansichten.
+  Eine zunächst freie Eingabe wird bei der Listenauswahl zugeordnet. Liegt dort
+  schon ein Entwurf, bleiben beide erhalten; die Auswahl fragt, welcher gerade
+  bearbeitet werden soll. Mehrere Listenentwürfe sind anschließend umschaltbar.
 * Alle zugänglichen Ziellisten sind erlaubt. Bei einer ausgeschlossenen Liste
   erklärt ein Hinweis, dass die neue Aufgabe in ihrer Listenansicht erscheint.
 * Aufgabenzeilen, Bereiche und „Abgehakt“ kommen in beiden Ansichten aus
@@ -115,6 +121,12 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
   erledigte Aufgaben auch in der Gesamtansicht: gruppiert am Ende ihres
   Listenblocks, bei „Neueste zuerst“ gesammelt am Ende mit Herkunft. Der
   Bereich ist zunächst eingeklappt und zeigt die Anzahl.
+  Sein Kopf ist zurückgenommen; der Abhakzeitpunkt steht im Hover-/Fokushinweis
+  und ist im Editor unter „Mehr Optionen“ auch ohne Maus erreichbar.
+* Die Sortierung der Gesamtansicht liegt hinter dem kleinen Symbol rechts über
+  den Aufgaben. In der breiten Webansicht kann eine Aufgabe auf eine Liste in
+  der linken Seitenleiste gezogen werden: Sie landet dort am Ende ohne Bereich.
+  Das geht auch aus „Neueste zuerst“; die chronologische Sortierung bleibt bestehen.
 * Diese persönlichen Einstellungen liegen in `list_preferences` und
   `user_preferences`; die Cloud braucht Migration 0015. Sie ersetzen keine der
   gemeinsamen Regeln zu Prioritäten, gleichen Namen oder „Abgehakt“.
@@ -135,13 +147,24 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
   ab Umstellung. Beim Verschieben erledigter Aufgaben gilt die Zielliste;
   ohne Aufbewahrung beginnen sieben Tage ab dem Verschieben.
 * Nach dem Abhaken erscheint unten kurz eine Leiste mit „Rückgängig“
-* Erinnerungen: Hat eine Aufgabe ein Fälligkeitsdatum in der Zukunft, plant
-  die Android-App eine Benachrichtigung. Details unter
+* Erinnerungen werden ausdrücklich hinzugefügt; ein Fälligkeitsdatum allein
+  löst keine Benachrichtigung aus. Details unter
   [Erinnerungen](#erinnerungen)
 * Wiederkehrende Aufgaben: täglich, wöchentlich, monatlich oder jährlich –
   Details unter [Wiederkehrende Aufgaben](#wiederkehrende-aufgaben)
 * Bewusst nicht enthalten: Prioritäten, Tags, Unteraufgaben, Anhänge,
   Kommentare
+
+Der Aufgabeneditor verwendet kompakte, aufklappbare Terminangaben und eine
+Beschreibung, deren Höhe dem Text folgt. Kalender beginnen montags und zeigen
+deutsche Monats-/Datumsnamen; Eingabe `TT.MM.JJJJ`, Uhrzeit `HH:mm` in der
+lokalen Gerätezeitzone. Erinnerungsvorlagen folgen der Fälligkeit auch bei
+einmaligen Aufgaben; eigene feste Zeitpunkte bleiben unabhängig. „Mehr Optionen“ enthält Bereich,
+Reihenfolge, Statuswechsel und den alternativen Listenwechsel.
+Symbolknöpfe verwenden gemeinsame Hover-/Fokushinweise. Der Desktop-Syncstatus
+erscheint im Hinweis am Synchronisationssymbol, im mobilen Menü weiterhin als
+farbiger Text. Die APK-Updateprüfung ist auf die native App beschränkt; die
+Webfassung aktualisiert ihre Dateien über den Service Worker.
 
 ### Offline und Synchronisation
 
@@ -570,17 +593,20 @@ Web-Oberfläche.
 
 Eine Aufgabe kann **mehrere** Erinnerungen tragen, und jede wird ein eigener
 Termin beim Betriebssystem. Sie stehen als Liste an der Aufgabe
-(`tasks.reminders`), und ihre **Form folgt der Wiederholung**:
+(`tasks.reminders`). Ihre Form speichert, ob der Zeitpunkt fest ist oder an
+die Fälligkeit gebunden bleibt:
 
 | Aufgabe | Eintrag | Beispiel |
 | --- | --- | --- |
-| einmalig | `{"form":"absolute","at":…}` | „am 15.02.2027 um 17:00" |
+| einmalig, fester Zeitpunkt | `{"form":"absolute","at":…}` | „am 15.02.2027 um 17:00“ |
+| einmalig, gebundene Vorlage | `{"form":"offset","minutes":…}` | „10 Min vorher“; folgt späteren Änderungen der Fälligkeit |
 | wiederkehrend | `{"form":"offset","minutes":…}` | „1 Std 30 Min vorher" |
 
 Warum diese Aufteilung: Eine absolute Erinnerung an einer wiederkehrenden
-Aufgabe feuerte genau einmal und wäre ab der zweiten Ausführung falsch. Ein
-Vorlauf an einer einmaligen Aufgabe könnte nichts, was ein absoluter Zeitpunkt
-nicht auch könnte.
+Aufgabe feuerte genau einmal und wäre ab der zweiten Ausführung falsch.
+Einmalige Aufgaben erlauben beide Formen: Ein Vorlauf wandert bei einer
+Terminverschiebung mit, ein ausdrücklich fester Zeitpunkt bleibt stehen.
+Bestehende feste Erinnerungen werden nicht automatisch umgedeutet.
 
 **Der Vorlauf darf negativ sein.** `-240` heißt „4 Stunden nach der Fälligkeit"
 – ein Nachempfinden für Aufgaben, die noch offen sind. Ist die Aufgabe bis
@@ -588,26 +614,29 @@ dahin abgehakt, verstummt es von selbst: Erledigte Aufgaben erinnern nicht.
 
 **Eine Fälligkeit setzt keine Erinnerung.** Wer erinnert werden will, wählt es
 ausdrücklich – „Zur Fälligkeit" ist dabei eine Auswahl wie jede andere. Und die
-Erinnerungen sind eine eigene Angabe: Wer die Fälligkeit verschiebt,
-verschiebt sie nicht mit.
+Erinnerungen sind eine eigene Angabe: Feste Zeitpunkte bleiben unabhängig,
+gebundene Vorlagen folgen der Fälligkeit. Treffen zwei Einträge auf denselben
+Zeitpunkt, plant Prio dort nur eine Benachrichtigung.
 
 **Warum eine Spalte und keine eigene Tabelle.** Erinnerungen sind Teil der
 Absicht einer Aufgabe und werden immer zusammen mit ihr gelesen. Eine zweite
 Tabelle bräuchte Policies, `grant`s, einen vierten Sync-Pfad und eigenes
 `dirty`-Tracking – viel Apparat für eine kurze, geordnete Liste, die mit der
-Aufgabe zusammen im Last-Write-Wins wandert. Dieselbe Überlegung wie bei
+Aufgabe zusammen gegen den bestätigten Ausgangsstand synchronisiert wird. Dieselbe Überlegung wie bei
 `recurrence`.
 
 ### Die Liste im Formular
 
-Ein Abschnitt „Erinnerungen" mit einer Zeile je Erinnerung, einem Knopf
-**„Weitere Erinnerung"** und einem Papierkorb je Zeile. Bei wiederkehrenden
-Aufgaben ist jede Zeile eine Auswahl (feste Stufen, gemerkte Werte, „Eigene …"),
-bei einmaligen ein Zeitpunktfeld.
+„Benachrichtigung hinzufügen“ öffnet die erste Zeile. Weitere Erinnerungen
+haben ebenfalls Kalender, Uhrzeit und einen Papierkorb. Bei einmaligen
+Aufgaben wählt die benachbarte Auswahl einen gebundenen Vorlauf oder einen
+festen Zeitpunkt; eine tatsächliche Änderung am Zeitpunktfeld macht ihn fest.
+Serien bieten zusätzlich eigene, merkbare Vorläufe.
 
-Was sich nicht umrechnen lässt, fällt weg: Wird aus einer einmaligen Aufgabe
-eine wiederkehrende, wandert jede Erinnerung in einen Vorlauf – außer sie läge
-dann in der Vergangenheit. Umgekehrt genauso.
+Beim Einschalten der Wiederholung werden feste Zeitpunkte in Vorläufe
+umgerechnet; Abschalten erhält deren Bindung. Wird die Fälligkeit entfernt,
+werden Vorläufe gegen den bisherigen Termin in feste, noch zukünftige
+Zeitpunkte umgerechnet. Bestehende feste Einträge bleiben erhalten.
 
 Höchstens **10 Erinnerungen** je Aufgabe. Jede ist ein Alarm beim
 Betriebssystem; zehn sind großzügig, und eine verbogene Zeile soll das Gerät
@@ -625,15 +654,13 @@ niemanden, für den er gälte.
 * Die Angabe steht als `mutedBy` **im Erinnerungseintrag** und wandert mit der
   Aufgabe durch den Sync. Eine eigene Tabelle für „wer will das nicht" wäre ein
   vierter Sync-Pfad für eine Handvoll Kennungen – dieselbe Überlegung wie bei
-  der Liste selbst. Der Preis: Stummschalten schreibt an der Aufgabe, und bei
-  gleichzeitigen Änderungen gewinnt wie überall der letzte Schreibvorgang.
+  der Liste selbst. Stummschalten schreibt an der Aufgabe; widersprechende
+  gleichzeitige Änderungen werden als Konflikt erkannt.
 * In der Liste bleibt die Erinnerung sichtbar und heißt dann
   „… · für mich stumm". Auch dann, wenn sie genau zur Fälligkeit passiert:
   Für die anderen wäre das eine Dublette zur Zeile darüber, für die stumme
   Person die einzige Spur ihrer Entscheidung.
-* Stummschalten gilt **nur für die eigene Person**, nicht für deren andere
-  Geräte – die Kennung ist die des Kontos, und die ist auf allen Geräten
-  dieselbe.
+* Stummschalten gilt für dein Konto und damit auf allen deinen Geräten.
 
 ### Wie es funktioniert
 
@@ -845,7 +872,8 @@ stellt die gemeinsame Aufbewahrungsregel in beiden Ansichten ein:
   zeigt sie die zuletzt abgehakte.
 * **„Abgehakt am Listenende“ an:** Dauerhaft erhalten, ausschließlich im Bereich
   „Abgehakt“ am Ende dieser Liste. Er beginnt eingeklappt mit der Anzahl.
-  „Wieder öffnen“ ist dort erreichbar. Es gilt keine Sieben-Tage-Grenze.
+  Die angehakte Checkbox öffnet eine Aufgabe wieder; ihr Hinweis benennt die
+  Aktion. Es gilt keine Sieben-Tage-Grenze.
 * **Einstellung aus, der Default:** Unter „Aufgaben wiederherstellen“ erreichbar,
   solange die siebentägige Frist läuft. Danach endgültig entfernt, ohne zweite
   Papierkorbfrist. Auf dem Telefon über das Menü, breit über „Wiederherstellen“.
@@ -988,10 +1016,26 @@ sind in `TaskList.tsx` konkret umgesetzt:
 | Leere Container erreichbar, Aufgaben bevorzugt | `useDroppable` mit niedriger Kollisionspriorität für jeden Bereich einschließlich des kopflosen Teils |
 | Ziele passend zur gewünschten Präzision erkennen | `pointerIntersection` für Aufgaben und Bereiche; die überlappende Ziehkopie blockiert damit keinen Bereichskopf. Der Tastaturweg setzt dieselbe virtuelle Zeigerposition. |
 | Passende Sensoren je Eingabegerät; Tastatur erhalten | Konfigurierter `PointerSensor`; Leertaste startet Tastatur-Ziehen, Enter öffnet den Editor, Pfeile/Escape/Abschluss behalten ihre Standards |
-| Standards für Feedback und automatisches Scrollen erhalten | Standardplugins; die Bibliothek hält die schwebende Zeile und ihre Breite |
-| React und automatische DOM-Sortierung nicht gleichzeitig dieselbe Gruppe ändern | `move` führt die Vorschau; `onDragOver.preventDefault()` verhindert die zusätzliche DOM-Umsortierung; `useSortable` animiert die Positionsänderungen |
+| Standards für Feedback und automatisches Scrollen erhalten | Standardplugins; die Bibliothek hält die schwebende Zeile und ihre Breite. Die [Fenstergrenze](https://dndkit.com/react/guides/modifiers/) `RestrictToWindow` erhält ihren lesbaren Inhalt auch beim Zug zur linken Seitenleiste; die Zielerkennung folgt weiterhin dem Zeiger. |
+| React und automatische DOM-Sortierung nicht gleichzeitig dieselbe Gruppe ändern | Die Zeigerhälfte führt die Vorschau auch innerhalb desselben Ziels; Tastatur verwendet `move`. `onDragOver.preventDefault()` verhindert die zusätzliche DOM-Umsortierung; `useSortable` animiert die Positionsänderungen. Loslassen speichert die sichtbare Vorschau. |
 | Neulesen während einer Ziehgeste zurückstellen | Momentaufnahme ausschließlich für die laufende Interaktion; danach wieder Datenbank-Hook |
 | Abbruch nimmt Vorschau zurück; erst Loslassen schreibt | `onDragEnd` prüft Abbruch und Ziel; `placeTask` schreibt atomar |
+| Ein gemeinsamer Kontext für externe Ablageziele | `TaskDragProvider` umfasst Aufgaben und Seitenleiste; der aktive `TaskList` liefert die Provider-Callbacks, damit die Bibliothek React-Renders vor ihren Messungen abwartet |
+| Bedienelemente innerhalb der Ziehfläche bleiben eigenständig | `PointerSensor.preventActivation` nimmt Checkbox, Knöpfe und Eingabefelder aus |
+
+**Ark UI:** Es werden die einzelnen Module für Kalender, Hinweis und Popover
+importiert und mit den vorhandenen Prio-Rollen gestaltet. Die
+[Kalenderdokumentation](https://ark-ui.com/docs/components/date-picker),
+[Hinweis-Empfehlungen](https://ark-ui.com/docs/components/tooltip) und
+[Popover-Integration](https://ark-ui.com/docs/components/popover) sind so zugeordnet:
+
+| Empfehlung | Umsetzung |
+| --- | --- |
+| Locale und Wochenbeginn ausdrücklich wählen | `DateTimeInput`: `de-DE`, Montag, lokale Gerätezeitzone; `TT.MM.JJJJ` mit strikter Prüfung |
+| Kontrollierte Werte an die Fachlogik anbinden | `DateValue.toString()` liefert den Kalendertag, Anzeige bleibt getrennt; lokaler ISO-Wert am bisherigen `useTaskForm` |
+| Interaktive Auswahl mit Tastatur und benannten Teilen | Ark-Kalendergitter; deutsche Navigations-/Feldnamen; Escape/Zurück schließen zuerst den Kalender |
+| Hinweise in festen Containern positionieren | `Hint`: feste Positionierung, gemeinsame Ebene, Maus-Hover und Tastaturfokus |
+| Verschachtelte Ebenen sauber schließen | Kalender und Sortier-Popover bleiben im Dialogbaum, mit `lazyMount`/`unmountOnExit` und eigener Zurück-Ebene |
 
 `tests/e2e/drag.spec.ts` prüft echte Maus-, Touch- und Tastaturgesten, animiertes
 Platzmachen, leere und zugeklappte Ziele, Abbruch und Wechsel zwischen Listen. Der frühere

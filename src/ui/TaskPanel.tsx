@@ -14,7 +14,7 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
   const query = useTasksQuery([list.id])
   const desktop = useIsDesktop()
   const { setListSettingsId } = useView()
-  return <section className={`mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col gap-5 p-rand ${desktop ? 'scroll-area overflow-y-auto' : ''}`} aria-label="Aufgaben">
+  return <section className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col gap-5 p-rand" aria-label="Aufgaben">
     <header className="flex shrink-0 items-start justify-between gap-4">
       <div className="min-w-0">
         {desktop ? <div className="flex min-w-0 items-center gap-3">

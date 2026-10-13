@@ -1,8 +1,8 @@
 import { reminderTimeOf } from '../../domain/reminder'
-import { BellIcon, BellOffIcon } from '../icons'
-import { formatReminderLabel } from '../datetime'
-import { formatOffsetChoice } from '../reminder'
-import { input, mutedText } from '../styles'
+import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../datetime'
+import { formatReminderOffset } from '../reminder'
+import { input } from '../styles'
+import { DateTimeInput } from '../components/DateTimeInput'
 import { CustomOffset } from './CustomOffset'
 import { EIGENE, useOffsetChoice } from './useOffsetChoice'
 
@@ -11,13 +11,11 @@ export function OffsetRow({
   idPrefix,
   dueAt,
   minutes,
-  muted,
   onChange,
 }: {
   idPrefix: string
   dueAt: string
   minutes: number
-  muted: boolean
   onChange: (minutes: number) => void
 }) {
   const { auswahl, wert, waehlen, eigeneOffen, gemerkt, merken } = useOffsetChoice({
@@ -28,23 +26,31 @@ export function OffsetRow({
 
   return (
     <div>
-      <label htmlFor={`${idPrefix}-wahl`} className="sr-only">
-        Erinnerung
-      </label>
-      <select
-        id={`${idPrefix}-wahl`}
-        aria-label="Erinnerung"
-        value={wert}
-        onChange={(event) => waehlen(event.target.value)}
-        className={input}
-      >
-        {auswahl.map((wahl) => (
-          <option key={wahl} value={String(wahl)}>
-            {formatOffsetChoice(wahl)}
-          </option>
-        ))}
-        <option value={EIGENE}>Eigene …</option>
-      </select>
+      <div className="reminder-timing-fields">
+        <DateTimeInput id={idPrefix} label="Erinnerung am" required value={toDateTimeLocalValue(zeitpunkt)} onChange={value => {
+          const next = fromDateTimeLocalValue(value)
+          if (next) onChange(Math.round((Date.parse(dueAt) - Date.parse(next)) / 60000))
+        }} />
+        <div>
+          <label htmlFor={`${idPrefix}-wahl`} className="sr-only">
+            Erinnerung
+          </label>
+          <select
+            id={`${idPrefix}-wahl`}
+            aria-label="Erinnerung"
+            value={wert}
+            onChange={(event) => waehlen(event.target.value)}
+            className={input}
+          >
+            {auswahl.map((wahl) => (
+              <option key={wahl} value={String(wahl)}>
+                {formatReminderOffset(wahl)}
+              </option>
+            ))}
+            <option value={EIGENE}>Eigene …</option>
+          </select>
+        </div>
+      </div>
 
       {eigeneOffen ? (
         <CustomOffset
@@ -54,14 +60,6 @@ export function OffsetRow({
           onRemember={merken}
           remembered={gemerkt}
         />
-      ) : null}
-
-      {zeitpunkt !== null ? (
-        <p className={`mt-1 flex items-center gap-1 text-meta ${mutedText}`}>
-          {muted ? <BellOffIcon className="h-3 w-3 shrink-0" /> : <BellIcon className="h-3 w-3 shrink-0" />}
-          {formatReminderLabel(zeitpunkt)}
-          {muted ? ' · für mich stumm' : ''}
-        </p>
       ) : null}
     </div>
   )

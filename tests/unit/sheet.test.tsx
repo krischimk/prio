@@ -102,6 +102,28 @@ describe('Sheet', () => {
     auslöser.remove()
   })
 
+  it('umschließt die erreichbaren Aktionen einschließlich zugeklappter Optionen', async () => {
+    const user = userEvent.setup()
+    render(<BackLayerProvider><Sheet title="Optionen" onClose={vi.fn()}>
+      <button>Erste Aktion</button>
+      <details><summary>Mehr Optionen</summary><button>Zusätzliche Aktion</button></details>
+    </Sheet></BackLayerProvider>)
+    const close = screen.getByRole('button', { name: 'Schließen' })
+    const summary = screen.getByText('Mehr Optionen')
+    summary.focus()
+    await user.tab()
+    expect(close).toHaveFocus()
+    await user.tab({ shift: true })
+    expect(summary).toHaveFocus()
+    await user.click(summary)
+    const extra = screen.getByRole('button', { name: 'Zusätzliche Aktion' })
+    extra.focus()
+    await user.tab()
+    expect(close).toHaveFocus()
+    await user.tab({ shift: true })
+    expect(extra).toHaveFocus()
+  })
+
   it('hält den Hintergrund beim Schließen eines verschachtelten Dialogs gesperrt und bewahrt vorherige Sperren', async () => {
     const user = userEvent.setup()
     const zuvorGesperrt = document.createElement('div')

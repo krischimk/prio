@@ -17,9 +17,7 @@ export interface TaskFactsProps {
  * Diese Zeilen standen zweimal im Code – einmal in der breiten Zeile, einmal in
  * der mobilen –, und sie waren schon auseinandergelaufen: dieselbe gedämpfte
  * Zeile war einmal `text-ink-muted` und einmal `text-ink-faint`. Hier entsteht
- * der Inhalt einmal; den **Rahmen** setzt der Aufrufer (Karte bzw. flache
- * Zeile), und auf dem Telefon liegt er in einem Knopf, weil die ganze Zeile
- * antippbar ist.
+ * der Inhalt einmal; TaskRow setzt die gemeinsame klickbare Aufgabenfläche.
  */
 export function TaskFacts({ task, currentUserId }: TaskFactsProps) {
   const due = task.due_at === null ? null : formatDueLabel(task.due_at, task.completed)

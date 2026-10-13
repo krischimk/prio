@@ -160,26 +160,26 @@ describe('Erinnerungen einer Aufgabe beschreiben', () => {
 describe('Vorschlag für eine neue Erinnerung', () => {
   const NOW = Date.parse('2099-01-15T14:23:00.000Z')
 
-  it('schlägt bei wiederkehrenden Aufgaben die Fälligkeit vor', () => {
-    expect(reminderSuggestion('daily', DUE, NOW)).toEqual({ form: 'offset', minutes: 0 })
+  it('schlägt mit Fälligkeit einen gebundenen Vorlauf vor', () => {
+    expect(reminderSuggestion(DUE, NOW)).toEqual({ form: 'offset', minutes: 0 })
   })
 
-  it('schlägt bei einmaligen Aufgaben mit Fälligkeit diese vor', () => {
-    expect(reminderSuggestion(null, DUE, NOW)).toEqual({ form: 'absolute', at: DUE })
+  it('vermeidet denselben Zeitpunkt in einer bereits gespeicherten festen Erinnerung', () => {
+    expect(reminderSuggestion(DUE, NOW, [{ form: 'absolute', at: DUE }])).toEqual({ form: 'offset', minutes: 10 })
   })
 
   it('weicht dem aus, was schon da ist', () => {
     // Sonst fiele die zweite Zeile beim Speichern als Dublette weg.
-    const erste = reminderSuggestion(null, DUE, NOW, [])
-    const zweite = reminderSuggestion(null, DUE, NOW, [erste])
+    const erste = reminderSuggestion(DUE, NOW, [])
+    const zweite = reminderSuggestion(DUE, NOW, [erste])
     expect(zweite).not.toEqual(erste)
 
-    const dritte = reminderSuggestion('daily', DUE, NOW, [{ form: 'offset', minutes: 0 }])
+    const dritte = reminderSuggestion(DUE, NOW, [{ form: 'offset', minutes: 0 }])
     expect(dritte).toEqual({ form: 'offset', minutes: 10 })
   })
 
   it('schlägt ohne Fälligkeit die nächste volle Stunde vor', () => {
-    const vorschlag = reminderSuggestion(null, null, NOW)
+    const vorschlag = reminderSuggestion(null, NOW)
     expect(vorschlag.form).toBe('absolute')
     expect(vorschlag.form === 'absolute' && new Date(vorschlag.at).getMinutes()).toBe(0)
     expect(vorschlag.form === 'absolute' && Date.parse(vorschlag.at)).toBeGreaterThan(NOW)

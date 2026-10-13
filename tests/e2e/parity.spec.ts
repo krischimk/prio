@@ -1,3 +1,4 @@
+import { addReminder, expectOverviewMode, moreOptions, setDueAt, setOverviewMode } from './support/taskForms'
 import { openTaskEditor } from './support/helpers'
 import { listAction, openListSettings, closeListSettings } from './support/helpers'
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
@@ -42,6 +43,7 @@ function inTagen(tage: number): string {
 
 async function changeOrder(page: Page) {
   const editor = await openTaskEditor(page, 'B')
+  await moreOptions(editor)
   await editor.getByRole('button', { name: 'Reihenfolge ändern', exact: true }).click()
   const order = page.getByRole('dialog', { name: 'Reihenfolge ändern', exact: true })
   await order.getByRole('button', { name: 'Position übernehmen', exact: true }).click()
@@ -86,7 +88,7 @@ const funktionen: Funktion[] = [
       const header = section.getByRole('button', { name: 'Abgehakt 1' })
       await expect(header).toHaveAttribute('aria-expanded', 'false')
       await header.click()
-      await section.getByRole('button', { name: 'Wieder öffnen' }).click()
+      await section.getByRole('checkbox', { name: /^Aufgabe wieder öffnen:/ }).click()
       await expect(breit.taskItem(page, 'Wohnung saugen')).toBeVisible()
     },
     telefon: async page => {
@@ -103,7 +105,7 @@ const funktionen: Funktion[] = [
       const header = section.getByRole('button', { name: 'Abgehakt 1' })
       await expect(header).toHaveAttribute('aria-expanded', 'false')
       await header.click()
-      await section.getByRole('button', { name: 'Wieder öffnen' }).click()
+      await section.getByRole('checkbox', { name: /^Aufgabe wieder öffnen:/ }).click()
       await expect(telefon.taskRow(page, 'Wohnung saugen')).toBeVisible()
     },
   },
@@ -145,11 +147,12 @@ const funktionen: Funktion[] = [
       await sheet.getByLabel('Standardliste für neue Aufgaben').selectOption({ label: 'Arbeit' })
       await expect(sheet.getByLabel('Standardliste für neue Aufgaben')).not.toHaveValue('')
       await sheet.getByRole('button', { name: 'Schließen', exact: true }).click()
-      await page.getByLabel('Ansicht der Gesamtansicht').selectOption('newest')
-      await expect(page.getByLabel('Ansicht der Gesamtansicht')).toHaveValue('newest')
+      await setOverviewMode(page, 'newest')
+      await expectOverviewMode(page, 'newest')
       await page.reload()
-      await expect(page.getByLabel('Ansicht der Gesamtansicht')).toHaveValue('newest')
+      await expectOverviewMode(page, 'newest')
       const composer = page.getByRole('form', { name: 'Neue Aufgabe anlegen', exact: true })
+      await composer.getByLabel('Neue Aufgabe', { exact: true }).focus()
       await expect(composer.getByLabel('Zielliste', { exact: true }).locator('option:checked')).toHaveText('Arbeit')
       await composer.getByLabel('Neue Aufgabe', { exact: true }).fill('Mit Standardliste')
       await composer.getByLabel('Neue Aufgabe', { exact: true }).press('Enter')
@@ -166,12 +169,12 @@ const funktionen: Funktion[] = [
       await sheet.getByLabel('Standardliste für neue Aufgaben').selectOption({ label: 'Arbeit' })
       await expect(sheet.getByLabel('Standardliste für neue Aufgaben')).not.toHaveValue('')
       await sheet.getByRole('button', { name: 'Schließen', exact: true }).click()
-      await page.getByLabel('Ansicht der Gesamtansicht').selectOption('newest')
-      await expect(page.getByLabel('Ansicht der Gesamtansicht')).toHaveValue('newest')
+      await setOverviewMode(page, 'newest')
+      await expectOverviewMode(page, 'newest')
       await page.reload()
-      await expect(page.getByLabel('Ansicht der Gesamtansicht')).toHaveValue('newest')
+      await expectOverviewMode(page, 'newest')
       await page.getByRole('button', { name: 'Neue Aufgabe', exact: true }).click()
-      await expect(page.getByRole('dialog', { name: 'Neue Aufgabe', exact: true })).toContainText('Liste: Arbeit')
+      await expect(page.getByRole('dialog', { name: 'Neue Aufgabe', exact: true }).getByLabel('Zielliste', { exact: true }).locator('option:checked')).toHaveText('Arbeit')
     },
   },
   {
@@ -311,6 +314,7 @@ const funktionen: Funktion[] = [
 
       await openTaskEditor(page, 'Äpfel')
       const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
+      await moreOptions(formular)
       await formular.getByLabel('Bereich').selectOption({ label: 'Obst' })
       await formular.getByRole('button', { name: 'Speichern' }).click()
 
@@ -334,6 +338,7 @@ const funktionen: Funktion[] = [
       await expect(bereichsKopf(page, 'Obst')).toBeVisible()
 
       await openTaskEditor(page, 'Äpfel')
+      await moreOptions(page)
       await page.getByLabel('Bereich').selectOption({ label: 'Obst' })
       await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
@@ -351,7 +356,7 @@ const funktionen: Funktion[] = [
       await openTaskEditor(page, 'Alter Titel')
       const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
       await formular.getByLabel('Titel', { exact: true }).fill('Neuer Titel')
-      await formular.getByLabel('Beschreibung (optional)', { exact: true }).fill('Mit Notiz')
+      await formular.getByLabel('Beschreibung', { exact: true }).fill('Mit Notiz')
       await formular.getByRole('button', { name: 'Speichern' }).click()
 
       const neu = breit.taskItem(page, 'Neuer Titel')
@@ -366,13 +371,12 @@ const funktionen: Funktion[] = [
       await openTaskEditor(page, 'Alter Titel')
       await expect(page.getByRole('dialog', { name: 'Aufgabe' })).toBeVisible()
       await page.getByLabel('Titel', { exact: true }).fill('Neuer Titel')
-      await page.getByLabel('Beschreibung (optional)', { exact: true }).fill('Mit Notiz')
+      await page.getByLabel('Beschreibung', { exact: true }).fill('Mit Notiz')
       await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
       const neu = telefon.taskRow(page, 'Neuer Titel')
       await expect(neu).toBeVisible()
-      // Die Beschreibung liegt neben dem Knopf „Aufgabe öffnen" – siehe
-      // taskZeile in support/mobile.ts.
+      // Die ganze Aufgabenfläche enthält auch die Beschreibung.
       await expect(telefon.taskZeile(page, 'Neuer Titel')).toContainText('Mit Notiz')
     },
   },
@@ -455,7 +459,7 @@ const funktionen: Funktion[] = [
 
       await openTaskEditor(page, 'Zähne putzen')
       const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
-      await formular.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
+      await setDueAt(formular, inTagen(1))
       await formular.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
       await formular.getByRole('button', { name: 'Speichern' }).click()
 
@@ -467,7 +471,7 @@ const funktionen: Funktion[] = [
       await telefon.createTask(page, 'Zähne putzen')
 
       await openTaskEditor(page, 'Zähne putzen')
-      await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
+      await setDueAt(page, inTagen(1))
       await page.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
       await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
@@ -483,11 +487,11 @@ const funktionen: Funktion[] = [
 
       await openTaskEditor(page, 'Medikament')
       const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
-      await formular.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
+      await setDueAt(formular, inTagen(1))
       await formular.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
-      await formular.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+      await addReminder(formular)
       await formular.getByLabel('Erinnerung', { exact: true }).selectOption('1440')
-      await formular.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+      await addReminder(formular)
       await formular.getByLabel('Erinnerung', { exact: true }).nth(1).selectOption('60')
       await formular.getByRole('button', { name: 'Speichern' }).click()
 
@@ -499,11 +503,11 @@ const funktionen: Funktion[] = [
       await telefon.createTask(page, 'Medikament')
 
       await openTaskEditor(page, 'Medikament')
-      await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
+      await setDueAt(page, inTagen(1))
       await page.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
-      await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+      await addReminder(page)
       await page.getByLabel('Erinnerung', { exact: true }).selectOption('1440')
-      await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+      await addReminder(page)
       await page.getByLabel('Erinnerung', { exact: true }).nth(1).selectOption('60')
       await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
@@ -524,9 +528,9 @@ const funktionen: Funktion[] = [
       await closeListSettings(page)
   await zeile.getByRole('button', { name: 'Bearbeiten' }).click()
       const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
-      await formular.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
-      await formular.getByRole('button', { name: 'Weitere Erinnerung' }).click()
-      await formular.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+      await setDueAt(formular, inTagen(1))
+      await addReminder(formular)
+      await addReminder(formular)
       await formular.getByRole('button', { name: 'Speichern' }).click()
 
       // In einer eigenen Liste gäbe es niemanden, für den der Schalter gilt.
@@ -558,9 +562,9 @@ const funktionen: Funktion[] = [
       await telefon.createTask(page, 'Müll rausbringen')
 
       await openTaskEditor(page, 'Müll rausbringen')
-      await page.getByLabel('Fällig am (optional)', { exact: true }).fill(inTagen(1))
-      await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
-      await page.getByRole('button', { name: 'Weitere Erinnerung' }).click()
+      await setDueAt(page, inTagen(1))
+      await addReminder(page)
+      await addReminder(page)
       await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
       await page.getByTestId('app-bar-title').click()
@@ -593,7 +597,7 @@ const funktionen: Funktion[] = [
       await openTaskEditor(page, 'Einkauf')
       const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
       await formular
-        .getByLabel('Beschreibung (optional)', { exact: true })
+        .getByLabel('Beschreibung', { exact: true })
         .fill('Erster Absatz.\n\nZweiter Absatz.')
       await formular.getByRole('button', { name: 'Speichern' }).click()
 
@@ -711,6 +715,7 @@ const funktionen: Funktion[] = [
       await breit.createTask(page, 'Bericht')
 
       await openTaskEditor(page, 'Bericht')
+      await moreOptions(page)
       await page.getByRole('button', { name: 'In andere Liste verschieben' }).click()
       const blatt = page.getByRole('dialog', { name: 'Aufgabe verschieben' })
       await expect(blatt).toBeVisible()
@@ -742,6 +747,7 @@ const funktionen: Funktion[] = [
 
       await openTaskEditor(page, 'Bericht')
       await expect(page.getByRole('dialog', { name: 'Aufgabe' })).toBeVisible()
+      await moreOptions(page)
       await page.getByRole('button', { name: 'In andere Liste verschieben' }).click()
 
       const blatt = page.getByRole('dialog', { name: 'Aufgabe verschieben' })

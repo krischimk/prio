@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { DragDropProvider, useDroppable } from '@dnd-kit/react'
+import { useDraggable, useDroppable } from '@dnd-kit/react'
 import { useSortable } from '@dnd-kit/react/sortable'
-import { KeyboardSensor, PointerSensor, PointerActivationConstraints } from '@dnd-kit/dom'
 import { CollisionPriority } from '@dnd-kit/abstract'
 import { move } from '@dnd-kit/helpers'
 import { pointerIntersection } from '@dnd-kit/collision'
@@ -12,24 +11,16 @@ import { taskLocation } from '../domain/taskPlacement'
 import { groupTasks } from '../domain/sections'
 import { useView } from './useView'
 import { useCollapsedSections } from './collapsedSections'
-import { dragGroups, groupOfTask, taskGroupId, taskGroupLocation, type DragGroups } from './taskDrag'
+import { dragGroups, groupOfTask, projectTaskPointer, sidebarDropListId, taskGroupId, taskGroupLocation, type DragGroups } from './taskDrag'
 import { SectionHeader } from './SectionHeader'
 import { TaskRow } from './TaskRow'
 import { ListIcon } from './ListIcon'
 import { CompletedTasksSection } from './CompletedTasksSection'
 import { emptyState, errorBox, focusRing, numeric } from './styles'
 import { leerAufgaben } from './emptyTexts'
-
-// Maus/Stift: gezielte Bewegung; Telefon: Langdruck, kurzes Wischen scrollt.
-// Die übrigen Standardsensoren (insbesondere Tastatur) bleiben erhalten.
-const pointer = PointerSensor.configure({
-  activationConstraints: event => event.pointerType === 'touch'
-    ? [new PointerActivationConstraints.Delay({ value: 400, tolerance: 6 })]
-    : [new PointerActivationConstraints.Distance({ value: 6 })],
-})
-// Enter öffnet die Aufgabe wie bei einem normalen Knopf. Die Leertaste
-// startet das Ziehen; Pfeile, Escape und Abschluss behalten ihre Standards.
-const keyboard = KeyboardSensor.configure({ keyboardCodes: { ...KeyboardSensor.defaults.keyboardCodes, start: ['Space'] } })
+import { isNativeApp } from '../app/platform'
+import { useTaskDragHandlers } from './useTaskDragHandlers'
+import { isKeyboardEvent } from '@dnd-kit/dom/utilities'
 
 interface DragPreview {
   lists: LocalList[]
@@ -68,6 +59,12 @@ export function TaskList({ lists, tasks, currentUserId, overview = false, mode =
     if (!current.current) setTaskDetail({ taskId: task.id, listId: task.list_id, fromOverview: overview })
   }
   const updatePreview = (value: DragPreview | null) => { current.current = value; setPreview(value) }
+  const projectPointer = (sourceId: string | number | undefined, targetId: string | number | undefined, y: number, centerY: number | undefined) => {
+    const state = current.current
+    if (!state || typeof sourceId !== 'string' || typeof targetId !== 'string' || centerY === undefined || sidebarDropListId(targetId)) return
+    const next = projectTaskPointer(state.groups, sourceId, targetId, y > centerY)
+    if (next !== state.groups) updatePreview({ ...state, groups: next })
+  }
 
   // Abgleiche dürfen die vom Sortierplugin bewegten DOM-Zeilen während des
   // Ziehens nicht ersetzen. Nur diese Interaktion hält eine Momentaufnahme;
@@ -75,31 +72,55 @@ export function TaskList({ lists, tasks, currentUserId, overview = false, mode =
   useEffect(() => { latestTasks.current = tasks }, [tasks])
   useEffect(() => { if (!preview) current.current = null }, [preview])
 
-  return <DragDropProvider sensors={defaults => [...defaults.filter(sensor => sensor !== PointerSensor && sensor !== KeyboardSensor), pointer, keyboard]}
-    onBeforeDragStart={event => { if (current.current) event.preventDefault() }}
-    onDragStart={({ operation }) => {
+  useTaskDragHandlers({
+    onBeforeDragStart: event => { if (current.current) event.preventDefault() },
+    onDragStart: ({ operation }) => {
       const task = tasks.find(row => row.id === operation.source?.id)
       if (!task) return
       initial.current = task; setError(null)
       updatePreview({ lists, tasks, groups: base, activeId: task.id, saving: false })
-    }}
-    onDragOver={event => {
-      // Der dokumentierte Mehrgruppen-Weg gleicht Vorschau und Sortierplugin
-      // mit move ab; auch leere Container erhalten sofort eine Zeile.
+    },
+    onDragOver: event => {
+      // Auch leere Container erhalten sofort eine Zeile. Beim Zeiger entscheidet
+      // seine Hälfte des Ziels, bei der Tastatur die Sortierlogik der Bibliothek.
       const state = current.current
       if (!state) return
-      const next = move(state.groups, event)
+      if (sidebarDropListId(event.operation.target?.id)) { event.preventDefault(); return }
+      const pointerGesture = event.operation.activatorEvent && !isKeyboardEvent(event.operation.activatorEvent)
+      if (pointerGesture) {
+        projectPointer(event.operation.source?.id, event.operation.target?.id, event.operation.position.current.y, event.operation.target?.shape?.center.y)
+      } else {
+        const next = move(state.groups, event)
+        if (next !== state.groups) updatePreview({ ...state, groups: next })
+      }
       // React verwaltet die Gruppen. Das Plugin darf dieselben DOM-Zeilen
       // nicht zusätzlich umhängen; useSortable animiert die neuen Positionen.
       event.preventDefault()
-      if (next !== state.groups) updatePreview({ ...state, groups: next })
-    }}
-    onDragEnd={event => {
+    },
+    onDragMove: event => {
+      if (!event.to || !event.nativeEvent || isKeyboardEvent(event.nativeEvent)) return
+      // dragmove wird vor dem Aktualisieren von position.current ausgelöst.
+      // event.to enthält bereits die neue Position, auch beim letzten Schritt.
+      if (!event.operation.target?.shape?.containsPoint(event.to)) return
+      projectPointer(event.operation.source?.id, event.operation.target?.id, event.to.y, event.operation.target?.shape?.center.y)
+    },
+    onDragEnd: event => {
       const state = current.current
       const original = initial.current
       initial.current = null
       if (event.canceled || !event.operation.target || !state || !original) { updatePreview(null); return }
-      const next = move(state.groups, event)
+      const sidebarListId = sidebarDropListId(event.operation.target.id)
+      if (sidebarListId) {
+        if (sidebarListId === original.list_id) { updatePreview(null); return }
+        updatePreview({ ...state, activeId: null, saving: true })
+        void repositories.placeTask(original.id, { listId: sidebarListId, sectionId: null, beforeTaskId: null, expected: taskLocation(original) })
+          .then(saved => { if (current.current) updatePreview({ ...current.current, saving: false, saved, awaitingTasks: latestTasks.current }) })
+          .catch(cause => { updatePreview(null); setError(cause instanceof Error ? cause.message : 'Die Aufgabe konnte nicht verschoben werden.') })
+        return
+      }
+      // Loslassen übernimmt die bereits sichtbare Vorschau. Ein zweites move
+      // hat beim Touch-Ende die Aufgabe nochmals hinter ihren Nachbarn gesetzt.
+      const next = state.groups
       const destination = groupOfTask(next, original.id)
       if (!destination) { updatePreview(null); return }
       const ids = next[destination]
@@ -111,15 +132,17 @@ export function TaskList({ lists, tasks, currentUserId, overview = false, mode =
       void repositories.placeTask(original.id, { ...taskGroupLocation(destination), beforeTaskId, expected: taskLocation(original) })
         .then(saved => { if (current.current) updatePreview({ ...current.current, saving: false, saved, awaitingTasks: latestTasks.current }) })
         .catch(cause => { updatePreview(null); setError(cause instanceof Error ? cause.message : 'Die Aufgabe konnte nicht verschoben werden.') })
-    }}>
+    },
+  })
+  return <>
     {error ? <p role="alert" className={errorBox}>{error}</p> : null}
     {shown?.saving ? <p role="status" className="sr-only">Position wird gespeichert …</p> : null}
     <div data-testid="task-list" className="space-y-abschnitt">
       {mode === 'newest' ? <ul aria-label="Aufgaben in der Gesamtansicht">
-        {[...tasks].sort((a, b) => b.created_at.localeCompare(a.created_at) || a.id.localeCompare(b.id)).map(task => {
-          const list = lists.find(entry => entry.id === task.list_id)!
+        {[...visibleTasks].sort((a, b) => b.created_at.localeCompare(a.created_at) || a.id.localeCompare(b.id)).map(task => {
+          const list = visibleLists.find(entry => entry.id === task.list_id)!
           const section = list.sections.find(entry => entry.id === task.section_id)
-          return <TaskRow key={task.id} task={task} currentUserId={currentUserId} overview={overview}
+          return <NewestTaskRow key={task.id} task={task} currentUserId={currentUserId} overview={overview}
             origin={`${list.name}${section ? ` · ${section.name}` : ''}`} onOpen={open} />
         })}
         {tasks.length === 0 ? <li className={emptyState}>Keine offenen Aufgaben.</li> : null}
@@ -127,7 +150,15 @@ export function TaskList({ lists, tasks, currentUserId, overview = false, mode =
         overview={overview} activeId={shown?.activeId ?? null} onOpen={open} onSelectList={selectList} />)}
     </div>
     {mode === 'newest' && lists.some(list => list.keep_completed) ? <CompletedTasksSection lists={lists.filter(list => list.keep_completed)} currentUserId={currentUserId} showOrigin overview={overview} /> : null}
-  </DragDropProvider>
+  </>
+}
+
+/** Chronologische Ansicht: Ziehen wechselt nur die Liste, nicht die Sortierung. */
+function NewestTaskRow(props: { task: LocalTask; currentUserId: string; overview: boolean; origin: string; onOpen: (task: LocalTask) => void }) {
+  const desktop = useIsDesktop()
+  const draggable = desktop && !isNativeApp()
+  const { ref, handleRef, isDragging } = useDraggable({ id: props.task.id, type: 'task', data: { listId: props.task.list_id }, disabled: !draggable })
+  return <TaskRow {...props} elementRef={ref} activatorRef={draggable ? handleRef : undefined} dragging={isDragging} />
 }
 
 function ListBlock({ list, groups, byId, currentUserId, overview, activeId, onOpen, onSelectList }: {
@@ -178,7 +209,7 @@ function TaskGroup({ id, ids, name, sectionId, open, onToggle, byId, currentUser
 function SortableTaskRow({ task, index, group, currentUserId, overview, onOpen }: {
   task: LocalTask; index: number; group: string; currentUserId: string; overview: boolean; onOpen: (task: LocalTask) => void
 }) {
-  const { ref, handleRef, isDragging } = useSortable({ id: task.id, index, group, type: 'task', accept: 'task', collisionDetector: pointerIntersection })
+  const { ref, handleRef, isDragging } = useSortable({ id: task.id, index, group, type: 'task', accept: 'task', data: { listId: task.list_id }, collisionDetector: pointerIntersection })
   return <TaskRow task={task} currentUserId={currentUserId} overview={overview} onOpen={onOpen}
     elementRef={ref} activatorRef={handleRef} dragging={isDragging} />
 }

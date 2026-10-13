@@ -64,6 +64,8 @@ const buttonSizes = {
   block: 'px-3 py-3 text-body',
   /** Nur ein Symbol (rundum gleiche Polsterung). */
   icon: 'h-11 w-11',
+  /** Ein Feld als kompakte, aufklappbare Zeile mit führendem Symbol. */
+  field: 'min-h-11 px-2 py-2 text-body',
 } as const
 
 const buttonVariants = {
@@ -135,6 +137,8 @@ export const layer = {
   screen: 'z-50',
   /** Ein Dialog über einem Dialog – die Ziel-Auswahl beim Verschieben. */
   top: 'z-60',
+  /** Hinweise über dem jeweils aktiven Bedienelement. */
+  hint: 'z-70',
 } as const
 
 /** Der gemeinsame Grund hinter allen Ansichten. */

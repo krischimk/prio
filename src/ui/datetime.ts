@@ -23,6 +23,32 @@ export function fromDateTimeLocalValue(value: string): string | null {
   return date.toISOString()
 }
 
+/** Deutsches Eingabedatum → ISO-Kalendertag, ohne stille Korrektur falscher Tage. */
+export function parseGermanDate(value: string): string | null {
+  const match = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(value.trim())
+  if (!match) return null
+  const [, d, m, y] = match
+  const date = new Date(Number(y), Number(m) - 1, Number(d), 12)
+  if (date.getFullYear() !== Number(y) || date.getMonth() !== Number(m) - 1 || date.getDate() !== Number(d)) return null
+  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`
+}
+
+export function formatGermanDate(day: string): string {
+  const [year, month, date] = day.split('-')
+  return `${date}.${month}.${year}`
+}
+
+export function formatCalendarDay(day: string): string {
+  return new Date(`${day}T12:00`).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+/** Die Uhrzeit verwendet unabhängig von der Browsersprache die 24-Stunden-Uhr. */
+export function normalizeTime(value: string): string | null {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(value.trim())
+  if (!match || Number(match[1]) > 23 || Number(match[2]) > 59) return null
+  return `${match[1].padStart(2, '0')}:${match[2]}`
+}
+
 /** Kurze, gut lesbare Anzeige, z. B. "31.01.2026, 14:30". */
 export function formatDateTime(iso: string): string {
   const date = new Date(iso)
@@ -34,6 +60,15 @@ export function formatDateTime(iso: string): string {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+/** Kompakte Terminzeile im Formular; das Kalenderzeichen benennt das Feld. */
+export function formatScheduleLabel(iso: string): string {
+  return formatDateTime(iso)
+}
+
+export function localTimeZone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone
 }
 
 /** `true`, wenn der Zeitpunkt in der Vergangenheit liegt. */

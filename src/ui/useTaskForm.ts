@@ -3,7 +3,7 @@ import { useWorkspace } from '../app/useWorkspace'
 import { sameData } from '../domain/equality'
 import { taskEditBase, TaskEditConflict, type TaskEditInput } from '../domain/taskEdit'
 import type { LocalTask } from '../domain/types'
-import { TaskDraftContext, type TaskDraft, type TaskFormWerte } from './taskDraftContext'
+import { newDraftKey, TaskDraftContext, type TaskDraft, type TaskFormWerte } from './taskDraftContext'
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from './datetime'
 
 export type { TaskFormWerte } from './taskDraftContext'
@@ -39,13 +39,13 @@ export function useTaskForm({ task, listId, onSaved }: {
 }): TaskForm {
   const { repositories } = useWorkspace()
   const drafts = useContext(TaskDraftContext)
-  const key = task ? `task:${task.id}` : `new:${listId}`
+  if (!drafts) throw new Error('useTaskForm braucht einen TaskDraftProvider.')
+  const key = task ? `task:${task.id}` : newDraftKey(drafts, listId)
   const activeKey = useRef<string | null>(null)
   useEffect(() => {
     activeKey.current = key
     return () => { activeKey.current = null }
   }, [key])
-  if (!drafts) throw new Error('useTaskForm braucht einen TaskDraftProvider.')
   const initial: TaskDraft = {
     taskId: task?.id ?? null,
     listId: task?.list_id ?? listId,

@@ -11,13 +11,13 @@ import { formatReminderLabel } from './datetime'
  */
 
 /**
- * Die festen Stufen für wiederkehrende Aufgaben.
+ * Die festen Vorlagen für einmalige und wiederkehrende Aufgaben.
  *
  * Sie stehen im Code und nicht in der gespeicherten Schnellauswahl: Sonst
  * stünden sie nach einer Umbenennung doppelt in der Liste. Eigene Werte des
  * Benutzers kommen in `meta` dazu (`reminder_presets`).
  */
-export const FIXED_REMINDER_STEPS: ReadonlyArray<number> = [0, 10, 60, 1440]
+export const FIXED_REMINDER_STEPS: ReadonlyArray<number> = [0, 5, 10, 15, 30, 60, 1440]
 
 /** „1 Tag 1 Std 30 Min" – ohne Nullteile. */
 export function formatDuration(minutes: number): string {
@@ -95,9 +95,8 @@ export function describeReminders(task: LocalTask, viewerId: string | null = nul
  * Ein Vorschlag für eine neu hinzugefügte Erinnerung.
  *
  * Eine leere Zeile wäre unbrauchbar, also wird etwas Plausibles vorbelegt, das
- * sofort geändert werden kann: bei wiederkehrenden Aufgaben „zur Fälligkeit",
- * bei einmaligen die Fälligkeit selbst – und ohne Fälligkeit die nächste volle
- * Stunde.
+ * sofort geändert werden kann: mit Fälligkeit ein gebundener Vorlauf,
+ * ohne Fälligkeit die nächste volle Stunde als fester Zeitpunkt.
  *
  * **Der Vorschlag weicht dem aus, was schon da ist.** Sonst ergäbe zweimal
  * „Weitere Erinnerung" zweimal denselben Wert, und beim Speichern fiele die
@@ -105,7 +104,6 @@ export function describeReminders(task: LocalTask, viewerId: string | null = nul
  * verschwindet.
  */
 export function reminderSuggestion(
-  recurrence: string | null,
   dueAt: string | null,
   nowMs: number,
   vorhandene: TaskReminder[] = [],
@@ -116,22 +114,21 @@ export function reminderSuggestion(
     ),
   )
 
-  if (dueAt !== null && recurrence !== null) {
+  if (dueAt !== null) {
+    for (const reminder of vorhandene) {
+      const at = reminderTimeOf(reminder, dueAt)
+      if (at) belegt.add(`o:${Math.round((Date.parse(dueAt) - Date.parse(at)) / 60000)}`)
+    }
     for (const minuten of [0, 10, 60, 1440, -60, 2880]) {
       if (!belegt.has(`o:${minuten}`)) return { form: 'offset', minutes: minuten }
     }
     return { form: 'offset', minutes: 0 }
   }
 
-  const basis =
-    dueAt !== null
-      ? Date.parse(dueAt)
-      : (() => {
-          const stunde = new Date(nowMs)
-          stunde.setMinutes(0, 0, 0)
-          stunde.setHours(stunde.getHours() + 1)
-          return stunde.getTime()
-        })()
+  const stunde = new Date(nowMs)
+  stunde.setMinutes(0, 0, 0)
+  stunde.setHours(stunde.getHours() + 1)
+  const basis = stunde.getTime()
 
   // Eine Stunde je Versuch zurück – so entsteht eine Reihe, die man sofort
   // auseinanderhalten kann.

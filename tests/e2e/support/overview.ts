@@ -5,7 +5,7 @@ export async function openOverview(page: Page, mobile: boolean) {
   if (mobile) await openMenu(page)
   await page.getByRole('button', { name: 'Gesamtansicht', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Gesamtansicht', exact: true })).toBeVisible()
-  await expect(page.getByLabel('Ansicht der Gesamtansicht')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Sortierung ändern', exact: true })).toBeVisible()
 }
 
 export async function overviewSettings(page: Page) {

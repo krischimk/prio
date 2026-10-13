@@ -3,23 +3,21 @@ import { BellIcon, BellOffIcon, PlusIcon, TrashIcon } from '../icons'
 import { mutedText } from '../styles'
 import { Button } from '../components/Button'
 import { IconButton } from '../components/IconButton'
-import { AbsoluteRow } from './AbsoluteRow'
+import { OneTimeRow } from './OneTimeRow'
 import { OffsetRow } from './OffsetRow'
 import { useReminderRows } from './useReminderRows'
 
 /**
  * Erinnerungen einer Aufgabe – in beiden Ansichten dieselbe Komponente.
  *
- * Die Form folgt der Wiederholung (siehe `alignReminders`):
- *
- *   einmalig      absolute Zeitpunkte
- *   wiederkehrend Vorläufe in Tagen, Stunden und Minuten, auch negativ
+ * Einmalig: feste Zeitpunkte oder gebundene Vorlagen. Serien: Vorläufe in
+ * Tagen, Stunden und Minuten, auch negativ (siehe `alignReminders`).
  *
  * **Eine Aufgabe kann mehrere tragen.** Jede wird ein eigener Termin beim
  * Betriebssystem; eine leere Liste heißt „keine Erinnerung".
  *
  * Der Zustand liegt in `useReminderRows`, `useOffsetChoice` und
- * `useCustomOffset`; die Zeilen in `AbsoluteRow`, `OffsetRow` und
+ * `useCustomOffset`; die Zeilen in `OneTimeRow`, `OffsetRow` und
  * `CustomOffset`. Diese Datei zeichnet nur noch die Liste.
  */
 export function ReminderList({
@@ -50,29 +48,17 @@ export function ReminderList({
 
   return (
     <div>
-      <div className="mb-1 flex items-baseline justify-between">
-        <span className="block text-meta text-ink-muted">Erinnerungen</span>
-        {reminders.length > 0 ? (
-          <span className={`text-meta ${mutedText}`}>
-            {reminders.length === 1 ? '1 Termin' : `${reminders.length} Termine`}
-          </span>
-        ) : null}
-      </div>
-
-      {reminders.length === 0 ? (
-        <p className={`mb-2 text-meta ${mutedText}`}>
-          Keine. Eine Fälligkeit erinnert nicht von selbst.
-        </p>
-      ) : (
+      {reminders.length > 0 ? (
         <ul className="mb-2 space-y-2">
           {reminders.map((reminder, index) => {
             const stumm = viewerId !== undefined && isMutedFor(reminder, viewerId)
             // Beim Ändern des Wertes darf die Stummschaltung nicht verloren gehen.
             const behalteStumm = reminder.mutedBy !== undefined ? { mutedBy: reminder.mutedBy } : {}
             return (
-              <li key={index} className="rounded-control border border-line p-2">
+              <li key={index} className="rounded-control px-2 py-2">
                 <div className="flex items-start gap-2">
-                  <div className="min-w-0 flex-1">
+                  {stumm ? <BellOffIcon className="mt-3 h-5 w-5 shrink-0 text-ink-muted" /> : <BellIcon className="mt-3 h-5 w-5 shrink-0 text-ink-muted" />}
+                  <div className="reminder-controls min-w-0 flex-1">
                     {/* `relativ` gilt nur mit Fälligkeit – hier nachgeprüft, damit
                         der Typ es auch weiß (die Herleitung steckt im Hook). */}
                     {relativ && dueAt !== null ? (
@@ -80,17 +66,16 @@ export function ReminderList({
                         idPrefix={`${idPrefix}-r${index}`}
                         dueAt={dueAt}
                         minutes={reminder.form === 'offset' ? reminder.minutes : 0}
-                        muted={stumm}
                         onChange={(minutes) =>
                           ersetzen(index, { form: 'offset', minutes, ...behalteStumm })
                         }
                       />
                     ) : (
-                      <AbsoluteRow
+                      <OneTimeRow
                         idPrefix={`${idPrefix}-r${index}`}
-                        at={reminder.form === 'absolute' ? reminder.at : null}
-                        muted={stumm}
-                        onChange={(at) => ersetzen(index, { form: 'absolute', at, ...behalteStumm })}
+                        reminder={reminder}
+                        dueAt={dueAt}
+                        onChange={(next) => ersetzen(index, { ...next, ...behalteStumm })}
                       />
                     )}
                   </div>
@@ -128,12 +113,12 @@ export function ReminderList({
             )
           })}
         </ul>
-      )}
+      ) : null}
 
       {reminders.length < MAX_REMINDERS ? (
-        <Button onClick={hinzufuegen} variant="secondary" size="sm">
-          <PlusIcon className="h-4 w-4" />
-          Weitere Erinnerung
+        <Button onClick={hinzufuegen} variant="ghost" size="field" title="Benachrichtigung hinzufügen. Ein Fälligkeitsdatum allein löst keine Benachrichtigung aus." layout="w-full justify-start">
+          {reminders.length === 0 ? <BellIcon className="h-5 w-5" /> : <PlusIcon className="h-5 w-5" />}
+          {reminders.length === 0 ? 'Benachrichtigung hinzufügen' : 'Weitere Erinnerung'}
         </Button>
       ) : (
         <p className={`text-meta ${mutedText}`}>

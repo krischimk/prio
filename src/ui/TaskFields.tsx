@@ -1,10 +1,12 @@
 import type { ListSection } from '../domain/types'
 import { Field } from './components/Field'
-import { RecurrenceSelect } from './RecurrenceSelect'
 import { ReminderList } from './reminderList/ReminderList'
 import { SectionSelect } from './SectionSelect'
 import { input } from './styles'
 import type { TaskForm } from './useTaskForm'
+import { AutoTextarea } from './components/AutoTextarea'
+import { DescriptionIcon } from './icons'
+import { TaskScheduleFields } from './TaskScheduleFields'
 
 /** Welche Felder ein Formular zeigt. */
 export type TaskFieldName =
@@ -39,8 +41,6 @@ export interface TaskFieldsProps {
   idPrefix: string
   /** Für die Eingabezeile: nur Beschreibung und Fälligkeit. */
   felder?: TaskFieldName[]
-  /** Zeilen der Beschreibung – die Detailansicht hat mehr Platz. */
-  beschreibungZeilen?: number
   /** Beim Anlegen auf dem Telefon steht der Schreibzeiger schon im Titelfeld. */
   titelAutofokus?: boolean
 }
@@ -64,7 +64,6 @@ export function TaskFields({
   listIsShared = false,
   idPrefix,
   felder = ALLE,
-  beschreibungZeilen = 2,
   titelAutofokus = false,
 }: TaskFieldsProps) {
   const zeigt = (feld: TaskFieldName) => felder.includes(feld)
@@ -85,32 +84,20 @@ export function TaskFields({
       ) : null}
 
       {zeigt('beschreibung') ? (
-        <Field id={`${idPrefix}-description`} label="Beschreibung (optional)">
-          <textarea
+        <div className="flex items-start gap-3 px-2">
+          <DescriptionIcon className="mt-3 h-5 w-5 shrink-0 text-ink-muted" />
+          <label htmlFor={`${idPrefix}-description`} className="sr-only">Beschreibung</label>
+          <AutoTextarea
             id={`${idPrefix}-description`}
+            placeholder="Beschreibung hinzufügen"
             value={form.werte.description}
             onChange={(event) => form.setzen('description', event.target.value)}
-            rows={beschreibungZeilen}
-            className={input}
           />
-        </Field>
+        </div>
       ) : null}
 
       {zeigt('faellig') ? (
-        <Field id={`${idPrefix}-due`} label="Fällig am (optional)">
-          <input
-            id={`${idPrefix}-due`}
-            type="datetime-local"
-            value={form.werte.dueAt}
-            onChange={(event) => {
-              const neu = event.target.value
-              form.setzen('dueAt', neu)
-              // Ohne Fälligkeit gibt es nichts fortzuschreiben.
-              if (neu === '') form.setzen('recurrence', '')
-            }}
-            className={input}
-          />
-        </Field>
+        <TaskScheduleFields form={form} idPrefix={idPrefix} recurrence={zeigt('wiederholung')} />
       ) : null}
 
       {zeigt('bereich') && sections.length > 0 ? (
@@ -122,15 +109,6 @@ export function TaskFields({
             onChange={(wert) => form.setzen('sectionId', wert)}
           />
         </Field>
-      ) : null}
-
-      {zeigt('wiederholung') ? (
-        <RecurrenceSelect
-          id={`${idPrefix}-recurrence`}
-          value={form.werte.recurrence}
-          disabled={form.werte.dueAt === ''}
-          onChange={(wert) => form.setzen('recurrence', wert)}
-        />
       ) : null}
 
       {zeigt('erinnerungen') ? (

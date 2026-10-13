@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
-import { useUndo } from './useUndo'
 import type { ListSection, LocalList, LocalTask } from '../domain/types'
-import { CloseIcon, MoveIcon, TrashIcon } from './icons'
+import { CloseIcon, MoveIcon, SaveIcon, TrashIcon } from './icons'
 import { Button } from './components/Button'
 import { IconButton } from './components/IconButton'
 import { Screen } from './components/Screen'
@@ -10,8 +9,9 @@ import { Sheet } from './components/Sheet'
 import { TaskFields } from './TaskFields'
 import { TaskFormStatus } from './TaskFormStatus'
 import { useTaskForm } from './useTaskForm'
-import { errorBox } from './styles'
-import { SyncIndicator } from './SyncIndicator'
+import { errorBox, focusRing } from './styles'
+import { useTaskDelete } from './useTaskDelete'
+import { formatCompletedLabel } from './datetime'
 
 /**
  * Detail- und Bearbeitungsansicht einer Aufgabe.
@@ -31,6 +31,7 @@ export function TaskEditor({
   onChangeTarget,
   targetHint,
   onRequestOrder,
+  onCreated,
 }: {
   /** `null` legt eine neue Aufgabe an. */
   task: LocalTask | null
@@ -43,18 +44,19 @@ export function TaskEditor({
   onChangeTarget?: () => void
   targetHint?: string
   onRequestOrder: (task: LocalTask) => void
+  onCreated?: () => void
 }) {
   const { repositories } = useWorkspace()
-  const { offer } = useUndo()
   const isNew = task === null
 
   // Zustand und Umwandlungen des Formulars kommen aus `useTaskForm` – dieselben
   // wie in der Eingabezeile und der Aufgabenzeile der breiten Ansicht.
-  const form = useTaskForm({ task, listId, onSaved: onClose })
+  const form = useTaskForm({ task, listId, onSaved: () => { if (isNew) onCreated?.(); onClose() } })
+  const deletion = useTaskDelete(task, () => { form.zuruecksetzen(); onClose() })
   /** Rückfrage, wenn über das Kreuz geschlossen wird und etwas geändert ist. */
   const [verwerfen, setVerwerfen] = useState(false)
   const schliessen = () => {
-    if (form.busy || busy) return
+    if (form.busy || busy || deletion.busy) return
     // Nichts geändert: schließen. Sonst erst fragen – die Änderungen sind
     // nicht gespeichert, und das soll nicht stillschweigend passieren.
     if (form.geaendert) setVerwerfen(true)
@@ -74,37 +76,6 @@ export function TaskEditor({
       onClose()
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Der Status konnte nicht geändert werden.')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const remove = async () => {
-    if (task === null || busy || form.busy) return
-    setBusy(true)
-    setError(null)
-    try {
-      const id = task.id
-      const titel = task.title
-      await repositories.deleteTask(id)
-      form.zuruecksetzen()
-      /*
-       * Keine Rückfrage mehr, dafür ein Weg zurück: Die Leiste unten zeigt die
-       * gelöschte Aufgabe und holt sie auf Wunsch zurück. Löschen ist damit so
-       * leicht zu korrigieren wie das Abhaken – und der Weg zum Löschen ist
-       * einen Schritt kürzer.
-       */
-      offer({
-        taskId: id,
-        text: `„${titel}“`,
-        art: 'geloescht',
-        rueckgaengig: async () => {
-          await repositories.restoreTask(id)
-        },
-      })
-      onClose()
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Die Aufgabe konnte nicht gelöscht werden.')
     } finally {
       setBusy(false)
     }
@@ -131,7 +102,7 @@ export function TaskEditor({
               onClick={schliessen}
               aria-label="Schließen"
               variant="icon"
-              disabled={busy || form.busy}
+              disabled={busy || form.busy || deletion.busy}
             >
               <CloseIcon />
             </IconButton>
@@ -140,76 +111,75 @@ export function TaskEditor({
             </h2>
 
             {isNew ? null : (
-              <Button
+              <IconButton
                 aria-label="Aufgabe löschen"
                 variant="danger"
-                disabled={busy || form.busy}
+                disabled={busy || form.busy || deletion.busy}
                 onClick={() => {
-                  void remove()
+                  void deletion.remove()
                 }}
               >
                 <TrashIcon className="h-4 w-4" />
-              </Button>
+              </IconButton>
             )}
-            <Button
+            <IconButton
               type="submit"
+              aria-label="Speichern"
+              title="Aufgabe speichern"
               variant="primary"
               layout="ml-auto"
-              disabled={busy || form.busy || form.werte.title.trim().length === 0}
+              disabled={busy || form.busy || deletion.busy || form.werte.title.trim().length === 0}
             >
-              Speichern
-            </Button>
+              <SaveIcon />
+            </IconButton>
           </header>
         </div>
 
-      <div className="scroll-area safe-bottom min-h-0 flex-1 overflow-y-auto">
-        <div className="space-y-5 px-5 py-5">
-          <p className="break-words text-meta text-ink-muted">Liste: {lists.find(list => list.id === listId)?.name ?? 'Nicht mehr verfügbar'}</p>
-          {targetHint ? <p role="status" className="text-body text-ink-muted">{targetHint}</p> : null}
-          {isNew && onChangeTarget ? <Button variant="secondary" disabled={form.busy || busy} onClick={onChangeTarget}>Zielliste ändern</Button> : null}
-          <TaskFields
-            form={form}
-            sections={sections}
-            currentUserId={currentUserId}
-            listIsShared={lists.find((eintrag) => eintrag.id === listId)?.is_shared ?? false}
-            idPrefix="detail"
-            beschreibungZeilen={4}
-            titelAutofokus={isNew}
-          />
-          <TaskFormStatus form={form} />
-          {error ? <p role="alert" className={errorBox}>{error}</p> : null}
+        <div className="scroll-area safe-bottom min-h-0 flex-1 overflow-y-auto">
+          <div className="space-y-5 px-5 py-5">
+            <p className="break-words text-meta text-ink-muted">Liste: {lists.find(list => list.id === listId)?.name ?? 'Nicht mehr verfügbar'}</p>
+            {targetHint ? <p role="status" className="text-body text-ink-muted">{targetHint}</p> : null}
+            {isNew && onChangeTarget ? <Button variant="secondary" disabled={form.busy || busy} onClick={onChangeTarget}>Zielliste ändern</Button> : null}
+            <TaskFields
+              form={form}
+              sections={sections}
+              currentUserId={currentUserId}
+              listIsShared={lists.find((eintrag) => eintrag.id === listId)?.is_shared ?? false}
+              idPrefix="detail"
+              felder={['titel', 'beschreibung', 'faellig', 'wiederholung', 'erinnerungen']}
+              titelAutofokus={isNew}
+            />
+            <TaskFormStatus form={form} />
+            {error ? <p role="alert" className={errorBox}>{error}</p> : null}
+            {deletion.error ? <p role="alert" className={errorBox}>{deletion.error}</p> : null}
 
-          {task !== null ? (
-            <Button
-              onClick={() => {
-                void toggleCompleted()
-              }}
-              disabled={busy || form.busy}
-              variant="secondary" layout="w-full"
-            >
-              {completed ? 'Als offen markieren' : 'Als erledigt markieren'}
-            </Button>
-          ) : null}
-          {task !== null && !completed ? <Button variant="secondary" layout="w-full" disabled={busy || form.busy}
-            onClick={() => onRequestOrder(task)}>Reihenfolge ändern</Button> : null}
-        </div>
-
-        {canMove ? (
-          <div className="space-y-2 border-t border-line px-4 py-4">
-            <Button
-              variant="secondary" size="block" layout="w-full"
-              disabled={busy || form.busy}
-              onClick={() => {
-                if (task !== null) onRequestMove(task)
-              }}
-            >
-              <MoveIcon className="h-4 w-4" />
-              In andere Liste verschieben
-            </Button>
+            {task !== null || sections.length > 0 ? <details className="border-t border-line pt-3">
+              <summary className={`${focusRing} cursor-pointer rounded-control py-2 text-body text-ink-muted hover:text-ink`}>Mehr Optionen</summary>
+              <div className="space-y-3 pt-3">
+                {task?.completed_at ? <p className="text-meta text-ink-muted">{formatCompletedLabel(task.completed_at)}</p> : null}
+                <TaskFields form={form} sections={sections} idPrefix="detail-extra" felder={['bereich']} />
+                {task !== null ? (
+                  <Button
+                    onClick={() => { void toggleCompleted() }}
+                    disabled={busy || form.busy}
+                    variant="secondary" layout="w-full"
+                  >
+                    {completed ? 'Als offen markieren' : 'Als erledigt markieren'}
+                  </Button>
+                ) : null}
+                {task !== null && !completed ? <Button variant="secondary" layout="w-full" disabled={busy || form.busy}
+                  onClick={() => onRequestOrder(task)}>Reihenfolge ändern</Button> : null}
+                {canMove ? <Button
+                  variant="secondary" size="block" layout="w-full"
+                  disabled={busy || form.busy}
+                  onClick={() => { if (task !== null) onRequestMove(task) }}
+                >
+                  <MoveIcon className="h-4 w-4" />In andere Liste verschieben
+                </Button> : null}
+              </div>
+            </details> : null}
           </div>
-        ) : null}
-        <div className="border-t border-line px-5 py-4"><SyncIndicator /></div>
-      </div>
+        </div>
       </form>
     </Screen>
     {verwerfen ? <Sheet role="alertdialog" label="Änderungen verwerfen" title="Ungespeicherter Entwurf"
