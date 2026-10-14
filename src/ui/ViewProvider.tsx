@@ -17,6 +17,7 @@ export function ViewProvider({ children, userId }: { children: ReactNode; userId
   const cloudConflicts = useCloudConflicts()
   const [preferred, setPreferred] = useState<string | null>(null)
   const [restoreOpen, setRestoreOpen] = useState(false)
+  const [accountOpen, setAccountOpen] = useState(false)
   const [conflictsOpen, setConflictsOpen] = useState(false)
   const [overviewSettingsOpen, setOverviewSettingsOpen] = useState(false)
   const [overviewCreating, setOverviewCreating] = useState(false)
@@ -35,13 +36,14 @@ export function ViewProvider({ children, userId }: { children: ReactNode; userId
       selectedListId,
       selectList,
       restoreOpen,
+      accountOpen, setAccountOpen,
       setRestoreOpen,
       cloudConflicts, conflictsOpen, setConflictsOpen,
       overview, overviewSettingsOpen, setOverviewSettingsOpen,
       overviewCreating, setOverviewCreating, taskDetail, setTaskDetail,
       listSettingsId, setListSettingsId,
     }
-  }, [lists, preferred, selectList, restoreOpen, cloudConflicts, conflictsOpen, overview, overviewSettingsOpen, overviewCreating, taskDetail, listSettingsId])
+  }, [lists, preferred, selectList, restoreOpen, accountOpen, cloudConflicts, conflictsOpen, overview, overviewSettingsOpen, overviewCreating, taskDetail, listSettingsId])
 
   return <ViewContext.Provider value={value}>{children}</ViewContext.Provider>
 }

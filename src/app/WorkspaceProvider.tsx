@@ -90,7 +90,7 @@ function Bereit({ runtime, children }: { runtime: WorkspaceRuntime; children: Re
       reminderStatus: zustand.reminderStatus,
       runSync: runtime.synchronisieren,
       enableReminders: runtime.erinnerungenErlauben,
-      shareListByEmail: runtime.shareListByEmail,
+      shareList: runtime.shareList,
     }),
     [runtime, zustand],
   )

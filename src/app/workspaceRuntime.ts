@@ -54,7 +54,7 @@ export interface WorkspaceZustand {
  */
 export interface WorkspaceRuntime {
   repositories: Repositories
-  shareListByEmail: ReturnType<typeof createShareListAction>
+  shareList: ReturnType<typeof createShareListAction>
   /** Die aktuelle Momentaufnahme (stabil, solange sich nichts ändert). */
   zustand: () => WorkspaceZustand
   /** Abonniert Änderungen; gibt die Abmelde-Funktion zurück. */
@@ -200,7 +200,7 @@ export async function createWorkspaceRuntime({
     nurLokaleAenderung,
   )
 
-  const shareListByEmail = createShareListAction({
+  const shareList = createShareListAction({
     gateway,
     repositories,
     sync: synchronisieren,
@@ -222,7 +222,7 @@ export async function createWorkspaceRuntime({
 
   return {
     repositories,
-    shareListByEmail,
+    shareList,
     zustand: () => zustand,
     abonnieren: (hoererEintrag) => {
       hoerer.add(hoererEintrag)

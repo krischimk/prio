@@ -17,11 +17,19 @@ export function ListCompletionChoice({ list, currentUserId }: { list: LocalList;
     finally { setBusy(false) }
   }
   return <div className="space-y-1">
-    <label className="flex min-h-11 items-center gap-3 text-body text-ink">
-      <input type="checkbox" className="h-5 w-5 shrink-0 accent-brand" checked={keep} disabled={busy || !owner} onChange={event => void change(event.target.checked)} />
-      <span>Abgehakt am Listenende</span>
-    </label>
-    <p className="text-meta text-ink-muted">{keep ? 'Erledigte Aufgaben bleiben ohne Zeitgrenze erhalten.' : 'Erledigte Aufgaben werden nach sieben Tagen endgültig gelöscht.'}{!owner ? ' Diese gemeinsame Listenregel stellt der Besitzer ein.' : ''}</p>
+    <ListCompletionField keep={keep} disabled={busy || !owner} owner={owner} onChange={next => { void change(next) }} />
     {error ? <p role="alert" className="text-body text-danger">{error}</p> : null}
+  </div>
+}
+
+export function ListCompletionField({ keep, disabled, owner = true, onChange }: {
+  keep: boolean; disabled?: boolean; owner?: boolean; onChange: (value: boolean) => void
+}) {
+  return <div className="space-y-1">
+    <label className="flex min-h-11 items-center gap-3 text-body text-ink">
+      <input type="checkbox" className="h-5 w-5 shrink-0 accent-brand" checked={keep} disabled={disabled} onChange={event => onChange(event.target.checked)} />
+      <span>Erledigt am Listenende</span>
+    </label>
+    {!owner ? <p className="text-meta text-ink-muted">Diese gemeinsame Listenregel stellt der Besitzer ein.</p> : null}
   </div>
 }

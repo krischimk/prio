@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { formatOpenTasks } from '../../src/ui/taskCount'
 
 /**
- * Der Zähler über der Liste. Abgehakte Aufgaben stehen nicht mehr in der Liste,
+ * Der Zähler über der Liste. Erledigte Aufgaben stehen nicht mehr in der Liste,
  * es gibt also nur noch offene – deshalb genau eine Zahl.
  */
 describe('Zähler offener Aufgaben', () => {

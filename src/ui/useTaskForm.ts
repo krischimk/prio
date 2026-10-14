@@ -3,7 +3,7 @@ import { useWorkspace } from '../app/useWorkspace'
 import { sameData } from '../domain/equality'
 import { taskEditBase, TaskEditConflict, type TaskEditInput } from '../domain/taskEdit'
 import type { LocalTask } from '../domain/types'
-import { newDraftKey, TaskDraftContext, type TaskDraft, type TaskFormWerte } from './taskDraftContext'
+import { TaskDraftContext, type TaskDraft, type TaskFormWerte } from './taskDraftContext'
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from './datetime'
 
 export type { TaskFormWerte } from './taskDraftContext'
@@ -32,15 +32,17 @@ function werteVon(task: LocalTask | null): TaskFormWerte {
 }
 
 /** Formularverhalten und Umwandlungen; Fachprüfung kommt aus taskEdit. */
-export function useTaskForm({ task, listId, onSaved }: {
+export function useTaskForm({ task, listId, onSaved, overviewUserId }: {
   task: LocalTask | null
   listId: string
   onSaved: () => void
+  /** Eigener Gesamtentwurf; seine Zielliste wird erst beim Speichern gebunden. */
+  overviewUserId?: string
 }): TaskForm {
   const { repositories } = useWorkspace()
   const drafts = useContext(TaskDraftContext)
   if (!drafts) throw new Error('useTaskForm braucht einen TaskDraftProvider.')
-  const key = task ? `task:${task.id}` : newDraftKey(drafts, listId)
+  const key = task ? `task:${task.id}` : overviewUserId !== undefined ? 'new:overview' : `new:${listId}`
   const activeKey = useRef<string | null>(null)
   useEffect(() => {
     activeKey.current = key
@@ -76,7 +78,7 @@ export function useTaskForm({ task, listId, onSaved }: {
         sectionId: werte.sectionId,
       }
       if (draft.taskId === null) {
-        await repositories.createTask({ listId: draft.listId, ...eingabe })
+        await repositories.createTask({ listId, ...eingabe, rememberOverviewTargetFor: overviewUserId })
       } else {
         const patch: TaskEditInput = {}
         if (werte.title !== start.title) patch.title = eingabe.title

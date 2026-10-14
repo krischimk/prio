@@ -79,6 +79,7 @@ export interface ShareDirectory {
    * Zuordnung E-Mail → Benutzer-ID kennt.
    */
   shareListByEmail(listId: string, email: string): Promise<{ userId: string }>
+  shareListByUsername(listId: string, username: string, expectedUserId?: string): Promise<{ userId: string }>
   /**
    * Adressen der Personen, mit denen der Aufrufer schon eine Liste teilt.
    *
@@ -102,6 +103,7 @@ export interface RemoteGateway extends SyncTransport, ShareDirectory {}
 export interface CoMemberContact {
   userId: string
   email: string
+  username?: string | null
 }
 
 /**

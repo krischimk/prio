@@ -1,3 +1,4 @@
+import { usernameFor } from './support/helpers'
 import { addReminder, expectOverviewMode, moreOptions, setDueAt, setOverviewMode } from './support/taskForms'
 import { openTaskEditor } from './support/helpers'
 import { listAction, openListSettings, closeListSettings } from './support/helpers'
@@ -6,7 +7,7 @@ import * as breit from './support/helpers'
 import { createAccount, resetServer, uniqueEmail } from './support/helpers'
 import * as telefon from './support/mobile'
 import { createCloudConflict } from './support/cloudConflict'
-import { openOverview, overviewSettings } from './support/overview'
+import { openOverview, rememberOverviewTarget } from './support/overview'
 
 /**
  * Oberflächenparität: Jede Funktion muss in beiden Ansichten erreichbar sein.
@@ -74,18 +75,18 @@ const funktionen: Funktion[] = [
     },
   },
   {
-    name: 'Abgehakt am Listenende einstellen und wieder öffnen',
+    name: 'Erledigt am Listenende einstellen und wieder öffnen',
     breit: async page => {
       await breit.register(page, uniqueEmail('p-completed-b'))
       await breit.createList(page, 'Haushalt')
       await breit.createTask(page, 'Wohnung saugen')
       await openListSettings(page)
-      await expect(page.getByLabel('Abgehakt am Listenende')).not.toBeChecked()
-      await page.getByLabel('Abgehakt am Listenende').check()
+      await expect(page.getByLabel('Erledigt am Listenende')).not.toBeChecked()
+      await page.getByLabel('Erledigt am Listenende').check()
       await closeListSettings(page)
       await breit.taskItem(page, 'Wohnung saugen').getByRole('checkbox').click()
-      const section = page.getByRole('region', { name: 'Abgehakt', exact: true })
-      const header = section.getByRole('button', { name: 'Abgehakt 1' })
+      const section = page.getByRole('region', { name: 'Erledigt', exact: true })
+      const header = section.getByRole('button', { name: 'Erledigt 1' })
       await expect(header).toHaveAttribute('aria-expanded', 'false')
       await header.click()
       await section.getByRole('checkbox', { name: /^Aufgabe wieder öffnen:/ }).click()
@@ -97,12 +98,12 @@ const funktionen: Funktion[] = [
       await telefon.createTask(page, 'Wohnung saugen')
       await page.getByTestId('app-bar-title').click()
       const settings = page.getByRole('dialog', { name: 'Liste verwalten' })
-      await expect(settings.getByLabel('Abgehakt am Listenende')).not.toBeChecked()
-      await settings.getByLabel('Abgehakt am Listenende').check()
+      await expect(settings.getByLabel('Erledigt am Listenende')).not.toBeChecked()
+      await settings.getByLabel('Erledigt am Listenende').check()
       await settings.getByRole('button', { name: 'Schließen', exact: true }).click()
       await page.getByLabel('Aufgabe erledigen: Wohnung saugen').click()
-      const section = page.getByRole('region', { name: 'Abgehakt', exact: true })
-      const header = section.getByRole('button', { name: 'Abgehakt 1' })
+      const section = page.getByRole('region', { name: 'Erledigt', exact: true })
+      const header = section.getByRole('button', { name: 'Erledigt 1' })
       await expect(header).toHaveAttribute('aria-expanded', 'false')
       await header.click()
       await section.getByRole('checkbox', { name: /^Aufgabe wieder öffnen:/ }).click()
@@ -138,15 +139,12 @@ const funktionen: Funktion[] = [
     },
   },
   {
-    name: 'Standardliste und Gesamtansicht wählen',
+    name: 'Letzte Gesamt-Zielliste und bevorzugte Ansicht merken',
     breit: async page => {
       await breit.register(page, uniqueEmail('p-preferences-b'))
       await breit.createList(page, 'Arbeit')
       await openOverview(page, false)
-      const sheet = await overviewSettings(page)
-      await sheet.getByLabel('Standardliste für neue Aufgaben').selectOption({ label: 'Arbeit' })
-      await expect(sheet.getByLabel('Standardliste für neue Aufgaben')).not.toHaveValue('')
-      await sheet.getByRole('button', { name: 'Schließen', exact: true }).click()
+      await rememberOverviewTarget(page, (page.viewportSize()?.width ?? 1280) < 1024, 'Arbeit')
       await setOverviewMode(page, 'newest')
       await expectOverviewMode(page, 'newest')
       await page.reload()
@@ -165,10 +163,7 @@ const funktionen: Funktion[] = [
       await telefon.register(page, uniqueEmail('p-preferences-t'))
       await telefon.createList(page, 'Arbeit')
       await openOverview(page, true)
-      const sheet = await overviewSettings(page)
-      await sheet.getByLabel('Standardliste für neue Aufgaben').selectOption({ label: 'Arbeit' })
-      await expect(sheet.getByLabel('Standardliste für neue Aufgaben')).not.toHaveValue('')
-      await sheet.getByRole('button', { name: 'Schließen', exact: true }).click()
+      await rememberOverviewTarget(page, (page.viewportSize()?.width ?? 1280) < 1024, 'Arbeit')
       await setOverviewMode(page, 'newest')
       await expectOverviewMode(page, 'newest')
       await page.reload()
@@ -412,7 +407,7 @@ const funktionen: Funktion[] = [
     },
   },
   {
-    name: 'Abgehakte Aufgabe wiederherstellen',
+    name: 'Erledigte Aufgabe wiederherstellen',
     breit: async (page) => {
       await breit.register(page, uniqueEmail('p-wiederherstellen-b'))
       await breit.createList(page, 'Haushalt')
@@ -535,7 +530,7 @@ const funktionen: Funktion[] = [
 
       // In einer eigenen Liste gäbe es niemanden, für den der Schalter gilt.
       await listAction(page, 'Teilen')
-      await page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(mitglied)
+      await page.getByLabel('Benutzername oder E-Mail', { exact: true }).fill(mitglied)
       await page.getByRole('button', { name: 'Freigeben' }).click()
       await expect(page.getByRole('dialog', { name: 'Liste verwalten', exact: true }).getByRole('status')).toContainText(
         'Freigabe für',
@@ -569,7 +564,7 @@ const funktionen: Funktion[] = [
 
       await page.getByTestId('app-bar-title').click()
       await listAction(page, 'Teilen')
-      await page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(mitglied)
+      await page.getByLabel('Benutzername oder E-Mail', { exact: true }).fill(mitglied)
       await page.getByRole('button', { name: 'Freigeben' }).click()
       await expect(page.getByRole('dialog', { name: 'Liste verwalten', exact: true }).getByRole('status')).toContainText(
         'Freigabe für',
@@ -636,7 +631,7 @@ const funktionen: Funktion[] = [
 
       // Erst das Teilen erzeugt den Vorschlag.
       await listAction(page, 'Teilen')
-      await page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(mitglied)
+      await page.getByLabel('Benutzername oder E-Mail', { exact: true }).fill(mitglied)
       await page.getByRole('button', { name: 'Freigeben' }).click()
       await expect(page.getByRole('dialog', { name: 'Liste verwalten', exact: true }).getByRole('status')).toContainText(
         'Freigabe für',
@@ -653,11 +648,11 @@ const funktionen: Funktion[] = [
       }
       await expect(teilenFormular).toBeVisible()
 
-      const vorschlag = page.getByRole('button', { name: mitglied })
+      const vorschlag = page.getByRole('button', { name: '@' + usernameFor(mitglied) })
       await expect(vorschlag).toBeVisible()
       await vorschlag.click()
-      await expect(page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true })).toHaveValue(
-        mitglied,
+      await expect(page.getByLabel('Benutzername oder E-Mail', { exact: true })).toHaveValue(
+        '@' + usernameFor(mitglied),
       )
     },
     telefon: async (page, request) => {
@@ -669,7 +664,7 @@ const funktionen: Funktion[] = [
 
       await page.getByTestId('app-bar-title').click()
       await listAction(page, 'Teilen')
-      await page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(mitglied)
+      await page.getByLabel('Benutzername oder E-Mail', { exact: true }).fill(mitglied)
       await page.getByRole('button', { name: 'Freigeben' }).click()
       await expect(page.getByRole('dialog', { name: 'Liste verwalten', exact: true }).getByRole('status')).toContainText(
         'Freigabe für',
@@ -680,11 +675,11 @@ const funktionen: Funktion[] = [
       await page.getByTestId('app-bar-title').click()
       await listAction(page, 'Teilen')
 
-      const vorschlag = page.getByRole('button', { name: mitglied })
+      const vorschlag = page.getByRole('button', { name: '@' + usernameFor(mitglied) })
       await expect(vorschlag).toBeVisible()
       await vorschlag.click()
-      await expect(page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true })).toHaveValue(
-        mitglied,
+      await expect(page.getByLabel('Benutzername oder E-Mail', { exact: true })).toHaveValue(
+        '@' + usernameFor(mitglied),
       )
     },
   },
@@ -694,6 +689,8 @@ const funktionen: Funktion[] = [
       await breit.register(page, uniqueEmail('p-datenziel-b'))
 
       // Die E2E-Umgebung läuft gegen den lokalen Mock (siehe playwright.config.ts).
+      await page.getByRole('button', { name: 'Konto', exact: true }).click()
+      await page.getByText('Technische Informationen', { exact: true }).click()
       await expect(page.getByTestId('backend-label')).toHaveText(/Mock · 127\.0\.0\.1:/)
     },
     telefon: async (page) => {
@@ -701,6 +698,8 @@ const funktionen: Funktion[] = [
 
       // Auf dem Telefon steht die Anzeige im Menü – erreichbar sein muss sie.
       await telefon.openMenu(page)
+      await page.getByRole('button', { name: 'Konto', exact: true }).click()
+      await page.getByText('Technische Informationen', { exact: true }).click()
       await expect(page.getByTestId('backend-label')).toHaveText(/Mock · 127\.0\.0\.1:/)
     },
   },

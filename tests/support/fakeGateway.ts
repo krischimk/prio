@@ -45,6 +45,7 @@ export class FakeServer {
 
   /** Registrierte Konten für `shareListByEmail`: E-Mail (klein) → Benutzer-ID. */
   readonly accounts = new Map<string, string>()
+  readonly usernames = new Map<string, string>()
 
   pushCalls = 0
   pullCalls = 0
@@ -67,7 +68,8 @@ export class FakeServer {
     return new FakeGateway(this, userId)
   }
 
-  registerAccount(email: string, userId: string): void {
+  registerAccount(email: string, userId: string, username?: string): void {
+    if (username) this.usernames.set(username.toLowerCase(), userId)
     this.accounts.set(email.trim().toLowerCase(), userId)
   }
 
@@ -234,6 +236,13 @@ export class FakeGateway implements RemoteGateway {
    * Liste teilt – dieselbe Sicht, die die Serverfunktion `co_member_contacts`
    * herausgibt.
    */
+  async shareListByUsername(listId: string, username: string, expectedUserId?: string): Promise<{ userId: string }> {
+    const userId = this.server.usernames.get(username.toLowerCase())
+    if (expectedUserId && userId !== expectedUserId) throw new RemoteError('server', 'Der Benutzername gehört inzwischen zu einem anderen Konto.')
+    const email = [...this.server.accounts.entries()].find(([, id]) => id === userId)?.[0]
+    return this.shareListByEmail(listId, email ?? '')
+  }
+
   async coMemberContacts(): Promise<{ userId: string; email: string }[]> {
     const kontakte = new Map<string, string>()
 
@@ -298,6 +307,10 @@ export class OfflineGateway implements RemoteGateway {
     this.calls += 1
     throw new RemoteError('offline', 'Netzwerk nicht erreichbar.')
   }
+  async shareListByUsername(): Promise<{ userId: string }> {
+    this.calls += 1
+    throw new RemoteError('offline', 'Netzwerk nicht erreichbar.')
+  }
 
   async coMemberContacts(): Promise<{ userId: string; email: string }[]> {
     this.calls += 1
@@ -321,6 +334,7 @@ export function createLazyGateway(server: FakeServer, currentUserId: () => strin
     pull: () => resolve().pull(),
     push: (payload, bases) => resolve().push(payload, bases),
     shareListByEmail: (listId, email) => resolve().shareListByEmail(listId, email),
+    shareListByUsername: (listId, username, expectedUserId) => resolve().shareListByUsername(listId, username, expectedUserId),
     coMemberContacts: () => resolve().coMemberContacts(),
   }
 }

@@ -1,6 +1,7 @@
 import type { LocalTask } from '../domain/types'
 import { formatDueLabel } from './datetime'
-import { BellIcon, BellOffIcon, RepeatIcon } from './icons'
+import { BellIcon, BellOffIcon, RepeatIcon, CalendarIcon } from './icons'
+import { Hint } from './components/Hint'
 import { describeRecurrence } from './recurrence'
 import { describeReminders } from './reminder'
 import { attentionText, dangerText, mutedText, numeric } from './styles'
@@ -27,16 +28,16 @@ export function TaskFacts({ task, currentUserId }: TaskFactsProps) {
   return (
     <>
       <span
-        className={`block break-words text-title leading-snug ${task.completed ? 'text-ink-faint line-through' : 'text-ink'}`}
+        className={`block break-words text-title ${task.completed ? 'text-ink-faint line-through' : 'text-ink'}`}
       >
         {task.title}
       </span>
 
       {due || wiederholung || erinnerungen.length ? <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
       {due ? (
-        <span className={`text-meta ${numeric} ${due.overdue ? dangerText : mutedText}`}>
-          {due.text}
-        </span>
+        <Hint text={due.absoluteText}><span aria-label={`${due.text}. ${due.absoluteText}`} className={`inline-flex items-center gap-1 text-meta ${numeric} ${due.overdue ? dangerText : mutedText}`}>
+          <CalendarIcon className="h-3 w-3 shrink-0" />{due.text}
+        </span></Hint>
       ) : null}
 
       {wiederholung ? (

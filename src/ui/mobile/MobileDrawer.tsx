@@ -1,14 +1,13 @@
-import { useState, type FormEvent } from 'react'
 import { useAuth } from '../../auth/useAuth'
 import { useWorkspace } from '../../app/useWorkspace'
 import { describeReminderState } from '../status/reminderStatus'
 import { describeSyncState } from '../status/syncStatus'
 import type { LocalList } from '../../domain/types'
-import { focusRing, layer, errorMessage, input } from '../styles'
-import { BackendLabel } from '../BackendLabel'
+import { focusRing, layer } from '../styles'
+import { AppBrand } from '../AppBrand'
 import { ListIcon } from '../ListIcon'
 import { UpdateEntry } from '../UpdateEntry'
-import { CloseIcon } from '../icons'
+import { CloseIcon, UserIcon, BellIcon, RestoreIcon, SyncIcon, OverviewIcon, AlertIcon } from '../icons'
 import { appBackground, numeric, statusTone } from '../styles'
 import { isNativeApp } from '../../app/platform'
 import { leerListen } from '../emptyTexts'
@@ -16,6 +15,7 @@ import { IconButton } from '../components/IconButton'
 import { Button } from '../components/Button'
 import { useDialog } from '../components/useDialog'
 import { useView } from '../useView'
+import { NewListComposer } from '../NewListComposer'
 
 /**
  * Ausklappbares Menü der mobilen Ansicht.
@@ -41,9 +41,8 @@ export function MobileDrawer({
   currentUserId: string
   onOpenRestore: () => void
 }) {
-  const { state, signOut } = useAuth()
+  const { state } = useAuth()
   const {
-    repositories,
     syncStatus,
     pendingCount,
     rejectedCount,
@@ -53,10 +52,7 @@ export function MobileDrawer({
     enableReminders,
   } = useWorkspace()
 
-  const [name, setName] = useState('')
-  const [creating, setCreating] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const { cloudConflicts, setConflictsOpen } = useView()
+  const { cloudConflicts, setConflictsOpen, setAccountOpen } = useView()
 
   // Zurück-Taste, Escape, Fokus und Rolle kommen aus `useDialog` – dasselbe
   // Verhalten wie bei Blatt und Detailansicht. `active: open`, weil das Menü
@@ -68,23 +64,6 @@ export function MobileDrawer({
   const email = state.status === 'authenticated' ? state.user.email : ''
   const sync = describeSyncState(syncStatus, pendingCount, syncing, rejectedCount, cloudConflicts.length)
   const reminders = describeReminderState(reminderStatus)
-
-  const createList = async (event: FormEvent) => {
-    event.preventDefault()
-    if (creating || name.trim().length === 0) return
-    setCreating(true)
-    setError(null)
-    try {
-      const list = await repositories.createList(name, currentUserId)
-      setName('')
-      onSelectList(list.id)
-      onClose()
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Liste konnte nicht erstellt werden.')
-    } finally {
-      setCreating(false)
-    }
-  }
 
   return (
     <div
@@ -110,7 +89,7 @@ export function MobileDrawer({
 
       <aside className={`safe-top safe-bottom absolute inset-y-0 left-0 flex w-80 max-w-[85%] flex-col overflow-y-auto border-r border-line ${appBackground}`}>
         <div className="flex items-center justify-between px-4 pt-3">
-          <span className="text-heading font-semibold tracking-tight text-ink-strong">Prio</span>
+          <AppBrand />
           <IconButton
             onClick={onClose}
             aria-label="Menü schließen"
@@ -119,17 +98,12 @@ export function MobileDrawer({
             <CloseIcon />
           </IconButton>
         </div>
-        <div className="px-4 pb-4">
-          <p className="truncate text-meta text-ink-faint" data-testid="drawer-user">
-            {email}
-          </p>
-          <BackendLabel />
-        </div>
+        <div className="px-4 pb-3"><span className="sr-only" data-testid="drawer-user">{email}</span></div>
 
         <section className="px-4 pb-4" aria-label="Listen">
           <button type="button" aria-current={selectedListId === null ? 'page' : undefined} onClick={() => { onSelectList(null); onClose() }}
-            className={`${focusRing} mb-3 w-full rounded-control px-3 py-3 text-left text-body ${selectedListId === null ? 'bg-brand-tint/60 text-brand-faint' : 'text-ink-soft active:bg-surface'}`}>
-            Gesamtansicht
+            className={`${focusRing} mb-3 flex w-full items-center gap-2 rounded-control px-3 py-3 text-left text-body ${selectedListId === null ? 'bg-brand-tint/60 text-brand-faint' : 'text-ink-soft active:bg-surface'}`}>
+            <OverviewIcon />Gesamtansicht
           </button>
           <h2 className="mb-2 text-meta font-semibold uppercase tracking-wide text-ink-faint">Listen</h2>
           <ul className="space-y-1">
@@ -162,30 +136,7 @@ export function MobileDrawer({
             ) : null}
           </ul>
 
-          <form onSubmit={createList} className="mt-3 space-y-2" aria-label="Neue Liste">
-            <label htmlFor="mobile-new-list" className="sr-only">
-              Name der neuen Liste
-            </label>
-            <input
-              id="mobile-new-list"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Neue Liste"
-              className={input}
-            />
-            <Button
-              type="submit"
-              variant="primary" layout="w-full"
-              disabled={creating || name.trim().length === 0}
-            >
-              Liste anlegen
-            </Button>
-            {error ? (
-              <p role="alert" className={errorMessage}>
-                {error}
-              </p>
-            ) : null}
-          </form>
+          <div className="mt-3"><NewListComposer currentUserId={currentUserId} onCreated={id => { onSelectList(id); onClose() }} /></div>
         </section>
 
         <section className="border-t border-line px-4 py-4" aria-label="Synchronisation">
@@ -203,7 +154,7 @@ export function MobileDrawer({
                 setConflictsOpen(true)
               }}
             >
-              Konflikte klären
+              <AlertIcon />Konflikte klären
             </Button>
           ) : null}
           <Button
@@ -213,13 +164,13 @@ export function MobileDrawer({
             }}
             disabled={syncing}
           >
-            Jetzt synchronisieren
+            <SyncIcon />Jetzt synchronisieren
           </Button>
         </section>
 
-        <section className="border-t border-line px-4 py-4" aria-label="Einstellungen">
-          <h2 className="mb-2 text-meta font-semibold uppercase tracking-wide text-ink-faint">
-            Einstellungen
+        <section className="border-t border-line px-4 py-4" aria-label="Erinnerungen">
+          <h2 className="mb-2 flex items-center gap-2 text-meta font-semibold uppercase tracking-wide text-ink-faint">
+            <BellIcon />Erinnerungen
           </h2>
           {reminders.text ? <p className="mb-2 text-meta text-ink-muted">{reminders.text}</p> : null}
           {reminders.canEnable ? (
@@ -229,19 +180,16 @@ export function MobileDrawer({
                 void enableReminders()
               }}
             >
-              Erinnerungen aktivieren
+              <BellIcon />Erinnerungen aktivieren
             </Button>
           ) : null}
           {!reminders.available ? (
             <p className="text-meta text-ink-faint">Erinnerungen sind auf diesem Gerät nicht verfügbar.</p>
           ) : null}
 
-          <Button
-            variant="secondary" layout="mt-3 w-full"
-            onClick={onOpenRestore}
-          >
-            Aufgaben wiederherstellen
-          </Button>
+        </section>
+        <section className="border-t border-line px-4 py-3" aria-label="Wiederherstellen">
+          <Button variant="ghost" layout="w-full justify-start" onClick={onOpenRestore}><RestoreIcon />Aufgaben wiederherstellen</Button>
         </section>
 
         {isNativeApp() ? <section className="border-t border-line px-4 py-4" aria-label="Updates">
@@ -250,14 +198,7 @@ export function MobileDrawer({
         </section> : null}
 
         <div className="mt-auto border-t border-line px-4 py-4">
-          <Button
-            variant="secondary" layout="w-full"
-            onClick={() => {
-              void signOut()
-            }}
-          >
-            Abmelden
-          </Button>
+          <Button variant="ghost" layout="w-full justify-start" onClick={() => { onClose(); setAccountOpen(true) }}><UserIcon />Konto</Button>
         </div>
       </aside>
     </div>

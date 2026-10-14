@@ -9,7 +9,7 @@ import type { NetworkMonitor } from '../../src/sync/network'
  * um beide Supabase-Konfigurationen testen zu können.
  */
 export class FakeAuthPort implements AuthPort {
-  private readonly accounts = new Map<string, { id: string; password: string }>()
+  private readonly accounts = new Map<string, { id: string; password: string; username: string | null }>()
   private listeners = new Set<(user: AuthUser | null) => void>()
   private counter = 0
   /**
@@ -27,10 +27,10 @@ export class FakeAuthPort implements AuthPort {
     this.prefix = prefix ?? `u${Math.random().toString(36).slice(2, 8)}`
   }
 
-  seed(email: string, password: string): AuthUser {
+  seed(email: string, password: string, username: string | null = `user_${this.counter + 1}`): AuthUser {
     this.counter += 1
-    const user: AuthUser = { id: `${this.prefix}-${this.counter}`, email }
-    this.accounts.set(email.trim().toLowerCase(), { id: user.id, password })
+    const user: AuthUser = { id: `${this.prefix}-${this.counter}`, email, username }
+    this.accounts.set(email.trim().toLowerCase(), { id: user.id, password, username })
     return user
   }
 
@@ -38,12 +38,12 @@ export class FakeAuthPort implements AuthPort {
     return this.currentUser
   }
 
-  async signUp(email: string, password: string): Promise<SignUpResult> {
+  async signUp(email: string, password: string, username?: string): Promise<SignUpResult> {
     const key = email.trim().toLowerCase()
     if (this.accounts.has(key)) {
       throw new AuthError('email-already-registered', 'User already registered')
     }
-    const user = this.seed(key, password)
+    const user = this.seed(key, password, username)
     if (this.requireEmailConfirmation) {
       return { user: null, requiresEmailConfirmation: true }
     }
@@ -61,13 +61,20 @@ export class FakeAuthPort implements AuthPort {
     if (!account || account.password !== password) {
       throw new AuthError('invalid-credentials', 'Invalid login credentials')
     }
-    const user: AuthUser = { id: account.id, email: email.trim().toLowerCase() }
+    const user: AuthUser = { id: account.id, email: email.trim().toLowerCase(), username: account.username }
     this.setCurrent(user)
     return user
   }
 
   async signOut(): Promise<void> {
     this.setCurrent(null)
+  }
+  async setUsername(username: string): Promise<AuthUser> {
+    if (!this.currentUser) throw new AuthError('unknown', 'Bitte anmelden.')
+    const user = { ...this.currentUser, username }
+    this.accounts.get(user.email)!.username = username
+    this.setCurrent(user)
+    return user
   }
 
   onAuthStateChange(listener: (user: AuthUser | null) => void): () => void {

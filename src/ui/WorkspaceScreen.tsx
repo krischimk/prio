@@ -4,7 +4,7 @@ import { ViewProvider } from './ViewProvider'
 import { TaskDraftProvider } from './TaskDraftProvider'
 import { useView } from './useView'
 import { MobileWorkspace } from './mobile/MobileWorkspace'
-import { BackendLabel } from './BackendLabel'
+import { AccountSheet } from './AccountSheet'
 import { RestoreTasksPanel } from './RestoreTasksPanel'
 import { describeUpdateState } from './status/updateStatus'
 import { useUpdate } from './useUpdate'
@@ -19,7 +19,7 @@ import { OverviewPanel } from './OverviewPanel'
 import { OverviewDialogs } from './OverviewDialogs'
 import { TaskDialogs } from './TaskDialogs'
 import { TaskDragProvider } from './TaskDragProvider'
-import { DownloadIcon, LogoutIcon, RestoreIcon } from './icons'
+import { DownloadIcon, RestoreIcon, UserIcon } from './icons'
 import { isNativeApp } from '../app/platform'
 
 /**
@@ -44,19 +44,20 @@ export function WorkspaceScreen() {
 }
 
 function WorkspaceViews({ isDesktop }: { isDesktop: boolean }) {
-  const { cloudConflicts, conflictsOpen, setConflictsOpen } = useView()
+  const { cloudConflicts, conflictsOpen, setConflictsOpen, accountOpen, setAccountOpen } = useView()
   return <TaskDragProvider>
     <div>{isDesktop ? <DesktopWorkspace /> : <MobileWorkspace />}</div>
     <OverviewDialogs />
     <TaskDialogs />
+    {accountOpen ? <AccountSheet onClose={() => setAccountOpen(false)} /> : null}
     <CloudConflictsSheet conflicts={cloudConflicts} open={conflictsOpen} onClose={() => setConflictsOpen(false)} />
   </TaskDragProvider>
 }
 
 /** Breite Ansicht: Listen links, Aufgaben rechts. */
 function DesktopWorkspace() {
-  const { state, signOut } = useAuth()
-  const { lists, selected, selectedListId, selectList, restoreOpen, setRestoreOpen } = useView()
+  const { state } = useAuth()
+  const { lists, selected, selectedListId, selectList, restoreOpen, setRestoreOpen, setAccountOpen } = useView()
   const { state: update, check, install, installing } = useUpdate()
   const updateBeschreibung = describeUpdateState(update)
   const updateVerfuegbar = update.status === 'available'
@@ -73,13 +74,7 @@ function DesktopWorkspace() {
       />
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line px-4 py-3">
-          <div className="flex items-baseline gap-2">
-            <span className="text-meta text-ink-faint" data-testid="current-user">
-              {user?.email}
-            </span>
-            <BackendLabel />
-          </div>
+        <header className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 border-b border-line px-4 py-3">
           <div className="flex flex-wrap items-center gap-3">
             <ReminderIndicator />
             <SyncIndicator />
@@ -107,13 +102,8 @@ function DesktopWorkspace() {
             >
               <DownloadIcon />
             </IconButton> : null}
-            <IconButton
-              aria-label="Abmelden"
-              onClick={() => {
-                void signOut()
-              }}
-            >
-              <LogoutIcon />
+            <IconButton aria-label="Konto" title={`Angemeldet als @${user?.username}. Konto öffnen.`} onClick={() => setAccountOpen(true)} data-testid="current-user">
+              <UserIcon /><span className="sr-only">{user?.email}</span>
             </IconButton>
           </div>
         </header>

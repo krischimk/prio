@@ -48,25 +48,34 @@ export function listen(ctx: Kontext): Pick<Repositories, 'createList' | 'renameL
       })
     },
 
-    async createList(name, ownerId) {
+    async createList(name, ownerId, options = {}) {
       const now = ctx.clock.now()
       const list: LocalList = {
         // Noch keine Abschnitte – der Plan ist von Anfang an da, nicht erst
         // nach dem ersten Anlegen.
         sections: [],
-        keep_completed: false,
+        keep_completed: options.keepCompleted ?? false,
         completion_retention_started_at: now,
         id: newId(),
         name: requireText(name, 'Der Listenname'),
         owner_id: ownerId,
         is_shared: false,
-        icon: null,
+        icon: options.icon ?? null,
         created_at: now,
         updated_at: now,
         deleted_at: null,
         dirty: 1,
       }
-      await ctx.db.lists.add(list)
+      await ctx.db.transaction('rw', ctx.db.lists, ctx.db.list_preferences, async () => {
+        await ctx.db.lists.add(list)
+        if (options.includeInOverview) {
+          requireText(ownerId, 'Die Benutzerkennung')
+          await ctx.db.list_preferences.add({
+            list_id: list.id, user_id: ownerId, include_in_overview: true,
+            created_at: now, updated_at: now, deleted_at: null, dirty: 1,
+          })
+        }
+      })
       return list
     },
 

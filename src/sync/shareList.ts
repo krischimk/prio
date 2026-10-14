@@ -1,9 +1,10 @@
 import { ValidationError } from '../db/validation'
 import type { Repositories } from '../db/repositories'
 import type { ShareDirectory } from './remoteGateway'
+import { normalizeUsername, validUsername } from '../domain/username'
 
 /**
- * Freigabe einer Liste per E-Mail-Adresse.
+ * Freigabe einer Liste per Benutzername oder E-Mail-Adresse.
  *
  * Bewusst außerhalb von React: Der Ablauf ist Geschäftslogik und soll ohne
  * Komponenten testbar sein.
@@ -22,16 +23,19 @@ export function createShareListAction(deps: {
   gateway: ShareDirectory
   repositories: Repositories
   sync: () => Promise<unknown>
-}): (listId: string, email: string) => Promise<{ userId: string }> {
-  return async (listId, email) => {
-    const trimmed = email.trim()
+}): (listId: string, recipient: string, expectedUserId?: string) => Promise<{ userId: string }> {
+  return async (listId, recipient, expectedUserId) => {
+    const trimmed = recipient.trim()
     if (trimmed.length === 0) {
-      throw new ValidationError('email', 'Bitte eine E-Mail-Adresse angeben.')
+      throw new ValidationError('email', 'Bitte einen Benutzernamen oder eine E-Mail-Adresse angeben.')
     }
 
     await deps.sync()
 
-    const result = await deps.gateway.shareListByEmail(listId, trimmed)
+    const username = normalizeUsername(trimmed)
+    const byEmail = trimmed.includes('@') && !trimmed.startsWith('@')
+    if (!byEmail && !validUsername(username)) throw new ValidationError('invalid', 'Bitte einen Benutzernamen oder eine E-Mail-Adresse angeben.')
+    const result = await (byEmail ? deps.gateway.shareListByEmail(listId, trimmed) : deps.gateway.shareListByUsername(listId, username, expectedUserId))
     await deps.repositories.markListShared(listId)
     await deps.sync()
     return result

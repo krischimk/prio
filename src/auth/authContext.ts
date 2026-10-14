@@ -21,7 +21,8 @@ export interface AuthContextValue {
   /** Meldung nach erfolgreicher Registrierung (E-Mail-Bestätigung nötig). */
   notice: string | null
   signIn(email: string, password: string): Promise<void>
-  signUp(email: string, password: string): Promise<void>
+  signUp(email: string, password: string, username?: string): Promise<void>
+  setUsername(username: string): Promise<void>
   signOut(): Promise<void>
   clearMessages(): void
 }

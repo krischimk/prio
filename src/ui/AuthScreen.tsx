@@ -3,6 +3,8 @@ import { useAuth } from '../auth/useAuth'
 import { errorBox, input, link, successBox } from './styles'
 import { appBackground } from './styles'
 import { Button } from './components/Button'
+import { UsernameField } from './UsernameField'
+import { AppBrand } from './AppBrand'
 
 /**
  * Anmeldung und Registrierung.
@@ -15,6 +17,7 @@ export function AuthScreen() {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('')
   const [busy, setBusy] = useState(false)
 
   const submit = async (event: FormEvent) => {
@@ -23,7 +26,7 @@ export function AuthScreen() {
     setBusy(true)
     try {
       if (mode === 'signin') await signIn(email, password)
-      else await signUp(email, password)
+      else await signUp(email, password, username)
     } catch {
       // Die Fehlermeldung steht bereits im Auth-Kontext.
     } finally {
@@ -39,12 +42,13 @@ export function AuthScreen() {
   return (
     <div className={`flex min-h-screen items-center justify-center ${appBackground} px-4`}>
       <div className="w-full max-w-sm">
-        <h1 className="mb-1 text-display font-semibold tracking-tight text-ink-strong">Prio</h1>
+        <h1 className="mb-1"><AppBrand /></h1>
         <p className="mb-6 text-body text-ink-muted">
           Aufgaben offline erfassen – synchronisiert wird, sobald das Netz da ist.
         </p>
 
         <form onSubmit={submit} className="space-y-3" aria-label="Anmeldung">
+          {mode === 'signup' ? <UsernameField value={username} onChange={setUsername} disabled={busy} /> : null}
           <div>
             <label htmlFor="email" className="mb-1 block text-body text-ink-soft">
               E-Mail

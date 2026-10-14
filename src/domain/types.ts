@@ -38,6 +38,7 @@ export interface LocalOnly {
  * synchronisiert wird. Siehe `domain/shareContacts.ts`.
  */
 export interface ShareContact {
+  username?: string | null
   /** Kleingeschrieben und ohne Leerzeichen – so wird verglichen. */
   email: string
   /** Benutzer-ID aus der Antwort des Servers. */
@@ -184,7 +185,7 @@ export type RemoteListPreference = Omit<LocalListPreference, 'dirty'>
 
 export type OverviewMode = 'by_list' | 'newest'
 
-/** Persönliche Startansicht; die Standardliste wird ausdrücklich gesetzt. */
+/** Persönliche Ansicht; default_list_id merkt die zuletzt verwendete Gesamt-Zielliste. */
 export interface LocalUserPreference extends SyncableRow, LocalOnly {
   id: string
   default_list_id: string | null

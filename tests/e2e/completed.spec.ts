@@ -3,13 +3,13 @@ import { expect, test, type Page } from '@playwright/test'
 import * as desktop from './support/helpers'
 import * as phone from './support/mobile'
 
-for (const mobile of [false,true]) test.describe(mobile ? 'Abgehakt Telefon' : 'Abgehakt breit', () => {
+for (const mobile of [false,true]) test.describe(mobile ? 'Erledigt Telefon' : 'Erledigt breit', () => {
   test.use({ viewport: mobile ? {width:390,height:844} : {width:1280,height:800}, hasTouch:mobile })
   test.beforeEach(async ({request}) => { await desktop.resetServer(request) })
   async function setting(page: Page, keep: boolean) {
     const scope=await desktop.openListSettings(page)
-    await scope.getByLabel('Abgehakt am Listenende').setChecked(keep)
-    await expect(scope.getByLabel('Abgehakt am Listenende')).toBeEnabled()
+    await scope.getByLabel('Erledigt am Listenende').setChecked(keep)
+    await expect(scope.getByLabel('Erledigt am Listenende')).toBeEnabled()
     await desktop.closeListSettings(page)
   }
   async function sync(page:Page) {
@@ -40,8 +40,8 @@ for (const mobile of [false,true]) test.describe(mobile ? 'Abgehakt Telefon' : '
     await edit()
     await page.getByLabel('Titel',{exact:true}).fill('Nächster Termin geändert')
     await page.getByRole('button',{name:'Speichern',exact:true}).click()
-    const section=page.getByRole('region',{name:'Abgehakt',exact:true})
-    await section.getByRole('button',{name:'Abgehakt 1'}).click()
+    const section=page.getByRole('region',{name:'Erledigt',exact:true})
+    await section.getByRole('button',{name:'Erledigt 1'}).click()
     const reopen=section.getByRole('checkbox',{name:'Aufgabe wieder öffnen: Serie',exact:true})
     await expect(reopen).toBeChecked()
     await reopen.click()
@@ -63,12 +63,12 @@ for (const mobile of [false,true]) test.describe(mobile ? 'Abgehakt Telefon' : '
     const answer=await request.post(`${desktop.MOCK_URL}/rest/v1/rpc/sync_push`,{headers:{Authorization:`Bearer ${access_token}`},data:{p_changes:[{table:'tasks',row:{...base,completed:true,completed_at:oldDate,completed_expires_at:null},expected:base}]}})
     expect((await answer.json())[0].kind).toBe('written')
     await sync(page)
-    const section=page.getByRole('region',{name:'Abgehakt',exact:true})
-    await expect(section.getByRole('button',{name:'Abgehakt 1'})).toHaveAttribute('aria-expanded','false')
+    const section=page.getByRole('region',{name:'Erledigt',exact:true})
+    await expect(section.getByRole('button',{name:'Erledigt 1'})).toHaveAttribute('aria-expanded','false')
     const panel=await restore(page)
     await expect(panel).not.toContainText('Schon lange erledigt')
     await panel.getByRole('button',{name:'Schließen',exact:true}).click()
-    await section.getByRole('button',{name:'Abgehakt 1'}).click()
+    await section.getByRole('button',{name:'Erledigt 1'}).click()
     await expect(section).toContainText('Schon lange erledigt')
     await expect(section.getByText('Wieder öffnen', { exact: true })).toHaveCount(0)
     if (!mobile) {

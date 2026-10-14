@@ -23,7 +23,7 @@ export function TaskCheckbox({ task }: { task: LocalTask }) {
   }
   return <div className="shrink-0">
     <Hint text={task.completed ? 'Aufgabe wieder öffnen. Der ursprüngliche Bereich und die Nachbarschaft werden soweit verfügbar wiederhergestellt.' : 'Aufgabe abhaken. Anschließend kannst du das Abhaken rückgängig machen.'}>
-    <label className={`${focusRing} flex h-11 w-11 cursor-pointer items-center justify-center rounded-control hover:bg-raised active:bg-raised`}>
+    <label className={`${focusRing} pointer-events-auto flex h-11 w-11 cursor-pointer items-center justify-center rounded-control hover:bg-raised active:bg-raised`}>
       <input type="checkbox" className="h-5 w-5 cursor-pointer accent-brand" checked={task.completed} disabled={busy}
         aria-label={`${task.completed ? 'Aufgabe wieder öffnen' : 'Aufgabe erledigen'}: ${task.title}`} onChange={event => void change(event.target.checked)} />
     </label>

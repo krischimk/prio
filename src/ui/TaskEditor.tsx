@@ -9,7 +9,8 @@ import { Sheet } from './components/Sheet'
 import { TaskFields } from './TaskFields'
 import { TaskFormStatus } from './TaskFormStatus'
 import { useTaskForm } from './useTaskForm'
-import { errorBox, focusRing } from './styles'
+import { errorBox } from './styles'
+import { TaskMoreOptions } from './TaskMoreOptions'
 import { useTaskDelete } from './useTaskDelete'
 import { formatCompletedLabel } from './datetime'
 
@@ -153,11 +154,9 @@ export function TaskEditor({
             {error ? <p role="alert" className={errorBox}>{error}</p> : null}
             {deletion.error ? <p role="alert" className={errorBox}>{deletion.error}</p> : null}
 
-            {task !== null || sections.length > 0 ? <details className="border-t border-line pt-3">
-              <summary className={`${focusRing} cursor-pointer rounded-control py-2 text-body text-ink-muted hover:text-ink`}>Mehr Optionen</summary>
-              <div className="space-y-3 pt-3">
+            <TaskMoreOptions form={form} sections={sections} idPrefix="detail">
+              {task !== null ? <>
                 {task?.completed_at ? <p className="text-meta text-ink-muted">{formatCompletedLabel(task.completed_at)}</p> : null}
-                <TaskFields form={form} sections={sections} idPrefix="detail-extra" felder={['bereich']} />
                 {task !== null ? (
                   <Button
                     onClick={() => { void toggleCompleted() }}
@@ -176,8 +175,8 @@ export function TaskEditor({
                 >
                   <MoveIcon className="h-4 w-4" />In andere Liste verschieben
                 </Button> : null}
-              </div>
-            </details> : null}
+              </> : null}
+            </TaskMoreOptions>
           </div>
         </div>
       </form>

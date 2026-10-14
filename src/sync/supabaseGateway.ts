@@ -119,6 +119,12 @@ export function createSupabaseGateway(client: SupabaseClient): RemoteGateway {
       return { userId: String(data) }
     },
 
+    async shareListByUsername(listId: string, username: string, expectedUserId?: string): Promise<{ userId: string }> {
+      const { data, error } = await client.rpc('share_list_by_username', { p_list_id: listId, p_username: username, p_expected_user_id: expectedUserId ?? null })
+      throwIfError(error, 'Die Liste konnte nicht geteilt werden.')
+      return { userId: String(data) }
+    },
+
     async coMemberContacts(): Promise<CoMemberContact[]> {
       const { data, error } = await client.rpc('co_member_contacts')
       throwIfError(error, 'Die Kontakte konnten nicht geladen werden.')
@@ -131,6 +137,7 @@ export function createSupabaseGateway(client: SupabaseClient): RemoteGateway {
           email: String((zeile as { email?: unknown })?.email ?? '')
             .trim()
             .toLowerCase(),
+          username: typeof zeile.username === 'string' ? zeile.username : null,
         }))
         .filter((kontakt) => kontakt.userId.length > 0 && kontakt.email.length > 0)
     },

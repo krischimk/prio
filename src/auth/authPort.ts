@@ -8,6 +8,7 @@
 export interface AuthUser {
   id: string
   email: string
+  username?: string | null
 }
 
 export type AuthFailureKind =
@@ -17,6 +18,9 @@ export type AuthFailureKind =
   | 'email-not-confirmed'
   | 'email-already-registered'
   | 'weak-password'
+  | 'username-invalid'
+  | 'username-taken'
+  | 'profile-error'
   | 'unknown'
 
 export class AuthError extends Error {
@@ -38,7 +42,8 @@ export interface SignUpResult {
 export interface AuthPort {
   /** Liest die gespeicherte Sitzung – auch ohne Netzwerk. */
   getCurrentUser(): Promise<AuthUser | null>
-  signUp(email: string, password: string): Promise<SignUpResult>
+  signUp(email: string, password: string, username?: string): Promise<SignUpResult>
+  setUsername(username: string): Promise<AuthUser>
   signIn(email: string, password: string): Promise<AuthUser>
   signOut(): Promise<void>
   onAuthStateChange(listener: (user: AuthUser | null) => void): () => void
@@ -60,6 +65,12 @@ export function authErrorMessage(error: unknown): string {
       return 'Für diese E-Mail-Adresse existiert bereits ein Konto.'
     case 'weak-password':
       return 'Das Passwort ist zu kurz (mindestens 6 Zeichen).'
+    case 'username-invalid':
+      return 'Verwende 3 bis 30 Zeichen: Buchstaben a–z, Ziffern und Unterstrich.'
+    case 'username-taken':
+      return 'Dieser Benutzername ist bereits vergeben. Wähle einen anderen.'
+    case 'profile-error':
+      return 'Der Benutzername konnte nicht gespeichert werden. Er ist möglicherweise inzwischen vergeben. Bitte versuche einen anderen Namen.'
     default:
       return error.message || 'Unbekannter Fehler bei der Anmeldung.'
   }

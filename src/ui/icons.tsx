@@ -46,6 +46,12 @@ export function SettingsIcon({ className = 'h-5 w-5' }: { className?: string }) 
   </svg>
 }
 
+export function IconChoiceIcon({ className = 'h-5 w-5' }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
+    <circle cx="8" cy="8" r="4" /><path d="m16 4 5 8H11z" /><rect x="4" y="15" width="7" height="6" rx="1" /><path d="M17 16v6M14 19h6" />
+  </svg>
+}
+
 export function OverviewIcon({ className = 'h-5 w-5' }: { className?: string }) {
   return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
     <rect x="3" y="3" width="7" height="7" rx="2" /><rect x="14" y="3" width="7" height="7" rx="2" />
@@ -218,5 +224,11 @@ export function SortIcon({ className = 'h-5 w-5' }: { className?: string }) {
 export function AlertIcon({ className = 'h-5 w-5' }: { className?: string }) {
   return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
     <path d="M12 3 2 21h20L12 3zM12 9v5M12 17h.01" />
+  </svg>
+}
+
+export function UserIcon({ className = 'h-5 w-5' }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <circle cx="12" cy="8" r="4" /><path d="M4 21v-2a8 8 0 0 1 16 0v2" />
   </svg>
 }

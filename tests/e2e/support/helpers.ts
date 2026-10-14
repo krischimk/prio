@@ -12,6 +12,8 @@ export const MOCK_URL = `http://127.0.0.1:${process.env.MOCK_SUPABASE_PORT ?? 54
 
 export const PASSWORD = 'geheim123'
 
+export function usernameFor(email: string): string { return 'u_' + email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '_').slice(-28) }
+
 export function uniqueEmail(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}@example.com`
 }
@@ -24,7 +26,7 @@ export async function resetServer(request: APIRequestContext): Promise<void> {
 
 export interface ServerState {
   users: number
-  lists: Array<{ id: string; name: string; owner_id: string; is_shared: boolean }>
+  lists: Array<{ id: string; name: string; owner_id: string; is_shared: boolean; icon: string | null; keep_completed: boolean }>
   members: Array<{ list_id: string; user_id: string; deleted_at: string | null }>
   tasks: Array<{ id: string; list_id: string; section_id: string | null; position: number; title: string; description: string | null; reminders: TaskReminder[]; completed: boolean; completed_at: string | null; completed_expires_at: string | null; expired_at: string | null; deleted_at: string | null }>
   preferences: Array<{ list_id: string; user_id: string; include_in_overview: boolean }>
@@ -42,6 +44,7 @@ export async function register(page: Page, email: string): Promise<void> {
   await page.getByRole('button', { name: 'Registrieren', exact: true }).click()
   await page.getByLabel('E-Mail', { exact: true }).fill(email)
   await page.getByLabel('Passwort', { exact: true }).fill(PASSWORD)
+  await page.getByLabel('Benutzername', { exact: true }).fill(usernameFor(email))
   await page.getByRole('button', { name: 'Konto erstellen', exact: true }).click()
   await expect(page.getByTestId('current-user')).toHaveText(email)
 }
@@ -54,7 +57,7 @@ export async function register(page: Page, email: string): Promise<void> {
  */
 export async function createAccount(request: APIRequestContext, email: string): Promise<void> {
   const response = await request.post(`${MOCK_URL}/auth/v1/signup`, {
-    data: { email, password: PASSWORD },
+    data: { email, password: PASSWORD, data: { username: usernameFor(email) } },
   })
   expect(response.ok()).toBe(true)
 }
@@ -68,7 +71,8 @@ export async function login(page: Page, email: string): Promise<void> {
 }
 
 export async function logout(page: Page): Promise<void> {
-  await page.getByRole('button', { name: 'Abmelden' }).click()
+  await page.getByRole('button', { name: 'Konto', exact: true }).click()
+  await page.getByRole('dialog', { name: 'Konto', exact: true }).getByRole('button', { name: 'Abmelden', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Anmelden', exact: true })).toBeVisible()
 }
 

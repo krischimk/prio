@@ -31,7 +31,7 @@ export interface WorkspaceValue {
   /** Fragt die Benachrichtigungs-Berechtigung an und plant danach. */
   enableReminders(): Promise<void>
   /** Teilt eine Liste per E-Mail-Adresse (benötigt Serververbindung). */
-  shareListByEmail(listId: string, email: string): Promise<{ userId: string }>
+  shareList(listId: string, recipient: string, expectedUserId?: string): Promise<{ userId: string }>
 }
 
 export const WorkspaceContext = createContext<WorkspaceValue | null>(null)

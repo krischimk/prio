@@ -51,15 +51,15 @@ export function SectionHeader({
       {...handlers}
       data-drop-target={hervorgehoben ? 'true' : undefined}
     >
-      <ChevronIcon offen={offen} className={`h-3.5 w-3.5 shrink-0 ${mutedText}`} />
+      <ChevronIcon offen={offen} className={`h-3.5 w-3.5 shrink-0 ${muted ? 'text-ink-completed' : mutedText}`} />
       <span
         className={`text-label font-semibold tracking-wide uppercase ${
-          hervorgehoben ? 'text-brand-faint' : muted ? 'text-ink-muted' : 'text-ink-soft'
+          hervorgehoben ? 'text-brand-faint' : muted ? 'text-ink-completed' : 'text-ink-soft'
         }`}
       >
         {name}
       </span>
-      <span className={`text-label ${mutedText}`}>{anzahl}</span>
+      <span className={`text-label ${muted ? 'text-ink-completed' : mutedText}`}>{anzahl}</span>
     </button>
   )
 }

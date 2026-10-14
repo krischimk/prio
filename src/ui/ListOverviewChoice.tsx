@@ -24,15 +24,20 @@ export function ListOverviewChoice({ listId, currentUserId, label = 'In Gesamtan
     finally { writing.current = false; setBusy(false) }
   }
   return <div className="space-y-1">
-    <label className="flex min-h-11 cursor-pointer items-center gap-3 text-body text-ink-soft">
-      <input type="checkbox" checked={pending ?? included} disabled={busy || pending !== null || overview.status !== 'ready'} className="h-5 w-5 shrink-0 accent-brand"
-        onChange={event => { void change(event.target.checked) }} />
-      <span className="min-w-0 break-words">{label}</span>
-    </label>
+    <ListOverviewField included={pending ?? included} disabled={busy || pending !== null || overview.status !== 'ready'} onChange={value => { void change(value) }} label={label} />
     {overview.status === 'error' ? <div>
       <p role="alert" className={errorMessage}>Die persönliche Auswahl konnte nicht geladen werden.</p>
       <Button variant="secondary" onClick={overview.retry}>Erneut versuchen</Button>
     </div> : null}
     {error ? <p role="alert" className={errorMessage}>{error}</p> : null}
   </div>
+}
+
+export function ListOverviewField({ included, disabled, onChange, label = 'In Gesamtansicht aufnehmen' }: {
+  included: boolean; disabled?: boolean; onChange: (value: boolean) => void; label?: string
+}) {
+  return <label className="flex min-h-11 cursor-pointer items-center gap-3 text-body text-ink-soft">
+    <input type="checkbox" checked={included} disabled={disabled} className="h-5 w-5 shrink-0 accent-brand" onChange={event => onChange(event.target.checked)} />
+    <span className="min-w-0 break-words">{label}</span>
+  </label>
 }

@@ -1,3 +1,4 @@
+import { usernameFor } from './support/helpers'
 import { expect, test } from '@playwright/test'
 import {
   closeListSettings,
@@ -47,7 +48,7 @@ test('E2E 4: Benutzer A teilt eine Liste mit Benutzer B', async ({ browser, requ
 
     // 2. A gibt die Liste per E-Mail-Adresse frei.
     await listAction(pageA, 'Teilen')
-    await pageA.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(emailB)
+    await pageA.getByLabel('Benutzername oder E-Mail', { exact: true }).fill(emailB)
     await pageA.getByRole('button', { name: 'Freigeben' }).click()
     await expect(pageA.getByRole('dialog', { name: 'Liste verwalten' }).getByRole('status')).toContainText(`Freigabe für ${emailB} gespeichert.`)
 
@@ -84,11 +85,11 @@ test('E2E 4: Benutzer A teilt eine Liste mit Benutzer B', async ({ browser, requ
     await createList(pageB, 'Liste von B')
     await listAction(pageB, 'Teilen')
 
-    const vorschlag = pageB.getByRole('button', { name: emailA })
+    const vorschlag = pageB.getByRole('button', { name: '@' + usernameFor(emailA) })
     await expect(vorschlag).toBeVisible()
     await vorschlag.click()
-    await expect(pageB.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true })).toHaveValue(
-      emailA,
+    await expect(pageB.getByLabel('Benutzername oder E-Mail', { exact: true })).toHaveValue(
+      '@' + usernameFor(emailA),
     )
   } finally {
     await contextA.close()
@@ -116,7 +117,7 @@ test('E2E 4b: nach dem Entfernen sieht Benutzer B die gemeinsame Liste nicht meh
     await register(pageA, emailA)
     await createList(pageA, 'Nur kurz geteilt')
     await listAction(pageA, 'Teilen')
-    await pageA.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(emailB)
+    await pageA.getByLabel('Benutzername oder E-Mail', { exact: true }).fill(emailB)
     await pageA.getByRole('button', { name: 'Freigeben' }).click()
     await expect(pageA.getByRole('dialog', { name: 'Liste verwalten' }).getByRole('status')).toContainText('Freigabe für')
 
@@ -173,7 +174,7 @@ test('E2E 5: der Abgleich läuft nicht in einer Schleife, wenn ein Kontakt bekan
     await register(pageA, emailA)
     await createList(pageA, 'Gemeinsame Liste')
     await listAction(pageA, 'Teilen')
-    await pageA.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(emailB)
+    await pageA.getByLabel('Benutzername oder E-Mail', { exact: true }).fill(emailB)
     await pageA.getByRole('button', { name: 'Freigeben' }).click()
     await expect(pageA.getByRole('dialog', { name: 'Liste verwalten' }).getByRole('status')).toContainText(`Freigabe für ${emailB} gespeichert.`)
 

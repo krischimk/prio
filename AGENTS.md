@@ -376,9 +376,10 @@ npm run android:emu:eval 'JSON.stringify(Object.keys(window.Capacitor.Plugins))'
   baut gegen das echte Projekt aus der privaten `.env` und ist für das da, was
   der Mock nicht beantworten kann: echte Anmeldung, echte Zugriffsregeln,
   Benachrichtigungen. Was dort entsteht, liegt dort wirklich.
-* **Welches Ziel läuft, steht in der App** – Kopfzeile (breit) bzw. Menü,
+* **Welches Ziel läuft, steht in der App** – unter „Konto → Technische Informationen“,
   als `Mock · 127.0.0.1:54321` oder als Host des Projekts. Ohne diese Anzeige
-  wäre nach einem Wechsel nicht erkennbar, wogegen man prüft; ein grüner Lauf
+  wäre nach einem Wechsel nicht erkennbar, wogegen man prüft. Der Nutzer wünscht
+  diese Angabe im Konto, damit sie den Arbeitsbereich nicht ständig belegt. Ein grüner Lauf
   gegen den Mock sagt nichts über die echten Zugriffsregeln.
 * **Ein sauberer Mock-Lauf beginnt mit `adb shell pm clear de.krischi.prio`.**
   Sonst stehen lokale Daten aus einem früheren Lauf gegen einen leeren Mock –

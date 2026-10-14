@@ -34,6 +34,10 @@ export function ListIconPicker({
     void repositories.setListIcon(list.id, icon).then(() => onPicked?.())
   }
 
+  return <ListIconChoice icon={list.icon} onPick={setzen} />
+}
+
+export function ListIconChoice({ icon, onPick }: { icon: string | null; onPick: (value: string | null) => void }) {
   return (
     <div className={`${cardSoft} space-y-3`}>
       <p className="text-meta text-ink-muted">
@@ -64,10 +68,10 @@ export function ListIconPicker({
                   key={eintrag.id}
                   type="button"
                   aria-label={eintrag.label}
-                  aria-pressed={list.icon === eintrag.id}
-                  onClick={() => setzen(eintrag.id)}
+                  aria-pressed={icon === eintrag.id}
+                  onClick={() => onPick(eintrag.id)}
                   className={`${focusRing} flex aspect-square items-center justify-center rounded-control border ${
-                    list.icon === eintrag.id
+                    icon === eintrag.id
                       ? 'border-brand bg-brand-tint/60 text-brand-faint'
                       : 'border-line-strong bg-surface text-ink-soft hover:bg-raised'
                   }`}
@@ -80,8 +84,8 @@ export function ListIconPicker({
         ))}
       </div>
 
-      {list.icon !== null ? (
-        <Button variant="secondary" onClick={() => setzen(null)}>
+      {icon !== null ? (
+        <Button variant="secondary" onClick={() => onPick(null)}>
           Symbol entfernen
         </Button>
       ) : null}

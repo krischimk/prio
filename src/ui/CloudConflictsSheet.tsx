@@ -35,7 +35,7 @@ function ConflictVersion({ conflict, row, viewerId }: { conflict: CloudConflict;
       <p>{task.deleted_at ? 'Gelöscht' : task.completed ? 'Erledigt' : 'Offen'}</p>
       {show('created_at') ? <p>{formatCreatedLabel(task.created_at)}</p> : null}
       {show('completed_at') && task.completed_at ? <p>{formatCompletedLabel(task.completed_at)}</p> : null}
-      {show('due_at') || task.due_at ? <p>{task.due_at ? formatDueLabel(task.due_at, task.completed).text : 'Keine Fälligkeit.'}</p> : null}
+      {show('due_at') || task.due_at ? <p>{task.due_at ? formatDueLabel(task.due_at, task.completed).absoluteText : 'Keine Fälligkeit.'}</p> : null}
       {show('recurrence') ? <p>Wiederholung: {describeRecurrence(task.recurrence) ?? 'Keine'}</p> : null}
       {show('reminders') ? <div>
         <p>Erinnerungen: {task.reminders.length === 0 ? 'Keine' : null}</p>
@@ -61,7 +61,7 @@ function ConflictVersion({ conflict, row, viewerId }: { conflict: CloudConflict;
       {show('icon') ? <p className="flex items-center gap-2"><ListIcon icon={list.icon} />{findListIcon(list.icon)?.label ?? 'Kein Symbol'}</p> : null}
       {show('is_shared') ? <p>{list.is_shared ? 'Geteilt' : 'Privat'}</p> : null}
       {show('sections') ? <p>Bereiche: {list.sections?.length ? list.sections.map(section => section.name).join(', ') : 'Keine'}</p> : null}
-      {show('keep_completed') ? <p>Erledigte Aufgaben: {list.keep_completed ? 'Dauerhaft unter Abgehakt' : 'Nach sieben Tagen endgültig löschen'}</p> : null}
+      {show('keep_completed') ? <p>Erledigte Aufgaben: {list.keep_completed ? 'Dauerhaft unter Erledigt' : 'Nach sieben Tagen endgültig löschen'}</p> : null}
     </>
   }
   if (conflict.table === 'preferences') {
@@ -72,7 +72,7 @@ function ConflictVersion({ conflict, row, viewerId }: { conflict: CloudConflict;
   if (conflict.table === 'userPreferences') {
     const preference = fromRemoteUserPreference(row as RemoteUserPreference)
     return <><p>Ansicht: {preference.overview_mode === 'by_list' ? 'Nach Listen gruppiert' : 'Neueste zuerst'}</p>
-      <p>Standardliste: {preference.default_list_id ? lists.find(list => list.id === preference.default_list_id)?.name ?? 'Nicht mehr verfügbar' : 'Jedes Mal auswählen'}</p></>
+      <p>Letzte Zielliste in der Gesamtansicht: {preference.default_list_id ? lists.find(list => list.id === preference.default_list_id)?.name ?? 'Nicht mehr verfügbar' : 'Noch nicht verwendet'}</p></>
   }
   const member = fromRemoteMember(row as RemoteListMember)
   return <>
@@ -86,7 +86,7 @@ const fields: Record<string, string> = {
   title: 'Titel', description: 'Beschreibung', name: 'Listenname', due_at: 'Fälligkeit', recurrence: 'Wiederholung', reminders: 'Erinnerungen',
   completed: 'Erledigt-Status', completed_at: 'Abschlusszeitpunkt', successor_id: 'Seriennachfolger', list_id: 'Liste', section_id: 'Bereich',
   position: 'Reihenfolge', sections: 'Bereiche', icon: 'Listensymbol', is_shared: 'Freigabe', deleted_at: 'Löschstatus', keep_completed: 'Aufbewahrung erledigter Aufgaben', reopen_context: 'Rückkehr und Seriennachfolger',
-  include_in_overview: 'Aufnahme in die Gesamtansicht', default_list_id: 'Standardliste', overview_mode: 'Bevorzugte Ansicht',
+  include_in_overview: 'Aufnahme in die Gesamtansicht', default_list_id: 'Letzte Gesamt-Zielliste', overview_mode: 'Bevorzugte Ansicht',
 }
 
 /** Öffnet sich nur auf Wunsch und nur für tatsächliche Cloud-Konflikte. */

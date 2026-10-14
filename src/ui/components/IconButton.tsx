@@ -39,7 +39,9 @@ export function IconButton({
   title,
   ...rest
 }: IconButtonProps) {
+  // Ark-Steuerungen reichen ihre eigene Trigger-ID durch. Der Tooltip braucht
+  // einen eigenen DOM-Anker, damit diese ID seinen Anker nicht überschreibt.
   return <Hint text={title ?? rest['aria-label']}>
-    <button {...rest} type={type} className={buttonClass(variant, 'icon', layout)} />
+    <span className={`inline-flex ${layout}`}><button {...rest} type={type} className={buttonClass(variant, 'icon')} /></span>
   </Hint>
 }

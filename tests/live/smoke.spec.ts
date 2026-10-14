@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { expect, test } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -60,6 +61,11 @@ test('die veröffentlichte Fassung startet, meldet sich an und gleicht ab', asyn
 
   // Die App zeigt die Aufgabenliste (nicht nur „lädt") – hier fiele ein
   // schwarzer Bildschirm auf.
+  await expect(page.getByTestId('app-bar-title').or(page.getByRole('heading', { name: 'Wähle deinen Benutzernamen', exact: true }))).toBeVisible()
+  if (await page.getByRole('form', { name: 'Benutzername wählen' }).isVisible()) {
+    await page.getByLabel('Benutzername', { exact: true }).fill('smoke_' + createHash('sha256').update(zugang!.email).digest('hex').slice(0, 18))
+    await page.getByRole('button', { name: 'Benutzernamen speichern', exact: true }).click()
+  }
   await expect(page.getByTestId('app-bar-title')).toBeVisible()
 
   const listenname = `Rauchprüfung ${new Date().toISOString().slice(0, 16)}`

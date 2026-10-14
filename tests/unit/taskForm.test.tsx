@@ -1,11 +1,10 @@
 import { act, renderHook } from '@testing-library/react'
-import { useContext, type FormEvent, type ReactNode } from 'react'
+import { type FormEvent, type ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Repositories } from '../../src/db/repositories'
 import type { LocalTask } from '../../src/domain/types'
 import { TaskDraftProvider } from '../../src/ui/TaskDraftProvider'
 import { useTaskForm } from '../../src/ui/useTaskForm'
-import { TaskDraftContext } from '../../src/ui/taskDraftContext'
 import { createFakeServer } from '../support/fakeGateway'
 import { createDevice, type DeviceHarness } from '../support/harness'
 
@@ -52,30 +51,28 @@ describe('Aufgabenentwürfe und Speichern', () => {
     expect(result.current.werte.title).toBe('Bericht')
   })
 
-  it('ordnet eine freie Eingabe zu und erhält dabei den vorhandenen Listenentwurf', async () => {
+  it('trennt Gesamt- und Listenentwurf und erhält die Eingabe bei jedem Zielwechsel', async () => {
     const onSaved = vi.fn()
-    const { result, rerender } = renderHook(({ target }: { target: string }) => ({
-      form: useTaskForm({ task: null, listId: target, onSaved }),
-      drafts: useContext(TaskDraftContext)!,
-    }), { wrapper, initialProps: { target: listId } })
-    act(() => result.current.form.setzen('title', 'Listenentwurf'))
-    act(() => result.current.form.setzen('description', 'Seine eigene Notiz'))
-    rerender({ target: '' })
-    act(() => result.current.form.setzen('title', 'Freie Eingabe'))
-    act(() => result.current.drafts.assignUnassignedDraft(listId))
-    rerender({ target: listId })
-    expect(result.current.form.werte.title).toBe('Freie Eingabe')
-    expect(result.current.form.werte.description).toBe('')
-    const original = Object.entries(result.current.drafts.drafts).find(([, draft]) => draft.werte.title === 'Listenentwurf')!
-    expect(original[1].listId).toBe(listId)
-    expect(result.current.drafts.drafts['new:']).toBeUndefined()
-    act(() => result.current.drafts.activateNewDraft(listId, original[0]))
-    expect(result.current.form.werte.description).toBe('Seine eigene Notiz')
-    await act(async () => { await result.current.form.speichern(event) })
-    expect(result.current.form.werte.title).toBe('Freie Eingabe')
-    await act(async () => { await result.current.form.speichern(event) })
-    expect((await repositories.listTasks(listId)).map(task => task.title).sort()).toEqual(['Freie Eingabe', 'Listenentwurf'])
-    expect(onSaved).toHaveBeenCalledTimes(2)
+    const other = await repositories.createList('Arbeit', 'form')
+    const { result, rerender } = renderHook(({ target, overview }: { target: string; overview: boolean }) =>
+      useTaskForm({ task: null, listId: target, onSaved, overviewUserId: overview ? 'form' : undefined }),
+      { wrapper, initialProps: { target: listId, overview: false } })
+    act(() => result.current.setzen('title', 'Listenentwurf'))
+    act(() => result.current.setzen('description', 'Seine eigene Notiz'))
+    rerender({ target: '', overview: true })
+    act(() => result.current.setzen('title', 'Gesamtentwurf'))
+    for (const target of [listId, other.id, listId]) {
+      rerender({ target, overview: true })
+      expect(result.current.werte.title).toBe('Gesamtentwurf')
+    }
+    await act(async () => { await result.current.speichern(event) })
+    expect((await repositories.getUserPreferences('form'))?.default_list_id).toBe(listId)
+    expect((await repositories.listTasks(listId)).map(task => task.title)).toEqual(['Gesamtentwurf'])
+    rerender({ target: listId, overview: false })
+    expect(result.current.werte.title).toBe('Listenentwurf')
+    expect(result.current.werte.description).toBe('Seine eigene Notiz')
+    await act(async () => { await result.current.speichern(event) })
+    expect((await repositories.listTasks(listId)).map(task => task.title).sort()).toEqual(['Gesamtentwurf', 'Listenentwurf'])
   })
 
   it('hält gleichnamige Aufgabenentwürfe getrennt und verwirft ausdrücklich', async () => {

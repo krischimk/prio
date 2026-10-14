@@ -8,13 +8,6 @@ import { normalisiereListenauswahl, normalisiereStartansicht } from '../../domai
 import { requireText, ValidationError } from '../validation'
 
 /**
- * Wie lange eine abgehakte Aufgabe unter „Aufgaben wiederherstellen“ auftaucht.
- *
- * Bewusste Entscheidung: Die Aufgabe verschwindet nach dem Abhaken sofort aus
- * der Liste, bleibt aber eine Woche lang auffindbar. Danach ist sie nur noch
- * über die Synchronisation erreichbar (sie ist nicht gelöscht, nur verborgen).
- */
-/**
  * Die selbst gemerkten Vorlaufzeiten für die Schnellauswahl.
  *
  * Bewusst nur lokal: Es ist eine Eingabehilfe, keine Angabe über eine Aufgabe.

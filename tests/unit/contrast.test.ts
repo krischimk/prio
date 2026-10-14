@@ -44,7 +44,7 @@ export function kontrast(a: string, b: string): number {
 const FARBEN = rollen()
 
 /** Alle Textrollen, die auf einer Fläche stehen können. */
-const TEXTROLLEN = ['ink-strong', 'ink', 'ink-soft', 'ink-muted', 'ink-faint']
+const TEXTROLLEN = ['ink-strong', 'ink', 'ink-soft', 'ink-muted', 'ink-faint', 'ink-completed']
 const FLAECHEN = ['page', 'surface', 'raised']
 
 /** Bedienelemente und Rahmen: 3:1 gegen die Fläche, auf der sie liegen. */
@@ -139,7 +139,7 @@ describe('Kontrast', () => {
     // unterscheiden, sind keine zwei Stufen. `ink-strong` und `ink` sind die
     // bewusste Ausnahme: beide sind „weiß", der Unterschied ist die Härte, und
     // beide tragen Text.
-    const rampe = ['ink-strong', 'ink', 'ink-soft', 'ink-muted', 'ink-faint']
+    const rampe = ['ink-strong', 'ink', 'ink-soft', 'ink-muted', 'ink-faint', 'ink-completed']
     const stufen = rampe.map((rolle) => helligkeit(FARBEN[rolle]))
     for (let i = 1; i < stufen.length; i += 1) {
       expect(stufen[i], `${rampe[i]} muss dunkler sein als ${rampe[i - 1]}`).toBeLessThan(stufen[i - 1])

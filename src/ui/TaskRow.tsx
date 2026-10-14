@@ -20,7 +20,7 @@ export function TaskRow({ task, currentUserId, onOpen, origin, overview = false,
   const content = <div role="button" tabIndex={0} ref={activatorRef}
         aria-label={task.completed ? `Aufgabe bearbeiten: ${task.title}` : desktop ? 'Bearbeiten' : undefined}
         data-testid="task-row" data-focus-key={`task:${task.id}`}
-        className={`${focusRing} min-h-11 w-full min-w-0 rounded-control px-2 py-2 text-left transition-colors hover:bg-surface active:bg-raised`}
+        className={`${focusRing} col-span-3 col-start-1 row-start-1 min-h-14 w-full min-w-0 rounded-control pl-14 ${desktop ? 'pr-14' : 'pr-3'} pt-4 pb-3 text-left`}
         onClick={event => { if (!event.defaultPrevented && !dragging && !(event.target as HTMLElement).closest('button')) onOpen(task) }}
         onKeyDown={event => {
           if (event.target !== event.currentTarget || event.defaultPrevented || dragging) return
@@ -33,11 +33,9 @@ export function TaskRow({ task, currentUserId, onOpen, origin, overview = false,
   return <li ref={elementRef} data-task-row="true" data-id={task.id}
     data-completed={task.completed ? 'true' : undefined} data-dragging={dragging ? 'true' : undefined}
     data-testid={overview ? 'overview-task' : undefined}
-    className={`group/row flex min-w-0 items-start gap-2 border-b border-line-soft ${appBackground} py-2 last:border-b-0 ${dragging ? 'rounded-control ring-1 ring-brand-soft shadow-lg shadow-page/50' : ''}`}>
-    <TaskCheckbox task={task} />
-    <div className="min-w-0 flex-1">
-      {task.completed_at ? <Hint text={formatCompletedLabel(task.completed_at)}>{content}</Hint> : content}
-    </div>
-    {desktop ? <TaskDeleteButton task={task} disabled={dragging} /> : null}
+    className={`group/row grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] rounded-control border-b border-line-soft ${appBackground} transition-colors hover:bg-surface active:bg-raised last:border-b-0 ${dragging ? 'ring-1 ring-brand-soft shadow-lg shadow-page/50' : ''}`}>
+    {task.completed_at ? <Hint text={formatCompletedLabel(task.completed_at)}>{content}</Hint> : content}
+    <div className="pointer-events-none col-start-1 row-start-1 flex items-center"><TaskCheckbox task={task} /></div>
+    {desktop ? <div className="pointer-events-none col-start-3 row-start-1 flex items-center"><TaskDeleteButton task={task} disabled={dragging} /></div> : null}
   </li>
 }

@@ -5,6 +5,7 @@
  * der lokalen Zeitzone – das erledigt `Date` zuverlässig und ohne zusätzliche
  * Bibliothek.
  */
+import { relativeTimeSpan } from './relativeTime'
 
 /** ISO-Zeitstempel → Wert für `<input type="datetime-local">`. */
 export function toDateTimeLocalValue(iso: string | null): string {
@@ -78,8 +79,10 @@ export function isOverdue(iso: string): boolean {
 }
 
 export interface DueLabel {
-  /** Fertiger Text, z. B. „Fällig: 15.02.2027, 18:30 · überfällig". */
+  /** Relative Anzeige, z. B. „In 3 Stunden und 20 Minuten“. */
   text: string
+  /** Exakter Termin für Hinweise und Entscheidungen zwischen Datenfassungen. */
+  absoluteText: string
   /** `true`, wenn hervorgehoben werden soll. */
   overdue: boolean
 }
@@ -106,13 +109,16 @@ export function formatCreatedLabel(createdAt: string): string {
   return `Erstellt: ${formatDateTime(createdAt)}`
 }
 
-export function formatDueLabel(dueAt: string, completed: boolean): DueLabel {
+export function formatDueLabel(dueAt: string, completed: boolean, now = Date.now()): DueLabel {
   const zeitpunkt = formatDateTime(dueAt)
-  const overdue = !completed && isOverdue(dueAt)
-  return {
-    text: overdue ? `Fällig: ${zeitpunkt} · überfällig` : `Fällig: ${zeitpunkt}`,
-    overdue,
-  }
+  const due = new Date(dueAt)
+  const absoluteText = `Fällig: ${zeitpunkt}`
+  if (!zeitpunkt) return { text: 'Fälligkeit unklar', absoluteText: 'Fälligkeit unklar', overdue: false }
+  const past = due.getTime() < now
+  const overdue = !completed && past
+  const span = relativeTimeSpan(past ? due : new Date(now), past ? new Date(now) : due)
+  const text = due.getTime() === now ? 'Jetzt fällig' : overdue ? `Seit ${span} überfällig` : `${past ? 'Vor' : 'In'} ${span}`
+  return { text, absoluteText, overdue }
 }
 
 /**

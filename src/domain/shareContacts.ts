@@ -1,4 +1,5 @@
 import type { ShareContact } from './types'
+import { normalizeUsername, validUsername } from './username'
 
 /**
  * Adressen, mit denen schon einmal eine Liste geteilt wurde.
@@ -46,9 +47,13 @@ export function parseShareContacts(raw: string | null): ShareContact[] {
           typeof (eintrag as ShareContact).user_id === 'string' &&
           typeof (eintrag as ShareContact).last_used_at === 'string',
       )
-      .map((eintrag) => ({ ...eintrag, email: normalizeShareEmail(eintrag.email) }))
+      .map((eintrag) => {
+        const username = typeof eintrag.username === 'string' ? normalizeUsername(eintrag.username) : null
+        return { email: normalizeShareEmail(eintrag.email), user_id: eintrag.user_id, last_used_at: eintrag.last_used_at,
+          ...(eintrag.username !== undefined ? { username: username && validUsername(username) ? username : null } : {}) }
+      })
       .filter((eintrag) => eintrag.email.length > 0)
-      .slice(0, SHARE_CONTACTS_MAX)
+
   } catch {
     return []
   }
@@ -70,10 +75,10 @@ export function withShareContact(
   if (adresse.length === 0 || userId.length === 0) return contacts
 
   const ohne = contacts.filter((eintrag) => eintrag.email !== adresse)
-  return [{ email: adresse, user_id: userId, last_used_at: at }, ...ohne].slice(
-    0,
-    SHARE_CONTACTS_MAX,
-  )
+  const username = contacts.find(contact => contact.user_id === userId)?.username
+  const next = [{ email: adresse, user_id: userId, last_used_at: at, ...(username !== undefined ? { username } : {}) }, ...ohne]
+  // Namen aktueller Mitwirkender dienen auch der Anzeige, nicht nur Vorschlägen.
+  return next.filter((contact, index) => index < SHARE_CONTACTS_MAX || contact.username !== undefined)
 }
 
 /**
@@ -102,22 +107,26 @@ export function suggestShareContacts(
  */
 export function withCoMemberContacts(
   contacts: ShareContact[],
-  additions: ReadonlyArray<{ userId: string; email: string }>,
+  additions: ReadonlyArray<{ userId: string; email: string; username?: string | null }>,
   at: string,
 ): ShareContact[] {
-  const bekannt = new Set(contacts.map((eintrag) => eintrag.email))
-  const neu: ShareContact[] = []
-
-  for (const eintrag of additions) {
-    const adresse = normalizeShareEmail(eintrag.email)
-    if (adresse.length === 0 || eintrag.userId.length === 0) continue
-    if (bekannt.has(adresse)) continue
-    if (neu.some((vorhanden) => vorhanden.email === adresse)) continue
-    bekannt.add(adresse)
-    neu.push({ email: adresse, user_id: eintrag.userId, last_used_at: at })
-  }
-
-  if (neu.length === 0) return contacts
-  neu.sort((a, b) => a.email.localeCompare(b.email))
-  return [...neu, ...contacts].slice(0, SHARE_CONTACTS_MAX)
+  const byUser = new Map(additions.map(contact => [contact.userId, contact]))
+  const existing = contacts.map(contact => {
+    const current = byUser.get(contact.user_id)
+    return current && current.username !== undefined ? { ...contact, username: current.username } : contact
+  })
+  const known = new Set(existing.map(contact => contact.user_id))
+  const emails = new Set(existing.map(contact => contact.email))
+  const added = additions.filter(contact => {
+    const email = normalizeShareEmail(contact.email)
+    if (!contact.userId || !email || known.has(contact.userId) || emails.has(email)) return false
+    known.add(contact.userId); emails.add(email)
+    return true
+  })
+    .map(contact => ({ email: normalizeShareEmail(contact.email), user_id: contact.userId, last_used_at: at,
+      ...(contact.username !== undefined ? { username: contact.username } : {}) }))
+    .sort((a, b) => a.email.localeCompare(b.email))
+  // Aktuelle Mitwirkende bleiben vollständig lesbar; die Vorschlagsliste selbst
+  // begrenzt weiterhin, wie viele Einträge auf einmal angeboten werden.
+  return added.length === 0 && existing.every((contact, index) => contact.username === contacts[index].username) ? contacts : [...added, ...existing]
 }

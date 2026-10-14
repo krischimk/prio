@@ -531,7 +531,7 @@ test('schaltet eine Erinnerung auf dem Telefon nur für sich stumm', async ({ pa
   // Teilen über die Listenverwaltung – dort ist es ein eigener Schritt.
   await page.getByRole('button', { name: /Liste .* verwalten/ }).click()
   await listAction(page, 'Teilen')
-  await page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(emailB)
+  await page.getByLabel('Benutzername oder E-Mail', { exact: true }).fill(emailB)
   await page.getByRole('button', { name: 'Freigeben' }).click()
   // Die Freigabemeldung gehört zur Listenverwaltung, unabhängig von anderen
   // Statusregionen (etwa den Ziehhinweisen für Vorleseprogramme).

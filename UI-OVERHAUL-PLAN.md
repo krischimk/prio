@@ -6,6 +6,8 @@ Die Bestandsprüfung und der Stufenplan beziehen sich auf den oben genannten Aus
 
 In den Rückfragen bestätigt: **MCP zunächst nur für den Cloud-Bestand**, **persönliche synchronisierte Listenauswahl für die Gesamtansicht**, **Rückkehr in die ursprüngliche Nachbarschaft mit festgelegtem Rückfall** und **ungespeicherte Eingaben je Liste/Aufgabe behalten**. Die Entwurfsregel wurde nach Erläuterung des Beispiels ausdrücklich bestätigt: Eine ungespeicherte Eingabe in „Einkaufen“ bleibt dort beim Wechsel zu „Arbeit“ erhalten und erscheint beim Zurückwechseln wieder. Sie wird dadurch noch nicht gespeichert.
 
+**Aktueller Nachtrag vom 14. Oktober 2026:** §20 ersetzt die früheren Entscheidungen zu manueller Standard-Zielliste, Entwurfsauswahl und der Beschriftung „Abgehakt“. Die unten dokumentierte Sieben-Tage-Regel bleibt bei ausgeschalteter dauerhafter Aufbewahrung bestehen.
+
 **Nachträglich ausdrücklich geklärt:** „Abgehakt am Listenende“ ohne Sieben-Tage-Grenze ist eine aktivierbare Listeneinstellung, **kein neuer Default**; sie ist zunächst aus. Bei ausgeschalteter Einstellung sollen erledigte Aufgaben künftig nach sieben Tagen automatisch und ohne weitere Wiederherstellungsfrist verschwinden. Bereits erledigte Aufgaben erhalten bei Einführung dieser Regel und beim Abschalten von „Abgehakt“ sieben Tage ab der Umstellung. „Abgehakt“, Prioritätsnutzung und Namensregel bestimmt der Besitzer gemeinsam für die Liste. Bestehende und neue Listen kommen erst nach ausdrücklichem Aktivieren in die persönliche, synchronisierte Gesamtansicht. Das heutige Verhalten löscht nach sieben Tagen noch nichts; automatische Löschung ist eine neue Funktion.
 
 ## Empfehlung
@@ -1207,3 +1209,107 @@ Die Sammlung liegt auf `feature/shared-task-lists` und ist lokal zum Testen
 bereitgestellt. Sie ist noch nicht veröffentlicht; eine native APK-Prüfung und
 ein Release gehören zur späteren Auslieferung. Die neuen Erinnerungsregeln
 verwenden die bereits vorhandenen JSON-Formen und benötigen keine Schemaänderung.
+
+
+## 20. Rückmeldungen vom 14. Oktober 2026
+
+Dieser Abschnitt enthält den aktuellen Stand. Frühere Abschnitte dokumentieren
+auch zwischenzeitliche Entscheidungen; die folgenden Regeln haben Vorrang.
+
+### Bestätigte Produktregeln
+
+- Der Titel „Gesamtansicht“ öffnet ausschließlich die Auswahl enthaltener
+  Listen. Der Pfeil erscheint am Computer bei Hover/Fokus, am Telefon dauerhaft.
+  Die gewählte Sortierung bleibt gespeichert; ihr Symbol steht in der Zählerzeile.
+  Die mobile App-Leiste ist der einzige Titel dieser Ansicht.
+- Die zuletzt **bei einer erfolgreichen Erstellung in der Gesamtansicht**
+  verwendete Zielliste wird persönlich synchronisiert und danach vorausgewählt.
+  Anlegen in einer einzelnen Liste verändert sie nicht. Ein fehlendes oder nicht
+  mehr zugängliches Ziel wird beim Hinzufügen ausgewählt. Die manuelle
+  Standardlisten-Einstellung entfällt. Alle zugänglichen Ziele bleiben erlaubt;
+  ausgeschlossene Ziele bekommen weiterhin einen sichtbaren Hinweis.
+- Der Gesamtentwurf bleibt von jedem Listenentwurf getrennt. Zielwechsel behalten
+  seine Eingaben. Es gibt keine Auswahl zwischen kollidierenden Entwürfen.
+  Anlegen und Bearbeiten verwenden dieselben Aufgabenfelder und „Mehr Optionen“.
+- Der bisherige Bereich und Schalter heißen „Erledigt“. Der Schalter bleibt
+  zunächst aus. An: dauerhaft aufbewahren, auch nach sieben Tagen. Aus:
+  sieben Tage mit anschließender endgültiger Entfernung wie bisher bestätigt.
+  Die Erklärung dieser Frist steht nicht ständig unter dem Schalter. Kopf und
+  Anzahl sind dunkler; der Abhakzeitpunkt bleibt im Hinweis und in „Mehr Optionen“.
+- Eine neue Liste bietet nach Fokus oder Eingabe rechts die Symbolauswahl und
+  darunter die Schalter „In Gesamtansicht aufnehmen“ und „Erledigt am Listenende“.
+  Beide sind zunächst aus. Der Entwurf überlebt Menü- und Breitenwechsel;
+  Liste, Symbol, gemeinsame Regel und persönliche Aufnahme entstehen zusammen.
+  Bereiche und Teilen sind erst nach dem Anlegen in der Listenverwaltung.
+- Die ganze äußere Aufgabenzeile leuchtet auf und umfasst die freie Klick-/Ziehfläche; Checkbox und Aktionsknöpfe behalten eigene Trefferflächen. Ohne Zusatzangaben steht der Titel auf Höhe der Checkbox; bei Zusatzangaben werden Checkbox und Löschen über die ganze Zeilenhöhe zentriert.
+- Abmelden ist in beiden Ansichten ausschließlich über „Konto“ erreichbar. Das Konto-Symbol steht im breiten Kopf ganz rechts.
+- Konto-E-Mail und Server stehen unter „Konto“ beziehungsweise „Technische
+  Informationen“. Die E-Mail bleibt Anmeldekennung, der Host erklärt das Sync-Ziel.
+  Das tatsächliche App-Symbol ist größer. Der Sync-Knopf ist ein einzelner
+  farbiger Punkt ohne kreisende Pfeile oder aufgesetzte Plakette.
+- Benutzername ist bei Registrierung und für Bestandskonten verpflichtend.
+  Bestehende Daten bleiben erhalten. Namen sind eindeutig, normalisiert und
+  3–30 Zeichen lang; Teilen verwendet Benutzername oder weiterhin E-Mail.
+  Mitglieder zeigen lesbare Namen. Die Cloud liefert Kontakte ausschließlich
+  aus gemeinsamen Listen. Ein bekannter alter Name darf bei Neuvergabe nicht
+  unbemerkt ein anderes Konto freigeben.
+- Fälligkeit steht relativ in der Aufgabenzeile: Minuten allein, Stunden mit Minuten, Tage ohne Stunden; Wochen mit Tagen, Monate mit Wochen, Jahre mit Monaten. Ganze Einheiten werden angezeigt, Nullanteile entfallen. Monatsenden werden begrenzt; die UTC-Kalenderrechnung bleibt unabhängig von der Gerätezeitzone. Der genaue lokale Termin steht im Hover-Hinweis und im Editor. Vergangenes heißt „Seit … überfällig“, bei erledigten Aufgaben „Vor …“ ohne Überfällig-Markierung. Die vorhandene 30-Sekunden-Laufzeit aktualisiert die Anzeige auch ohne Datenänderung.
+- „Erinnerung“ bezeichnet die Funktion durchgängig. Auf dem Telefon haben
+  Erinnerungsstatus, Wiederherstellen und Konto getrennte, mit Symbolen
+  erkennbare Bereiche.
+
+### Gemessene Ursachen und Grenzen
+
+Das erste Abhaken bei fokussierter leerer Erfassung scheiterte in beiden
+Ansichten: Blur klappte die Erfassung vor dem eigentlichen Klick ein und
+verschob damit dessen Ziel. Einklappen erfolgt jetzt nach der Zeilenaktion;
+mit Eingaben bleibt die Erfassung offen. Vier Browserfälle decken Liste/Gesamt
+und leere/befüllte Erfassung ab. Derselbe Fokusmechanismus wird für neue Listen
+verwendet; ein Klick, der ein Formular erst öffnet, schließt es nicht sofort.
+
+Der Sortierhinweis lag über tausend Pixel von seinem Auslöser entfernt.
+Ein Popover überschreibt die Trigger-ID des Tooltips; der Tooltip hat jetzt
+seinen eigenen Anker um den tatsächlichen Knopf. Die Prüfung misst den
+Abstand zum Auslöser. Der unnötige Abstand über „Erledigt“ entstand auch durch
+leere Ziehplatzhalter; deren zusätzliche Fläche existiert jetzt nur während
+einer Ziehung. Ziele ohne Bereich bleiben dabei erreichbar.
+
+Der freie Rand der äußeren Aufgabenzeile öffnete zunächst weder auf dem Telefon noch am Computer den Editor. Die Fläche reicht jetzt über die gesamte Zeile; die Aktionsknöpfe liegen als eigene Bedienelemente darüber. Browserfälle bedienen den freien Rand und beginnen dort eine Ziehung. Titel und Checkbox werden in den gerenderten Ansichten gemeinsam beurteilt.
+
+Diese Sammlung ergänzt ausschließlich die vorhandenen Fachabläufe. Sie führt
+keine Prioritätsformel, Matrix, Checklisten, Eltern-Kind-Aufgaben oder MCP ein.
+Die weitere Roadmap dafür bleibt bestehen. Neue Listen verwenden vorhandene
+Felder; Benutzernamen benötigen die Sammelmigration einschließlich 0019 vor der
+Auslieferung. Auth-Metadaten und Profil werden atomar geschrieben; Offline-
+Arbeitsdaten bleiben unabhängig davon lokal. Eine alte Sitzung mit inzwischen
+anderswo gewähltem Namen wird bei Verbindung aktualisiert und gespeichert.
+
+### Abschlusskriterien dieser Sammlung
+
+- Typecheck, Lint, Unit-/Integrationstests und Produktionsbuild sind grün.
+- Alle Browserkernabläufe einschließlich Altbestand, PWA-Offline-Start, Ziehen,
+  getrennten Entwürfen, Anlegen mit Einstellungen und Namenspflicht bestehen.
+- Telefon-Hoch-/Querformat und breite Ansicht werden gerendert und angesehen.
+- Die vollständige Cloudmigration ist eingespielt; Format, Unique-Regel,
+  Besitzprüfung, erwarteter Empfänger und wiederholbare Migration sind geprüft.
+- Das tatsächliche APK durchläuft vor dem Tag die native Android-Prüfung.
+- Ein gemeinsames Release enthält diese Sammlung sowie den noch nicht
+  veröffentlichten gemeinsamen Listen-/Ziehaufbau und kompakten Aufgabeneditor.
+
+
+### Lokale Abnahme vom 14. Oktober 2026
+
+Die Sammlung für 0.25.0 besteht mit 580 Unit-/Integrationstests, Typecheck,
+Lint, Skriptprüfung und Produktionsbuild. Alle 174 Browserfälle sind grün,
+einschließlich PWA-Offline-Start, Altbestand, Ziehen, getrennten Entwürfen,
+Benutzernamen und relativen Fälligkeiten. Die gerenderten Aufgabenflächen,
+Termine, Erfassung, Gesamtansicht und Menü wurden in breiter Ansicht und in
+Telefon-Hoch-/Querformat angesehen. Eine zusätzliche schnelle Listenanlage
+bestand zwanzig isolierte Durchläufe.
+
+Die Sammelmigration einschließlich 0019 ist eingespielt; die Cloudprüfung
+bestätigt Spalten, geschützte Schreibrechte und aktiven Ablaufjob. Eine lokale
+PostgreSQL-Prüfung bestätigt außerdem Format, Eindeutigkeit, Rechte, bekannte
+Empfänger und wiederholbare Migrationen. Die vollständige Cron-Prüfung und die
+native APK-Abnahme laufen vor dem Tag in der CI; dieser Absatz behauptet deren
+Ergebnis noch nicht.

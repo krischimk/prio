@@ -69,7 +69,7 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
   return {
 
     async createTask(input) {
-      return ctx.db.transaction('rw', ctx.db.lists, ctx.db.tasks, async () => {
+      return ctx.db.transaction('rw', ctx.db.lists, ctx.db.tasks, ctx.db.user_preferences, async () => {
         await ctx.requireList(input.listId)
         const now = ctx.clock.now()
         // Neue Aufgaben landen oben: Position = kleinste vorhandene − 1.
@@ -121,6 +121,15 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
           dirty: 1,
         }
         await ctx.db.tasks.add(task)
+        if (input.rememberOverviewTargetFor) {
+          const userId = requireText(input.rememberOverviewTargetFor, 'Die Benutzerkennung')
+          const preference = await ctx.db.user_preferences.get(userId)
+          if (preference?.default_list_id !== input.listId || preference.deleted_at !== null) {
+            await ctx.db.user_preferences.put({ id: userId, default_list_id: input.listId,
+              overview_mode: preference?.overview_mode ?? 'by_list', created_at: preference?.created_at ?? now,
+              deleted_at: null, ...ctx.stamp() })
+          }
+        }
         return task
       })
     },

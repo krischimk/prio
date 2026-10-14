@@ -7,7 +7,8 @@ import { useView } from './useView'
 import { Button } from './components/Button'
 import { errorBox, emptyState, input, numeric } from './styles'
 import { formatOpenTasks } from './taskCount'
-import { SettingsIcon, SortIcon } from './icons'
+import { SortIcon } from './icons'
+import { OverviewTitle } from './OverviewTitle'
 import { TaskList } from './TaskList'
 import { TaskComposer } from './TaskComposer'
 import { IconButton } from './components/IconButton'
@@ -17,7 +18,7 @@ import { layer } from './styles'
 
 export function OverviewPanel({ currentUserId }: { currentUserId: string }) {
   const desktop = useIsDesktop()
-  const { overview, setOverviewSettingsOpen } = useView()
+  const { overview } = useView()
   const { repositories } = useWorkspace()
   const included = new Set(overview.preferences.filter(row => row.include_in_overview).map(row => row.list_id))
   const lists = overview.lists.filter(list => included.has(list.id))
@@ -35,18 +36,12 @@ export function OverviewPanel({ currentUserId }: { currentUserId: string }) {
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Die Änderung konnte nicht gespeichert werden.') }
     finally { writing.current = false; setBusy(false) }
   }
-  return <section aria-label="Gesamtansicht" className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col gap-5 p-rand">
-    <header className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div><h1 className="text-heading font-semibold tracking-tight text-ink-strong">Gesamtansicht</h1>
-          <p className={`mt-1 text-meta text-ink-muted ${numeric}`}>{formatOpenTasks(query.tasks.length)} · {lists.length} {lists.length === 1 ? 'Liste' : 'Listen'}</p>
-        </div>
-        <IconButton data-focus-key="settings:overview" aria-label="Gesamtansicht einstellen" title="Listen für die Gesamtansicht und deine Standardliste auswählen" onClick={() => setOverviewSettingsOpen(true)}><SettingsIcon /></IconButton>
-      </div>
-      {error ? <p role="alert" className={errorBox}>{error}</p> : null}
-    </header>
-    {desktop && overview.status === 'ready' && overview.lists.length > 0 ? <TaskComposer /> : null}
-    {overview.status === 'ready' ? <div className="flex justify-end">
+  return <section aria-label="Gesamtansicht" className={`mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col gap-3 ${desktop ? 'p-rand' : 'px-rand py-3'}`}>
+    <header>
+      {desktop ? <h1 aria-label="Gesamtansicht" className="text-heading font-semibold tracking-tight"><OverviewTitle /></h1> : null}
+      <div className="flex items-center justify-between gap-2">
+        <p className={`text-meta text-ink-muted ${numeric}`}>{formatOpenTasks(query.tasks.length)} · {lists.length} {lists.length === 1 ? 'Liste' : 'Listen'}</p>
+    {overview.status === 'ready' ? <div>
       <Popover.Root open={sortOpen} onOpenChange={details => setSortOpen(details.open)} onEscapeKeyDown={event => { event.preventDefault(); setSortOpen(false) }} positioning={{ strategy: 'fixed', placement: 'bottom-end' }} lazyMount unmountOnExit>
         <Popover.Trigger asChild><IconButton aria-label="Sortierung ändern" title={`Ansicht: ${mode === 'by_list' ? 'Nach Listen gruppiert' : 'Neueste zuerst'}. Sortierung ändern.`}><SortIcon /></IconButton></Popover.Trigger>
         <Popover.Positioner className={layer.raised}><Popover.Content className="w-72 max-w-[calc(100vw-2rem)] rounded-card border border-line-strong bg-raised p-3 shadow-lg shadow-page/50">
@@ -58,6 +53,10 @@ export function OverviewPanel({ currentUserId }: { currentUserId: string }) {
         </Popover.Content></Popover.Positioner>
       </Popover.Root>
     </div> : null}
+      </div>
+      {error ? <p role="alert" className={errorBox}>{error}</p> : null}
+    </header>
+    {desktop && overview.status === 'ready' && overview.lists.length > 0 ? <TaskComposer /> : null}
     {overview.status === 'loading' || query.status === 'loading' ? <p role="status" className="py-6 text-body text-ink-muted">Gesamtansicht wird geladen …</p>
       : overview.status === 'error' || query.status === 'error' ? <div className="space-y-3 py-6">
         <p role="alert" className={errorBox}>Die Gesamtansicht konnte nicht geladen werden.</p>
@@ -67,8 +66,7 @@ export function OverviewPanel({ currentUserId }: { currentUserId: string }) {
         {desktop ? 'Lege links eine Liste an, um Aufgaben zu erfassen.' : 'Öffne oben links das Menü und lege eine Liste an.'}
       </p>
       : lists.length === 0 ? <div className={`${emptyState} space-y-4`}>
-        <p>Noch keine Listen ausgewählt. Aktiviere die Listen, deren Aufgaben hier erscheinen sollen.</p>
-        <Button variant="secondary" onClick={() => setOverviewSettingsOpen(true)}>Listen auswählen</Button>
+        <p>Noch keine Listen ausgewählt. Öffne die Auswahl über den Titel „Gesamtansicht“.</p>
       </div>
       : <TaskList key={mode} lists={lists} tasks={query.tasks} currentUserId={currentUserId} overview mode={mode} />}
   </section>

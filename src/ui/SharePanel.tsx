@@ -6,24 +6,17 @@ import type { LocalList } from '../domain/types'
 import { cardSoft, errorMessage, input, successMessage } from './styles'
 import { LEER_MITGLIEDER } from './emptyTexts'
 import { Button } from './components/Button'
+import { UserIcon } from './icons'
+import { normalizeUsername } from '../domain/username'
 
 /**
- * Teilen einer Liste über die E-Mail-Adresse eines registrierten Nutzers.
- *
- * Bewusste Einschränkung für Version 0.1: Teilen erfordert eine Verbindung,
- * weil nur der Server die Zuordnung E-Mail → Benutzer-ID kennt. Und: Mitglieder
- * werden lokal nur über ihre Benutzer-ID geführt – E-Mail-Adressen anderer
- * Nutzer werden nicht synchronisiert (Datensparsamkeit). Angezeigt wird
- * deshalb eine Kurzform der ID.
- *
- * Was der Benutzer selbst einträgt, wird dagegen gemerkt: Adressen, mit denen
- * schon einmal geteilt wurde, stehen beim nächsten Mal als Vorschlag bereit.
- * Ohne das müsste man dieselbe Adresse für jede weitere Liste erneut tippen.
- * Die Vorschläge liegen nur auf diesem Gerät (siehe `domain/shareContacts.ts`)
- * und werden über die Benutzer-ID gegen die Mitglieder der Liste geprüft.
+ * Teilen mit Benutzername oder E-Mail, über die serverseitige Rechteprüfung.
+ * Namen und Adressen werden nur für den Kreis gemeinsamer Listen geliefert.
+ * Bekannte Empfänger bleiben beim Wiederverwenden eines Namens an ihre ID
+ * gebunden, damit eine spätere Namensvergabe niemand anderem Zugriff gibt.
  */
 export function SharePanel({ list, currentUserId }: { list: LocalList; currentUserId: string }) {
-  const { shareListByEmail, repositories } = useWorkspace()
+  const { shareList, repositories } = useWorkspace()
   const members = useMembers(list.id)
   const contacts = useShareContacts()
   const [email, setEmail] = useState('')
@@ -44,9 +37,12 @@ export function SharePanel({ list, currentUserId }: { list: LocalList; currentUs
     setError(null)
     setNotice(null)
     try {
-      const { userId } = await shareListByEmail(list.id, email)
+      const expected = contacts.find(contact => contact.username && contact.username === normalizeUsername(email))?.user_id
+      const { userId } = await shareList(list.id, email, expected)
       // Merken, damit dieselbe Adresse beim nächsten Teilen vorgeschlagen wird.
-      await repositories.rememberShareContact(email, userId)
+      const contact = (await repositories.listShareContacts()).find(row => row.user_id === userId)
+      if (contact) await repositories.rememberShareContact(contact.email, userId)
+      else if (email.includes('@') && !email.startsWith('@')) await repositories.rememberShareContact(email, userId)
       setNotice(`Freigabe für ${email.trim()} gespeichert.`)
       setEmail('')
     } catch (cause) {
@@ -68,19 +64,19 @@ export function SharePanel({ list, currentUserId }: { list: LocalList; currentUs
     <div className={`${cardSoft} space-y-3`}>
       <form onSubmit={submit} className="flex flex-wrap gap-2" aria-label="Liste teilen">
         <label htmlFor="share-email" className="sr-only">
-          E-Mail-Adresse des Mitglieds
+          Benutzername oder E-Mail
         </label>
         <input
           id="share-email"
-          type="email"
+          type="text"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          placeholder="mitglied@example.com"
+          placeholder="@benutzername"
           required
           className={`${input} flex-1 min-w-48`}
         />
         <Button type="submit" variant="primary" disabled={busy}>
-          Freigeben
+          <UserIcon />Freigeben
         </Button>
       </form>
 
@@ -99,9 +95,9 @@ export function SharePanel({ list, currentUserId }: { list: LocalList; currentUs
                 */}
                 <Button
                   variant="ghost" size="sm"
-                  onClick={() => setEmail(contact.email)}
+                  onClick={() => setEmail(contact.username ? `@${contact.username}` : contact.email)}
                 >
-                  {contact.email}
+                  {contact.username ? `@${contact.username}` : contact.email}
                 </Button>
               </li>
             ))}
@@ -130,8 +126,8 @@ export function SharePanel({ list, currentUserId }: { list: LocalList; currentUs
           <ul className="space-y-1">
             {members.map((member) => (
               <li key={member.user_id} className="flex items-center justify-between gap-2 text-meta">
-                <span className="truncate font-mono text-ink-soft" title={member.user_id}>
-                  Mitglied {member.user_id.slice(0, 8)}
+                <span className="truncate text-ink-soft">
+                  {(() => { const contact = contacts.find(row => row.user_id === member.user_id); return contact?.username ? `@${contact.username}` : contact?.email ?? 'Name noch nicht geladen' })()}
                 </span>
                 <Button
                   variant="danger" size="sm"

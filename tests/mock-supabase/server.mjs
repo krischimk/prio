@@ -73,7 +73,7 @@ function publicUser(user) {
     confirmed_at: user.created_at,
     last_sign_in_at: user.created_at,
     app_metadata: { provider: 'email', providers: ['email'] },
-    user_metadata: {},
+    user_metadata: { username: user.username ?? null },
     identities: [],
     created_at: user.created_at,
     updated_at: user.created_at,
@@ -81,7 +81,11 @@ function publicUser(user) {
 }
 
 function createSession(user) {
-  const accessToken = `access-${randomUUID()}`
+  // setSession liest wie GoTrue die JWT-Laufzeit. Der Mock prüft trotzdem
+  // ausschließlich sein eigenes Tokenregister; das ist kein echter Signierer.
+  const now = Math.floor(Date.now() / 1000)
+  const encode = value => Buffer.from(JSON.stringify(value)).toString('base64url')
+  const accessToken = `${encode({ alg: 'HS256', typ: 'JWT' })}.${encode({ sub: user.id, aud: 'authenticated', role: 'authenticated', iat: now, exp: now + 3600, jti: randomUUID() })}.${Buffer.from(randomUUID()).toString('base64url')}`
   const refreshToken = `refresh-${randomUUID()}`
   state.sessions.set(accessToken, user.id)
   state.refreshTokens.set(refreshToken, user.id)
@@ -90,7 +94,7 @@ function createSession(user) {
     token_type: 'bearer',
     expires_in: 3600,
     expires_in_ms: 3_600_000,
-    expires_at: Math.floor(Date.now() / 1000) + 3600,
+    expires_at: now + 3600,
     refresh_token: refreshToken,
     user: publicUser(user),
   }
@@ -200,7 +204,12 @@ async function handle(request, response) {
       })
       return
     }
-    const user = { id: randomUUID(), email, password, created_at: new Date().toISOString() }
+    const username = body?.data?.username === undefined ? null : String(body.data.username).trim().toLowerCase()
+    if (username !== null && (!/^[a-z0-9][a-z0-9_]{2,29}$/.test(username) || [...state.users.values()].some(user => user.username === username))) {
+      send(response, 422, { message: 'Benutzername ungültig oder bereits vergeben.' })
+      return
+    }
+    const user = { id: randomUUID(), email, password, username, created_at: new Date().toISOString() }
     state.users.set(user.id, user)
     send(response, 200, createSession(user))
     return
@@ -237,6 +246,19 @@ async function handle(request, response) {
     }
 
     send(response, 400, { error: 'unsupported_grant_type', error_description: 'grant_type fehlt' })
+    return
+  }
+
+  if (path === '/auth/v1/user' && request.method === 'PUT') {
+    const user = authenticatedUser(request)
+    if (!user) { send(response, 401, { message: 'invalid login credentials' }); return }
+    const body = await readBody(request)
+    const username = String(body?.data?.username ?? '').trim().toLowerCase()
+    if (!/^[a-z0-9][a-z0-9_]{2,29}$/.test(username) || [...state.users.values()].some(other => other.id !== user.id && other.username === username)) {
+      send(response, 422, { message: 'Benutzername ungültig oder bereits vergeben.' }); return
+    }
+    user.username = username
+    send(response, 200, publicUser(user))
     return
   }
 
@@ -314,6 +336,12 @@ async function handleTable(table, request, response, url) {
 }
 
 async function handleRpc(name, request, response) {
+  if (name === 'username_available') {
+    const body = await readBody(request)
+    const username = String(body?.p_username ?? '').trim().toLowerCase()
+    send(response, 200, /^[a-z0-9][a-z0-9_]{2,29}$/.test(username) && ![...state.users.values()].some(user => user.username === username))
+    return
+  }
   const user = authenticatedUser(request)
   if (!user) {
     sendPostgrestError(response, 401, 'JWT expired', 'PGRST301')
@@ -399,13 +427,13 @@ async function handleRpc(name, request, response) {
     }
 
     const zeilen = [...kontakte]
-      .map(([userId, email]) => ({ user_id: userId, email }))
+      .map(([userId, email]) => ({ user_id: userId, email, username: state.users.get(userId)?.username ?? null }))
       .sort((a, b) => a.email.localeCompare(b.email))
     send(response, 200, zeilen)
     return
   }
 
-  if (name !== 'share_list_by_email') {
+  if (name !== 'share_list_by_email' && name !== 'share_list_by_username') {
     sendPostgrestError(response, 404, `Unbekannte Funktion: ${name}`, 'PGRST202')
     return
   }
@@ -420,7 +448,7 @@ async function handleRpc(name, request, response) {
     return
   }
 
-  const target = [...state.users.values()].find((candidate) => candidate.email === email)
+  const target = [...state.users.values()].find((candidate) => name === 'share_list_by_email' ? candidate.email === email : candidate.username === String(body?.p_username ?? '').trim().toLowerCase())
   if (!target) {
     sendPostgrestError(
       response,
@@ -432,6 +460,10 @@ async function handleRpc(name, request, response) {
   }
   if (target.id === user.id) {
     sendPostgrestError(response, 400, 'Du bist bereits Besitzer dieser Liste.', 'P0001')
+    return
+  }
+  if (name === 'share_list_by_username' && body?.p_expected_user_id && target.id !== body.p_expected_user_id) {
+    sendPostgrestError(response, 409, 'Dieser Benutzername gehört inzwischen zu einem anderen Konto. Aktualisiere die Kontakte und prüfe den Empfänger.', '40001')
     return
   }
 

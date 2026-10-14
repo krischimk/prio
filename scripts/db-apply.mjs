@@ -119,6 +119,7 @@ const base = ['-X', '-v', 'ON_ERROR_STOP=1', '-d', dbUrl]
  * wirklich nennt.
  */
 const ERWARTET = [
+  ['profiles', 'username', '0001'],
   ['lists', 'keep_completed', '0016'],
   ['lists', 'completion_retention_started_at', '0016'],
   ['tasks', 'completed_expires_at', '0016'],

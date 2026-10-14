@@ -83,6 +83,13 @@ describe('Gemerkte Adressen', () => {
 })
 
 describe('Gelesene Adressen', () => {
+  it('normalisiert Namen und entfernt unbrauchbare Namenswerte aus altem JSON', () => {
+    const raw = JSON.stringify([
+      { ...kontakt('anna@example.com', 'anna', '2026-01-01'), username: ' ANNA_Name ' },
+      { ...kontakt('bea@example.com', 'bea', '2026-01-01'), username: { kaputt: true } },
+    ])
+    expect(parseShareContacts(raw).map(contact => contact.username)).toEqual(['anna_name', null])
+  })
   it('liefert nichts, wenn nichts gespeichert ist', () => {
     expect(parseShareContacts(null)).toEqual([])
   })
@@ -106,6 +113,12 @@ describe('Gelesene Adressen', () => {
 })
 
 describe('Adressen aus gemeinsamen Listen', () => {
+  it('frischt umbenannte Mitglieder auf, ohne die Vorschlagsreihenfolge neu zu setzen', () => {
+    const known = [{ ...kontakt('anna@example.com', 'anna', '2026-01-01'), username: 'alter_name' }]
+    const refreshed = withCoMemberContacts(known, [{ userId: 'anna', email: 'anna@example.com', username: 'neuer_name' }], '2026-02-01')
+    expect(refreshed).toEqual([{ ...known[0], username: 'neuer_name' }])
+    expect(withCoMemberContacts(refreshed, [{ userId: 'anna', email: 'anna@example.com', username: 'neuer_name' }], '2026-03-01')).toBe(refreshed)
+  })
   it('nimmt Personen auf, mit denen eine Liste geteilt wird', () => {
     const neu = withCoMemberContacts(
       [],

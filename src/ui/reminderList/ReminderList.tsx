@@ -116,9 +116,9 @@ export function ReminderList({
       ) : null}
 
       {reminders.length < MAX_REMINDERS ? (
-        <Button onClick={hinzufuegen} variant="ghost" size="field" title="Benachrichtigung hinzufügen. Ein Fälligkeitsdatum allein löst keine Benachrichtigung aus." layout="w-full justify-start">
+        <Button onClick={hinzufuegen} variant="ghost" size="field" title="Erinnerung hinzufügen. Ein Fälligkeitsdatum allein löst keine Erinnerung aus." layout="w-full justify-start">
           {reminders.length === 0 ? <BellIcon className="h-5 w-5" /> : <PlusIcon className="h-5 w-5" />}
-          {reminders.length === 0 ? 'Benachrichtigung hinzufügen' : 'Weitere Erinnerung'}
+          {reminders.length === 0 ? 'Erinnerung hinzufügen' : 'Weitere Erinnerung'}
         </Button>
       ) : (
         <p className={`text-meta ${mutedText}`}>

@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { AuthError, type AuthPort, type AuthUser, type SignUpResult } from './authPort'
+import { normalizeUsername, validUsername } from '../domain/username'
 
 /**
  * Supabase Auth als `AuthPort`.
@@ -54,11 +55,13 @@ export function createSupabaseClient(config: SupabaseConfig): SupabaseClient {
 interface SupabaseUserLike {
   id: string
   email?: string | null
+  user_metadata?: { username?: unknown }
 }
 
 function toAuthUser(user: SupabaseUserLike | null | undefined): AuthUser | null {
   if (!user) return null
-  return { id: user.id, email: user.email ?? '' }
+  const name = typeof user.user_metadata?.username === 'string' ? normalizeUsername(user.user_metadata.username) : ''
+  return { id: user.id, email: user.email ?? '', username: validUsername(name) ? name : null }
 }
 
 function classifyAuthError(error: unknown): AuthError {
@@ -84,10 +87,19 @@ function classifyAuthError(error: unknown): AuthError {
   if (lower.includes('password should be at least') || lower.includes('weak password')) {
     return new AuthError('weak-password', message, { cause: error })
   }
+  if (lower.includes('database error') || lower.includes('benutzername')) return new AuthError('profile-error', message, { cause: error })
   return new AuthError('unknown', message, { cause: error })
 }
 
 export function createSupabaseAuthPort(client: SupabaseClient): AuthPort {
+  async function checkUsername(value: string) {
+    const username = normalizeUsername(value)
+    if (!validUsername(username)) throw new AuthError('username-invalid', 'username-invalid')
+    const { data, error } = await client.rpc('username_available', { p_username: username })
+    if (error) throw classifyAuthError(error)
+    if (data !== true) throw new AuthError('username-taken', 'username-taken')
+    return username
+  }
   return {
     async getCurrentUser() {
       // `getSession` liest die gespeicherte Sitzung und funktioniert damit auch
@@ -95,15 +107,39 @@ export function createSupabaseAuthPort(client: SupabaseClient): AuthPort {
       // Verbindung erneuert; schlägt das fehl, bleibt die Sitzung erhalten.
       const { data, error } = await client.auth.getSession()
       if (error) throw classifyAuthError(error)
-      return toAuthUser(data.session?.user)
+      const cached = toAuthUser(data.session?.user)
+      if (cached && !cached.username && data.session && (typeof navigator === 'undefined' || navigator.onLine)) {
+        // Ein anderes Gerät kann den Pflichtnamen bereits gewählt haben. Die
+        // öffentliche Auth-API liest dann das Profil neu und speichert es in
+        // der Sitzung; spätere Offline-Starts kennen denselben Namen.
+        const refreshed = await client.auth.setSession({
+          access_token: data.session.access_token, refresh_token: data.session.refresh_token,
+        })
+        if (!refreshed.error) return toAuthUser(refreshed.data.user)
+      }
+      return cached
     },
 
-    async signUp(email: string, password: string): Promise<SignUpResult> {
-      const { data, error } = await client.auth.signUp({ email, password })
+    async signUp(email: string, password: string, requested?: string): Promise<SignUpResult> {
+      const username = requested === undefined ? undefined : await checkUsername(requested)
+      const { data, error } = await client.auth.signUp({ email, password, ...(username ? { options: { data: { username } } } : {}) })
       if (error) throw classifyAuthError(error)
       const user = toAuthUser(data.user)
       // Ohne Sitzung verlangt das Projekt eine E-Mail-Bestätigung.
       return { user: data.session ? user : null, requiresEmailConfirmation: data.session === null }
+    },
+
+    async setUsername(requested: string): Promise<AuthUser> {
+      const session = await client.auth.getSession()
+      const current = toAuthUser(session.data.session?.user)
+      if (!current) throw new AuthError('unknown', 'Bitte erneut anmelden.')
+      if (normalizeUsername(requested) === current.username) return current
+      const username = await checkUsername(requested)
+      const { data, error } = await client.auth.updateUser({ data: { username } })
+      if (error) throw classifyAuthError(error)
+      const user = toAuthUser(data.user)
+      if (!user?.username) throw new AuthError('profile-error', 'username-not-confirmed')
+      return user
     },
 
     async signIn(email: string, password: string): Promise<AuthUser> {

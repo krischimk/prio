@@ -21,7 +21,7 @@ it('zeigt beim Listenwechsel auch bei einem Lesefehler keine Aufgaben der vorher
   await waitFor(() => expect(result.current.tasks.map(row => row.id)).toEqual(['b']))
 })
 
-it('lässt eine verspätete alte Abgehakt-Abfrage nicht in einer anderen Liste erscheinen', async () => {
+it('lässt eine verspätete alte Erledigt-Abfrage nicht in einer anderen Liste erscheinen', async () => {
   let release!: (tasks: ReturnType<typeof localTask>[]) => void
   workspace.repositories.listCompletedTasks.mockImplementationOnce(() => new Promise(resolve => { release = resolve }))
     .mockResolvedValueOnce([localTask({ list_id: 'b', id: 'b', completed: true })])

@@ -44,7 +44,7 @@ function check(name, fn) { fn(); checks += 1; console.log(`✓ ${name}`) }
 sql(`drop extension if exists pg_cron cascade; drop schema if exists private cascade; drop schema if exists auth cascade; drop schema public cascade; create schema public; create schema auth;
 do $$ begin if not exists(select 1 from pg_roles where rolname='authenticated') then create role authenticated; end if;
 if not exists(select 1 from pg_roles where rolname='anon') then create role anon; end if; end $$;
-create table auth.users (id uuid primary key, email text);
+create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}'::jsonb);
 create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true),'')::uuid $$;
 grant usage on schema auth to authenticated,anon;`)
 const migrations = readFileSync(new URL('../supabase/all-migrations.sql', import.meta.url), 'utf8')
@@ -52,6 +52,38 @@ sql(migrations)
 sql(`insert into auth.users(id,email) values ('${owner}','owner@prio.test'),('${member}','member@prio.test'),('${stranger}','stranger@prio.test')`)
 const list = { id: listId, owner_id: owner, name: 'Liste', is_shared: false, icon: null, sections: [], keep_completed: false, completion_retention_started_at: at, created_at: at, updated_at: at, deleted_at: null }
 const task = { id: taskId, list_id: listId, title: 'Anfang', description: null, due_at: null, completed: false, completed_at: null, completed_expires_at: null, expired_at: null, reopen_context: null, recurrence: null, successor_id: null, reminders: [], section_id: null, position: 0, created_at: at, updated_at: at, deleted_at: null }
+
+check('Bestehende Konten wählen einen eindeutigen Namen; Auth und Profil bleiben atomar', () => {
+  assert.equal(sql(`select username is null from public.profiles where id='${owner}'`),'t')
+  sql(`update auth.users set raw_user_meta_data='{"username":"OWNER_Name"}' where id='${owner}'`)
+  assert.equal(sql(`select username from public.profiles where id='${owner}'`),'owner_name')
+  assert.throws(() => sql(`update auth.users set raw_user_meta_data='{"username":"Owner_Name"}' where id='${member}'`), /bereits vergeben/)
+  assert.equal(sql(`select raw_user_meta_data from auth.users where id='${member}'`),'{}')
+  assert.throws(() => sql(`update auth.users set raw_user_meta_data='{"username":"ungueltig!"}' where id='${member}'`), /Benutzername/)
+  assert.throws(() => sql(`update auth.users set raw_user_meta_data='{}' where id='${owner}'`), /entfernt/)
+  assert.equal(sql("begin;set local role anon;select public.username_available('owner_name');commit"),'f')
+  assert.equal(sql("begin;set local role anon;select public.username_available('anderer_name');commit"),'t')
+  assert.equal(sql("select has_function_privilege('anon','public.share_list_by_username(uuid,text,uuid)','EXECUTE')"),'f')
+  sql(`update auth.users set raw_user_meta_data='{"username":"member_name"}' where id='${member}'`)
+})
+
+check('Teilen per Benutzername schützt Besitz und gibt nur verbundene Namen heraus', () => {
+  const temporary='10000000-0000-0000-0000-000000000099'
+  const result=sql(`begin;
+    insert into public.lists(id,owner_id,name) values('${temporary}','${owner}','Namen prüfen');
+    set local role authenticated;set local request.jwt.claim.sub='${owner}';
+    select public.share_list_by_username('${temporary}','MEMBER_Name');
+    select username from public.co_member_contacts();rollback;`)
+  assert.equal(result,`${member}\nmember_name`)
+  sql(`insert into public.lists(id,owner_id,name) values('${temporary}','${owner}','Veralteter Name')`)
+  assert.throws(() => sql(actorSql(owner,`select public.share_list_by_username('${temporary}','member_name','${stranger}')`)), /anderen Konto/)
+  assert.equal(sql(`select count(*) from public.list_members where list_id='${temporary}'`),'0')
+  assert.equal(sql(`select is_shared from public.lists where id='${temporary}'`),'f')
+  sql(`delete from public.lists where id='${temporary}'`)
+  assert.throws(() => sql(`begin;set local role anon;select public.share_list_by_username('${temporary}','member_name');commit;`), /permission denied/)
+  assert.equal(sql(actorSql(stranger,'select count(*) from public.co_member_contacts()')),'0')
+  assert.equal(sql(actorSql(owner,'select count(*) from public.profiles')),'1')
+})
 check('Anlegen und Antwort mit tatsächlich gespeichertem Inhalt', () => {
   assert.equal(push(owner,'lists',list).kind,'written')
   const answer = push(owner,'tasks',task)

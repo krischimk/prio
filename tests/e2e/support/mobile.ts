@@ -1,3 +1,4 @@
+import { usernameFor } from './helpers'
 import { expect, type Page } from '@playwright/test'
 import { PASSWORD } from './helpers'
 
@@ -27,6 +28,7 @@ export async function register(page: Page, email: string): Promise<void> {
   await page.getByRole('button', { name: 'Registrieren', exact: true }).click()
   await page.getByLabel('E-Mail', { exact: true }).fill(email)
   await page.getByLabel('Passwort', { exact: true }).fill(PASSWORD)
+  await page.getByLabel('Benutzername', { exact: true }).fill(usernameFor(email))
   await page.getByRole('button', { name: 'Konto erstellen', exact: true }).click()
   await expect(page.getByTestId('app-bar-title')).toBeVisible()
 }

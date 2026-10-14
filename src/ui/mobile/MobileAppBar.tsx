@@ -6,6 +6,7 @@ import { MenuIcon, SettingsIcon } from '../icons'
 import { ListIcon } from '../ListIcon'
 import { IconButton } from '../components/IconButton'
 import { useView } from '../useView'
+import { OverviewTitle } from '../OverviewTitle'
 
 /**
  * Obere Leiste der mobilen Ansicht.
@@ -60,12 +61,12 @@ export function MobileAppBar({
         </IconButton>
 
         {listName === null ? (
-          <span
+          <div
             className="min-w-0 flex-1 truncate text-center text-title font-medium text-ink"
             data-testid="app-bar-title"
           >
-            Gesamtansicht
-          </span>
+            <OverviewTitle />
+          </div>
         ) : (
           /*
             Der Listenname ist der Zugang zur Listenverwaltung – wie beim Tippen

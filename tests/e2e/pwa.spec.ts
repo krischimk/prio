@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { register, resetServer, uniqueEmail, createList, createTask, taskItem } from './support/helpers'
 
 /**
  * Der PWA-Weg: Service Worker, Cache, Offline-Start.
@@ -70,4 +71,17 @@ test('startet offline aus dem Cache, ohne fehlgeschlagene Anfrage', async ({ pag
   // Seite leer.
   await expect(page.getByLabel('E-Mail', { exact: true })).toBeVisible()
   expect(fehlgeschlagen).toEqual([])
+})
+
+test('startet mit gespeichertem Benutzernamen und Aufgaben auch offline', async ({ page, context, request }) => {
+  await resetServer(request)
+  await register(page, uniqueEmail('pwa-username'))
+  await createList(page, 'Offline-Bestand')
+  await createTask(page, 'Gespeicherte Aufgabe')
+  await page.evaluate(() => navigator.serviceWorker.ready)
+  await context.setOffline(true)
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Gesamtansicht', exact: true })).toBeVisible()
+  await page.getByRole('complementary', { name: 'Listen' }).getByRole('button', { name: 'Offline-Bestand', exact: true }).click()
+  await expect(taskItem(page, 'Gespeicherte Aufgabe')).toBeVisible()
 })

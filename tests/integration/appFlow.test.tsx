@@ -52,6 +52,7 @@ describe('App-Integration', () => {
     await user.click(await screen.findByRole('button', { name: 'Registrieren' }))
     await user.type(screen.getByLabelText('E-Mail'), 'test@example.com')
     await user.type(screen.getByLabelText('Passwort'), 'geheim123')
+    await user.type(screen.getByLabelText('Benutzername'), 'test_name')
     await user.click(screen.getByRole('button', { name: 'Konto erstellen' }))
 
     expect(await screen.findByText(/Noch keine Liste vorhanden\./)).toBeInTheDocument()
@@ -160,6 +161,7 @@ describe('App-Integration', () => {
     await user.click(await screen.findByRole('button', { name: 'Registrieren' }))
     await user.type(screen.getByLabelText('E-Mail'), 'offline@example.com')
     await user.type(screen.getByLabelText('Passwort'), 'geheim123')
+    await user.type(screen.getByLabelText('Benutzername'), 'test_name')
     await user.click(screen.getByRole('button', { name: 'Konto erstellen' }))
     await screen.findByText(/Noch keine Liste vorhanden\./)
 

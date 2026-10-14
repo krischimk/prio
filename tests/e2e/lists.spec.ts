@@ -146,7 +146,7 @@ test('holt eine abgehakte Aufgabe in der breiten Ansicht zurück', async ({ page
   await zeile.getByRole('checkbox').click()
   await expect(zeile).toHaveCount(0)
 
-  // Abgehakt heißt: aus der Liste verschwunden, aber sieben Tage auffindbar.
+  // Erledigt heißt: aus der Liste verschwunden, aber sieben Tage auffindbar.
   await page.getByRole('button', { name: 'Wiederherstellen', exact: true }).click()
   const panel = page.getByRole('dialog', { name: 'Aufgaben wiederherstellen' })
   const eintrag = panel.locator('li').filter({ hasText: 'Müll rausbringen' })
@@ -264,7 +264,7 @@ test('schaltet eine Erinnerung in der breiten Ansicht nur für sich stumm', asyn
 
   // Erst teilen, dann erscheint der Schalter.
   await listAction(page, 'Teilen')
-  await page.getByLabel('E-Mail-Adresse des Mitglieds', { exact: true }).fill(emailB)
+  await page.getByLabel('Benutzername oder E-Mail', { exact: true }).fill(emailB)
   await page.getByRole('button', { name: 'Freigeben' }).click()
   await expect(page.getByRole('dialog', { name: 'Liste verwalten', exact: true }).getByRole('status')).toContainText('Freigabe für')
 

@@ -19,8 +19,9 @@
 -- Adresse eines anderen Nutzers. Für Vorschläge ist das unvermeidbar – wer
 -- gemeinsam an einer Liste arbeitet, sieht nun, mit wem.
 -- -----------------------------------------------------------------------------
-create or replace function public.co_member_contacts()
-returns table (user_id uuid, email text)
+drop function if exists public.co_member_contacts();
+create or replace function private.co_member_contacts()
+returns table (user_id uuid, email text, username text)
 language plpgsql
 security definer
 set search_path = public, pg_temp
@@ -59,7 +60,7 @@ begin
       join meine_listen ml on ml.id = m.list_id
       where m.deleted_at is null
     )
-    select distinct p.id, lower(p.email)
+    select distinct p.id, lower(p.email), p.username
     from beteiligte b
     join public.profiles p on p.id = b.user_id
     where b.user_id <> auth.uid()
@@ -67,6 +68,12 @@ begin
     order by lower(p.email);
 end;
 $$;
+
+revoke all on function private.co_member_contacts() from public,anon;
+grant execute on function private.co_member_contacts() to authenticated;
+create function public.co_member_contacts()
+returns table(user_id uuid,email text,username text)
+language sql stable security invoker set search_path='' as $$ select * from private.co_member_contacts() $$;
 
 comment on function public.co_member_contacts() is
   'Adressen der Personen, mit denen der Aufrufer eine Liste teilt – Grundlage für Vorschläge beim Teilen.';

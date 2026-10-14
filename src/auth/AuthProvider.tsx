@@ -19,28 +19,32 @@ export function AuthProvider({ port, children }: { port: AuthPort; children: Rea
    * Der Auth-Listener von Supabase feuert beim Abonnieren sofort ein
    * INITIAL_SESSION-Event. Ein frühes `null` würde die App fälschlich als
    * abgemeldet darstellen, während `getCurrentUser()` noch lädt. Deshalb
-   * werden frühe `null`-Events ignoriert, frühe Benutzer-Events nicht.
+   * übernimmt erst die vollständige Initialisierung den Startzustand – samt
+   * einem gegebenenfalls auf einem anderen Gerät gewählten Benutzernamen.
    */
   const initialResolved = useRef(false)
 
   useEffect(() => {
     let active = true
+    initialResolved.current = false
     const apply = (user: AuthUser | null) => {
       if (!active) return
       setState(user ? { status: 'authenticated', user } : { status: 'anonymous' })
     }
 
     const unsubscribe = port.onAuthStateChange((user) => {
-      if (user || initialResolved.current) apply(user)
+      if (initialResolved.current) apply(user)
     })
 
     port
       .getCurrentUser()
       .then((user) => {
+        if (!active) return
         initialResolved.current = true
         apply(user)
       })
       .catch(() => {
+        if (!active) return
         initialResolved.current = true
         apply(null)
       })
@@ -68,11 +72,11 @@ export function AuthProvider({ port, children }: { port: AuthPort; children: Rea
   )
 
   const signUp = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string, username?: string) => {
       setError(null)
       setNotice(null)
       try {
-        const result = await port.signUp(email, password)
+        const result = await port.signUp(email, password, username)
         initialResolved.current = true
         if (result.user) {
           setState({ status: 'authenticated', user: result.user })
@@ -109,9 +113,17 @@ export function AuthProvider({ port, children }: { port: AuthPort; children: Rea
     setNotice(null)
   }, [])
 
+  const setUsername = useCallback(async (username: string) => {
+    setError(null)
+    try {
+      const user = await port.setUsername(username)
+      setState({ status: 'authenticated', user })
+    } catch (cause) { setError(authErrorMessage(cause)); throw cause }
+  }, [port])
+
   const value = useMemo<AuthContextValue>(
-    () => ({ state, error, notice, signIn, signUp, signOut, clearMessages }),
-    [state, error, notice, signIn, signUp, signOut, clearMessages],
+    () => ({ state, error, notice, signIn, signUp, setUsername, signOut, clearMessages }),
+    [state, error, notice, signIn, signUp, setUsername, signOut, clearMessages],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

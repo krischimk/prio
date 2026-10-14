@@ -12,7 +12,7 @@ async function setup(server = new FakeServer(createFixedClock()), userId = 'owne
   devices.push(device)
   return { device, server, list: await device.repositories.createList('Liste', userId) }
 }
-describe('Abgehakt, Fristen und Rückkehr', () => {
+describe('Erledigt, Fristen und Rückkehr', () => {
   it.each(['bearbeitet','verschoben','umsortiert'] as const)('behält einen inzwischen %s nächsten Termin auch bei gleicher Millisekunde', async change => {
     const { device, list } = await setup()
     const original = await device.repositories.createTask({listId:list.id,title:'Serie',dueAt:'2026-01-01T12:00:00.000Z',recurrence:'daily'})

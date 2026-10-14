@@ -12,6 +12,8 @@ import type { TaskPlacement } from '../../domain/taskPlacement'
 
 export interface CreateTaskInput {
   listId: string
+  /** Merkt bei einer Erfassung in der Gesamtansicht die zuletzt genutzte Zielliste. */
+  rememberOverviewTargetFor?: string
   /** Der Abschnitt der neuen Aufgabe; `null` oder weggelassen heißt „ohne". */
   sectionId?: string | null
   title: string
@@ -24,6 +26,12 @@ export interface CreateTaskInput {
 
 export type UpdateTaskInput = TaskEditInput
 
+export interface CreateListOptions {
+  icon?: string | null
+  includeInOverview?: boolean
+  keepCompleted?: boolean
+}
+
 export interface Repositories {
   listListPreferences(userId: string): Promise<LocalListPreference[]>
   setListInOverview(listId: string, userId: string, included: boolean): Promise<void>
@@ -32,7 +40,7 @@ export interface Repositories {
   listCloudConflicts(): Promise<CloudConflict[]>
   resolveCloudConflict(conflict: CloudConflict, choice: 'local' | 'remote'): Promise<void>
   // Listen
-  createList(name: string, ownerId: string): Promise<LocalList>
+  createList(name: string, ownerId: string, options?: CreateListOptions): Promise<LocalList>
   renameList(listId: string, name: string): Promise<LocalList>
   /**
    * Setzt das Symbol der Liste.
@@ -136,7 +144,7 @@ export interface Repositories {
    * nicht ohne Anlass neu zeichnen.
    */
   mergeShareContacts(
-    contacts: ReadonlyArray<{ userId: string; email: string }>,
+    contacts: ReadonlyArray<{ userId: string; email: string; username?: string | null }>,
     at: string,
   ): Promise<void>
 

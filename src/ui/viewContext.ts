@@ -22,6 +22,8 @@ export interface ViewValue {
   selectedListId: string | null
   selectList: (id: string | null) => void
   restoreOpen: boolean
+  accountOpen: boolean
+  setAccountOpen: (open: boolean) => void
   setRestoreOpen: (open: boolean) => void
   cloudConflicts: CloudConflict[]
   conflictsOpen: boolean

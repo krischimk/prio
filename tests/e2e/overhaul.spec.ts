@@ -57,7 +57,7 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Neue Kernoberfläche
     await expect(labels.nth(2)).toHaveAttribute('aria-label', 'Aufgabe erledigen: Brot')
   })
 
-  test('Abgehakte Aufgaben bleiben im Editor erreichbar und lassen sich erledigt verschieben', async ({ page, request }) => {
+  test('Erledigte Aufgaben bleiben im Editor erreichbar und lassen sich erledigt verschieben', async ({ page, request }) => {
     await (mobile ? phone.register : desktop.register)(page, desktop.uniqueEmail('ui-completed'))
     await (mobile ? phone.createList : desktop.createList)(page, 'Quelle')
     await (mobile ? phone.createTask : desktop.createTask)(page, 'Beleg aufbewahren')
@@ -66,7 +66,7 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Neue Kernoberfläche
     await editor.getByRole('button', { name: 'Speichern', exact: true }).click()
     await expect(editor).toBeHidden()
     const settings = await desktop.openListSettings(page)
-    await settings.getByLabel('Abgehakt am Listenende').check()
+    await settings.getByLabel('Erledigt am Listenende').check()
     await desktop.closeListSettings(page)
     await (mobile ? phone.createList : desktop.createList)(page, 'Ziel')
     if (mobile) {
@@ -74,8 +74,8 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Neue Kernoberfläche
       await page.getByRole('dialog', { name: 'Menü' }).getByRole('button', { name: 'Quelle', exact: true }).click()
     } else await desktop.selectList(page, 'Quelle')
     await page.getByRole('checkbox', { name: 'Aufgabe erledigen: Beleg aufbewahren' }).click()
-    const completed = page.getByRole('region', { name: 'Abgehakt', exact: true })
-    await completed.getByRole('button', { name: /^Abgehakt/i }).click()
+    const completed = page.getByRole('region', { name: 'Erledigt', exact: true })
+    await completed.getByRole('button', { name: /^Erledigt/i }).click()
     await completed.getByRole('button', { name: 'Aufgabe bearbeiten: Beleg aufbewahren', exact: true }).click()
     editor = page.getByRole('dialog', { name: 'Aufgabe', exact: true })
     await expect(editor.getByLabel('Beschreibung')).toHaveValue('Die gespeicherten Einzelheiten bleiben erreichbar.')
@@ -135,9 +135,9 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Neue Kernoberfläche
     await (mobile ? phone.createTask : desktop.createTask)(page, 'Den nächsten Urlaub planen und die passende Verbindung heraussuchen')
     const settings = await desktop.openListSettings(page)
     await expect(settings.getByLabel('In Gesamtansicht aufnehmen')).not.toBeChecked()
-    await expect(settings.getByLabel('Abgehakt am Listenende')).not.toBeChecked()
+    await expect(settings.getByLabel('Erledigt am Listenende')).not.toBeChecked()
     await settings.getByLabel('In Gesamtansicht aufnehmen').check()
-    await settings.getByLabel('Abgehakt am Listenende').check()
+    await settings.getByLabel('Erledigt am Listenende').check()
     await page.screenshot({ path: info.outputPath(mobile ? 'settings-phone.png' : 'settings-desktop.png') })
     await desktop.closeListSettings(page)
     await openOverview(page, mobile)

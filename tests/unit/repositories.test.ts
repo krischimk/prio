@@ -215,7 +215,7 @@ describe('Repositories (lokale Geschäftslogik)', () => {
 
       await device.repositories.setTaskCompleted(erste.id, true)
 
-      // Abgehakt heißt: verschwindet. Auffindbar bleibt sie unter
+      // Erledigt heißt: verschwindet. Auffindbar bleibt sie unter
       // „Aufgaben wiederherstellen“.
       expect((await device.repositories.listTasks(listId)).map((task) => task.title)).toEqual([
         'Zweite',
@@ -812,6 +812,20 @@ describe('Repositories (lokale Geschäftslogik)', () => {
   })
 
   describe('Listen', () => {
+    it('legt Symbol, Erledigt-Regel und persönliche Gesamt-Auswahl zusammen an', async () => {
+      const list = await device.repositories.createList('Musik', userId, { icon: 'music', keepCompleted: true, includeInOverview: true })
+      expect(list.icon).toBe('music')
+      expect(list.keep_completed).toBe(true)
+      const preferences = await device.repositories.listListPreferences(userId)
+      expect(preferences).toEqual([expect.objectContaining({ list_id: list.id, user_id: userId, include_in_overview: true, dirty: 1, updated_at: device.clock.now() })])
+      expect(await device.repositories.getUserPreferences(userId)).toBeUndefined()
+    })
+
+    it('rollt das Anlegen zurück, wenn die persönliche Auswahl nicht gespeichert werden kann', async () => {
+      await expect(device.repositories.createList('Nicht halb anlegen', ' ', { includeInOverview: true })).rejects.toBeInstanceOf(ValidationError)
+      expect(await device.repositories.listLists()).toEqual([])
+    })
+
     it('erstellt eine private Liste', async () => {
       const list = await device.repositories.createList('Privat', userId)
       expect(list.owner_id).toBe(userId)

@@ -24,8 +24,8 @@ import { SCHREIBEND } from '../../src/app/trackedRepositories'
  */
 const ABDECKUNG: Record<(typeof SCHREIBEND)[number], string | null> = {
   setListInOverview: 'Liste in die Gesamtansicht aufnehmen',
-  setListKeepCompleted: 'Abgehakt am Listenende einstellen und wieder öffnen',
-  updateUserPreferences: 'Standardliste und Gesamtansicht wählen',
+  setListKeepCompleted: 'Erledigt am Listenende einstellen und wieder öffnen',
+    updateUserPreferences: 'Letzte Gesamt-Zielliste und bevorzugte Ansicht merken',
   resolveCloudConflict: 'Cloud-Schreibkonflikt klären',
   createList: 'Liste anlegen',
   renameList: 'Liste umbenennen',
@@ -46,8 +46,8 @@ const ABDECKUNG: Record<(typeof SCHREIBEND)[number], string | null> = {
   reorderTasks: null,
   deleteTask: null,
   // Wiederherstellen läuft über das Wiederherstellen-Fenster; der Eintrag
-  // „Abgehakte Aufgabe wiederherstellen" deckt den Weg in beiden Ansichten ab.
-  restoreTask: 'Abgehakte Aufgabe wiederherstellen',
+  // „Erledigte Aufgabe wiederherstellen" deckt den Weg in beiden Ansichten ab.
+  restoreTask: 'Erledigte Aufgabe wiederherstellen',
   restoreList: null,
   markListShared: 'Vorschlag für eine schon einmal geteilte Adresse',
   removeMember: null,

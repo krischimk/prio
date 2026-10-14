@@ -80,8 +80,12 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
 
 * Zwei Arten: **private Listen** und **gemeinsame Listen**
 * Liste erstellen, umbenennen, löschen (löschen ist ein Soft Delete)
-* Gemeinsame Listen: Besitzer lädt Mitglieder **per E-Mail-Adresse** ein und
+* Gemeinsame Listen: Besitzer lädt Mitglieder **per Benutzername oder E-Mail** ein und
   kann sie wieder entfernen
+* Beim Anlegen klappen nach Fokus oder Eingabe das Listensymbol und die Schalter
+  „In Gesamtansicht aufnehmen“ und „Erledigt am Listenende“ auf. Beide Schalter
+  sind zunächst aus. Symbol, Listenregel und persönliche Auswahl werden zusammen
+  gespeichert; Bereiche und Teilen sind danach in der Listenverwaltung erreichbar.
 * Berechtigungen in 0.1: **Besitzer** (verwaltet die Liste und die Mitglieder)
   und **Mitglied** (darf Aufgaben lesen und bearbeiten)
 
@@ -89,7 +93,7 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
 
 * Beim Öffnen startet die Gesamtansicht. Bestehende und neue Listen sind
   zunächst ausgeschlossen; aufgenommen werden sie ausdrücklich in den
-  Listeneinstellungen oder über „Gesamtansicht einstellen“.
+  Listeneinstellungen oder per Klick auf den Titel „Gesamtansicht“.
 * Die Auswahl ist persönlich. Auch Mitglieder einer geteilten Liste können
   ihre eigene Auswahl bestimmen.
 * „Nach Listen gruppiert“ erhält die vorhandene Reihenfolge innerhalb der
@@ -100,24 +104,26 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
   Gruppierung ist nur die erste Voreinstellung. Die gewählte Ansicht bleibt
   nach Neustart erhalten und wird zwischen Geräten synchronisiert.
 * Auf dem Desktop werden neue Aufgaben in beiden Ansichten direkt im sichtbaren
-  Titelfeld mit Enter angelegt. Beschreibung und Termin klappen beim Arbeiten
-  mit dem Titelfeld auf; „Weitere Einstellungen“ öffnet den Aufgabeneditor.
+  Titelfeld mit Enter angelegt. Beschreibung, Termin und Erinnerungen klappen
+  beim Arbeiten mit dem Titelfeld auf und verwenden dieselben Felder wie der
+  Editor. Seltene Aktionen liegen unter „Mehr Optionen“.
   In der Gesamtansicht kann zuerst geschrieben werden. Erst das Hinzufügen
-  verlangt eine ausdrückliche Zielliste, solange keine manuell gesetzte
-  Standardliste vorausgewählt ist. Ohne Standardliste ist nach dem Hinzufügen
-  erneut eine Auswahl nötig. Auf dem Telefon öffnet „Neue Aufgabe“ in der
+  verlangt eine Zielliste, solange dort noch keine Aufgabe erstellt wurde.
+  Danach bleibt die zuletzt **in der Gesamtansicht verwendete** Zielliste
+  vorausgewählt und wird persönlich synchronisiert. Das Anlegen in einer
+  einzelnen Liste verändert sie nicht. Auf dem Telefon öffnet „Neue Aufgabe“ in der
   Gesamtansicht dieselbe Erfassung mit bereits fokussiertem Titelfeld;
   in einer einzelnen Liste ist das Ziel bereits bestimmt.
-  Die zuletzt gewählte Zielliste wird nicht automatisch zum Default. Entwürfe
-  bleiben ihrer Zielliste zugeordnet, auch beim Wechsel zwischen den Ansichten.
-  Eine zunächst freie Eingabe wird bei der Listenauswahl zugeordnet. Liegt dort
-  schon ein Entwurf, bleiben beide erhalten; die Auswahl fragt, welcher gerade
-  bearbeitet werden soll. Mehrere Listenentwürfe sind anschließend umschaltbar.
+  Der Gesamtentwurf bleibt unabhängig von den Entwürfen einzelner Listen.
+  Ein Zielwechsel behält seine Eingaben; eine Entwurfsauswahl ist nicht nötig.
+  Listen- und Breitenwechsel behalten auch Symbol und Einstellungen einer noch
+  nicht angelegten Liste. Diese Entwürfe gelten für die laufende Sitzung.
+  Abhaken funktioniert mit einem Klick, auch bei aufgeklappter Erfassung.
 * Alle zugänglichen Ziellisten sind erlaubt. Bei einer ausgeschlossenen Liste
   erklärt ein Hinweis, dass die neue Aufgabe in ihrer Listenansicht erscheint.
-* Aufgabenzeilen, Bereiche und „Abgehakt“ kommen in beiden Ansichten aus
+* Aufgabenzeilen, Bereiche und „Erledigt“ kommen in beiden Ansichten aus
   `TaskList`/`TaskRow`. Zugeklappte Bereiche werden auf demselben Gerät je
-  Ursprungsliste gemeinsam gemerkt. Bei eingeschaltetem „Abgehakt“ erscheinen
+  Ursprungsliste gemeinsam gemerkt. Bei eingeschaltetem „Erledigt“ erscheinen
   erledigte Aufgaben auch in der Gesamtansicht: gruppiert am Ende ihres
   Listenblocks, bei „Neueste zuerst“ gesammelt am Ende mit Herkunft. Der
   Bereich ist zunächst eingeklappt und zeigt die Anzahl.
@@ -129,7 +135,34 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
   Das geht auch aus „Neueste zuerst“; die chronologische Sortierung bleibt bestehen.
 * Diese persönlichen Einstellungen liegen in `list_preferences` und
   `user_preferences`; die Cloud braucht Migration 0015. Sie ersetzen keine der
-  gemeinsamen Regeln zu Prioritäten, gleichen Namen oder „Abgehakt“.
+  gemeinsamen Regeln zu Prioritäten, gleichen Namen oder „Erledigt“.
+
+### Konto und Benutzernamen
+
+Bei Registrierung und für bestehende Konten ist ein eindeutiger Benutzername
+erforderlich. Altbestand wählt ihn einmalig vor dem Öffnen des Arbeitsbereichs;
+Listen, Aufgaben und Anmeldung bleiben erhalten. Er besteht aus 3–30 Zeichen
+(`a–z`, Ziffern, Unterstrich), beginnt mit Buchstabe oder Ziffer und wird ohne
+Unterscheidung der Groß-/Kleinschreibung vergeben. Im Teilen-Dialog kann er
+auch mit `@` eingegeben werden. Die Cloud erzwingt Format und Eindeutigkeit
+atomar. Eine ältere Sitzung übernimmt einen schon auf einem anderen Gerät
+gewählten Namen bei bestehender Verbindung.
+
+„Konto“ enthält E-Mail, Benutzername und unter „Technische Informationen“ den
+Server. Die E-Mail dient weiterhin der Anmeldung; der Server ist das Ziel des
+Cloudabgleichs und unterscheidet insbesondere Mock und echtes Projekt. Beides
+steht nicht mehr ständig im Arbeitsbereich. Abmelden ist auf beiden Ansichten
+nur innerhalb von „Konto“ erreichbar; sein Symbol steht im breiten Kopf rechts.
+Der Kopf zeigt das tatsächliche
+App-Symbol und für den Sync einen einzelnen farbigen Punkt mit erklärendem
+Hinweis und manueller Synchronisation per Klick.
+
+Mitglieder werden als Benutzername angezeigt. `co_member_contacts()` liefert
+Namen und Adressen ausschließlich aus dem Kreis gemeinsamer Listen; es gibt
+keine allgemeine Personensuche. Bei einem bekannten Kontakt prüft die Freigabe
+auch dessen erwartete ID: Ein neu vergebener alter Name gibt niemand anderem
+versehentlich Zugriff. Die Cloud braucht die Sammelmigration einschließlich
+`0019_usernames.sql` vor dieser App-Fassung.
 
 ### Aufgaben
 
@@ -139,13 +172,18 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
   `reminders` (Liste, siehe [Erinnerungen](#erinnerungen)), `created_at`,
   `updated_at`, `deleted_at`
 * Erstellen, bearbeiten, erledigen, in eine andere Liste verschieben, löschen
-* Der Besitzer kann **„Abgehakt am Listenende“** je Liste einschalten; zunächst
+* Der Besitzer kann **„Erledigt am Listenende“** je Liste einschalten; zunächst
   ist die Einstellung aus. An: dauerhaft aufbewahren, ausschließlich im
-  zunächst eingeklappten Bereich „Abgehakt“ mit Anzahl. Aus: sieben Tage unter
+  zunächst eingeklappten Bereich „Erledigt“ mit Anzahl. Aus: sieben Tage unter
   „Aufgaben wiederherstellen“, danach endgültig gelöscht.
 * Bei Einführung und Abschalten erhalten bestehende Abschlüsse sieben Tage
   ab Umstellung. Beim Verschieben erledigter Aufgaben gilt die Zielliste;
   ohne Aufbewahrung beginnen sieben Tage ab dem Verschieben.
+* Die Aufgabenzeile zeigt Fälligkeiten relativ, etwa „In 3 Stunden und 20 Minuten“
+  oder „Seit 2 Tagen überfällig“. Das genaue lokale Datum steht im Hover-Hinweis
+  und im Editor. Tage erscheinen ohne Stunden; Wochen/Tage, Monate/Wochen und
+  Jahre/Monate werden kombiniert. Checkbox und Löschen sind über die ganze
+  Zeilenhöhe zentriert; die äußere Fläche lässt sich öffnen und ziehen.
 * Nach dem Abhaken erscheint unten kurz eine Leiste mit „Rückgängig“
 * Erinnerungen werden ausdrücklich hinzugefügt; ein Fälligkeitsdatum allein
   löst keine Benachrichtigung aus. Details unter
@@ -870,8 +908,8 @@ stellt die gemeinsame Aufbewahrungsregel in beiden Ansichten ein:
 * **Die Leiste unten** erscheint direkt nach dem Abhaken für fünf Sekunden mit
   einem „Rückgängig“-Knopf. Hakst du mehrere Aufgaben kurz hintereinander ab,
   zeigt sie die zuletzt abgehakte.
-* **„Abgehakt am Listenende“ an:** Dauerhaft erhalten, ausschließlich im Bereich
-  „Abgehakt“ am Ende dieser Liste. Er beginnt eingeklappt mit der Anzahl.
+* **„Erledigt am Listenende“ an:** Dauerhaft erhalten, ausschließlich im Bereich
+  „Erledigt“ am Ende dieser Liste. Er beginnt eingeklappt mit der Anzahl.
   Die angehakte Checkbox öffnet eine Aufgabe wieder; ihr Hinweis benennt die
   Aktion. Es gilt keine Sieben-Tage-Grenze.
 * **Einstellung aus, der Default:** Unter „Aufgaben wiederherstellen“ erreichbar,
@@ -930,7 +968,7 @@ als erledigt stehen – so bleibt nachvollziehbar, wann etwas zuletzt getan wurd
   bearbeitete, verschobene, umsortierte oder erledigte Nachfolger bleiben
   erhalten. Der gesicherte Ausgangsstand schützt spätere Arbeit auch bei
   identischen Zeitstempeln.
-* **Die abgehakte Fassung folgt der Listenregel.** Dauerhaft unter „Abgehakt“
+* **Die abgehakte Fassung folgt der Listenregel.** Dauerhaft unter „Erledigt“
   oder bis zum Fristablauf unter „Aufgaben wiederherstellen“, auch wenn der
   Nachfolger bereits existiert (siehe [Erledigen und
   Wiederherstellen](#erledigen-und-wiederherstellen)).
@@ -1119,16 +1157,16 @@ jeweiligen Stelle kommentiert.
    unbemerkt verändern.
 
 4. **Teilen erfordert eine Verbindung.** Nur der Server kennt die Zuordnung
-   E-Mail → Benutzer-ID. Vor dem Teilen wird deshalb erst synchronisiert, damit
+   Benutzername/E-Mail → Benutzer-ID. Vor dem Teilen wird deshalb erst synchronisiert, damit
    die Liste auf dem Server existiert. Das *Entfernen* eines Mitglieds
    funktioniert dagegen auch offline, weil die Mitgliedschaftszeile lokal
    vorliegt.
 
-5. **Mitglieder werden ohne E-Mail-Adresse angezeigt.** E-Mail-Adressen gehören
-   nicht zum Listenbestand und werden nicht mit ihm synchronisiert; die
-   Mitgliederliste zeigt deshalb eine Kurzform der Benutzer-ID. Eine Ausnahme
-   gibt es seit den Vorschlägen (Punkt 6): Wer mit dir eine Liste teilt, dessen
-   Adresse holt die App gezielt für den Teilen-Dialog – siehe dort.
+5. **Mitglieder haben lesbare Namen.** Namen und E-Mail-Adressen gehören nicht
+   zum synchronisierten Listenbestand. Sie werden gezielt für Personen aus
+   gemeinsamen Listen geladen und lokal als Eingabehilfe abgelegt. Der Dialog
+   zeigt Benutzernamen, bei alten Kontakten die bekannte E-Mail; bis zum ersten
+   erfolgreichen Abruf steht dort „Name noch nicht geladen“.
 
 6. **Beim Teilen wird vorgeschlagen, wer schon mit dir teilt.** Wer eine Liste
    teilt, tippt sonst für jede weitere Liste dieselbe Adresse – und auf der
@@ -1150,10 +1188,9 @@ jeweiligen Stelle kommentiert.
    über die Benutzer-ID. Ein Klick setzt die Adresse ins Feld; freigegeben wird
    mit dem zweiten Klick auf „Freigeben", damit ein Tipp niemandem Zugriff gibt.
 
-6. **Abgelehnte Zeilen bleiben in der Queue.** Lehnt der Server einen Datensatz
-   dauerhaft ab (z. B. weil der Zugriff auf eine gemeinsame Liste entzogen
-   wurde), bleibt er `dirty` und wird bei jedem Sync erneut versucht. Es geht
-   nichts verloren; schöner wäre ein getrenntes Ablagefach für solche Fälle.
+6. **Dauerhafte Ablehnungen blockieren den Bestand nicht.** Der Upload bestätigt
+   jede Zeile einzeln. Nach einigen Versuchen kommen dauerhaft abgelehnte
+   Änderungen in ein lokales Ablagefach und zählen nicht mehr als wartend.
 
 7. **Keine Echtzeit.** Änderungen erscheinen auf anderen Geräten erst beim
    nächsten Sync. Supabase Realtime ist bewusst nicht eingebunden.

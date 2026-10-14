@@ -20,12 +20,26 @@ export interface TaskDraft {
   error: string | null
   conflict: boolean
 }
+export interface NewListDraft {
+  name: string
+  icon: string | null
+  includeInOverview: boolean
+  keepCompleted: boolean
+  busy: boolean
+  error: string | null
+}
+export const emptyNewListDraft: NewListDraft = {
+  name: '', icon: null, includeInOverview: false, keepCompleted: false, busy: false, error: null,
+}
 export interface TaskDraftState {
+  newList: NewListDraft
+  changeNewList(patch: Partial<Pick<NewListDraft, 'name' | 'icon' | 'includeInOverview' | 'keepCompleted'>>): void
+  beginListSave(): boolean
+  listSaved(): void
+  listFailed(message: string): void
   drafts: Readonly<Record<string, TaskDraft>>
-  activeNewDrafts: Readonly<Record<string, string>>
-  activateNewDraft(listId: string, key: string): void
-  /** Ordnet die noch ungebundene Eingabe zu, ohne Listenentwürfe zu ersetzen. */
-  assignUnassignedDraft(listId: string): void
+  overviewTarget: string | null
+  selectOverviewTarget(listId: string): void
   change(key: string, initial: TaskDraft, update: (previous: TaskDraft) => TaskDraft): void
   discard(key: string): void
   beginSave(key: string, initial: TaskDraft): boolean
@@ -36,11 +50,3 @@ export interface TaskDraftState {
   discardListName(id: string): void
 }
 export const TaskDraftContext = createContext<TaskDraftState | null>(null)
-
-export function newDraftKey(state: TaskDraftState, listId: string): string {
-  const active = state.activeNewDrafts[listId]
-  if (active && state.drafts[active]?.listId === listId) return active
-  const standard = `new:${listId}`
-  if (state.drafts[standard]) return standard
-  return Object.entries(state.drafts).find(([, draft]) => draft.taskId === null && draft.listId === listId)?.[0] ?? standard
-}

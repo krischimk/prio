@@ -3,7 +3,7 @@ import { describeSyncState } from './status/syncStatus'
 import { statusTone } from './styles'
 import { useView } from './useView'
 import { IconButton } from './components/IconButton'
-import { AlertIcon, SyncIcon } from './icons'
+import { AlertIcon } from './icons'
 
 /**
  * Statusanzeige der Synchronisation.
@@ -21,10 +21,9 @@ export function SyncIndicator() {
     <span data-testid="sync-status" role="status" className="sr-only">{text}</span>
     <IconButton aria-label="Jetzt synchronisieren"
       title={`${text} Klicken, um jetzt zu synchronisieren.`}
-      disabled={syncing} layout="relative"
+      disabled={syncing}
       onClick={() => { void runSync() }}>
-      <SyncIcon />
-      <span className={`absolute right-1 top-1 h-2 w-2 rounded-full ${farben.dot}`} aria-hidden="true" />
+      <span className={`h-2.5 w-2.5 rounded-full ${farben.dot} ${syncing ? 'animate-pulse' : ''}`} aria-hidden="true" />
     </IconButton>
     {conflicts.length > 0 ? <IconButton aria-label="Konflikte klären" variant="attention"
       title={`${conflicts.length} offene ${conflicts.length === 1 ? 'Änderung' : 'Änderungen'} prüfen und entscheiden, welche Fassung erhalten bleibt.`}

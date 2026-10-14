@@ -202,7 +202,7 @@ function TaskGroup({ id, ids, name, sectionId, open, onToggle, byId, currentUser
       const task = byId.get(taskId)
       return task ? <SortableTaskRow key={task.id} task={task} index={index} group={id} currentUserId={currentUserId} overview={overview} onOpen={onOpen} /> : null
     })}</ul> : null}
-    {ids.length === 0 || !open ? <div className={`min-h-11 rounded-control border border-dashed ${activeId ? 'border-line-strong' : 'border-transparent'}`} data-testid="gruppe-leer" aria-hidden="true" /> : null}
+    {activeId !== null && (ids.length === 0 || !open) ? <div className="min-h-11 rounded-control border border-dashed border-line-strong" data-testid="gruppe-leer" aria-hidden="true" /> : null}
   </div>
 }
 

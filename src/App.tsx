@@ -9,6 +9,7 @@ import { UndoProvider } from './ui/UndoProvider'
 import { UpdateProvider } from './ui/UpdateProvider'
 import { WorkspaceScreen } from './ui/WorkspaceScreen'
 import { appBackground } from './ui/styles'
+import { UsernameSetup } from './ui/UsernameSetup'
 
 /**
  * Wurzelkomponente.
@@ -39,6 +40,7 @@ function AuthenticatedArea({ services }: { services: AppServices }) {
   if (state.status === 'anonymous') {
     return <AuthScreen />
   }
+  if (!state.user.username) return <UsernameSetup />
 
   return (
     <WorkspaceProvider userId={state.user.id} gateway={services.gateway} network={services.network}>

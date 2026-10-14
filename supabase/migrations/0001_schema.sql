@@ -30,12 +30,14 @@
 create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   email text not null,
+  username text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 comment on table public.profiles is
   'Spiegel der Benutzerkonten für die Suche nach E-Mail-Adressen beim Teilen von Listen.';
+alter table public.profiles add column if not exists username text;
 
 -- E-Mail-Adressen sind eindeutig (Groß-/Kleinschreibung spielt keine Rolle).
 -- Leere Einträge werden ausgenommen, damit Konten ohne E-Mail-Adresse

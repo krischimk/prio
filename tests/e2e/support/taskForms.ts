@@ -23,7 +23,7 @@ export async function moreOptions(scope: Page | Locator) {
 }
 
 export async function addReminder(scope: Page | Locator) {
-  await scope.getByRole('button', { name: /^(Benachrichtigung hinzufügen|Weitere Erinnerung)$/ }).click()
+  await scope.getByRole('button', { name: /^(Erinnerung hinzufügen|Weitere Erinnerung)$/ }).click()
 }
 
 export async function setOverviewMode(page: Page, mode: 'newest' | 'by_list') {
