@@ -17,13 +17,31 @@ App. Sie sind so geschrieben, dass sie sich gefahrlos erneut ausführen lassen
 | `0009_task_recurrence.sql` | Spalten `recurrence` und `successor_id` für wiederkehrende Aufgaben |
 | `0010_task_reminder.sql` | Spalten `remind_at` und `reminder_offset_minutes`; trennt die Erinnerung von der Fälligkeit |
 | `0011_task_reminders.sql` | Spalte `reminders` (jsonb) – mehrere Erinnerungen je Aufgabe. Zieht die Einzelwerte aus 0010 einmalig um und entfernt die alten Spalten |
-| `0012_co_member_contacts.sql` | Funktion `co_member_contacts()` – Adressen der Personen, mit denen man eine Liste teilt (für Vorschläge beim Teilen). Gibt nur diesen Kreis heraus, ohne Parameter |
+| `0012_co_member_contacts.sql` | Funktion `co_member_contacts()` – Adressen und Benutzernamen der Personen aus gemeinsamen Listen. Gibt nur diesen Kreis heraus, ohne Parameter |
 | `0013_list_sections.sql` | Spalte `lists.sections` (jsonb, Abschnitte in Anzeigereihenfolge) und `tasks.section_id` (Abschnitt innerhalb der Liste; `null` = ohne Bereich). Keine neuen Policies nötig – die Rechte hängen an den bestehenden Tabellen |
 | `0014_guarded_sync.sql` | Geschützter `sync_push` mit Basisvergleich, Sperren, Rechteprüfung und Antwort je Zeile. Sperrt direkte App-Schreibrechte. Keine Datenumschreibung und keine neuen Spalten |
-| `0015_personal_overview.sql` | Persönliche Aufnahme je Liste, manuelle Standardliste und bevorzugte Ansicht. Eigene Tabellen mit RLS; geschützte Änderungen über denselben `sync_push`. Keine automatische Listenauswahl |
+| `0015_personal_overview.sql` | Persönliche Aufnahme je Liste, zuletzt in der Gesamtansicht verwendete Zielliste (`default_list_id`) und bevorzugte Ansicht. Eigene Tabellen mit RLS; geschützte Änderungen über denselben `sync_push`. Keine automatische Aufnahme von Listen |
 | `0016_completion_retention.sql` | Gemeinsame Aufbewahrung, letzte Umstellung, gesonderte Abschlussfrist, endgültiger Ablauf und Rückkehrkontext; private Ablauffunktionen. Erweitert die Positionsspalte für Zwischenplätze, ohne bestehende Werte zu verändern |
 | `0017_completion_grace.sql` | Einmaliger, mit Marker gesicherter Datenumbau: Altabschlüsse erhalten sieben Tage ab Einführung; erneutes Einspielen verlängert nichts |
 | `0018_completion_cron.sql` | Benannter minütlicher Datenbankjob, unabhängig von App/MCP; setzt `pg_cron` voraus |
+| `0019_usernames.sql` | Eindeutige Benutzernamen, atomarer Auth-/Profil-Trigger, reine Verfügbarkeitsabfrage und Freigabe per Name mit Besitzprüfung und optionaler erwarteter Benutzer-ID |
+
+### Benutzernamen
+
+`profiles.username` bleibt für noch nicht umgestellte Konten `null`. Die App
+verlangt bei Registrierung und vor dem Öffnen eines bestehenden Arbeitsbereichs
+einen Namen. Der private Auth-Trigger normalisiert ihn, prüft das Format und
+schreibt das Profil in derselben Transaktion. Der Unique-Index entscheidet
+gleichzeitige Vergaben; ein gewählter Name kann geändert, aber nicht entfernt
+werden. Es gibt keinen erfundenen Backfill-Namen für Bestandskonten.
+
+Die anonym erlaubte `username_available(text)` gibt nur ein Boolean zurück.
+`share_list_by_username(uuid,text,uuid)` erfordert Anmeldung und Listenbesitz;
+ein bekannter Kontakt wird zusätzlich gegen die erwartete Benutzer-ID geprüft.
+Namen in `co_member_contacts()` sind ausschließlich für den Kreis gemeinsamer
+Listen lesbar. Exponierte Funktionen sind `SECURITY INVOKER`, die eigentliche
+Rechteprüfung steht im privaten Schema. Die Sammelmigration meldet ihren neuen
+API-Stand an den PostgREST-Schemacache und wird vor der App eingespielt.
 
 ## Anwenden
 
