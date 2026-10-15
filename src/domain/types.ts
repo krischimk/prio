@@ -96,6 +96,8 @@ export interface LocalTask extends SyncableRow, LocalOnly {
   title: string
   description: string | null
   due_at: IsoDateTime | null
+  /** Frühes Abhaken: der Nachfolger tritt bis zur bisherigen Fälligkeit zurück. */
+  available_from: IsoDateTime | null
   completed: boolean
   /**
    * Zeitpunkt, zu dem die Aufgabe abgehakt wurde – `null`, solange sie offen
@@ -179,6 +181,8 @@ export interface LocalListPreference extends SyncableRow, LocalOnly {
   list_id: string
   user_id: string
   include_in_overview: boolean
+  position: number | null
+  hidden: boolean
   created_at: IsoDateTime
 }
 export type RemoteListPreference = Omit<LocalListPreference, 'dirty'>
@@ -240,7 +244,8 @@ export type RemoteList = Omit<LocalList, 'dirty' | 'sections' | 'keep_completed'
 }
 
 /** Eine Aufgabenzeile vom Server; `section_id` fehlt vor Migration 0013. */
-export type RemoteTask = Omit<LocalTask, 'dirty' | 'section_id' | 'completed_expires_at' | 'expired_at' | 'reopen_context'> & {
+export type RemoteTask = Omit<LocalTask, 'dirty' | 'section_id' | 'completed_expires_at' | 'expired_at' | 'reopen_context' | 'available_from'> & {
+  available_from?: IsoDateTime | null
   section_id?: string | null
   completed_expires_at?: IsoDateTime | null
   expired_at?: IsoDateTime | null

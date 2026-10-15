@@ -72,6 +72,7 @@ export function listen(ctx: Kontext): Pick<Repositories, 'createList' | 'renameL
           requireText(ownerId, 'Die Benutzerkennung')
           await ctx.db.list_preferences.add({
             list_id: list.id, user_id: ownerId, include_in_overview: true,
+            position: null, hidden: false,
             created_at: now, updated_at: now, deleted_at: null, dirty: 1,
           })
         }

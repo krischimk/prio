@@ -10,6 +10,7 @@ import { UpdateProvider } from './ui/UpdateProvider'
 import { WorkspaceScreen } from './ui/WorkspaceScreen'
 import { appBackground } from './ui/styles'
 import { UsernameSetup } from './ui/UsernameSetup'
+import { StartupScreen } from './ui/StartupScreen'
 
 /**
  * Wurzelkomponente.
@@ -35,7 +36,7 @@ function AuthenticatedArea({ services }: { services: AppServices }) {
   const { state } = useAuth()
 
   if (state.status === 'loading') {
-    return <FullScreenNotice text="Sitzung wird geprüft…" />
+    return <StartupScreen text="Sitzung wird geprüft …" />
   }
   if (state.status === 'anonymous') {
     return <AuthScreen />
@@ -52,14 +53,6 @@ function AuthenticatedArea({ services }: { services: AppServices }) {
         </UpdateProvider>
       </BackLayerProvider>
     </WorkspaceProvider>
-  )
-}
-
-function FullScreenNotice({ text }: { text: string }) {
-  return (
-    <div className={`flex min-h-screen items-center justify-center ${appBackground} px-4 text-ink-muted`}>
-      {text}
-    </div>
   )
 }
 

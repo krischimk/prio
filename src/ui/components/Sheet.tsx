@@ -77,7 +77,7 @@ export function Sheet({
         isDesktop ? 'items-center' : 'items-end'
       }`}
     >
-      <div className="absolute inset-0 bg-page/60" aria-hidden="true" onClick={onClose} />
+      <div className="absolute inset-0 bg-scrim/60" aria-hidden="true" onClick={onClose} />
 
       <div
         ref={panel}

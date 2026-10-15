@@ -82,18 +82,20 @@ export function MobileAppBar({
           >
             <ListIcon icon={listIcon} className="h-4 w-4 shrink-0" />
             <span className="truncate">{listName}</span>
-            <SettingsIcon className="ml-auto h-4 w-4 shrink-0 text-ink-muted" />
+            <SettingsIcon className="ml-auto size-icon shrink-0 text-ink-muted" />
           </button>
         )}
 
         <button
           type="button"
           onClick={() => {
+            if (syncing) return
             if (cloudConflicts.length > 0) setConflictsOpen(true)
             else void runSync()
           }}
           aria-label={cloudConflicts.length > 0 ? `${text} Konflikte klären` : `${farben.label} – jetzt synchronisieren`}
           title={text}
+          aria-disabled={syncing}
           className={`${focusRing} rounded-control p-3 active:bg-raised`}
         >
           {/*

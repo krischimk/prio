@@ -109,6 +109,7 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
             Date.parse(now),
           ),
           completed: false,
+          available_from: null,
           completed_at: null,
           completed_expires_at: null,
           expired_at: null,
@@ -139,7 +140,8 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
         const task = await ctx.requireTask(taskId)
         const values = applyTaskEdit(task, patch, ctx.clock.nowMs(), options?.base)
         if (sameData(values, taskEditValues(task))) return task
-        const updated: LocalTask = { ...task, ...values, ...ctx.stamp() }
+        const scheduleChanged = values.due_at !== task.due_at || values.recurrence !== task.recurrence
+        const updated: LocalTask = { ...task, ...values, available_from: scheduleChanged ? null : task.available_from, ...ctx.stamp() }
         await ctx.db.tasks.put(updated)
         return updated
       })
@@ -191,6 +193,7 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
           ...task,
           id: nachfolgerId,
           due_at: naechsterTermin,
+          available_from: Date.parse(task.due_at) > Date.parse(now) ? task.due_at : null,
           completed: false,
           completed_at: null,
           completed_expires_at: null,

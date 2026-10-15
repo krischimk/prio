@@ -35,6 +35,7 @@ export interface CreateListOptions {
 export interface Repositories {
   listListPreferences(userId: string): Promise<LocalListPreference[]>
   setListInOverview(listId: string, userId: string, included: boolean): Promise<void>
+  placeList(listId: string, userId: string, destination: { hidden: boolean; beforeListId: string | null }): Promise<void>
   getUserPreferences(userId: string): Promise<LocalUserPreference | undefined>
   updateUserPreferences(userId: string, patch: { defaultListId?: string | null; overviewMode?: OverviewMode }): Promise<void>
   listCloudConflicts(): Promise<CloudConflict[]>

@@ -1,4 +1,4 @@
-import { appBackground } from './styles'
+import { StartupScreen } from './StartupScreen'
 
 /**
  * Die Anzeige, während die lokale Datenbank geöffnet wird.
@@ -7,9 +7,5 @@ import { appBackground } from './styles'
  * Tailwind-Klassen und einen deutschen Satz der Oberfläche mit.
  */
 export function WorkspaceLoading() {
-  return (
-    <div className={`flex min-h-screen items-center justify-center ${appBackground} text-ink-muted`}>
-      Lokale Daten werden geladen…
-    </div>
-  )
+  return <StartupScreen text="Lokale Daten werden geladen …" />
 }

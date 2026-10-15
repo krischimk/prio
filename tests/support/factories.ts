@@ -15,6 +15,7 @@ export function localTask(overrides: Partial<LocalTask> = {}): LocalTask {
     title: 'Aufgabe',
     description: null,
     due_at: null,
+    available_from: null,
     completed: false,
     completed_at: null,
     completed_expires_at: null,
@@ -80,7 +81,7 @@ export function remoteMember(overrides: Partial<RemoteListMember> = {}): RemoteL
 export { createFixedClock }
 
 export function localListPreference(overrides: Partial<LocalListPreference> = {}): LocalListPreference {
-  return { list_id: 'list-1', user_id: 'user-1', include_in_overview: false, created_at: T0, updated_at: T0, deleted_at: null, dirty: 0, ...overrides }
+  return { list_id: 'list-1', user_id: 'user-1', include_in_overview: false, position: null, hidden: false, created_at: T0, updated_at: T0, deleted_at: null, dirty: 0, ...overrides }
 }
 
 export function localUserPreference(overrides: Partial<LocalUserPreference> = {}): LocalUserPreference {

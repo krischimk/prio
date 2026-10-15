@@ -10,6 +10,7 @@ import { formatOpenTasks } from './taskCount'
 import { SortIcon } from './icons'
 import { OverviewTitle } from './OverviewTitle'
 import { TaskList } from './TaskList'
+import { DelayedLoading } from './components/DelayedLoading'
 import { TaskComposer } from './TaskComposer'
 import { IconButton } from './components/IconButton'
 import { Popover } from '@ark-ui/react/popover'
@@ -57,7 +58,7 @@ export function OverviewPanel({ currentUserId }: { currentUserId: string }) {
       {error ? <p role="alert" className={errorBox}>{error}</p> : null}
     </header>
     {desktop && overview.status === 'ready' && overview.lists.length > 0 ? <TaskComposer /> : null}
-    {overview.status === 'loading' || query.status === 'loading' ? <p role="status" className="py-6 text-body text-ink-muted">Gesamtansicht wird geladen …</p>
+    {overview.status === 'loading' || query.status === 'loading' ? <DelayedLoading>Gesamtansicht wird geladen …</DelayedLoading>
       : overview.status === 'error' || query.status === 'error' ? <div className="space-y-3 py-6">
         <p role="alert" className={errorBox}>Die Gesamtansicht konnte nicht geladen werden.</p>
         <Button variant="secondary" onClick={() => { overview.retry(); query.retry() }}>Erneut versuchen</Button>

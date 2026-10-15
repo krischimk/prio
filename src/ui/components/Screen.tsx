@@ -33,7 +33,7 @@ export function Screen({ label, onClose, onBack, name = 'flaeche', header, child
 
   return (
     <div className={`fixed inset-0 ${layer.screen} flex ${isDesktop ? 'items-center justify-center p-6' : ''}`}>
-    {isDesktop ? <div className="absolute inset-0 bg-page/70 backdrop-blur-sm" aria-hidden="true" onClick={onClose} /> : null}
+    {isDesktop ? <div className="absolute inset-0 bg-scrim/70 backdrop-blur-sm" aria-hidden="true" onClick={onClose} /> : null}
     <div
       ref={panel}
       role="dialog"

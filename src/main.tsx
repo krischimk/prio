@@ -4,6 +4,9 @@ import { App } from './App'
 import { createSupabaseServices, readSupabaseConfig } from './app/services'
 import { registerServiceWorker } from './pwa/registerServiceWorker'
 import './index.css'
+import { applyTheme, currentTheme } from './app/theme'
+
+applyTheme(currentTheme())
 
 /**
  * Einstiegspunkt.

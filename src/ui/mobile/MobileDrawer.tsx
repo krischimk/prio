@@ -5,17 +5,18 @@ import { describeSyncState } from '../status/syncStatus'
 import type { LocalList } from '../../domain/types'
 import { focusRing, layer } from '../styles'
 import { AppBrand } from '../AppBrand'
-import { ListIcon } from '../ListIcon'
 import { UpdateEntry } from '../UpdateEntry'
 import { CloseIcon, UserIcon, BellIcon, RestoreIcon, SyncIcon, OverviewIcon, AlertIcon } from '../icons'
 import { appBackground, numeric, statusTone } from '../styles'
 import { isNativeApp } from '../../app/platform'
-import { leerListen } from '../emptyTexts'
 import { IconButton } from '../components/IconButton'
 import { Button } from '../components/Button'
-import { useDialog } from '../components/useDialog'
+import type { DialogVerhalten } from '../components/useDialog'
 import { useView } from '../useView'
 import { NewListComposer } from '../NewListComposer'
+import { ThemeToggle } from '../ThemeToggle'
+import { ListNavigation } from '../ListNavigation'
+import type { RefObject } from 'react'
 
 /**
  * Ausklappbares Menü der mobilen Ansicht.
@@ -32,6 +33,11 @@ export function MobileDrawer({
   onSelectList,
   currentUserId,
   onOpenRestore,
+  draggingTask = false,
+  visible,
+  panelRef,
+  sheetRef,
+  onKeyDown,
 }: {
   open: boolean
   onClose: () => void
@@ -40,6 +46,11 @@ export function MobileDrawer({
   onSelectList: (listId: string | null) => void
   currentUserId: string
   onOpenRestore: () => void
+  draggingTask?: boolean
+  visible: boolean
+  panelRef: RefObject<HTMLDivElement | null>
+  sheetRef: RefObject<HTMLElement | null>
+  onKeyDown: DialogVerhalten<HTMLDivElement>['onKeyDown']
 }) {
   const { state } = useAuth()
   const {
@@ -54,26 +65,23 @@ export function MobileDrawer({
 
   const { cloudConflicts, setConflictsOpen, setAccountOpen } = useView()
 
-  // Zurück-Taste, Escape, Fokus und Rolle kommen aus `useDialog` – dasselbe
-  // Verhalten wie bei Blatt und Detailansicht. `active: open`, weil das Menü
-  // immer eingebunden ist, aber meistens zu.
-  const { panel, onKeyDown } = useDialog<HTMLDivElement>({ active: open, onClose })
-
-  if (!open) return null
-
   const email = state.status === 'authenticated' ? state.user.email : ''
   const sync = describeSyncState(syncStatus, pendingCount, syncing, rejectedCount, cloudConflicts.length)
   const reminders = describeReminderState(reminderStatus)
 
   return (
+    // Geschlossen ist das Menü sofort inaktiv; sichtbar bleibt nur die Animation.
     <div
-      ref={panel}
+      ref={panelRef}
       role="dialog"
-      aria-modal="true"
+      aria-hidden={!open}
+      inert={!open}
+      aria-modal={draggingTask ? undefined : true}
       aria-label="Menü"
       tabIndex={-1}
       onKeyDown={onKeyDown}
-      className={`fixed inset-0 outline-none ${layer.raised}`}
+      data-drawer-visible={visible || open}
+      className={`mobile-drawer fixed inset-0 outline-none ${layer.raised}`}
     >
       {/*
         Der Hintergrund schließt das Menü, ist aber kein Bedienelement:
@@ -82,12 +90,12 @@ export function MobileDrawer({
         nicht zwei Bedienelemente mit demselben Namen.
       */}
       <div
-        className="absolute inset-0 cursor-default bg-page/60"
+        className="drawer-scrim absolute inset-0 cursor-default bg-scrim/60"
         aria-hidden="true"
         onClick={onClose}
       />
 
-      <aside className={`safe-top safe-bottom absolute inset-y-0 left-0 flex w-80 max-w-[85%] flex-col overflow-y-auto border-r border-line ${appBackground}`}>
+      <aside ref={sheetRef} data-testid="drawer-sheet" className={`drawer-sheet safe-top safe-bottom absolute inset-y-0 left-0 flex w-80 max-w-[85%] flex-col overflow-y-auto border-r border-line ${appBackground}`}>
         <div className="flex items-center justify-between px-4 pt-3">
           <AppBrand />
           <IconButton
@@ -106,46 +114,19 @@ export function MobileDrawer({
             <OverviewIcon />Gesamtansicht
           </button>
           <h2 className="mb-2 text-meta font-semibold uppercase tracking-wide text-ink-faint">Listen</h2>
-          <ul className="space-y-1">
-            {lists.map((list) => {
-              const selected = list.id === selectedListId
-              return (
-                <li key={list.id}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onSelectList(list.id)
-                      onClose()
-                    }}
-                    aria-current={selected ? 'true' : undefined}
-                    className={`${focusRing} flex w-full items-center justify-between gap-2 rounded-control px-3 py-2 text-left text-body ${
-                      selected ? 'bg-brand-tint/60 text-brand-faint' : 'text-ink-soft active:bg-surface'
-                    }`}
-                  >
-                    <span className="flex min-w-0 items-center gap-2">
-                      <ListIcon icon={list.icon} className="h-4 w-4 shrink-0" />
-                      <span className="truncate">{list.name}</span>
-                    </span>
-                    {list.is_shared ? <span className="shrink-0 text-meta text-brand-soft">geteilt</span> : null}
-                  </button>
-                </li>
-              )
-            })}
-            {lists.length === 0 ? (
-              <li className="px-3 py-1 text-body text-ink-faint">{leerListen('mobil')}</li>
-            ) : null}
-          </ul>
+          <ListNavigation lists={lists} selectedListId={selectedListId} currentUserId={currentUserId}
+            onSelect={id => { onSelectList(id); onClose() }} />
 
           <div className="mt-3"><NewListComposer currentUserId={currentUserId} onCreated={id => { onSelectList(id); onClose() }} /></div>
         </section>
 
-        <section className="border-t border-line px-4 py-4" aria-label="Synchronisation">
-          <h2 className="mb-2 text-meta font-semibold uppercase tracking-wide text-ink-faint">
-            Synchronisation
-          </h2>
+        <section className="border-t border-line px-4 py-2" aria-label="Synchronisation">
+          <div className="flex min-h-11 items-center justify-between gap-2">
           <p className={`text-meta ${statusTone[sync.tone].text} ${numeric}`} data-testid="drawer-sync">
             <span data-testid="sync-status">{sync.text}</span>
           </p>
+          <IconButton aria-label="Jetzt synchronisieren" disabled={syncing} onClick={() => void runSync()}><SyncIcon /></IconButton>
+          </div>
           {cloudConflicts.length > 0 ? (
             <Button
               variant="secondary" layout="mt-2 w-full"
@@ -157,18 +138,9 @@ export function MobileDrawer({
               <AlertIcon />Konflikte klären
             </Button>
           ) : null}
-          <Button
-            variant="secondary" layout="mt-2 w-full"
-            onClick={() => {
-              void runSync()
-            }}
-            disabled={syncing}
-          >
-            <SyncIcon />Jetzt synchronisieren
-          </Button>
         </section>
 
-        <section className="border-t border-line px-4 py-4" aria-label="Erinnerungen">
+        {reminders.canEnable || reminders.tone === 'error' || !reminders.available ? <section className="border-t border-line px-4 py-3" aria-label="Erinnerungen">
           <h2 className="mb-2 flex items-center gap-2 text-meta font-semibold uppercase tracking-wide text-ink-faint">
             <BellIcon />Erinnerungen
           </h2>
@@ -187,7 +159,7 @@ export function MobileDrawer({
             <p className="text-meta text-ink-faint">Erinnerungen sind auf diesem Gerät nicht verfügbar.</p>
           ) : null}
 
-        </section>
+        </section> : null}
         <section className="border-t border-line px-4 py-3" aria-label="Wiederherstellen">
           <Button variant="ghost" layout="w-full justify-start" onClick={onOpenRestore}><RestoreIcon />Aufgaben wiederherstellen</Button>
         </section>
@@ -197,8 +169,9 @@ export function MobileDrawer({
           <UpdateEntry />
         </section> : null}
 
-        <div className="mt-auto border-t border-line px-4 py-4">
-          <Button variant="ghost" layout="w-full justify-start" onClick={() => { onClose(); setAccountOpen(true) }}><UserIcon />Konto</Button>
+        <div className="mt-auto flex items-center justify-between gap-2 border-t border-line px-4 py-2">
+          <Button variant="ghost" layout="flex-1 justify-start" onClick={() => { onClose(); setAccountOpen(true) }}><UserIcon />Konto</Button>
+          <ThemeToggle />
         </div>
       </aside>
     </div>

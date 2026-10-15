@@ -37,6 +37,22 @@ describe('Sync-Szenarien', () => {
     await device.dispose()
   })
 
+  it('überträgt persönliche Listenreihenfolge und Verstecken, ohne die Gesamtansicht-Auswahl zu ändern', async () => {
+    const a = await device.repositories.createList('A', userId, { includeInOverview: true })
+    const b = await device.repositories.createList('B', userId)
+    await device.repositories.placeList(b.id, userId, { hidden: false, beforeListId: a.id })
+    await device.repositories.placeList(a.id, userId, { hidden: true, beforeListId: null })
+    await device.engine.sync()
+    const other = await createDevice({ userId, gateway: server.gatewayFor(userId) })
+    try {
+      await other.engine.sync()
+      expect(await other.repositories.listListPreferences(userId)).toEqual(expect.arrayContaining([
+        expect.objectContaining({ list_id: a.id, hidden: true, include_in_overview: true, position: 1, dirty: 0 }),
+        expect.objectContaining({ list_id: b.id, hidden: false, position: 1, dirty: 0 }),
+      ]))
+    } finally { await other.dispose() }
+  })
+
   it('Szenario 1: offline erstellte Aufgabe existiert lokal und steht in der Queue', async () => {
     online = false
     const list = await device.repositories.createList('Privat', userId)

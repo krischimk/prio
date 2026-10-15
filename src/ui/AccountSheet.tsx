@@ -6,6 +6,7 @@ import { BackendLabel } from './BackendLabel'
 import { UsernameField } from './UsernameField'
 import { errorBox, focusRing } from './styles'
 import { LogoutIcon, SaveIcon } from './icons'
+import { ThemeToggle } from './ThemeToggle'
 
 export function AccountSheet({ onClose }: { onClose: () => void }) {
   const { state, setUsername, signOut, error } = useAuth()
@@ -15,6 +16,7 @@ export function AccountSheet({ onClose }: { onClose: () => void }) {
   const [saved, setSaved] = useState(false)
   return <Sheet title="Konto" name="account" onClose={() => { if (!busy) onClose() }}>
     <div className="space-y-5 p-5">
+      <div className="flex items-center justify-between"><span className="text-body text-ink">Darstellung</span><ThemeToggle /></div>
       <p className="break-words text-body text-ink-muted">{user?.email}</p>
       <form aria-label="Benutzername ändern" className="space-y-3" onSubmit={event => {
         event.preventDefault()

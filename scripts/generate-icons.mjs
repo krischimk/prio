@@ -60,6 +60,14 @@ const BAR_COLORS = [
   [0xa5, 0xb4, 0xfc, 0xff],
   [0x63, 0x66, 0xf1, 0xff],
 ]
+// Helle Oberflächenvariante; Form und Raster bleiben dieselben. Die Rollen
+// entsprechen page, ink-strong, brand-soft und brand aus src/index.css.
+const LIGHT_BACKGROUND = [0xf9, 0xfa, 0xfc, 0xff]
+const LIGHT_BAR_COLORS = [
+  [0x15, 0x19, 0x23, 0xff],
+  [0x5d, 0x47, 0xb6, 0xff],
+  [0x67, 0x56, 0xdf, 0xff],
+]
 const BAR_WIDTH_FACTORS = [1, 0.72, 0.46]
 
 const CRC_TABLE = (() => {
@@ -136,7 +144,7 @@ function fillRoundRect(pixels, size, rect) {
 }
 
 /** Zeichnet das Motiv mittig; `markScale` verkleinert es für maskierbare Icons. */
-function drawMark(pixels, size, markScale) {
+function drawMark(pixels, size, markScale, colors = BAR_COLORS) {
   const barHeight = size * 0.11 * markScale
   const gap = size * 0.075 * markScale
   const radius = barHeight / 2
@@ -145,7 +153,7 @@ function drawMark(pixels, size, markScale) {
   const startY = (size - totalHeight) / 2
   const startX = (size - available) / 2
 
-  BAR_COLORS.forEach((color, index) => {
+  colors.forEach((color, index) => {
     fillRoundRect(pixels, size, {
       x: startX,
       y: startY + index * (barHeight + gap),
@@ -176,9 +184,9 @@ function writePng(file, size, pixels) {
   console.log(`geschrieben: ${file} (${size}×${size})`)
 }
 
-function writeIcon(fileName, size, markScale) {
-  const pixels = createCanvas(size, BACKGROUND)
-  drawMark(pixels, size, markScale)
+function writeIcon(fileName, size, markScale, background = BACKGROUND, colors = BAR_COLORS) {
+  const pixels = createCanvas(size, background)
+  drawMark(pixels, size, markScale, colors)
   writePng(join(OUT_DIR, fileName), size, pixels)
 }
 
@@ -216,6 +224,7 @@ function writeAndroidIcons() {
 
 mkdirSync(OUT_DIR, { recursive: true })
 writeIcon('icon-192.png', 192, 1)
+writeIcon('icon-light-192.png', 192, 1, LIGHT_BACKGROUND, LIGHT_BAR_COLORS)
 writeIcon('icon-512.png', 512, 1)
 // Maskierbare Icons werden vom System beschnitten – das Motiv bleibt daher
 // kleiner und vollständig innerhalb der sicheren Zone.

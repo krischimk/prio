@@ -14,6 +14,8 @@ import type { OverviewPreferencesQuery } from '../app/hooks'
  * Hier liegt der Zustand **über** der Verzweigung und überlebt sie.
  */
 export interface ViewValue {
+  drawerMode: 'closed' | 'open' | 'drag'
+  setDrawerMode: (mode: ViewValue['drawerMode']) => void
   /** Die sichtbaren Listen – einmal geladen, von beiden Ansichten benutzt. */
   lists: LocalList[]
   /** `null` öffnet die Gesamtansicht. */

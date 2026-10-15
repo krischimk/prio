@@ -16,6 +16,11 @@ export const RECURRENCES = ['daily', 'weekly', 'monthly', 'yearly'] as const
 
 export type Recurrence = (typeof RECURRENCES)[number]
 
+/** Eine frühe Erledigung macht die Folgeaufgabe sichtbar, aber noch leise. */
+export function isUpcomingRepeat(task: { completed: boolean; available_from: string | null }, now = Date.now()): boolean {
+  return !task.completed && task.available_from !== null && Date.parse(task.available_from) > now
+}
+
 /** Ist der Wert eine bekannte Wiederholung? Alles andere gilt als „keine". */
 export function isRecurrence(value: string | null | undefined): value is Recurrence {
   return value !== null && value !== undefined && (RECURRENCES as readonly string[]).includes(value)

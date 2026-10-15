@@ -1313,3 +1313,92 @@ PostgreSQL-Prüfung bestätigt außerdem Format, Eindeutigkeit, Rechte, bekannte
 Empfänger und wiederholbare Migrationen. Die vollständige Cron-Prüfung und die
 native APK-Abnahme laufen vor dem Tag in der CI; dieser Absatz behauptet deren
 Ergebnis noch nicht.
+
+## 21. Bedienung und mobile Sammlung vom 15. Oktober 2026
+
+Diese Arbeitsliste gehört zur nächsten gemeinsamen Testfassung. Die Freigabe
+des Nutzers umfasst ein Release ohne Emulator; die übrigen Prüfungen bleiben.
+
+### Bestätigte Regeln und Aufgaben
+
+- [x] Fälligkeit: Antippen öffnet unmittelbar den Kalender, ein gewählter Tag
+  unmittelbar die Uhrzeit. Heute bleibt unabhängig von der Auswahl markiert.
+- [x] Dasselbe Verhalten für feste Erinnerungszeitpunkte. Wiederkehrende
+  Erinnerungen behalten ihre relativen Vorlaufzeiten.
+- [x] Das mobile Menü zeigt keinen Erinnerungsstatus ohne Handlungsbedarf.
+- [x] Synchronisation im mobilen Menü kompakter darstellen, Zustand und
+  manuelles Synchronisieren weiterhin erreichbar halten.
+- [x] Direktes horizontales Wischen öffnet/schließt das mobile Menü von überall,
+  einschließlich der Ränder. Eingabefelder, Regler und andere Dialoge bleiben
+  ausgenommen. Nach Langdruck gehört die Geste dem Aufgaben-/Listen-Ziehen.
+- [x] Das Menü folgt während der Geste kontinuierlich dem Finger. Loslassen
+  berücksichtigt Weg und letzte Geschwindigkeit, Umkehren bleibt möglich.
+  Auch Menüknopf und Aufgaben-Randwechsel öffnen/schließen animiert. Die
+  Systemeinstellung für reduzierte Bewegung entfernt das Nachfedern.
+- [x] Browser-Zurück schließt zuerst offene Dialoge und führt anschließend
+  durch zuvor besuchte Listen; Android-Zurück verwendet dieselbe Navigation.
+- [x] Mobile Aufgaben lassen sich durch kurzes Verweilen am linken Rand ins
+  Menü ziehen. Verweilen am rechten Rand schließt das Menü wieder.
+- [x] Loslassen im während einer Ziehung geöffneten Menü ohne Zielliste
+  verwirft die gesamte Verschiebung und schließt das Menü.
+- [x] Listen lassen sich in beiden Menüs umsortieren und in den aufklappbaren
+  Bereich „Versteckt“ ziehen. Diese Ziehung öffnet/schließt das Menü nicht.
+- [x] Reihenfolge und Verstecken sind persönlich synchronisiert. Versteckte
+  Listen bleiben erreichbar; ihre Gesamtansicht-Auswahl bleibt unabhängig.
+- [x] UI-Symbole folgen einem gemeinsamen Raster, Strich und Größenrollen;
+  insbesondere Löschaktionen sind optisch gleichwertig erkennbar.
+- [x] Symbole an den Aktionen der Listenverwaltung ergänzen.
+- [x] Mobile Gesamtansicht: Symbol links, Einstellungssymbol rechts, derselbe
+  breite klickbare Titelbereich wie bei einer einzelnen Liste.
+- [x] Hellen Modus über einen erreichbaren Schalter anbieten und die Wahl auf
+  dem Gerät merken; bisheriges Schwarz bleibt die anfängliche Einstellung.
+- [x] Sync-Punkt, Warnungen, Fehler und weitere Statusfarben passen ihre
+  Helligkeit an das Thema an; Kontrast wird auf allen drei Flächen geprüft.
+- [x] App-Symbol in heller und dunkler Variante anbieten, einschließlich
+  Startansicht und Offline-Cache. Form und Bedeutung bleiben gleich.
+- [x] Nächste Wiederholung bis zur bisherigen Fälligkeit dezent zurücknehmen
+  und kennzeichnen. Beispiel: heute 14 Uhr fällig, um 10 Uhr erledigt → die
+  morgige Aufgabe steht bis heute 14 Uhr gedämpft. Danach normal.
+- [x] Bereichsüberschriften größer als Aufgabentitel, Listenüberschriften der
+  Gesamtansicht noch eine Stufe größer. „Erledigt“ bleibt zurückgenommen.
+- [x] Kurze Lesevorgänge zeigen keine blinkenden Ladetexte. Erst nach etwa
+  200 ms einen sanft eingeblendeten Hinweis zeigen; Start zeigt das App-Logo.
+
+### Abnahme und Auslieferung
+
+- [x] Ursachen und neue Fachregeln durch gezielte Tests prüfen; neue Felder
+  an Leserand, Feldkatalog, Sync und wiederholbarer Migration berücksichtigen.
+- [x] Altbestand und geräteübergreifende Einstellungen prüfen; vollständige
+  Sammelmigration vor Veröffentlichung einspielen und lesend kontrollieren.
+- [x] Breite Ansicht und Telefon in Hoch-/Querformat rendern und ansehen.
+- [x] Typecheck, Lint, Unit-/Integrationstests, Build und alle E2E bestehen.
+- [x] Version 0.26.0 und lesbaren Changelog für die gemeinsame Auslieferung
+  vorbereiten. Abschließende Veröffentlichung prüft APK-Download, Web-Fassung
+  und Live-Test.
+
+Die offizielle Material-/Android-Recherche und die begründete Auswahl des
+ruhigen Standard-Bewegungsschemas stehen in `DESIGN.md`, Abschnitt
+„Bewegung und Plattformkonventionen“. Androids systemeigene Zurück-Geste an
+beiden Rändern bleibt erhalten. Ihre Fortschrittsvorschau liefert Capacitors
+Back-Callback nicht; direktes Fingerfolgen gilt für die appinternen Wischgesten.
+
+### Lokale Abnahme vom 15. Oktober 2026
+
+606 Unit-/Integrationstests, Typecheck, Lint, Skriptprüfung und Produktionsbuild
+bestehen. Die Browserabdeckung umfasst alle 196 Fälle: 193 Chromium-Fälle in
+zwei isolierten Beständen und drei PWA-Fälle gegen den Produktionsbuild. Die
+vollständigen Zieh- und Touch-Dateien wurden abschließend erneut geprüft;
+alle 17 beziehungsweise acht Fälle bestehen. Die Touch-Messung beginnt am
+geschlossenen Anschlag, während die Bedienbarkeit bereits am Anfang der
+Schließanimation endet.
+
+Die helle und dunkle Darstellung, das zum Thema passende Symbol, Kalender,
+Editor und Menü wurden breit sowie im Telefon-Hoch-/Querformat angesehen.
+Der Offline-Start erhält das helle Thema samt Symbol und gespeicherten Aufgaben.
+36 PostgreSQL-Prüfungen bestehen; die vollständige Sammelmigration einschließlich
+0020 ist eingespielt und mit `db:check` kontrolliert.
+
+Das tatsächliche Android-Bundle für 0.26.0 ist synchronisiert und das native
+Debug-APK mit JDK 21 erfolgreich gebaut. Die Laufzeitprüfung im Emulator
+entfällt auf ausdrücklichen Nutzerwunsch. Native Systemgesten, Systemleisten
+und Gerätebesonderheiten werden mit dem Testrelease auf dem Telefon beurteilt.

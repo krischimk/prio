@@ -50,7 +50,7 @@ begin
   if p_table = 'preferences' then
     lp := jsonb_populate_record(null::public.list_preferences,p_row);
     wanted := to_jsonb(lp);
-    expected := case when p_expected is null or p_expected = 'null'::jsonb then null else to_jsonb(jsonb_populate_record(null::public.list_preferences,p_expected)) end;
+    expected := case when p_expected is null or p_expected = 'null'::jsonb then null else to_jsonb(jsonb_populate_record(null::public.list_preferences,jsonb_build_object('hidden',false) || p_expected)) end;
     select to_jsonb(r) into current_row from public.list_preferences r where r.list_id=lp.list_id and r.user_id=lp.user_id for update;
     perform 1 from public.lists l where l.id=lp.list_id for share;
     perform 1 from public.list_members m where m.list_id=lp.list_id and m.user_id=actor for share;
@@ -78,9 +78,9 @@ begin
   if current_row = wanted then return jsonb_build_object('table',p_table,'id',row_id,'kind','written','current',current_row); end if;
   if current_row is distinct from expected then return jsonb_build_object('table',p_table,'id',row_id,'kind','conflict','current',current_row); end if;
   if p_table = 'preferences' then
-    insert into public.list_preferences as saved (list_id,user_id,include_in_overview,created_at,updated_at,deleted_at)
-    values (lp.list_id,lp.user_id,lp.include_in_overview,lp.created_at,lp.updated_at,lp.deleted_at)
-    on conflict(list_id,user_id) do update set include_in_overview=excluded.include_in_overview,updated_at=excluded.updated_at,deleted_at=excluded.deleted_at
+    insert into public.list_preferences as saved (list_id,user_id,include_in_overview,position,hidden,created_at,updated_at,deleted_at)
+    values (lp.list_id,lp.user_id,lp.include_in_overview,lp.position,lp.hidden,lp.created_at,lp.updated_at,lp.deleted_at)
+    on conflict(list_id,user_id) do update set include_in_overview=excluded.include_in_overview,position=excluded.position,hidden=excluded.hidden,updated_at=excluded.updated_at,deleted_at=excluded.deleted_at
     returning to_jsonb(saved) into current_row;
   else
     insert into public.user_preferences as saved (id,default_list_id,overview_mode,created_at,updated_at,deleted_at)

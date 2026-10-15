@@ -32,7 +32,7 @@ export function TaskScheduleFields({ form, idPrefix, recurrence }: { form: TaskF
     </Hint>
     {open ? <div className="ml-2 mt-2 space-y-3 border-l border-line pl-3">
       <div className="flex min-w-0 items-start gap-1">
-        <div className="min-w-0 flex-1"><DateTimeInput id={`${idPrefix}-due`} label="Fällig am" value={form.werte.dueAt} onChange={change} disabled={form.busy} /></div>
+        <div className="min-w-0 flex-1"><DateTimeInput id={`${idPrefix}-due`} label="Fällig am" value={form.werte.dueAt} onChange={change} disabled={form.busy} autoOpen /></div>
         {form.werte.dueAt ? <IconButton aria-label="Fälligkeit entfernen" onClick={() => change('')}><CloseIcon /></IconButton> : null}
       </div>
       {recurrence && form.werte.dueAt ? <RecurrenceSelect id={`${idPrefix}-recurrence`} value={form.werte.recurrence} disabled={form.busy} onChange={value => form.setzen('recurrence', value)} /> : null}

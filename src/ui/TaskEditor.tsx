@@ -120,7 +120,7 @@ export function TaskEditor({
                   void deletion.remove()
                 }}
               >
-                <TrashIcon className="h-4 w-4" />
+                <TrashIcon />
               </IconButton>
             )}
             <IconButton
@@ -173,7 +173,7 @@ export function TaskEditor({
                   disabled={busy || form.busy}
                   onClick={() => { if (task !== null) onRequestMove(task) }}
                 >
-                  <MoveIcon className="h-4 w-4" />In andere Liste verschieben
+                  <MoveIcon />In andere Liste verschieben
                 </Button> : null}
               </> : null}
             </TaskMoreOptions>

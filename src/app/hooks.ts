@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { LocalList, LocalListMember, LocalListPreference, LocalUserPreference, LocalTask, ShareContact } from '../domain/types'
 import { useWorkspace } from './useWorkspace'
 import type { CloudConflict } from '../domain/cloudMerge'
+import { orderedLists } from '../domain/listNavigation'
 
 /**
  * Lese-Hooks auf die lokale Datenbank.
@@ -71,7 +72,7 @@ export function useOverviewPreferences(userId: string): OverviewPreferencesQuery
     let active = true
     Promise.all([repositories.listLists(), repositories.listListPreferences(userId), repositories.getUserPreferences(userId)])
       .then(([lists, preferences, userPreference]) => {
-        if (active) setResult({ userId, status: 'ready', lists, preferences, userPreference: userPreference ?? null })
+        if (active) setResult({ userId, status: 'ready', lists: orderedLists(lists, preferences), preferences, userPreference: userPreference ?? null })
       }).catch(() => {
         if (active) setResult(previous => previous.userId === userId ? { ...previous, status: 'error' } : { userId, status: 'error', lists: [], preferences: [], userPreference: null })
       })

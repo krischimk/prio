@@ -53,6 +53,7 @@ export function toRemoteTask(local: LocalTask): RemoteTask {
     title: local.title,
     description: local.description,
     due_at: normalizeIso(local.due_at),
+    available_from: normalizeIso(local.available_from ?? null),
     completed: local.completed,
     completed_at: normalizeIso(local.completed_at),
     completed_expires_at: normalizeIso(local.completed_expires_at ?? null),

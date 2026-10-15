@@ -73,14 +73,19 @@ test('startet offline aus dem Cache, ohne fehlgeschlagene Anfrage', async ({ pag
   expect(fehlgeschlagen).toEqual([])
 })
 
-test('startet mit gespeichertem Benutzernamen und Aufgaben auch offline', async ({ page, context, request }) => {
+test('startet mit gespeichertem Benutzernamen, Aufgaben und hellem Thema auch offline', async ({ page, context, request }) => {
   await resetServer(request)
   await register(page, uniqueEmail('pwa-username'))
   await createList(page, 'Offline-Bestand')
   await createTask(page, 'Gespeicherte Aufgabe')
+  await page.getByRole('button', { name: 'Hellen Modus einschalten', exact: true }).click()
   await page.evaluate(() => navigator.serviceWorker.ready)
   await context.setOffline(true)
   await page.reload()
+  await expect(page.getByRole('button', { name: 'Dunklen Modus einschalten', exact: true })).toBeVisible()
+  const icon = page.locator('img[src="/icons/icon-light-192.png"]')
+  await expect(icon).toBeVisible()
+  await expect.poll(() => icon.evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
   await expect(page.getByRole('heading', { name: 'Gesamtansicht', exact: true })).toBeVisible()
   await page.getByRole('complementary', { name: 'Listen' }).getByRole('button', { name: 'Offline-Bestand', exact: true }).click()
   await expect(taskItem(page, 'Gespeicherte Aufgabe')).toBeVisible()

@@ -25,6 +25,25 @@ App. Sie sind so geschrieben, dass sie sich gefahrlos erneut ausführen lassen
 | `0017_completion_grace.sql` | Einmaliger, mit Marker gesicherter Datenumbau: Altabschlüsse erhalten sieben Tage ab Einführung; erneutes Einspielen verlängert nichts |
 | `0018_completion_cron.sql` | Benannter minütlicher Datenbankjob, unabhängig von App/MCP; setzt `pg_cron` voraus |
 | `0019_usernames.sql` | Eindeutige Benutzernamen, atomarer Auth-/Profil-Trigger, reine Verfügbarkeitsabfrage und Freigabe per Name mit Besitzprüfung und optionaler erwarteter Benutzer-ID |
+| `0020_navigation_and_recurrence.sql` | Persönliche Listenposition und Verstecken; `tasks.available_from` kennzeichnet den noch zurückgenommenen nächsten Serientermin. Wiederholbare Spaltenergänzung ohne Umschreiben bestehender Daten |
+
+### Persönliche Navigation und kommende Wiederholungen
+
+`list_preferences.position` und `hidden` gehören dem jeweiligen Benutzer;
+sie verändern weder die Liste noch deren Aufnahme in die Gesamtansicht.
+Alte Zeilen entsprechen Position `null` und `hidden = false`. Der Leserand
+ergänzt dieselben Werte. Der geschützte Schreibweg akzeptiert auch eine vor
+der Erweiterung bestätigte Basis, ohne konkurrierende neue Einstellungen zu
+überschreiben. Die Positionsspalte erlaubt ausschließlich endliche Zahlen.
+
+Wird ein Serientermin vor seiner Fälligkeit erledigt, trägt der Nachfolger
+in `available_from` die ursprüngliche Fälligkeit. Bis dahin wird er dezent
+gedämpft, danach normal dargestellt. Er bleibt als offene Aufgabe vollständig
+bedienbar; das Feld verschiebt keine Erinnerung und sperrt keine Fachoperation.
+Eine Änderung an Fälligkeit oder Wiederholung hebt die Kennzeichnung auf.
+Alte Aufgaben erhalten `null`; bereits erzeugte Nachfolger werden nicht
+rückwirkend geraten. Die vollständige Sammelmigration einschließlich `0020`
+wird vor dem neuen Client eingespielt.
 
 ### Benutzernamen
 

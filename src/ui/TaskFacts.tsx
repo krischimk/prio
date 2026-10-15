@@ -5,6 +5,7 @@ import { Hint } from './components/Hint'
 import { describeRecurrence } from './recurrence'
 import { describeReminders } from './reminder'
 import { attentionText, dangerText, mutedText, numeric } from './styles'
+import { isUpcomingRepeat } from '../domain/recurrence'
 
 export interface TaskFactsProps {
   task: LocalTask
@@ -23,12 +24,13 @@ export interface TaskFactsProps {
 export function TaskFacts({ task, currentUserId }: TaskFactsProps) {
   const due = task.due_at === null ? null : formatDueLabel(task.due_at, task.completed)
   const wiederholung = describeRecurrence(task.recurrence)
+  const upcoming = isUpcomingRepeat(task)
   const erinnerungen = describeReminders(task, currentUserId)
 
   return (
     <>
       <span
-        className={`block break-words text-title ${task.completed ? 'text-ink-faint line-through' : 'text-ink'}`}
+        className={`block break-words text-title ${task.completed ? 'text-ink-faint line-through' : upcoming ? 'text-ink-faint' : 'text-ink'}`}
       >
         {task.title}
       </span>
@@ -36,14 +38,14 @@ export function TaskFacts({ task, currentUserId }: TaskFactsProps) {
       {due || wiederholung || erinnerungen.length ? <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
       {due ? (
         <Hint text={due.absoluteText}><span aria-label={`${due.text}. ${due.absoluteText}`} className={`inline-flex items-center gap-1 text-meta ${numeric} ${due.overdue ? dangerText : mutedText}`}>
-          <CalendarIcon className="h-3 w-3 shrink-0" />{due.text}
+          <CalendarIcon className="size-icon-meta shrink-0" />{due.text}
         </span></Hint>
       ) : null}
 
       {wiederholung ? (
         <span className={`flex items-center gap-1 text-meta ${mutedText}`}>
-          <RepeatIcon className="h-3 w-3 shrink-0" />
-          {wiederholung}
+          <RepeatIcon className="size-icon-meta shrink-0" />
+          {upcoming ? `Nächste Wiederholung · ${wiederholung}` : wiederholung}
         </span>
       ) : null}
 
@@ -55,9 +57,9 @@ export function TaskFacts({ task, currentUserId }: TaskFactsProps) {
           }`}
         >
           {erinnerung.muted ? (
-            <BellOffIcon className="h-3 w-3 shrink-0" />
+            <BellOffIcon className="size-icon-meta shrink-0" />
           ) : (
-            <BellIcon className="h-3 w-3 shrink-0" />
+            <BellIcon className="size-icon-meta shrink-0" />
           )}
           {erinnerung.text}
         </span>

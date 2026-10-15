@@ -48,7 +48,9 @@ function lockBackground(panel: HTMLElement): () => void {
   }
 }
 
-export interface DialogOptions {
+export interface DialogOptions<T extends HTMLElement = HTMLDivElement> {
+  /** Optional dieselbe Fläche wie eine direkte Wisch-/Bewegungssteuerung. */
+  panelRef?: RefObject<T | null>
   /** `false` beim Menü: Es ist immer eingebunden, aber meistens zu. */
   active?: boolean
   /** Schließt den ganzen Dialog – das X und der Schleier. */
@@ -84,10 +86,12 @@ export function useDialog<T extends HTMLElement = HTMLDivElement>({
   onClose,
   onBack,
   name,
-}: DialogOptions): DialogVerhalten<T> {
-  const panel = useRef<T>(null)
+  panelRef,
+}: DialogOptions<T>): DialogVerhalten<T> {
+  const localPanel = useRef<T>(null)
+  const panel = panelRef ?? localPanel
 
-  useBackLayer(active, onBack ?? onClose, name)
+  useBackLayer(active, onBack ?? onClose, name, onClose)
 
   useEffect(() => {
     if (!active) return
@@ -111,7 +115,7 @@ export function useDialog<T extends HTMLElement = HTMLDivElement>({
         counterpart?.focus()
       }
     }
-  }, [active])
+  }, [active, panel])
 
   const onKeyDown = (event: KeyboardEvent<T>) => {
     if (event.key !== 'Tab' || !panel.current) return

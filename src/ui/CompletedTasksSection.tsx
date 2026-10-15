@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { DelayedLoading } from './components/DelayedLoading'
 import { useCompletedTasks } from '../app/hooks'
 import { SectionHeader } from './SectionHeader'
 import { Button } from './components/Button'
@@ -13,7 +14,7 @@ export function CompletedTasksSection({ lists, currentUserId, showOrigin = false
   const [open, setOpen] = useState(false)
   return <section aria-label="Erledigt" className="mt-2 border-t border-line pt-1">
     <SectionHeader name="Erledigt" muted anzahl={query.tasks.length} offen={open} onToggle={() => setOpen(value => !value)} />
-    {query.status === 'loading' ? <p role="status" className="text-meta text-ink-muted">Erledigte Aufgaben werden geladen …</p> : null}
+    {query.status === 'loading' ? <DelayedLoading>Erledigte Aufgaben werden geladen …</DelayedLoading> : null}
     {query.status === 'error' ? <div className="space-y-2">
       <p role="alert">Erledigte Aufgaben ließen sich nicht laden.</p>
       <Button variant="secondary" onClick={query.retry}>Erneut versuchen</Button>

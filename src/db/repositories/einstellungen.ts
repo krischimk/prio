@@ -6,6 +6,7 @@ import type { Repositories } from './types'
 import { readCloudConflicts, resolveCloudConflict } from '../cloudState'
 import { normalisiereListenauswahl, normalisiereStartansicht } from '../../domain/normalize'
 import { requireText, ValidationError } from '../validation'
+import { placeNavigationList } from '../../domain/listNavigation'
 
 /**
  * Die selbst gemerkten Vorlaufzeiten für die Schnellauswahl.
@@ -25,8 +26,27 @@ const META_REMINDER_PRESETS = 'reminder_presets'
  * suchen, solange sie dort keinen Zweck erfüllen.
  */
 const META_SHARE_CONTACTS = 'share_contacts'
-export function einstellungen(ctx: Kontext): Pick<Repositories, 'listReminderPresets' | 'setReminderPresets' | 'listShareContacts' | 'rememberShareContact' | 'mergeShareContacts' | 'listCloudConflicts' | 'resolveCloudConflict' | 'listListPreferences' | 'setListInOverview' | 'getUserPreferences' | 'updateUserPreferences'> {
+export function einstellungen(ctx: Kontext): Pick<Repositories, 'listReminderPresets' | 'setReminderPresets' | 'listShareContacts' | 'rememberShareContact' | 'mergeShareContacts' | 'listCloudConflicts' | 'resolveCloudConflict' | 'listListPreferences' | 'setListInOverview' | 'placeList' | 'getUserPreferences' | 'updateUserPreferences'> {
   return {
+    async placeList(listId, userId, destination) {
+      requireText(userId, 'Die Benutzerkennung')
+      await ctx.db.transaction('rw', ctx.db.lists, ctx.db.list_preferences, async () => {
+        await ctx.requireList(listId)
+        const lists = (await ctx.db.lists.toArray()).filter(row => row.deleted_at === null)
+        const preferences = (await ctx.db.list_preferences.where('user_id').equals(userId).toArray())
+          .filter(row => row.deleted_at === null).map(normalisiereListenauswahl)
+        const moves = placeNavigationList(lists, preferences, listId, destination)
+        for (const move of moves) {
+          const old = preferences.find(row => row.list_id === move.listId)
+          if (old && old.position === move.position && old.hidden === move.hidden) continue
+          await ctx.db.list_preferences.put({
+            list_id: move.listId, user_id: userId, include_in_overview: old?.include_in_overview ?? false,
+            position: move.position, hidden: move.hidden,
+            created_at: old?.created_at ?? ctx.clock.now(), deleted_at: null, ...ctx.stamp(),
+          })
+        }
+      })
+    },
     async getUserPreferences(userId) {
       const row = await ctx.db.user_preferences.get(userId)
       return row && row.deleted_at === null ? normalisiereStartansicht(row) : undefined
@@ -60,6 +80,7 @@ export function einstellungen(ctx: Kontext): Pick<Repositories, 'listReminderPre
         if (existing?.deleted_at === null && existing.include_in_overview === included) return
         const now = ctx.clock.now()
         await ctx.db.list_preferences.put({
+          position: null, hidden: false, ...existing,
           list_id: listId, user_id: userId, include_in_overview: included,
           created_at: existing?.created_at ?? now, deleted_at: null, ...ctx.stamp(),
         })

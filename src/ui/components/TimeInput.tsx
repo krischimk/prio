@@ -7,10 +7,14 @@ import { input, layer, numeric } from '../styles'
 import { IconButton } from './IconButton'
 
 /** Direkt tippen oder Stunde/Minute wählen; in beiden Fällen 24-Stunden-Uhr. */
-export function TimeInput({ id, label, value, scopeValue, disabled, onChange }: {
+export function TimeInput({ id, label, value, scopeValue, disabled, onChange, open: controlledOpen, onOpenChange, onFocus }: {
   id: string; label: string; value: string; scopeValue: string; disabled: boolean; onChange: (value: string) => void
+  open?: boolean; onOpenChange?: (open: boolean) => void
+  onFocus?: () => void
 }) {
-  const [open, setOpen] = useState(false)
+  const [localOpen, setLocalOpen] = useState(false)
+  const open = controlledOpen ?? localOpen
+  const setOpen = onOpenChange ?? setLocalOpen
   const [draft, setDraft] = useState<string | null>(null)
   const [lastValue, setLastValue] = useState(scopeValue)
   const element = useRef<HTMLInputElement>(null)
@@ -25,16 +29,17 @@ export function TimeInput({ id, label, value, scopeValue, disabled, onChange }: 
     <div className="relative w-28 shrink-0">
       <label htmlFor={id} className="sr-only">{label}</label>
       <input ref={element} id={id} aria-label={label} placeholder="HH:mm" disabled={disabled}
+        onFocus={onFocus}
         value={shown} pattern="([01]?[0-9]|2[0-3]):[0-5][0-9]" title="Uhrzeit im 24-Stunden-Format, zum Beispiel 14:30"
         onChange={event => {
           setDraft(event.target.value)
           const next = normalizeTime(event.target.value)
           event.target.setCustomValidity(next ? '' : 'Bitte eine gültige Uhrzeit eingeben, zum Beispiel 14:30.')
-          if (next) onChange(next)
+          if (next) { onChange(next); setOpen(false) }
         }}
         onBlur={event => { if (normalizeTime(event.target.value)) setDraft(null) }}
         className={`${input} ${numeric} date-time-clock`} />
-      <Popover.Trigger asChild><IconButton aria-label={`${label} wählen`} disabled={disabled} layout="absolute inset-y-0 left-0"><ClockIcon className="h-4 w-4" /></IconButton></Popover.Trigger>
+      <Popover.Trigger asChild><IconButton aria-label={`${label} wählen`} disabled={disabled} layout="absolute inset-y-0 left-0"><ClockIcon /></IconButton></Popover.Trigger>
     </div>
     <Popover.Positioner className={layer.top}><Popover.Content className="w-52 rounded-card border border-line-strong bg-raised p-3 shadow-lg shadow-page/50" aria-label="Uhrzeit wählen">
       <div className="grid grid-cols-2 gap-2">

@@ -6,7 +6,7 @@ import type { LocalList } from '../domain/types'
 import { cardSoft, errorMessage, input, successMessage } from './styles'
 import { LEER_MITGLIEDER } from './emptyTexts'
 import { Button } from './components/Button'
-import { UserIcon } from './icons'
+import { UserIcon, TrashIcon } from './icons'
 import { normalizeUsername } from '../domain/username'
 
 /**
@@ -97,7 +97,7 @@ export function SharePanel({ list, currentUserId }: { list: LocalList; currentUs
                   variant="ghost" size="sm"
                   onClick={() => setEmail(contact.username ? `@${contact.username}` : contact.email)}
                 >
-                  {contact.username ? `@${contact.username}` : contact.email}
+                  <UserIcon />{contact.username ? `@${contact.username}` : contact.email}
                 </Button>
               </li>
             ))}
@@ -135,7 +135,7 @@ export function SharePanel({ list, currentUserId }: { list: LocalList; currentUs
                     void repositories.removeMember(list.id, member.user_id)
                   }}
                 >
-                  Entfernen
+                  <TrashIcon />Entfernen
                 </Button>
               </li>
             ))}

@@ -51,7 +51,7 @@ const migrations = readFileSync(new URL('../supabase/all-migrations.sql', import
 sql(migrations)
 sql(`insert into auth.users(id,email) values ('${owner}','owner@prio.test'),('${member}','member@prio.test'),('${stranger}','stranger@prio.test')`)
 const list = { id: listId, owner_id: owner, name: 'Liste', is_shared: false, icon: null, sections: [], keep_completed: false, completion_retention_started_at: at, created_at: at, updated_at: at, deleted_at: null }
-const task = { id: taskId, list_id: listId, title: 'Anfang', description: null, due_at: null, completed: false, completed_at: null, completed_expires_at: null, expired_at: null, reopen_context: null, recurrence: null, successor_id: null, reminders: [], section_id: null, position: 0, created_at: at, updated_at: at, deleted_at: null }
+const task = { id: taskId, list_id: listId, title: 'Anfang', description: null, due_at: null, available_from: null, completed: false, completed_at: null, completed_expires_at: null, expired_at: null, reopen_context: null, recurrence: null, successor_id: null, reminders: [], section_id: null, position: 0, created_at: at, updated_at: at, deleted_at: null }
 
 check('Bestehende Konten wählen einen eindeutigen Namen; Auth und Profil bleiben atomar', () => {
   assert.equal(sql(`select username is null from public.profiles where id='${owner}'`),'t')
@@ -195,7 +195,7 @@ check('Paralleles Anlegen schützt dieselbe Kennung auch mit anderer Großschrei
   assert.equal(sql(`select count(*) from public.tasks where id='${newId}'`),'1')
 })
 sql('drop trigger prio_test_pause on public.tasks; drop function public.prio_test_pause()')
-const personal = { list_id: listId, user_id: owner, include_in_overview: true, created_at: at, updated_at: at, deleted_at: null }
+const personal = { list_id: listId, user_id: owner, include_in_overview: true, position: null, hidden: false, created_at: at, updated_at: at, deleted_at: null }
 const userSettings = { id: owner, default_list_id: listId, overview_mode: 'newest', created_at: at, updated_at: at, deleted_at: null }
 check('Persönliche Aufnahme und bevorzugte Ansicht: Schreiben, Retry und stale Basis', () => {
   assert.equal(push(owner,'preferences',personal).kind,'written')
@@ -203,6 +203,18 @@ check('Persönliche Aufnahme und bevorzugte Ansicht: Schreiben, Retry und stale 
   assert.equal(push(owner,'userPreferences',userSettings).kind,'written')
   assert.equal(push(owner,'userPreferences',{...userSettings,overview_mode:'by_list'}).kind,'conflict')
   assert.equal(sql(actorSql(owner,'select overview_mode from public.user_preferences')),'newest')
+})
+check('Navigation überträgt neue Felder, akzeptiert eine alte Basis und bleibt persönlich', () => {
+  const legacy = { ...personal }
+  delete legacy.position; delete legacy.hidden
+  const moved = push(owner,'preferences',{...personal,position:1.5,hidden:true},legacy)
+  assert.equal(moved.kind,'written')
+  assert.equal(moved.current.hidden,true)
+  assert.equal(moved.current.position,1.5)
+  assert.equal(moved.current.include_in_overview,true)
+  assert.equal(push(member,'preferences',{...moved.current,position:2},moved.current).kind,'rejected')
+  assert.equal(push(owner,'preferences',{...moved.current,position:'NaN'},moved.current).kind,'rejected')
+  assert.equal(push(owner,'preferences',personal,moved.current).kind,'written')
 })
 check('Mitgliedsauswahl bleibt persönlich; fremde Einstellungen sind weder lesbar noch schreibbar', () => {
   const other = { ...personal, user_id: stranger }

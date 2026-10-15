@@ -1,6 +1,7 @@
-import { useCallback, useMemo, useState, type ReactNode } from 'react'
+import { useContext, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { useCloudConflicts, useOverviewPreferences } from '../app/hooks'
 import { ViewContext, type ViewValue } from './viewContext'
+import { NavigationContext } from '../app/navigationContext'
 
 /**
  * Der Ansichtszustand, über der Verzweigung zwischen breiter und mobiler
@@ -15,7 +16,8 @@ export function ViewProvider({ children, userId }: { children: ReactNode; userId
   const overview = useOverviewPreferences(userId)
   const lists = overview.lists
   const cloudConflicts = useCloudConflicts()
-  const [preferred, setPreferred] = useState<string | null>(null)
+  const navigation = useContext(NavigationContext)!
+  const preferred = useSyncExternalStore(navigation.subscribe, navigation.selectedListId)
   const [restoreOpen, setRestoreOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const [conflictsOpen, setConflictsOpen] = useState(false)
@@ -24,7 +26,8 @@ export function ViewProvider({ children, userId }: { children: ReactNode; userId
   const [taskDetail, setTaskDetail] = useState<ViewValue['taskDetail']>(null)
   const [listSettingsId, setListSettingsId] = useState<string | null>(null)
 
-  const selectList = useCallback((id: string | null) => setPreferred(id), [])
+  const selectList = navigation.selectList
+  const [drawerMode, setDrawerMode] = useState<ViewValue['drawerMode']>('closed')
 
   const value = useMemo<ViewValue>(() => {
     const selectedListId = lists.some((list) => list.id === preferred)
@@ -32,6 +35,7 @@ export function ViewProvider({ children, userId }: { children: ReactNode; userId
       : null
     return {
       lists,
+      drawerMode, setDrawerMode,
       selected: lists.find((list) => list.id === selectedListId) ?? null,
       selectedListId,
       selectList,
@@ -43,7 +47,7 @@ export function ViewProvider({ children, userId }: { children: ReactNode; userId
       overviewCreating, setOverviewCreating, taskDetail, setTaskDetail,
       listSettingsId, setListSettingsId,
     }
-  }, [lists, preferred, selectList, restoreOpen, accountOpen, cloudConflicts, conflictsOpen, overview, overviewSettingsOpen, overviewCreating, taskDetail, listSettingsId])
+  }, [lists, preferred, selectList, restoreOpen, accountOpen, cloudConflicts, conflictsOpen, overview, overviewSettingsOpen, overviewCreating, taskDetail, listSettingsId, drawerMode])
 
   return <ViewContext.Provider value={value}>{children}</ViewContext.Provider>
 }

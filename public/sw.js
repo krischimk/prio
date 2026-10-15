@@ -16,7 +16,7 @@
  * beim Aktivieren gelöscht werden.
  */
 
-const CACHE_NAME = 'prio-shell-v0.2.0'
+const CACHE_NAME = 'prio-shell-v0.26.0'
 
 const APP_SHELL = [
   '/',
@@ -24,6 +24,7 @@ const APP_SHELL = [
   '/manifest.webmanifest',
   '/favicon.svg',
   '/icons/icon-192.png',
+  '/icons/icon-light-192.png',
   '/icons/icon-512.png',
   '/icons/icon-maskable-512.png',
   '/icons/apple-touch-icon.png',

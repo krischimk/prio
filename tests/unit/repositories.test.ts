@@ -884,6 +884,7 @@ describe('Repositories (lokale Geschäftslogik)', () => {
       const listId = await newList()
       await device.db.tasks.put({
         id: 'alt',
+        available_from: null,
         completed_expires_at: null,
         expired_at: null,
         reopen_context: null,

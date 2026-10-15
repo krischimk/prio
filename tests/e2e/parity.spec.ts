@@ -54,6 +54,11 @@ async function changeOrder(page: Page) {
 
 const funktionen: Funktion[] = [
   {
+    name: 'Listen umsortieren und verstecken',
+    breit: async page => (await import('./support/listNavigation')).checkListSorting(page, false),
+    telefon: async page => (await import('./support/listNavigation')).checkListSorting(page, true),
+  },
+  {
     name: 'Aufgabenreihenfolge ändern',
     breit: async page => {
       await breit.register(page, uniqueEmail('p-order-b'))

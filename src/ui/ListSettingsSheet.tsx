@@ -4,6 +4,7 @@ import { useUndo } from './useUndo'
 import { useListNameDraft } from './useListNameDraft'
 import { ListOverviewChoice } from './ListOverviewChoice'
 import { ListCompletionChoice } from './ListCompletionChoice'
+import { ListNavigationChoice } from './ListNavigationChoice'
 import type { LocalList } from '../domain/types'
 import { ListIcon } from './ListIcon'
 import { ListIconPicker } from './ListIconPicker'
@@ -13,6 +14,7 @@ import { errorMessage, input } from './styles'
 
 import { Button } from './components/Button'
 import { Sheet } from './components/Sheet'
+import { ArrowLeftIcon, CloseIcon, EditIcon, IconChoiceIcon, LogoutIcon, SaveIcon, SectionsIcon, ShareIcon, TrashIcon } from './icons'
 
 /**
  * Verwaltung der aktuellen Liste – umbenennen, teilen, löschen oder verlassen.
@@ -105,7 +107,7 @@ export function ListSettingsSheet({
       leading={<ListIcon icon={list.icon} className="h-5 w-5 shrink-0 text-ink-soft" />}
       onClose={onClose}
       onBack={schliessen}
-      footer={modus !== 'menue' ? <Button variant="secondary" layout="w-full" onClick={() => setModus('menue')}>Zur Übersicht</Button> : undefined}
+      footer={modus !== 'menue' ? <Button variant="secondary" layout="w-full" onClick={() => setModus('menue')}><ArrowLeftIcon />Zur Übersicht</Button> : undefined}
     >
       <div className="px-5 py-5">
           {modus === 'menue' ? (
@@ -113,6 +115,7 @@ export function ListSettingsSheet({
               <section className="space-y-1" aria-label="Persönliche Ansicht">
               <h3 className="text-meta font-medium text-ink-muted">Nur für dich</h3>
               <ListOverviewChoice listId={list.id} currentUserId={currentUserId} />
+              <ListNavigationChoice listId={list.id} currentUserId={currentUserId} />
               </section>
               <section className="space-y-2 border-t border-line pt-4" aria-label="Gemeinsame Listenregeln">
               <h3 className="text-meta font-medium text-ink-muted">Für diese Liste</h3>
@@ -125,32 +128,32 @@ export function ListSettingsSheet({
                     variant="secondary" layout="w-full"
                     onClick={() => setModus('umbenennen')}
                   >
-                    Umbenennen
+                    <EditIcon />Umbenennen
                   </Button>
                   <Button
                     variant="secondary" layout="w-full"
                     onClick={() => setModus('symbol')}
                   >
-                    Symbol ändern
+                    <IconChoiceIcon />Symbol ändern
                   </Button>
                   <Button
                     variant="secondary" layout="w-full"
                     onClick={() => setModus('bereiche')}
                   >
-                    Bereiche
+                    <SectionsIcon />Bereiche
                   </Button>
                   <Button
                     variant="secondary" layout="w-full"
                     onClick={() => setModus('teilen')}
                   >
-                    Teilen
+                    <ShareIcon />Teilen
                   </Button>
                   <Button
                     variant="danger" layout="col-span-2 w-full"
                     disabled={busy}
                     onClick={() => void loeschen()}
                   >
-                    Liste löschen
+                    <TrashIcon />Liste löschen
                   </Button>
                 </>
               ) : (
@@ -158,7 +161,7 @@ export function ListSettingsSheet({
                   variant="danger" layout="w-full"
                   onClick={() => setModus('verlassen')}
                 >
-                  Liste verlassen
+                  <LogoutIcon />Liste verlassen
                 </Button>
               )}
               </div>
@@ -179,13 +182,13 @@ export function ListSettingsSheet({
               />
               <div className="flex gap-2">
                 <Button type="submit" variant="primary" layout="flex-1" disabled={busy}>
-                  Speichern
+                  <SaveIcon />Speichern
                 </Button>
                 <Button
                   variant="secondary" layout="flex-1"
                   onClick={() => { discardName(); setModus('menue') }}
                 >
-                  Abbrechen
+                  <CloseIcon />Abbrechen
                 </Button>
               </div>
             </form>
@@ -204,7 +207,7 @@ export function ListSettingsSheet({
                 variant="secondary" layout="w-full"
                 onClick={() => setModus('menue')}
               >
-                Zurück
+                <ArrowLeftIcon />Zurück
               </Button>
             </div>
           ) : null}
@@ -219,13 +222,13 @@ export function ListSettingsSheet({
                 disabled={busy}
                 onClick={() => void ausfuehren(() => repositories.leaveList(list.id, currentUserId))}
               >
-                Wirklich verlassen
+                <LogoutIcon />Wirklich verlassen
               </Button>
               <Button
                 variant="secondary" layout="w-full"
                 onClick={() => setModus('menue')}
               >
-                Abbrechen
+                <CloseIcon />Abbrechen
               </Button>
             </div>
           ) : null}

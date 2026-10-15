@@ -12,10 +12,13 @@ import { describe, expect, it } from 'vitest'
  */
 
 /** Liest die Farbrollen aus `@theme`. */
-function rollen(): Record<string, string> {
+function rollen(mode: 'dark' | 'light'): Record<string, string> {
   const css = readFileSync(join(process.cwd(), 'src', 'index.css'), 'utf8')
   const farben: Record<string, string> = {}
-  for (const treffer of css.matchAll(/--color-([a-z-]+):\s*(#[0-9a-fA-F]{6});/g)) {
+  const base = css.slice(css.indexOf('@theme {'), css.indexOf(':root {'))
+  const overrides = css.match(/:root\[data-theme='light'\]\s*\{([^}]+)\}/)?.[1] ?? ''
+  expect(overrides.length).toBeGreaterThan(0)
+  for (const treffer of (base + (mode === 'light' ? overrides : '')).matchAll(/--color-([a-z-]+):\s*(#[0-9a-fA-F]{6});/g)) {
     farben[treffer[1]] = treffer[2]
   }
   return farben
@@ -40,8 +43,6 @@ export function kontrast(a: string, b: string): number {
   const [hell, dunkel] = [helligkeit(a), helligkeit(b)].sort((x, y) => y - x)
   return (hell + 0.05) / (dunkel + 0.05)
 }
-
-const FARBEN = rollen()
 
 /** Alle Textrollen, die auf einer Fläche stehen können. */
 const TEXTROLLEN = ['ink-strong', 'ink', 'ink-soft', 'ink-muted', 'ink-faint', 'ink-completed']
@@ -76,7 +77,8 @@ function genutzteTextrollen(): string[] {
   return [...rollen]
 }
 
-describe('Kontrast', () => {
+for (const mode of ['dark', 'light'] as const) describe(`Kontrast ${mode}`, () => {
+  const FARBEN = rollen(mode)
   it('findet die Farbrollen', () => {
     expect(Object.keys(FARBEN).length).toBeGreaterThan(20)
     expect(FARBEN.page).toMatch(/^#[0-9a-f]{6}$/i)
@@ -118,7 +120,9 @@ describe('Kontrast', () => {
 
   it('hält Statusfarben lesbar', () => {
     for (const rolle of ['danger', 'ok', 'warn', 'brand-soft']) {
-      expect(kontrast(FARBEN[rolle], FARBEN.surface), rolle).toBeGreaterThanOrEqual(4.5)
+      for (const flaeche of FLAECHEN) {
+        expect(kontrast(FARBEN[rolle], FARBEN[flaeche]), `${rolle} auf ${flaeche}`).toBeGreaterThanOrEqual(4.5)
+      }
     }
   })
 
@@ -142,7 +146,8 @@ describe('Kontrast', () => {
     const rampe = ['ink-strong', 'ink', 'ink-soft', 'ink-muted', 'ink-faint', 'ink-completed']
     const stufen = rampe.map((rolle) => helligkeit(FARBEN[rolle]))
     for (let i = 1; i < stufen.length; i += 1) {
-      expect(stufen[i], `${rampe[i]} muss dunkler sein als ${rampe[i - 1]}`).toBeLessThan(stufen[i - 1])
+      const direction = mode === 'dark' ? -1 : 1
+      expect((stufen[i] - stufen[i - 1]) * direction, `${rampe[i]} muss gegenüber ${rampe[i - 1]} zurücktreten`).toBeGreaterThan(0)
     }
     for (let i = 2; i < rampe.length; i += 1) {
       const abstand = kontrast(FARBEN[rampe[i - 1]], FARBEN[rampe[i]])

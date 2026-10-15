@@ -9,6 +9,7 @@ import { ListSettingsSheet } from './ListSettingsSheet'
 import { Screen } from './components/Screen'
 import { Button } from './components/Button'
 import { errorBox } from './styles'
+import { DelayedLoading } from './components/DelayedLoading'
 
 /** Gemeinsame Dialoge bleiben beim Wechsel der Fensterbreite eingebunden. */
 export function TaskDialogs() {
@@ -36,7 +37,7 @@ export function TaskDialogs() {
       <div className="p-4"><Button variant="secondary" onClick={() => setTaskDetail(null)}>Schließen</Button></div>
     }>
       <div className="space-y-3 p-5">
-        {query.status === 'loading' ? <p role="status">Aufgabe wird geladen …</p> : query.status === 'error' ? <>
+        {query.status === 'loading' ? <DelayedLoading>Aufgabe wird geladen …</DelayedLoading> : query.status === 'error' ? <>
           <p role="alert" className={errorBox}>Die Aufgabe konnte nicht geladen werden. Dein Entwurf bleibt erhalten.</p>
           <Button variant="secondary" onClick={query.retry}>Erneut versuchen</Button>
         </> : <p role="status">Diese Aufgabe oder ihre Liste ist nicht mehr verfügbar.</p>}

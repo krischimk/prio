@@ -28,7 +28,7 @@ async function feldEntfernen(page: import('@playwright/test').Page) {
       anfrage.onerror = () => fehlschlag(new Error('open fehlgeschlagen'))
       anfrage.onsuccess = () => {
         const db = anfrage.result
-        const tx = db.transaction(['lists','tasks'], 'readwrite')
+        const tx = db.transaction(['lists','tasks','list_preferences'], 'readwrite')
         const speicher = tx.objectStore('lists')
         const alle = speicher.getAll()
         alle.onsuccess = () => {
@@ -46,7 +46,17 @@ async function feldEntfernen(page: import('@playwright/test').Page) {
             delete zeile.completed_expires_at
             delete zeile.expired_at
             delete zeile.reopen_context
+            delete zeile.available_from
             aufgaben.put(zeile)
+          }
+        }
+        const auswahl = tx.objectStore('list_preferences')
+        const alteAuswahl = auswahl.getAll()
+        alteAuswahl.onsuccess = () => {
+          for (const zeile of alteAuswahl.result as Record<string, unknown>[]) {
+            delete zeile.position
+            delete zeile.hidden
+            auswahl.put(zeile)
           }
         }
         tx.oncomplete = () => {
@@ -69,6 +79,10 @@ test('E2E 7: Listen aus einer älteren Fassung stürzen die Ansicht nicht ab', a
   await telefon.register(page, uniqueEmail('update'))
   await telefon.createList(page, 'Einkauf')
   await telefon.createTask(page, 'Milch')
+  await page.getByTestId('app-bar-title').click()
+  await page.getByLabel('In Gesamtansicht aufnehmen', { exact: true }).check()
+  await expect(page.getByLabel('In Gesamtansicht aufnehmen', { exact: true })).toBeEnabled()
+  await page.getByRole('button', { name: 'Schließen', exact: true }).click()
 
   // Zeile aus der Fassung vor 0.18.0 herstellen.
   await page.route('**/rest/v1/**', route => route.abort())

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef } from 'react'
+import { useContext, useLayoutEffect, useRef } from 'react'
 import { BackLayerContext } from './backLayerContext'
 
 /**
@@ -17,20 +17,22 @@ import { BackLayerContext } from './backLayerContext'
  * dann „liste-verwalten“ statt nur „irgendetwas ist offen“. Für einen späteren
  * Router ist das der Anknüpfungspunkt.
  */
-export function useBackLayer(active: boolean, onBack: () => void, name?: string): void {
+export function useBackLayer(active: boolean, onBack: () => void, name?: string, onHistoryBack = onBack): void {
   const stack = useContext(BackLayerContext)
 
   // Der Handler wird in einem Effekt aktualisiert und nicht während des
   // Renderns geschrieben.
   const handlerRef = useRef(onBack)
-  useEffect(() => {
+  const historyRef = useRef(onHistoryBack)
+  useLayoutEffect(() => {
     handlerRef.current = onBack
-  }, [onBack])
+    historyRef.current = onHistoryBack
+  }, [onBack, onHistoryBack])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!stack || !active) return
     return stack.push(() => {
       handlerRef.current()
-    }, name)
+    }, name, () => historyRef.current())
   }, [stack, active, name])
 }

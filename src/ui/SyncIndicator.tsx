@@ -20,9 +20,9 @@ export function SyncIndicator() {
   return <div className="flex items-center gap-1">
     <span data-testid="sync-status" role="status" className="sr-only">{text}</span>
     <IconButton aria-label="Jetzt synchronisieren"
-      title={`${text} Klicken, um jetzt zu synchronisieren.`}
-      disabled={syncing}
-      onClick={() => { void runSync() }}>
+      title={syncing ? text : `${text} Klicken, um jetzt zu synchronisieren.`}
+      aria-disabled={syncing}
+      onClick={() => { if (!syncing) void runSync() }}>
       <span className={`h-2.5 w-2.5 rounded-full ${farben.dot} ${syncing ? 'animate-pulse' : ''}`} aria-hidden="true" />
     </IconButton>
     {conflicts.length > 0 ? <IconButton aria-label="Konflikte klären" variant="attention"

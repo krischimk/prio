@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { isMutedFor, withMuted, MAX_REMINDERS, type TaskReminder } from '../../domain/reminder'
 import { BellIcon, BellOffIcon, PlusIcon, TrashIcon } from '../icons'
 import { mutedText } from '../styles'
@@ -39,6 +40,7 @@ export function ReminderList({
   listIsShared?: boolean
   onChange: (next: TaskReminder[]) => void
 }) {
+  const [newReminder, setNewReminder] = useState<number | null>(null)
   const { relativ, ersetzen, entfernen, hinzufuegen } = useReminderRows({
     dueAt,
     recurrence,
@@ -73,6 +75,7 @@ export function ReminderList({
                     ) : (
                       <OneTimeRow
                         idPrefix={`${idPrefix}-r${index}`}
+                        autoOpen={newReminder === index}
                         reminder={reminder}
                         dueAt={dueAt}
                         onChange={(next) => ersetzen(index, { ...next, ...behalteStumm })}
@@ -97,7 +100,7 @@ export function ReminderList({
                       title={stumm ? 'Wieder für mich einschalten' : 'Nur für mich stummschalten'}
                       variant={stumm ? 'iconMuted' : 'icon'} layout="shrink-0"
                     >
-                      {stumm ? <BellOffIcon className="h-4 w-4" /> : <BellIcon className="h-4 w-4" />}
+                      {stumm ? <BellOffIcon /> : <BellIcon />}
                     </IconButton>
                   ) : null}
                   <IconButton
@@ -106,7 +109,7 @@ export function ReminderList({
                     title="Erinnerung entfernen"
                     variant="icon" layout="shrink-0"
                   >
-                    <TrashIcon className="h-4 w-4" />
+                    <TrashIcon />
                   </IconButton>
                 </div>
               </li>
@@ -116,7 +119,7 @@ export function ReminderList({
       ) : null}
 
       {reminders.length < MAX_REMINDERS ? (
-        <Button onClick={hinzufuegen} variant="ghost" size="field" title="Erinnerung hinzufügen. Ein Fälligkeitsdatum allein löst keine Erinnerung aus." layout="w-full justify-start">
+        <Button onClick={() => { setNewReminder(reminders.length); hinzufuegen() }} variant="ghost" size="field" title="Erinnerung hinzufügen. Ein Fälligkeitsdatum allein löst keine Erinnerung aus." layout="w-full justify-start">
           {reminders.length === 0 ? <BellIcon className="h-5 w-5" /> : <PlusIcon className="h-5 w-5" />}
           {reminders.length === 0 ? 'Erinnerung hinzufügen' : 'Weitere Erinnerung'}
         </Button>

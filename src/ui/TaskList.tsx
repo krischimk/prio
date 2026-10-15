@@ -18,7 +18,6 @@ import { ListIcon } from './ListIcon'
 import { CompletedTasksSection } from './CompletedTasksSection'
 import { emptyState, errorBox, focusRing, numeric } from './styles'
 import { leerAufgaben } from './emptyTexts'
-import { isNativeApp } from '../app/platform'
 import { useTaskDragHandlers } from './useTaskDragHandlers'
 import { isKeyboardEvent } from '@dnd-kit/dom/utilities'
 
@@ -155,10 +154,8 @@ export function TaskList({ lists, tasks, currentUserId, overview = false, mode =
 
 /** Chronologische Ansicht: Ziehen wechselt nur die Liste, nicht die Sortierung. */
 function NewestTaskRow(props: { task: LocalTask; currentUserId: string; overview: boolean; origin: string; onOpen: (task: LocalTask) => void }) {
-  const desktop = useIsDesktop()
-  const draggable = desktop && !isNativeApp()
-  const { ref, handleRef, isDragging } = useDraggable({ id: props.task.id, type: 'task', data: { listId: props.task.list_id }, disabled: !draggable })
-  return <TaskRow {...props} elementRef={ref} activatorRef={draggable ? handleRef : undefined} dragging={isDragging} />
+  const { ref, handleRef, isDragging } = useDraggable({ id: props.task.id, type: 'task', data: { listId: props.task.list_id } })
+  return <TaskRow {...props} elementRef={ref} activatorRef={handleRef} dragging={isDragging} />
 }
 
 function ListBlock({ list, groups, byId, currentUserId, overview, activeId, onOpen, onSelectList }: {
@@ -171,7 +168,7 @@ function ListBlock({ list, groups, byId, currentUserId, overview, activeId, onOp
   return <section aria-label={overview ? `Aufgaben aus ${list.name}` : `Aufgaben in ${list.name}`} className="min-w-0">
     {overview ? <div className="mb-2 flex items-center justify-between gap-3 border-b border-line py-2">
       <h2 className="min-w-0"><button type="button" aria-label={`Liste ${list.name} öffnen`} onClick={() => onSelectList(list.id)}
-        className={`${focusRing} flex min-h-11 items-center gap-2 rounded-control text-body font-semibold text-ink-strong hover:text-brand-soft`}>
+        className={`${focusRing} flex min-h-11 items-center gap-2 rounded-control text-list-heading font-semibold text-ink-strong hover:text-brand-soft`}>
         <ListIcon icon={list.icon} className="h-4 w-4 shrink-0 text-brand-soft" /><span className="break-words">{list.name}</span>
       </button></h2><span className={`text-meta text-ink-muted ${numeric}`}>{count}</span>
     </div> : null}

@@ -53,7 +53,7 @@ export function SectionHeader({
     >
       <ChevronIcon offen={offen} className={`h-3.5 w-3.5 shrink-0 ${muted ? 'text-ink-completed' : mutedText}`} />
       <span
-        className={`text-label font-semibold tracking-wide uppercase ${
+        className={`${muted ? 'text-label tracking-wide uppercase' : 'text-section'} font-semibold ${
           hervorgehoben ? 'text-brand-faint' : muted ? 'text-ink-completed' : 'text-ink-soft'
         }`}
       >

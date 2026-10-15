@@ -1,6 +1,6 @@
 # Design für Prio
 
-Stand: 14. Oktober 2026. Dies ist die Arbeitsgrundlage für den begonnenen
+Stand: 15. Oktober 2026. Dies ist die Arbeitsgrundlage für den begonnenen
 UI-Umbau. Sie trennt überprüfbares Verhalten von veränderbaren Stilwerten.
 Der Lieferumfang und die noch offenen Produktentscheidungen stehen in
 [UI-OVERHAUL-PLAN.md](UI-OVERHAUL-PLAN.md). Arbeits-, Daten- und Release-Regeln
@@ -15,7 +15,7 @@ stehen in [AGENTS.md](AGENTS.md).
 | **D3 Aufgaben zuerst**: Im Normalzustand stehen Titel, vorhandene Metadaten und Abhaken im Vordergrund. Zusatzaktionen liegen im Editor, Listenverwaltung in den Einstellungen. | Reduziert wiederholte Verwaltungsflächen und hält schnelle Erfassung leicht. | Eine Standardaufgabe braucht nur einen Titel; leere Zusatzdaten erzeugen keine Platzhalter in der Aufgabenzeile. Screenshots mit kurzen/langen Titeln und mit/ohne Metadaten. |
 | **D4 Informationsrollen**: Auswahl, Fehler, Alter, Aufwand und Priorität erhalten unterscheidbare Rollen. | Eine Farbe oder Größe soll im selben Kontext keine widersprüchlichen Aussagen tragen. | Statusfarben kommen aus einer gemeinsamen Zuordnung. Altersfarben, Aufwand-Größen und Prioritätshervorhebung werden erst mit Ranking/Matrix an Beispielen festgelegt. |
 | **D5 Gemeinsame Bedeutung**: Telefon und breite Ansicht verwenden dieselben Fachoperationen, Texte, Aufgabenfakten und Formularinhalte. | Konsistenz ohne starres identisches Layout. | Paritätsabläufe einschließlich Besitzer-/Mitgliedsrollen, zusätzlich eigenständige Kernabläufe. Editor und Listenverwaltung sind gemeinsame Komponenten. |
-| **D6 Mehrere Bedienweisen**: Jede Kernaktion hat einen Tastaturweg und einen Weg mit einem einzelnen Zeiger ohne verpflichtendes Ziehen. | Langdruck und Drag dürfen keine Voraussetzung sein. | Aufgabenreihenfolge über „Reihenfolge ändern“; Bereiche über ihre vorhandenen Sortierknöpfe. Drag bleibt ein zusätzlicher Weg. Spätere Slider brauchen Track-Tap, Pfeiltasten und Zahleneingabe. |
+| **D6 Mehrere Bedienweisen**: Jede Kernaktion hat einen Tastaturweg und einen Weg mit einem einzelnen Zeiger ohne verpflichtendes Ziehen. | Langdruck und Drag dürfen keine Voraussetzung sein. | Aufgabenreihenfolge über „Reihenfolge ändern“; Bereiche über Sortierknöpfe; Listenposition und Verstecken über Pfeile und Sichtbarkeit in der Listenverwaltung. Drag bleibt ein zusätzlicher Weg. Spätere Slider brauchen Track-Tap, Pfeiltasten und Zahleneingabe. |
 | **D7 Dialog und Orientierung**: Der oberste Dialog hält den Fokus; der Hintergrund ist inaktiv. Zurück/Escape betrifft die oberste Ebene. Schließen gibt den Fokus zum Auslöser oder seinem Gegenpart zurück. | Verhindert versehentliche Hintergrundaktionen und verlorene Orientierung. | `sheet`, `overhaul`, `cloud`; Breitenwechsel und verschachtelter Dialog. Ein verschwundener Auslöser braucht einen sinnvollen verbleibenden Fokus. |
 | **D8 Lesbarkeit und Ziele**: Normaler Text erreicht 4,5:1, identifikationsrelevante Markierungen 3:1. Häufige Touch-Aktionen haben mindestens 44 × 44 CSS-Pixel Trefferfläche. | Größe einer Trefferfläche ist unabhängig vom visuellen Gewicht einer Aktion. | Farbpaare werden gerechnet; tatsächliche Ziele, 200 % Schrift sowie Telefon-Hoch-/Querformat werden gerendert. Kompakte Hilfsaktionen dürfen 32 Pixel hoch sein; sie ersetzen keine Touch-Hauptaktion. |
 | **D9 Zuverlässige Rückmeldung**: Speichern reagiert auf den lokal erreichten Zustand; Sync meldet die Cloudübertragung gesondert. Fehler erklären Ursache und nächste wirksame Handlung. | Ein deaktivierter Knopf allein beweist weder Persistierung noch Konfliktschutz. | Offline, Schreibfehler, konkurrierende Änderung, Wiederholung und Serverablehnung. Entwurf bleibt bei Fehlern erhalten. Upload-Bestätigung ist eine interne Bestätigung, kein zusätzlicher Benutzerdialog. |
@@ -24,6 +24,8 @@ stehen in [AGENTS.md](AGENTS.md).
 | **D12 Details bei Bedarf**: Optionale Felder zeigen im Ruhezustand ein Symbol und den vorhandenen Wert oder eine Einladung zur Eingabe. Beschriftungen bleiben für Hilfstechnologien erhalten. Ein Klick öffnet die vollständige Bedienung; seltene Aktionen liegen unter „Mehr Optionen“. | Ungenutzte Formularblöcke und dauernd wechselnde Statussätze beanspruchten dieselbe Aufmerksamkeit wie die Aufgabe. | Gemeinsame Aufgabenfelder und Erfassung; Kalender, Vorlagen, zusätzliche Aktionen, Entwürfe und Speichern werden auf beiden Ansichten bedient (`compact-task-ui`, `parity`). |
 | **D13 Erklärende Symbole**: Symbolknöpfe haben einen Namen und einen Hinweis bei Hover und Tastaturfokus. Hinweise benennen die Aktion und relevante Folgen. Touch-Hauptaktionen bleiben unmittelbar erreichbar. Fehler und notwendige Zielentscheidungen stehen direkt im Arbeitsablauf. | Ein Symbol spart Platz, darf seine Bedeutung oder einen Schreibfehler aber nicht verstecken. | Gemeinsamer `IconButton`/`Hint`, Tastaturbedienung, Löschung mit Rückgängig, erforderliche Listenauswahl und Schreibfehler. Sichtprüfung auf Telefon und Desktop. |
 | **D14 Eine Aufgabenfläche**: Die aufgehellte Aufgabenfläche lässt sich einschließlich Beschreibung öffnen und greifen. Checkbox, „Mehr“ und andere Knöpfe behalten eigene Aktionen. | Die Beschreibung lag bisher außerhalb des Ziehgriffs; sichtbare und bedienbare Fläche passten nicht zusammen. | Klick und Ziehen von der Beschreibung, eigenständiges Aufklappen und Abhaken; Desktop-Zug in die Seitenleiste verschiebt ohne Bereich ans Zielende (`compact-task-ui`, `drag`). |
+| **D15 Direkte Bewegung**: Beim horizontalen Menü-Wischen folgt die Leiste dem Finger. Loslassen entscheidet anhand von Weg und letzter Geschwindigkeit, Umkehren und Abbrechen bleiben möglich. Scrollen und aktiviertes Aufgaben-/Listen-Ziehen behalten ihre Bedeutung. | Eine reine Schwelle mit anschließendem Sprung fühlt sich vom Finger getrennt an; konkurrierende Gesten dürfen keine Daten ändern. | Echte Touch-Ereignisse prüfen zusätzliche Finger-/Leistenwege, Umkehr, rechten Rand, Eingabefelder, Aufgabenübertragung und Listensortierung (`mobile-gestures`). Bewegungsreduktion entfernt das Nachfedern. |
+| **D16 Ruhige Zustände**: Kurze Lesevorgänge zeigen erst nach 200 ms einen Ladehinweis. Wiederholungsnachfolger bleiben bis zur bisherigen Fälligkeit gedämpft und benannt. Beide Farbmodi verwenden dieselben Informationsrollen. | Verhindert Textblitze, vermeintlich erneut fällige Aufgaben und abweichende Bedeutungen im hellen Modus. | Timer- und Wiederholungstests, Offline-Zeitfortschritt im Browser, Kontrastpaare beider Modi und visuelle Abnahme (`delayedLoading`, `navigation-polish`, `contrast`). |
 
 Die Kontrastschwellen beziehen sich auf [WCAG 2.2: Kontrast](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html).
 Dialogverhalten folgt dem [WAI-Dialogmuster](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/),
@@ -33,8 +35,15 @@ Tests behaupten keine vollständige WCAG-Konformität der Anwendung.
 
 ## Erste visuelle Fassung
 
-Der Hintergrund ist auf ausdrücklichen Nutzerwunsch vollständig schwarz
-(`#000000`). Formularflächen und angehobene Zustände sind neutral und klar
+Im anfänglichen dunklen Modus ist der Hintergrund auf ausdrücklichen
+Nutzerwunsch vollständig schwarz (`#000000`). Ein Schalter im Kopf, mobilen
+Menü und Konto bietet zusätzlich einen hellen Modus; die Wahl bleibt auf dem
+Gerät erhalten. Beide Paletten setzen dieselben semantischen Farbrollen.
+Sync-Punkt, Warnungen und Fehler erhalten je Thema eigene Kontrastwerte;
+Statusmarkierungen bleiben auch während der Synchronisation kräftig erkennbar.
+Das App-Symbol verwendet dieselbe Form mit einer zum Thema passenden hellen
+beziehungsweise dunklen Fläche und Balkenfarben, auch beim Start und offline.
+Formularflächen und angehobene Zustände sind neutral und klar
 getrennt; Violett bezeichnet Auswahl und
 Hauptaktion. Rote Flächen gehören zu Fehlern bzw. destruktiven Aktionen.
 Der sichtbare Produktname wird „Prio“ geschrieben.
@@ -54,6 +63,36 @@ zusammenhängende Zeilen mit Trennern. Ein ungenutzter Token wird nicht allein
 für seine Existenzprüfung behalten. Inhaltsbreiten und Rundungen sind
 Arbeitswerte dieser Fassung, keine unumkehrbaren Produktentscheidungen.
 
+### Bewegung und Plattformkonventionen
+
+Der [offizielle Android-Drawer](https://developer.android.com/develop/ui/compose/components/drawer)
+ist über Menüknopf und Wischgeste erreichbar. Die aktuelle
+[Compose-Implementierung](https://github.com/androidx/androidx/blob/androidx-main/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/NavigationDrawer.kt)
+erkennt horizontales Ziehen über ihrer gesamten Inhaltsfläche. Das ist eine
+Referenzimplementierung, keine Pflicht für jede Anwendung. Prio trennt die
+sofortige horizontale Bewegung vom Langdruck zum Verschieben; Texteingaben,
+Regler und andere Dialoge behalten ihre eigene Bedienung.
+
+Die [Material-Components-Dokumentation](https://github.com/material-components/material-components-android/blob/master/docs/components/NavigationDrawer.md)
+kündigt für M3 Expressive den Ersatz des klassischen Drawers durch eine
+aufklappbare Navigationsleiste an. Prio übernimmt für diese Sammlung die
+geeigneten Bewegungsregeln; diese Empfehlung allein rechtfertigt keinen
+weiteren Wechsel des bestätigten Listen-Bedienmodells.
+
+[Material Motion](https://m3.material.io/styles/motion) empfiehlt für funktionale
+Produkte das ruhigere Standard-Schema. Prio verwendet dessen räumliche
+Standard-Steifigkeit (700) mit kritischer Dämpfung (1), damit die links
+verankerte Fläche nicht über den Anschlag hinausschwingt. Fingerposition und
+Schleier werden direkt gekoppelt; erst nach Loslassen läuft die Feder, mit
+der letzten Geschwindigkeit als Ausgangspunkt. Bei reduzierter Bewegung
+entfällt diese Animation. Dafür ist kein zusätzliches UI-Framework nötig.
+
+Android belegt [beide physischen Bildschirmränder mit der Zurück-Geste](https://developer.android.com/develop/ui/views/touch-and-input/gestures/gesturenav).
+Prio sperrt diese Systemgeste nicht großflächig. Innerhalb der App folgt die
+Leiste dem Finger; eine vom System übernommene Geste kommt über den nativen
+Zurück-Weg an und schließt das Menü. Eine animierte Vorschau der systemeigenen
+Zurück-Geste gehört nicht zum Capacitor-Back-Callback und wird hier nicht behauptet.
+
 ## Abnahme und Grenzen
 
 - `npm run ci`: Typen, Konventionen, Geschäftslogik, Farbpaare und Build.
@@ -66,8 +105,8 @@ Arbeitswerte dieser Fassung, keine unumkehrbaren Produktentscheidungen.
 
 Neue Prioritätsregeln, Checklisten und optionale Hierarchie werden im jeweiligen
 Lieferumfang fachlich geklärt. Der aktuelle Umbau legt diese Entscheidungen
-nicht durch einen Platzhalter oder einen Default fest. Ein Hellmodus bleibt
-möglich, ist aber kein Teil dieser ersten Fassung.
+nicht durch einen Platzhalter oder einen Default fest. Der zusätzliche Hellmodus
+gehört zur Bedienungssammlung vom 15. Oktober 2026.
 
 ## 15 Historische Befunde
 

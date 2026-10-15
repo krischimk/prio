@@ -59,7 +59,7 @@ export function TaskComposer({ listId, autoFocus = false, onCreated }: { listId?
         value={form.werte.title} onChange={event => form.setzen('title', event.target.value)}
         placeholder="Neue Aufgabe…" className={`${input} min-w-0 flex-1`} />
       <Button type="submit" variant="primary" disabled={form.busy || form.werte.title.trim().length === 0}>
-        <PlusIcon className="h-4 w-4" />Hinzufügen
+        <PlusIcon />Hinzufügen
       </Button>
     </div>
     {expanded ? <div className="space-y-3">

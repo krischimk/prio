@@ -22,7 +22,7 @@ export type BackHandler = () => void
 
 export interface BackStack {
   /** Meldet eine Ebene an. Gibt die Abmelde-Funktion zurück. */
-  push(handler: BackHandler, name?: string): () => void
+  push(handler: BackHandler, name?: string, onHistoryBack?: BackHandler): () => void
   /**
    * Schließt die zuletzt geöffnete Ebene.
    * `true`, wenn eine Ebene behandelt wurde – sonst `false`.

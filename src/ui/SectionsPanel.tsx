@@ -5,6 +5,7 @@ import type { LocalList } from '../domain/types'
 import { errorMessage, input, mutedText } from './styles'
 import { LEER_BEREICHE } from './emptyTexts'
 import { Button } from './components/Button'
+import { CloseIcon, EditIcon, PlusIcon, SaveIcon, TrashIcon } from './icons'
 
 /**
  * Bereiche einer Liste verwalten: anlegen, umbenennen, löschen.
@@ -89,13 +90,13 @@ export function SectionsPanel({ list }: { list: LocalList }) {
                     className={`${input} min-w-40 flex-1`}
                   />
                   <Button type="submit" variant="primary" size="sm">
-                    Speichern
+                    <SaveIcon />Speichern
                   </Button>
                   <Button
                     variant="ghost" size="sm"
                     onClick={() => setUmbenennen(null)}
                   >
-                    Abbrechen
+                    <CloseIcon />Abbrechen
                   </Button>
                 </form>
               ) : (
@@ -110,7 +111,7 @@ export function SectionsPanel({ list }: { list: LocalList }) {
                       setNeuerName(section.name)
                     }}
                   >
-                    Umbenennen
+                    <EditIcon />Umbenennen
                   </Button>
                   <Button
                    
@@ -121,7 +122,7 @@ export function SectionsPanel({ list }: { list: LocalList }) {
                       void repositories.deleteListSection(list.id, section.id)
                     }}
                   >
-                    Löschen
+                    <TrashIcon />Löschen
                   </Button>
                 </>
               )}
@@ -140,7 +141,7 @@ export function SectionsPanel({ list }: { list: LocalList }) {
           className={`${input} min-w-40 flex-1`}
         />
         <Button type="submit" variant="primary" disabled={speichert}>
-          Bereich anlegen
+          <PlusIcon />Bereich anlegen
         </Button>
       </form>
 

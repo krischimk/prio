@@ -130,9 +130,12 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
   Sein Kopf ist zurückgenommen; der Abhakzeitpunkt steht im Hover-/Fokushinweis
   und ist im Editor unter „Mehr Optionen“ auch ohne Maus erreichbar.
 * Die Sortierung der Gesamtansicht liegt hinter dem kleinen Symbol rechts über
-  den Aufgaben. In der breiten Webansicht kann eine Aufgabe auf eine Liste in
-  der linken Seitenleiste gezogen werden: Sie landet dort am Ende ohne Bereich.
-  Das geht auch aus „Neueste zuerst“; die chronologische Sortierung bleibt bestehen.
+  den Aufgaben. Eine Aufgabe kann auf eine Liste in der linken Seitenleiste
+  gezogen werden: Sie landet dort am Ende ohne Bereich. Auf dem Telefon öffnet
+  kurzes Verweilen mit der gezogenen Aufgabe am linken Rand das Menü;
+  Verweilen am rechten Rand schließt es. Loslassen im Menü ohne Zielliste
+  verwirft die gesamte Verschiebung. Das geht auch aus „Neueste zuerst“;
+  die chronologische Sortierung bleibt bestehen.
 * Diese persönlichen Einstellungen liegen in `list_preferences` und
   `user_preferences`; die Cloud braucht Migration 0015. Sie ersetzen keine der
   gemeinsamen Regeln zu Prioritäten, gleichen Namen oder „Erledigt“.
@@ -665,11 +668,17 @@ Aufgabe zusammen gegen den bestätigten Ausgangsstand synchronisiert wird. Diese
 
 ### Die Liste im Formular
 
-„Benachrichtigung hinzufügen“ öffnet die erste Zeile. Weitere Erinnerungen
+„Erinnerung hinzufügen“ öffnet die erste Zeile. Weitere Erinnerungen
 haben ebenfalls Kalender, Uhrzeit und einen Papierkorb. Bei einmaligen
 Aufgaben wählt die benachbarte Auswahl einen gebundenen Vorlauf oder einen
 festen Zeitpunkt; eine tatsächliche Änderung am Zeitpunktfeld macht ihn fest.
 Serien bieten zusätzlich eigene, merkbare Vorläufe.
+
+Bei festen Zeitpunkten öffnet Hinzufügen direkt den Kalender; die Auswahl
+eines Tages öffnet anschließend die Uhrzeit. Dasselbe gilt für Fälligkeiten.
+Der heutige Tag bleibt auch bei einer anderen Auswahl dezent markiert.
+Wiederkehrende Erinnerungen behalten ihre Vorlaufzeiten; ein absoluter Termin
+wäre nur für die erste Wiederholung richtig.
 
 Beim Einschalten der Wiederholung werden feste Zeitpunkte in Vorläufe
 umgerechnet; Abschalten erhält deren Bindung. Wird die Fälligkeit entfernt,
@@ -806,11 +815,46 @@ ersten immer identisch.
 | --- | --- |
 | Tippen auf eine Aufgabe | Detailansicht: bearbeiten, erledigt, verschieben, löschen |
 | **Tippen auf den Listennamen** | Liste verwalten: umbenennen, Symbol, teilen, löschen – oder verlassen |
-| **Gedrückt halten und ziehen** | Aufgabe innerhalb der Liste umsortieren |
+| **Gedrückt halten und ziehen** | Aufgabe umsortieren; am linken Rand kurz verweilen öffnet die Ziellisten |
+| Direkt nach rechts / links wischen | Menü mit dem Finger öffnen / schließen; auch aus der Bildschirmmitte |
+| Listen im Menü gedrückt halten und ziehen | Persönlich umsortieren oder nach „Versteckt“ verschieben |
 | Tippen auf die Checkbox | erledigt / wieder offen – ohne die Detailansicht zu öffnen |
 | ☰ oben links | Menü mit Listen, Konto, Sync-Zustand und Erinnerungen |
 | Punkt oben rechts | Sync-Zustand; Antippen synchronisiert sofort |
-| Zurück-Taste | schließt zuerst Detailansicht, Liste oder Menü, sonst Hintergrund |
+| Zurück-Taste / Browser-Zurück | schließt zuerst den obersten Dialog oder das Menü, besucht danach die vorige Liste; erst am Anfang geht Android in den Hintergrund |
+
+Beim Wischen folgt die Leiste kontinuierlich dem Finger. Loslassen öffnet
+oder schließt sie nach Weg und letzter Geschwindigkeit; eine umgekehrte Geste
+kann den Vorgang zurücknehmen. Langes Drücken aktiviert stattdessen Ziehen.
+Eingabefelder, Regler und andere Dialoge bleiben ausgenommen. Androids
+systemeigene Rand-Zurück-Geste bleibt erhalten und schließt über den nativen
+Zurück-Weg; innerhalb der App kann die Menü-Geste überall beginnen.
+
+Listenreihenfolge und „Versteckt“ werden persönlich synchronisiert. Der
+eingeklappte Bereich behält die Listen erreichbar. Verstecken verändert ihre
+Auswahl in der Gesamtansicht nicht. Beim Listen-Ziehen gibt es keinen
+Randwechsel des Menüs. Browser-Vorwärts kann besuchte Listen erneut öffnen;
+geschlossene Dialogformulare sind keine dauerhaft adressierbaren Seiten.
+In der Listenverwaltung gibt es dieselben persönlichen Änderungen über
+Aufwärts-/Abwärtspfeile und ein Sichtbarkeitssymbol, auch ohne Ziehen.
+
+Das Menü zeigt gesunde Erinnerungen nicht als dauernden Status. Aktivieren,
+Fehler und fehlende Verfügbarkeit bleiben auffindbar. Die Synchronisation
+belegt eine kompakte Zeile. Heller/dunkler Modus ist in beiden Ansichten und
+im Konto schaltbar und wird auf dem Gerät gemerkt. Der dunkle Modus startet
+weiter mit vollständig schwarzem Hintergrund. Beide Paletten verwenden
+dieselben Informationsrollen und werden auf Kontrast geprüft.
+Sync-Punkt, Warnungen und Fehler wechseln dabei ihre Helligkeit passend zum
+Thema. Das App-Symbol hat ebenfalls eine helle und eine dunkle Variante;
+beide stehen auch für den Offline-Start bereit.
+
+Kurze Ladezustände bleiben still: Ein Hinweis erscheint erst nach 200 ms und
+blendet sanft ein. Der Start zeigt das App-Symbol statt einer leeren schwarzen
+Fläche. Aktionssymbole verwenden ein gemeinsames 24er-Zeichenraster und
+20-CSS-Pixel-Größe; kleine Metadatensymbole haben eine eigene 14er-Rolle.
+Trefferflächen bleiben unabhängig von der Zeichengröße. Bereiche sind
+größer als Aufgabentitel, Listenüberschriften in der Gesamtansicht eine Stufe
+darüber. „Erledigt“ behält seine zurückgenommene Rolle.
 
 Der Titel öffnet den gemeinsamen Editor, die Checkbox erledigt die Aufgabe.
 Beschreibung und Metadaten bleiben direkt lesbar. Verschieben, Löschen und
@@ -956,7 +1000,7 @@ als erledigt stehen – so bleibt nachvollziehbar, wann etwas zuletzt getan wurd
 
 * **Vier Intervalle:** täglich, wöchentlich, monatlich, jährlich.
 * **Wiederholung braucht eine Fälligkeit.** Ohne Datum gibt es nichts
-  fortzuschreiben; das Auswahlfeld ist dann abgeschaltet und sagt auch, warum.
+  fortzuschreiben; die Wiederholungsoption erscheint mit dem Fälligkeitsdatum.
 * **Gerechnet wird vom Fälligkeitsdatum**, nicht vom Abhaken: Wer eine
   Wochenaufgabe montags abhakt, bleibt bei Montag. Die Uhrzeit bleibt erhalten,
   auch über die Zeitumstellung.
@@ -964,6 +1008,13 @@ als erledigt stehen – so bleibt nachvollziehbar, wann etwas zuletzt getan wurd
 * **Kein Rückstand:** Liegt der Termin längst in der Vergangenheit, wird so weit
   vorgerückt, bis er in der Zukunft liegt. Eine seit drei Wochen fällige
   Wochenaufgabe springt also auf nächste Woche.
+* **Früh erledigt:** Heute 14 Uhr fällig und um 10 Uhr abgehakt erzeugt den
+  morgigen Termin sofort, aber bis heute 14 Uhr dezent gedämpft und mit
+  „Nächste Wiederholung“. Danach ist er normal dargestellt, auch offline.
+  `available_from` speichert diese Grenze und wird synchronisiert. Der
+  Nachfolger bleibt bedienbar; eine Änderung an Fälligkeit oder Wiederholung
+  nimmt die Kennzeichnung zurück. Alte Nachfolger ohne dieses Feld bleiben
+  normal sichtbar, statt ihre Vorgeschichte zu erraten.
 * **Rückgängig nimmt unveränderte Nachfolger zurück.** Zwischenzeitlich
   bearbeitete, verschobene, umsortierte oder erledigte Nachfolger bleiben
   erhalten. Der gesicherte Ausgangsstand schützt spätere Arbeit auch bei
@@ -1121,7 +1172,7 @@ vor Version 140 falsche Werte liefert ([Chromium-Bug 40699457](https://issues.ch
    ([Chromium-Bug 457682720](https://issues.chromium.org/issues/457682720)).
    Capacitor setzt die Variable bei sichtbarer Tastatur korrekt auf 0.
 
-**Fensterhintergrund muss dunkel sein.** Capacitor legt bei WebViews vor
+**Fensterhintergrund folgt der Darstellung.** Capacitor legt bei WebViews vor
 Version 140 selbst Padding um die Ansicht, damit der Inhalt nicht unter den
 Systemleisten liegt. Der freie Streifen zeigt den Fensterhintergrund. Erbt das
 Theme dabei von `Theme.AppCompat.Light` oder `DayNight`, ist dieser Streifen
@@ -1130,7 +1181,12 @@ Theme dabei von `Theme.AppCompat.Light` oder `DayNight`, ist dieser Streifen
 `android/app/src/main/res/values/styles.xml` explizit
 `android:windowBackground` und `windowSplashScreenBackground` auf
 `@color/prioBackground`. Das Start-Theme erbt bewusst **nicht** mehr von
-`Light.DarkActionBar`.
+`Light.DarkActionBar` und zeigt das App-Symbol. Nach dem Web-Start setzt
+`AppearancePlugin` die Fenster-, Decor- und WebView-Flächen auf dieselbe
+semantische Hintergrundfarbe wie die Oberfläche; `SystemBars` schaltet den
+Kontrast der Systemzeichen. Nach Resume und Konfigurationswechsel wird die
+Wahl erneut angewendet, weil Capacitor sonst den statischen Start-Hintergrund
+wiederherstellt.
 
 ## Bewusste Entscheidungen und Grenzen von 0.1
 

@@ -36,6 +36,9 @@ export async function register(page: Page, email: string): Promise<void> {
 export async function openMenu(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Menü öffnen' }).click()
   await expect(page.getByRole('dialog', { name: 'Menü' })).toBeVisible()
+  // Touch-Koordinaten und direkte Ziehungen brauchen das erreichte Ziel;
+  // normale Klicks warten in Playwright bereits auf stabile Elemente.
+  await expect(page.locator('[data-drawer-motion="idle"][data-drawer-visible="true"]')).toBeVisible()
 }
 
 export async function createList(page: Page, name: string): Promise<void> {

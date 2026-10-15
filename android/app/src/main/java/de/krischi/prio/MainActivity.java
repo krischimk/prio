@@ -25,6 +25,7 @@ public class MainActivity extends BridgeActivity {
         // Muss vor super.onCreate() stehen: Capacitor sammelt die Plugins beim
         // Aufbau der Brücke ein.
         registerPlugin(UpdaterPlugin.class);
+        registerPlugin(AppearancePlugin.class);
 
         EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
