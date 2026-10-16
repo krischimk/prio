@@ -33,16 +33,16 @@ export function OverviewPanel({ currentUserId }: { currentUserId: string }) {
     finally { writing.current = false; setBusy(false) }
   }
   return <section aria-label="Gesamtansicht" className={`mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col gap-3 ${desktop ? 'p-rand' : 'px-rand py-3'}`}>
-    <header>
-      {desktop ? <h1 aria-label="Gesamtansicht" className="text-heading font-semibold tracking-tight"><OverviewTitle /></h1> : null}
+    {desktop ? <header><h1 aria-label="Gesamtansicht" className="text-heading font-semibold tracking-tight"><OverviewTitle /></h1></header> : null}
+    {desktop && overview.status === 'ready' && overview.lists.length > 0 ? <TaskComposer /> : null}
+    <div>
       <div className="flex items-center justify-between gap-2">
         <p className={`text-meta text-ink-muted ${numeric}`}>{formatOpenTasks(query.tasks.filter(task => matchesTags(task.tags, tagFilter)).length, tagFilter.length ? query.tasks.length : undefined)} · {lists.length} {lists.length === 1 ? 'Liste' : 'Listen'}</p>
         {overview.status === 'ready' ? <TaskViewOptions tags={query.tasks.flatMap(task => task.tags)} mode={mode} busy={busy} onModeChange={mode => void write(mode)} /> : null}
       </div>
       <ActiveTagFilters />
       {error ? <p role="alert" className={errorBox}>{error}</p> : null}
-    </header>
-    {desktop && overview.status === 'ready' && overview.lists.length > 0 ? <TaskComposer /> : null}
+    </div>
     {overview.status === 'loading' || query.status === 'loading' ? <DelayedLoading>Gesamtansicht wird geladen …</DelayedLoading>
       : overview.status === 'error' || query.status === 'error' ? <div className="space-y-3 py-6">
         <p role="alert" className={errorBox}>Die Gesamtansicht konnte nicht geladen werden.</p>

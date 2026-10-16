@@ -119,6 +119,11 @@ export function withChecklistWeights(items: ChecklistItem[]): ChecklistItem[] {
   return items.map(item => weights.has(item.id) ? { ...item, weight: weights.get(item.id)! } : item)
 }
 
+/** Ohne individuelle Gewichte zählt wieder jeder Punkt gleich viel. */
+export function withoutChecklistWeights(items: ChecklistItem[]): ChecklistItem[] {
+  return items.map(({ weight: _weight, ...item }) => item)
+}
+
 export function setChecklistWeight(items: ChecklistItem[], id: string, weight: number): ChecklistItem[] {
   if (!Number.isFinite(weight) || weight < 0 || weight > 1) throw new ValidationError('invalid', 'Ein Checklistengewicht liegt außerhalb des gültigen Bereichs.')
   const weights = checklistWeights(items)

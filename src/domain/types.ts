@@ -193,16 +193,17 @@ export interface LocalListPreference extends SyncableRow, LocalOnly {
 }
 export type RemoteListPreference = Omit<LocalListPreference, 'dirty'>
 
-export type OverviewMode = 'by_list' | 'newest'
+export type OverviewMode = 'by_list' | 'newest' | 'priority'
 
 /** Persönliche Ansicht; default_list_id merkt die zuletzt verwendete Gesamt-Zielliste. */
 export interface LocalUserPreference extends SyncableRow, LocalOnly {
   id: string
   default_list_id: string | null
   overview_mode: OverviewMode
+  detailed_ratings: boolean
   created_at: IsoDateTime
 }
-export type RemoteUserPreference = Omit<LocalUserPreference, 'dirty'>
+export type RemoteUserPreference = Omit<LocalUserPreference, 'dirty' | 'detailed_ratings'> & { detailed_ratings?: boolean }
 
 export interface LocalMeta {
   key: string

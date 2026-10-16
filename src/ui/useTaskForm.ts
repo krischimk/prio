@@ -79,7 +79,7 @@ export function useTaskForm({ task, listId, onSaved, overviewUserId }: {
       const eingabe = {
         title: werte.title,
         description: werte.description,
-        checklist: werte.checklistText.trim() ? appendChecklistItem(werte.checklist, createChecklistItem(werte.checklistText), werte.rating?.effortFromChecklist) : werte.checklist,
+        checklist: werte.checklistText.trim() ? appendChecklistItem(werte.checklist, createChecklistItem(werte.checklistText)) : werte.checklist,
         tags: parseTags([...werte.tags, werte.tagText]),
         rating: werte.rating,
         dueAt: fromDateTimeLocalValue(werte.dueAt),

@@ -146,6 +146,7 @@ const ERWARTET = [
   ['user_preferences', 'id', '0015'],
   ['user_preferences', 'default_list_id', '0015'],
   ['user_preferences', 'overview_mode', '0015'],
+  ['user_preferences', 'detailed_ratings', '0015'],
   ['user_preferences', 'created_at', '0015'],
   ['user_preferences', 'updated_at', '0015'],
   ['user_preferences', 'deleted_at', '0015'],

@@ -405,6 +405,14 @@ body {
   touch-action: pan-y;
 }
 
+/* Die Checkliste hat einen eigenen Knopf: dessen Rückmeldung gehört nur ihm. */
+.task-card:hover:not(:has([data-checklist-toggle]:hover)) {
+  background-color: var(--color-surface);
+}
+.task-card:active:not(:has([data-checklist-toggle]:active)) {
+  background-color: var(--color-raised);
+}
+
 /* dnd-kit: Der dedizierte Checklisten-Griff gehört vollständig der Ziehgeste.
  * Die übrige Zeile scrollt normal und ihre Textfelder bleiben auswählbar. */
 .checklist-drag-handle {

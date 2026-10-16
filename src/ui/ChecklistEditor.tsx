@@ -3,7 +3,7 @@ import { DragDropProvider } from '@dnd-kit/react'
 import { isSortable, useSortable } from '@dnd-kit/react/sortable'
 import { KeyboardSensor, PointerSensor, PointerActivationConstraints } from '@dnd-kit/dom'
 import { RestrictToWindow } from '@dnd-kit/dom/modifiers'
-import { appendChecklistItem, checklistProgress, checklistWeights, createChecklistItem, deleteChecklistItem, setChecklistWeight, withChecklistWeights, type ChecklistItem } from '../domain/checklist'
+import { appendChecklistItem, checklistProgress, checklistWeights, createChecklistItem, deleteChecklistItem, setChecklistWeight, withChecklistWeights, withoutChecklistWeights, type ChecklistItem } from '../domain/checklist'
 import type { TaskForm } from './useTaskForm'
 import { ChecklistIcon, ChevronIcon, GripIcon, PlusIcon, TrashIcon } from './icons'
 import { checklistInput, focusRing, numeric } from './styles'
@@ -23,7 +23,8 @@ export function ChecklistEditor({ form, ratingsEnabled = false }: { form: TaskFo
   const addInput = useRef<HTMLInputElement>(null)
   const items = form.werte.checklist.filter(item => item.deleted_at === null)
   const progress = checklistProgress(items)
-  const weighted = ratingsEnabled && form.werte.rating?.effortFromChecklist === true
+  const linked = ratingsEnabled && form.werte.rating?.effortFromChecklist === true
+  const weighted = items.some(item => item.weight !== undefined)
   const weights = checklistWeights(items)
   const change = (id: string, patch: Partial<ChecklistItem>) => form.setzen('checklist', form.werte.checklist.map(item => item.id === id ? { ...item, ...patch } : item))
   const add = () => {
@@ -41,11 +42,15 @@ export function ChecklistEditor({ form, ratingsEnabled = false }: { form: TaskFo
       <ChevronIcon offen={open} className="size-icon-meta shrink-0" />
     </button>
     {ratingsEnabled && form.werte.rating && items.length > 0 ? <label className="ml-2 flex min-h-11 items-center gap-3 pl-2 text-meta text-ink-muted">
-      <input type="checkbox" className="size-5 shrink-0 accent-brand" checked={weighted} onChange={event => {
+      <input type="checkbox" className="size-5 shrink-0 accent-brand" checked={linked} onChange={event => {
         form.setzen('rating', { ...form.werte.rating!, effortFromChecklist: event.target.checked })
-        if (event.target.checked) form.setzen('checklist', withChecklistWeights(form.werte.checklist))
       }} />
       <span>Checkliste reduziert den Restaufwand</span>
+    </label> : null}
+    {linked && items.length > 0 ? <label className="ml-2 flex min-h-11 items-center gap-3 pl-2 text-meta text-ink-muted">
+      <input type="checkbox" className="size-5 shrink-0 accent-brand" checked={weighted}
+        onChange={event => form.setzen('checklist', event.target.checked ? withChecklistWeights(form.werte.checklist) : withoutChecklistWeights(form.werte.checklist))} />
+      <span>Checklistenpunkte unterschiedlich gewichten</span>
     </label> : null}
     {open ? <div id={`${group}-items`} className="ml-2 min-w-0 border-l border-line pl-2">
       <DragDropProvider sensors={defaults => [...defaults.filter(sensor => sensor !== PointerSensor && sensor !== KeyboardSensor), pointer, keyboard]}
@@ -59,7 +64,7 @@ export function ChecklistEditor({ form, ratingsEnabled = false }: { form: TaskFo
           form.setzen('checklist', [...ordered, ...form.werte.checklist.filter(item => item.deleted_at !== null)])
         }}>
         <ul aria-label="Checklistenpunkte bearbeiten">{items.map((item, index) => <ChecklistEditRow key={item.id} item={item} index={index} group={group} busy={form.busy}
-          weight={weighted ? weights.get(item.id) : undefined}
+          weight={linked && weighted ? weights.get(item.id) : undefined}
           onWeight={value => form.setzen('checklist', setChecklistWeight(form.werte.checklist, item.id, value))}
           onChange={patch => change(item.id, patch)} onDelete={() => form.setzen('checklist', deleteChecklistItem(form.werte.checklist, item.id, new Date().toISOString()))} />)}</ul>
       </DragDropProvider>

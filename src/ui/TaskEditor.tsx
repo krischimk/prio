@@ -156,7 +156,7 @@ export function TaskEditor({
             {error ? <p role="alert" className={errorBox}>{error}</p> : null}
             {deletion.error ? <p role="alert" className={errorBox}>{deletion.error}</p> : null}
 
-            <TaskMoreOptions form={form} sections={sections} idPrefix="detail">
+            <TaskMoreOptions form={form} sections={sections} idPrefix="detail" ratingsEnabled={lists.find(list => list.id === listId)?.ratings_enabled}>
               {task !== null ? <>
                 {task?.completed_at ? <p className="text-meta text-ink-muted">{formatCompletedLabel(task.completed_at)}</p> : null}
                 {task !== null ? (

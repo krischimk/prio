@@ -17,6 +17,16 @@ async function pair() {
 }
 
 describe('Persönliche Gesamtansicht auf mehreren Geräten', () => {
+  it('synchronisiert Prioritätssortierung und appweite Detailansicht ohne die letzte Zielliste zu verlieren', async () => {
+    const { a, b, list } = await pair()
+    await a.repositories.updateUserPreferences('owner', { overviewMode: 'priority', detailedRatings: true, defaultListId: list.id })
+    await a.engine.sync(); await b.engine.sync()
+    expect(await b.repositories.getUserPreferences('owner')).toMatchObject({ overview_mode: 'priority', detailed_ratings: true, default_list_id: list.id, dirty: 0 })
+    await b.repositories.createTask({ listId: list.id, title: 'Neu', rememberOverviewTargetFor: 'owner' })
+    await b.repositories.updateUserPreferences('owner', { detailedRatings: false })
+    await b.engine.sync(); await a.engine.sync()
+    expect(await a.repositories.getUserPreferences('owner')).toMatchObject({ overview_mode: 'priority', detailed_ratings: false, default_list_id: list.id, dirty: 0 })
+  })
   it('überträgt die gewählte Ansicht, die manuelle Standardliste und die Aufnahme', async () => {
     const { a, b, list } = await pair()
     await a.repositories.setListInOverview(list.id, 'owner', true)

@@ -7,6 +7,8 @@ import { UsernameField } from './UsernameField'
 import { errorBox, focusRing } from './styles'
 import { LogoutIcon, SaveIcon } from './icons'
 import { ThemeToggle } from './ThemeToggle'
+import { useView } from './useView'
+import { useWorkspace } from '../app/useWorkspace'
 
 export function AccountSheet({ onClose }: { onClose: () => void }) {
   const { state, setUsername, signOut, error } = useAuth()
@@ -14,9 +16,32 @@ export function AccountSheet({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState(user?.username ?? '')
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState(false)
+  const { overview } = useView()
+  const { repositories } = useWorkspace()
+  const [ratingBusy, setRatingBusy] = useState(false)
+  const [ratingError, setRatingError] = useState<string | null>(null)
+  const [ratingPending, setRatingPending] = useState<boolean | null>(null)
+  const detailed = overview.userPreference?.detailed_ratings === true
+  if (ratingPending === detailed) setRatingPending(null)
+  const changeDetail = async (next: boolean) => {
+    if (!user || ratingBusy) return
+    setRatingPending(next); setRatingBusy(true); setRatingError(null)
+    try { await repositories.updateUserPreferences(user.id, { detailedRatings: next }) }
+    catch (cause) { setRatingPending(null); setRatingError(cause instanceof Error ? cause.message : 'Die Darstellung konnte nicht gespeichert werden.') }
+    finally { setRatingBusy(false) }
+  }
   return <Sheet title="Konto" name="account" onClose={() => { if (!busy) onClose() }}>
     <div className="space-y-5 p-5">
-      <div className="flex items-center justify-between"><span className="text-body text-ink">Darstellung</span><ThemeToggle /></div>
+      <section aria-label="Darstellung" className="space-y-2">
+        <div className="flex items-center justify-between"><h2 className="text-body text-ink">Darstellung</h2><ThemeToggle /></div>
+        <label className="flex min-h-11 items-center gap-3 text-body text-ink">
+          <input type="checkbox" className="size-5 shrink-0 accent-brand" checked={ratingPending ?? detailed} disabled={ratingBusy}
+            onChange={event => void changeDetail(event.target.checked)} />
+          <span>Detaillierte Bewertungen anzeigen</span>
+        </label>
+        <p className="text-meta text-ink-muted">Für alle Listen auf deinen Geräten. Zeigt Wichtigkeit, Dringlichkeit und Aufwand zusätzlich zur Priorität.</p>
+        {ratingError ? <p role="alert" className={errorBox}>{ratingError}</p> : null}
+      </section>
       <p className="break-words text-body text-ink-muted">{user?.email}</p>
       <form aria-label="Benutzername ändern" className="space-y-3" onSubmit={event => {
         event.preventDefault()

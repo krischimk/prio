@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { LocalTask } from '../domain/types'
 import { checklistProgress } from '../domain/checklist'
 import { useWorkspace } from '../app/useWorkspace'
@@ -6,7 +6,7 @@ import { ChecklistIcon, ChevronIcon } from './icons'
 import { errorBox, focusRing, numeric } from './styles'
 import { Hint } from './components/Hint'
 
-export function TaskChecklist({ task }: { task: LocalTask }) {
+export function TaskChecklist({ task, trailing }: { task: LocalTask; trailing?: ReactNode }) {
   const { repositories } = useWorkspace()
   const [open, setOpen] = useState(false)
   // Nur die unbestätigte Klickabsicht: sie endet, sobald der DB-Hook sie zeigt.
@@ -32,12 +32,14 @@ export function TaskChecklist({ task }: { task: LocalTask }) {
     } finally { writing.current.delete(id); setPending(previous => ({ ...previous })) }
   }
   return <div data-no-drawer-swipe className="min-w-0">
+    <div className="flex min-w-0 items-center justify-between gap-3">
     <Hint text={`Checkliste ${open ? 'einklappen' : 'aufklappen'}: ${progress.completed} von ${progress.total} Punkten erledigt. Die Hauptaufgabe bleibt unabhängig.`}>
-      <button type="button" aria-label={`Checkliste: ${task.title}`} aria-expanded={open} onClick={() => setOpen(value => !value)}
+      <button type="button" data-checklist-toggle aria-label={`Checkliste: ${task.title}`} aria-expanded={open} onClick={() => setOpen(value => !value)}
         className={`${focusRing} inline-flex min-h-8 items-center gap-1 rounded-control px-1 text-meta text-ink-muted hover:bg-raised hover:text-ink`}>
         <ChecklistIcon className="size-icon-meta" /><span className={numeric}>{progress.completed}/{progress.total}</span><ChevronIcon offen={open} className="size-icon-meta" />
       </button>
     </Hint>
+    {trailing}</div>
     {open ? <ul aria-label={`Checkliste: ${task.title}`} className="mt-1">{task.checklist.filter(item => item.deleted_at === null).map(item => <li key={item.id}>
       <div className="flex min-h-11 items-center gap-3 rounded-control px-1 text-body hover:bg-raised active:bg-raised">
         <input type="checkbox" className="size-5 shrink-0 accent-brand" checked={pending[item.id] ?? item.completed} disabled={Object.hasOwn(pending, item.id)}

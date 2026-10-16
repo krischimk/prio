@@ -131,13 +131,11 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Feedback Telefon' : 
       await expect(editor).toBeHidden()
       await item.hover()
     }
-    await info.attach('Zeilenmaße', { body: JSON.stringify(await item.evaluate(row => {
-      const title = row.querySelector('[data-testid="task-row"] > span')!
-      const check = row.querySelector('input[type="checkbox"]')!
-      const body = row.querySelector('[data-testid="task-row"]')!
-      const r = row.getBoundingClientRect(), b = body.getBoundingClientRect(), t = title.getBoundingClientRect(), c = check.getBoundingClientRect()
-      return { rowWidth: r.width, clickableWidth: b.width, titleCenter: t.y + t.height / 2, checkboxCenter: c.y + c.height / 2 }
-    })), contentType: 'application/json' })
+    const [r, b, t, c] = await Promise.all([item.boundingBox(), item.getByTestId('task-row').boundingBox(),
+      item.getByText('Eine Aufgabe', { exact: true }).boundingBox(), item.getByRole('checkbox').boundingBox()])
+    if (!r || !b || !t || !c) throw new Error('Die sichtbaren Teile der Aufgabenzeile müssen messbar sein.')
+    await info.attach('Zeilenmaße', { body: JSON.stringify({ rowWidth: r.width, clickableWidth: b.width,
+      titleCenter: t.y + t.height / 2, checkboxCenter: c.y + c.height / 2 }), contentType: 'application/json' })
     await page.screenshot({ path: info.outputPath('outer-task-row.png') })
   })
 

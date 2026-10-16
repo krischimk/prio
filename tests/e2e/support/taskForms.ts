@@ -26,14 +26,14 @@ export async function addReminder(scope: Page | Locator) {
   await scope.getByRole('button', { name: /^(Erinnerung hinzufügen|Weitere Erinnerung)$/ }).click()
 }
 
-export async function setOverviewMode(page: Page, mode: 'newest' | 'by_list') {
+export async function setOverviewMode(page: Page, mode: 'newest' | 'by_list' | 'priority') {
   await page.getByRole('button', { name: 'Sortierung ändern', exact: true }).click()
   const field = page.getByLabel('Ansicht der Gesamtansicht', { exact: true })
   await field.selectOption(mode)
   await expect(field).toBeHidden()
 }
 
-export async function expectOverviewMode(page: Page, mode: 'newest' | 'by_list') {
+export async function expectOverviewMode(page: Page, mode: 'newest' | 'by_list' | 'priority') {
   await page.getByRole('button', { name: 'Sortierung ändern', exact: true }).click()
   await expect(page.getByLabel('Ansicht der Gesamtansicht', { exact: true })).toHaveValue(mode)
   await page.keyboard.press('Escape')

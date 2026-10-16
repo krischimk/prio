@@ -394,7 +394,7 @@ async function handleRpc(name, request, response) {
       }
       if (table === 'tasks' && (!canAccessList(user.id,state.lists.get(row.list_id)) || (current && !canAccessList(user.id,state.lists.get(current.list_id))))) { rejected('Kein Zugriff auf die Aufgabe.'); continue }
       if (table === 'preferences' && (row.user_id !== user.id || !canAccessList(user.id,state.lists.get(row.list_id)))) { rejected('Nur deine eigene Listenauswahl darf geändert werden.'); continue }
-      if (table === 'userPreferences' && (row.id !== user.id || !['by_list','newest'].includes(row.overview_mode))) { rejected('Ungültige persönliche Einstellung.'); continue }
+      if (table === 'userPreferences' && (row.id !== user.id || !['by_list','newest','priority'].includes(row.overview_mode))) { rejected('Ungültige persönliche Einstellung.'); continue }
       if (table === 'userPreferences' && row.default_list_id && row.default_list_id !== current?.default_list_id && !canAccessList(user.id,state.lists.get(row.default_list_id))) { rejected('Kein Zugriff auf die Standardliste.'); continue }
       if ((table==='tasks' && !row.title?.trim()) || (table==='lists' && !row.name?.trim())) { rejected('Name darf nicht leer sein.','23514'); continue }
       if (current && row.created_at !== current.created_at) { rejected('Der Erstellzeitpunkt ist unveränderlich.','22023'); continue }

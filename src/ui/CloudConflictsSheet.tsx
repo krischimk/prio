@@ -15,6 +15,7 @@ import { formatReminderOffset } from './reminder'
 import { findListIcon } from './listIcons'
 import { ListIcon } from './ListIcon'
 import { useView } from './useView'
+import { overviewModeLabel } from './overviewMode'
 import { checklistWeights } from '../domain/checklist'
 import { TaskRatingSummary } from './TaskRating'
 
@@ -41,7 +42,7 @@ function ConflictVersion({ conflict, row, viewerId }: { conflict: CloudConflict;
       {show('recurrence') ? <p>Wiederholung: {describeRecurrence(task.recurrence) ?? 'Keine'}</p> : null}
       {show('tags') ? <p>Tags: {task.tags.length ? task.tags.join(', ') : 'Keine'}</p> : null}
       {show('checklist') ? <div><p>Checkliste:</p>{task.checklist.filter(item => item.deleted_at === null).map(item => <p key={item.id} className="break-words">{item.completed ? '✓' : '○'} {item.text}{item.weight !== undefined ? ` · ${Math.round((checklistWeights(task.checklist).get(item.id) ?? 0) * 100)} %` : ''}</p>)}</div> : null}
-      {show('rating') ? task.rating ? <div><TaskRatingSummary rating={task.rating} dueAt={task.due_at} checklist={task.checklist} />
+      {show('rating') ? task.rating ? <div><TaskRatingSummary rating={task.rating} dueAt={task.due_at} checklist={task.checklist} detailed />
         <p>Dringlichkeit: {task.rating.urgencyMode === 'auto' ? 'Automatisch bei Fälligkeit' : 'Manuell'} · Checklisten-Kopplung: {task.rating.effortFromChecklist ? 'An' : 'Aus'}</p></div> : <p>Keine Bewertung.</p> : null}
       {show('reminders') ? <div>
         <p>Erinnerungen: {task.reminders.length === 0 ? 'Keine' : null}</p>
@@ -78,7 +79,8 @@ function ConflictVersion({ conflict, row, viewerId }: { conflict: CloudConflict;
   }
   if (conflict.table === 'userPreferences') {
     const preference = fromRemoteUserPreference(row as RemoteUserPreference)
-    return <><p>Ansicht: {preference.overview_mode === 'by_list' ? 'Nach Listen gruppiert' : 'Neueste zuerst'}</p>
+    return <><p>Ansicht: {overviewModeLabel[preference.overview_mode]}</p>
+      <p>Detaillierte Bewertungen: {preference.detailed_ratings ? 'An' : 'Aus'}</p>
       <p>Letzte Zielliste in der Gesamtansicht: {preference.default_list_id ? lists.find(list => list.id === preference.default_list_id)?.name ?? 'Nicht mehr verfügbar' : 'Noch nicht verwendet'}</p></>
   }
   const member = fromRemoteMember(row as RemoteListMember)
@@ -94,7 +96,7 @@ const fields: Record<string, string> = {
   checklist: 'Checkliste', tags: 'Tags', rating: 'Bewertung', ratings_enabled: 'Bewertungen verwenden',
   completed: 'Erledigt-Status', completed_at: 'Abschlusszeitpunkt', successor_id: 'Seriennachfolger', list_id: 'Liste', section_id: 'Bereich',
   position: 'Reihenfolge', sections: 'Bereiche', icon: 'Listensymbol', is_shared: 'Freigabe', deleted_at: 'Löschstatus', keep_completed: 'Aufbewahrung erledigter Aufgaben', reopen_context: 'Rückkehr und Seriennachfolger',
-  include_in_overview: 'Aufnahme in die Gesamtansicht', default_list_id: 'Letzte Gesamt-Zielliste', overview_mode: 'Bevorzugte Ansicht',
+  include_in_overview: 'Aufnahme in die Gesamtansicht', default_list_id: 'Letzte Gesamt-Zielliste', overview_mode: 'Bevorzugte Ansicht', detailed_ratings: 'Detaillierte Bewertungen',
 }
 
 /** Öffnet sich nur auf Wunsch und nur für tatsächliche Cloud-Konflikte. */

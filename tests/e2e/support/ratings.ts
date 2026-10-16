@@ -1,11 +1,87 @@
 import { expect, test, type Page } from '@playwright/test'
 import * as desktop from './helpers'
 import * as phone from './mobile'
-import { addChecklistPoint, outerTask } from './checklists'
-import { setDueAt } from './taskForms'
+import { addChecklistPoint, addTags, outerTask } from './checklists'
+import { moreOptions, setDueAt, setOverviewMode, expectOverviewMode } from './taskForms'
+import { openOverview } from './overview'
+
+export async function setDetailedRatings(page: Page, mobile: boolean, enabled: boolean) {
+  if (mobile) await phone.openMenu(page)
+  await page.getByRole('button', { name: 'Konto', exact: true }).click()
+  const account = page.getByRole('dialog', { name: 'Konto', exact: true })
+  await account.getByLabel('Detaillierte Bewertungen anzeigen', { exact: true }).setChecked(enabled)
+  await expect(account.getByLabel('Detaillierte Bewertungen anzeigen', { exact: true })).toBeEnabled()
+  await account.getByRole('button', { name: 'Schließen', exact: true }).click()
+}
+
+export async function compactRatingParity(page: Page, mobile: boolean) {
+  await (mobile ? phone.register : desktop.register)(page, desktop.uniqueEmail('compact'))
+  await (mobile ? phone.createList : desktop.createList)(page, 'Arbeit')
+  const settings = await desktop.openListSettings(page)
+  await settings.getByLabel('In Gesamtansicht aufnehmen', { exact: true }).check()
+  await expect(settings.getByLabel('In Gesamtansicht aufnehmen', { exact: true })).toBeEnabled()
+  await desktop.closeListSettings(page)
+  await (mobile ? phone.createTask : desktop.createTask)(page, 'Projekt')
+  const editor = await desktop.openTaskEditor(page, 'Projekt')
+  await editor.getByRole('slider', { name: 'Wichtigkeit einschätzen', exact: true }).press('End')
+  await expect(editor.getByRole('slider', { name: 'Dringlichkeit', exact: true })).toBeVisible()
+  await setDueAt(editor, '2030-12-18T18:00')
+  await expect(editor.getByRole('slider', { name: 'Dringlichkeit', exact: true })).toBeHidden()
+  await expect(editor.getByRole('slider', { name: 'Aufwand', exact: true })).toBeVisible()
+  await moreOptions(editor)
+  await editor.getByRole('button', { name: 'Manuell', exact: true }).click()
+  await editor.getByRole('slider', { name: 'Dringlichkeit', exact: true }).press('Home')
+  await addChecklistPoint(editor, 'Erster Schritt')
+  await addChecklistPoint(editor, 'Zweiter Schritt')
+  const weights = editor.getByLabel('Checklistenpunkte unterschiedlich gewichten', { exact: true })
+  await expect(weights).not.toBeChecked()
+  await weights.check()
+  await expect(editor.getByRole('slider', { name: /^Gewichtung:/ })).toHaveCount(2)
+  await weights.uncheck()
+  await expect(editor.getByRole('slider', { name: /^Gewichtung:/ })).toHaveCount(0)
+  await addTags(editor, ['Planung', 'Ein sehr langer Tag für die Vorschau'])
+  await editor.getByRole('button', { name: 'Speichern', exact: true }).click()
+  const row = outerTask(page, 'Projekt')
+  await expect(row.getByRole('meter')).toHaveCount(1)
+  await expect(row.getByRole('meter', { name: 'Priorität', exact: true })).toHaveAttribute('aria-valuenow', '5')
+  await row.getByRole('button', { name: 'Checkliste: Projekt', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: 'Aufgabe', exact: true })).toBeHidden()
+  await row.getByLabel('Checklistenpunkt: Erster Schritt', { exact: true }).check()
+  await row.getByRole('button', { name: 'Checkliste: Projekt', exact: true }).click()
+  await page.screenshot({ path: test.info().outputPath('kompakte-bewertung.png') })
+  if (mobile) {
+    await page.setViewportSize({ width: 740, height: 360 })
+    await page.screenshot({ path: test.info().outputPath('kompakte-bewertung-quer.png') })
+    await page.setViewportSize({ width: 390, height: 844 })
+  }
+  await setDetailedRatings(page, mobile, true)
+  await expect(row.getByRole('meter')).toHaveCount(4)
+  await expect(row.getByRole('meter', { name: 'Restaufwand', exact: true })).toHaveAttribute('aria-valuenow', '2.5')
+  await setDetailedRatings(page, mobile, false)
+  await (mobile ? phone.createTask : desktop.createTask)(page, 'Sehr wichtig')
+  await desktop.openTaskEditor(page, 'Sehr wichtig')
+  await editor.getByRole('slider', { name: 'Wichtigkeit einschätzen', exact: true }).press('End')
+  await editor.getByRole('slider', { name: 'Dringlichkeit', exact: true }).press('End')
+  await editor.getByRole('button', { name: 'Speichern', exact: true }).click()
+  // Vor dem nächsten Eingeben muss das asynchrone Speichern den modalen
+  // Editor geschlossen haben. Der Hintergrund ist bis dahin bewusst inert.
+  await expect(editor).toBeHidden()
+  await (mobile ? phone.createTask : desktop.createTask)(page, 'Unbewertet')
+  await openOverview(page, mobile)
+  await setOverviewMode(page, 'priority')
+  const titles = page.getByRole('list', { name: 'Aufgaben in der Gesamtansicht', exact: true }).getByTestId('task-row')
+  await expect(titles).toHaveCount(3)
+  await expect(titles.nth(0)).toContainText('Sehr wichtig')
+  await expect(titles.nth(1)).toContainText('Projekt')
+  await expect(titles.nth(2)).toContainText('Unbewertet')
+  await page.reload()
+  await expectOverviewMode(page, 'priority')
+  await expect(outerTask(page, 'Projekt').getByRole('meter')).toHaveCount(1)
+}
 
 export async function ratingParity(page: Page, mobile: boolean) {
   await (mobile ? phone.register : desktop.register)(page, desktop.uniqueEmail('rating'))
+  await setDetailedRatings(page, mobile, true)
   await (mobile ? phone.createList : desktop.createList)(page, 'Bewertbar')
   await (mobile ? phone.createTask : desktop.createTask)(page, 'Einschätzung')
   const editor = await desktop.openTaskEditor(page, 'Einschätzung')
@@ -50,6 +126,7 @@ export async function ratingParity(page: Page, mobile: boolean) {
 
 export async function weightedChecklistParity(page: Page, mobile: boolean) {
   await (mobile ? phone.register : desktop.register)(page, desktop.uniqueEmail('weighted'))
+  await setDetailedRatings(page, mobile, true)
   await (mobile ? phone.createList : desktop.createList)(page, 'Gewichtete Schritte')
   await (mobile ? phone.createTask : desktop.createTask)(page, 'Projekt vorbereiten')
   const editor = await desktop.openTaskEditor(page, 'Projekt vorbereiten')
@@ -59,6 +136,10 @@ export async function weightedChecklistParity(page: Page, mobile: boolean) {
   await editor.getByRole('slider', { name: 'Wichtigkeit einschätzen', exact: true }).press('End')
   const linked = editor.getByLabel('Checkliste reduziert den Restaufwand', { exact: true })
   await expect(linked).toBeChecked()
+  const weighted = editor.getByLabel('Checklistenpunkte unterschiedlich gewichten', { exact: true })
+  await expect(weighted).not.toBeChecked()
+  await expect(editor.getByRole('slider', { name: /^Gewichtung:/ })).toHaveCount(0)
+  await weighted.check()
   const first = editor.getByRole('slider', { name: 'Gewichtung: Recherche', exact: true })
   await expect(first).toHaveValue('0.5')
   await first.press('End')
@@ -92,6 +173,7 @@ export async function weightedChecklistParity(page: Page, mobile: boolean) {
     await page.setViewportSize({ width: 390, height: 844 })
   }
   await linked.uncheck()
+  await expect(weighted).toBeHidden()
   await expect(editor.getByRole('slider', { name: /^Gewichtung:/ })).toHaveCount(0)
   await editor.getByRole('button', { name: 'Speichern', exact: true }).click()
   await expect(row.getByRole('meter', { name: 'Aufwand', exact: true })).toHaveAttribute('aria-valuenow', '10')

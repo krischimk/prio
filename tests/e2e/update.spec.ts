@@ -28,7 +28,7 @@ async function feldEntfernen(page: import('@playwright/test').Page) {
       anfrage.onerror = () => fehlschlag(new Error('open fehlgeschlagen'))
       anfrage.onsuccess = () => {
         const db = anfrage.result
-        const tx = db.transaction(['lists','tasks','list_preferences'], 'readwrite')
+        const tx = db.transaction(['lists','tasks','list_preferences','user_preferences'], 'readwrite')
         const speicher = tx.objectStore('lists')
         const alle = speicher.getAll()
         alle.onsuccess = () => {
@@ -61,6 +61,14 @@ async function feldEntfernen(page: import('@playwright/test').Page) {
             delete zeile.position
             delete zeile.hidden
             auswahl.put(zeile)
+          }
+        }
+        const startansicht = tx.objectStore('user_preferences')
+        const alteStartansicht = startansicht.getAll()
+        alteStartansicht.onsuccess = () => {
+          for (const zeile of alteStartansicht.result as Record<string, unknown>[]) {
+            delete zeile.detailed_ratings
+            startansicht.put(zeile)
           }
         }
         tx.oncomplete = () => {

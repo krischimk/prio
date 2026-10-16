@@ -79,7 +79,7 @@ export const MITGLIEDER_FELDER = [
 ] as const satisfies readonly (keyof LocalListMember)[]
 
 export const LISTENAUSWAHL_FELDER = ['list_id', 'user_id', 'include_in_overview', 'position', 'hidden', 'created_at', 'updated_at', 'deleted_at', 'dirty'] as const satisfies readonly (keyof LocalListPreference)[]
-export const STARTANSICHT_FELDER = ['id', 'default_list_id', 'overview_mode', 'created_at', 'updated_at', 'deleted_at', 'dirty'] as const satisfies readonly (keyof LocalUserPreference)[]
+export const STARTANSICHT_FELDER = ['id', 'default_list_id', 'overview_mode', 'detailed_ratings', 'created_at', 'updated_at', 'deleted_at', 'dirty'] as const satisfies readonly (keyof LocalUserPreference)[]
 
 // Wenn eine dieser Zusicherungen fehlschlägt, nennt der Fehler das Feld.
 const _listen: FelderGenau<LocalList, typeof LISTEN_FELDER> = true

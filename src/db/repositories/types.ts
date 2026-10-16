@@ -43,7 +43,7 @@ export interface Repositories {
   setListInOverview(listId: string, userId: string, included: boolean): Promise<void>
   placeList(listId: string, userId: string, destination: { hidden: boolean; beforeListId: string | null }): Promise<void>
   getUserPreferences(userId: string): Promise<LocalUserPreference | undefined>
-  updateUserPreferences(userId: string, patch: { defaultListId?: string | null; overviewMode?: OverviewMode }): Promise<void>
+  updateUserPreferences(userId: string, patch: { defaultListId?: string | null; overviewMode?: OverviewMode; detailedRatings?: boolean }): Promise<void>
   listCloudConflicts(): Promise<CloudConflict[]>
   resolveCloudConflict(conflict: CloudConflict, choice: 'local' | 'remote'): Promise<void>
   // Listen

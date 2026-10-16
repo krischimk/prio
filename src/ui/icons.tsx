@@ -278,6 +278,36 @@ export function SortIcon({ className = iconClass }: { className?: string }) {
   </svg>
 }
 
+export function FilterIcon({ className = iconClass }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
+    <path d="M3 4h18l-7 8v7l-4 2v-9z" />
+  </svg>
+}
+
+export function ImportanceIcon({ className = iconClass }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
+    <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" />
+  </svg>
+}
+
+export function EffortIcon({ className = iconClass }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
+    <circle cx="12" cy="5" r="2" /><path d="M7 9h10l4 12H3z" />
+  </svg>
+}
+
+export function UrgencyIcon({ className = iconClass }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
+    <path d="M9 2h6M12 2v3M18 6l2-2M12 9v5l3 2" /><circle cx="12" cy="14" r="8" />
+  </svg>
+}
+
+export function PriorityIcon({ className = iconClass }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
+    <path d="m5 12 7-7 7 7M5 19l7-7 7 7" />
+  </svg>
+}
+
 export function AlertIcon({ className = iconClass }: { className?: string }) {
   return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
     <path d="M12 3 2 21h20L12 3zM12 9v5M12 17h.01" />

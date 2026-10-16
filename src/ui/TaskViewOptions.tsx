@@ -7,7 +7,8 @@ import { useBackLayer } from '../app/useBackLayer'
 import { useTaskTags } from '../app/hooks'
 import { IconButton } from './components/IconButton'
 import { Button } from './components/Button'
-import { SettingsIcon, SortIcon, TagIcon } from './icons'
+import { FilterIcon, SortIcon, TagIcon } from './icons'
+import { overviewModeLabel } from './overviewMode'
 import { focusRing, input, layer } from './styles'
 
 /** Gleicher Tagfilter in Einzel- und Gesamtansicht; deren Listenwahl bleibt unverändert. */
@@ -22,13 +23,13 @@ export function TaskViewOptions({ tags, mode, busy = false, onModeChange }: {
   return <Popover.Root open={open} onOpenChange={details => setOpen(details.open)}
     onEscapeKeyDown={event => { event.preventDefault(); setOpen(false) }} positioning={{ strategy: 'fixed', placement: 'bottom-end' }} lazyMount unmountOnExit>
     <Popover.Trigger asChild><IconButton aria-label={mode ? 'Sortierung ändern' : 'Nach Tags filtern'} variant={tagFilter.length ? 'iconActive' : 'icon'}
-      title={mode ? `Sortierung ändern und nach Tags filtern. Aktuell: ${mode === 'by_list' ? 'Nach Listen gruppiert' : 'Neueste zuerst'}.` : 'Aufgaben nach Tags filtern.'}>
-      {mode ? <SortIcon /> : <SettingsIcon />}
+      title={mode ? `Sortierung ändern und nach Tags filtern. Aktuell: ${overviewModeLabel[mode]}.` : 'Aufgaben nach Tags filtern.'}>
+      {mode ? <SortIcon /> : <FilterIcon />}
     </IconButton></Popover.Trigger>
     <Popover.Positioner className={layer.raised}><Popover.Content className="w-72 max-w-[calc(100vw-2rem)] space-y-3 rounded-card border border-line-strong bg-raised p-3 shadow-lg shadow-page/50">
       {mode && onModeChange ? <label className="block text-meta text-ink-muted"><span className="sr-only">Ansicht der Gesamtansicht</span>
         <select aria-label="Ansicht der Gesamtansicht" className={input} value={mode} disabled={busy} onChange={event => { onModeChange(event.target.value as OverviewMode); setOpen(false) }}>
-          <option value="by_list">Nach Listen gruppiert</option><option value="newest">Neueste zuerst</option>
+          {Object.entries(overviewModeLabel).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </select>
       </label> : null}
       <fieldset className="space-y-1"><legend className="mb-1 flex items-center gap-2 text-meta text-ink-muted"><TagIcon className="size-icon-meta" />Nach Tags filtern</legend>

@@ -21,6 +21,7 @@ import { leerAufgaben } from './emptyTexts'
 import { useTaskDragHandlers } from './useTaskDragHandlers'
 import { isKeyboardEvent } from '@dnd-kit/dom/utilities'
 import { matchesTags } from '../domain/tags'
+import { orderOverviewTasks } from '../domain/overviewOrdering'
 
 interface DragPreview {
   lists: LocalList[]
@@ -36,7 +37,7 @@ interface DragPreview {
 export function TaskList({ lists, tasks: allTasks, currentUserId, overview = false, mode = 'by_list' }: {
   lists: LocalList[]; tasks: LocalTask[]; currentUserId: string; overview?: boolean; mode?: OverviewMode
 }) {
-  const { repositories } = useWorkspace()
+  const { repositories, nowMs } = useWorkspace()
   const { setTaskDetail, selectList, tagFilter } = useView()
   const tasks = useMemo(() => tagFilter.length ? allTasks.filter(task => matchesTags(task.tags, tagFilter)) : allTasks, [allTasks, tagFilter])
   const base = useMemo(() => dragGroups(lists, tasks), [lists, tasks])
@@ -144,8 +145,8 @@ export function TaskList({ lists, tasks: allTasks, currentUserId, overview = fal
     {error ? <p role="alert" className={errorBox}>{error}</p> : null}
     {shown?.saving ? <p role="status" className="sr-only">Position wird gespeichert …</p> : null}
     <div data-testid="task-list" className="flex flex-1 flex-col space-y-abschnitt">
-      {mode === 'newest' ? <ul aria-label="Aufgaben in der Gesamtansicht">
-        {[...visibleTasks].sort((a, b) => b.created_at.localeCompare(a.created_at) || a.id.localeCompare(b.id)).map(task => {
+      {mode !== 'by_list' ? <ul aria-label="Aufgaben in der Gesamtansicht">
+        {orderOverviewTasks(visibleTasks, visibleLists, mode, nowMs).map(task => {
           const list = visibleLists.find(entry => entry.id === task.list_id)!
           const section = list.sections.find(entry => entry.id === task.section_id)
           return <NewestTaskRow key={task.id} task={task} currentUserId={currentUserId} overview={overview}
@@ -156,11 +157,11 @@ export function TaskList({ lists, tasks: allTasks, currentUserId, overview = fal
       </ul> : visibleLists.map(list => <ListBlock key={list.id} list={list} groups={groups} byId={byId} currentUserId={currentUserId}
         overview={overview} activeId={shown?.activeId ?? null} onOpen={open} onSelectList={selectList} />)}
     </div>
-    {mode === 'newest' && lists.some(list => list.keep_completed) ? <CompletedTasksSection lists={lists.filter(list => list.keep_completed)} currentUserId={currentUserId} showOrigin overview={overview} /> : null}
+    {mode !== 'by_list' && lists.some(list => list.keep_completed) ? <CompletedTasksSection lists={lists.filter(list => list.keep_completed)} currentUserId={currentUserId} showOrigin overview={overview} /> : null}
   </>
 }
 
-/** Chronologische Ansicht: Ziehen wechselt nur die Liste, nicht die Sortierung. */
+/** Berechnete Ansicht: Ziehen wechselt nur die Liste, nicht die Sortierung. */
 function NewestTaskRow(props: { task: LocalTask; currentUserId: string; overview: boolean; origin: string; ratingsEnabled: boolean; onOpen: (task: LocalTask) => void }) {
   const { ref, handleRef, isDragging } = useDraggable({ id: props.task.id, type: 'task', data: { listId: props.task.list_id } })
   return <TaskRow {...props} elementRef={ref} activatorRef={handleRef} dragging={isDragging} />

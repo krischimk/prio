@@ -80,7 +80,7 @@ export function TaskComposer({ listId, autoFocus = false, onCreated }: { listId?
       {excluded ? <p role="status" className="text-meta text-ink-muted">Die Aufgabe wird in „{target.name}“ gespeichert. Diese Liste ist nicht in deiner Gesamtansicht enthalten.</p> : null}
       <TaskFields form={form} felder={['beschreibung', 'checkliste', 'tags', 'faellig', 'wiederholung', 'erinnerungen']} sections={target?.sections ?? []}
         currentUserId={currentUserId} listIsShared={target?.is_shared ?? false} ratingsEnabled={target?.ratings_enabled} idPrefix={idPrefix} />
-      <TaskMoreOptions form={form} sections={target?.sections ?? []} idPrefix={idPrefix} />
+      <TaskMoreOptions form={form} sections={target?.sections ?? []} idPrefix={idPrefix} ratingsEnabled={target?.ratings_enabled} />
     </div> : null}
     <TaskFormStatus form={form} />
   </form>

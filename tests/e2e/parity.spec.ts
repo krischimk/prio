@@ -9,7 +9,7 @@ import * as telefon from './support/mobile'
 import { createCloudConflict } from './support/cloudConflict'
 import { openOverview, rememberOverviewTarget } from './support/overview'
 import { checklistParity, tagFilterParity } from './support/checklists'
-import { ratingParity, weightedChecklistParity } from './support/ratings'
+import { ratingParity, weightedChecklistParity, compactRatingParity } from './support/ratings'
 
 /**
  * Oberflächenparität: Jede Funktion muss in beiden Ansichten erreichbar sein.
@@ -55,6 +55,11 @@ async function changeOrder(page: Page) {
 }
 
 const funktionen: Funktion[] = [
+  {
+    name: 'Kompakte Bewertungen, persönliche Detailansicht und Prioritätssortierung',
+    breit: page => compactRatingParity(page, false),
+    telefon: page => compactRatingParity(page, true),
+  },
   {
     name: 'Checklisten gewichten und Restaufwand reversibel ableiten',
     breit: page => weightedChecklistParity(page, false),

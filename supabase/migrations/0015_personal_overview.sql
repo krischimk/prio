@@ -19,6 +19,12 @@ create table if not exists public.user_preferences (
   deleted_at timestamptz
 );
 create index if not exists list_preferences_user_id on public.list_preferences(user_id);
+-- Persönliche Darstellung gilt für die gesamte App, unabhängig von den
+-- gemeinsamen Bewertungsregeln einzelner Listen. Wiederholbar auch im Bestand.
+alter table public.user_preferences add column if not exists detailed_ratings boolean not null default false;
+alter table public.user_preferences drop constraint if exists user_preferences_overview_mode_check;
+alter table public.user_preferences add constraint user_preferences_overview_mode_check
+  check (overview_mode in ('by_list','newest','priority'));
 alter table public.list_preferences enable row level security;
 alter table public.user_preferences enable row level security;
 drop policy if exists list_preferences_select_self on public.list_preferences;
@@ -60,7 +66,7 @@ begin
   else
     up := jsonb_populate_record(null::public.user_preferences,p_row);
     wanted := to_jsonb(up);
-    expected := case when p_expected is null or p_expected = 'null'::jsonb then null else to_jsonb(jsonb_populate_record(null::public.user_preferences,p_expected)) end;
+    expected := case when p_expected is null or p_expected = 'null'::jsonb then null else to_jsonb(jsonb_populate_record(null::public.user_preferences,jsonb_build_object('detailed_ratings',false) || p_expected)) end;
     select to_jsonb(r) into current_row from public.user_preferences r where r.id=up.id for update;
     if up.id is distinct from actor then raise exception 'Nur deine eigenen Einstellungen dürfen geändert werden.' using errcode = '42501'; end if;
     if up.default_list_id is not null and (current_row is null or wanted->'default_list_id' is distinct from current_row->'default_list_id') then
@@ -83,9 +89,9 @@ begin
     on conflict(list_id,user_id) do update set include_in_overview=excluded.include_in_overview,position=excluded.position,hidden=excluded.hidden,updated_at=excluded.updated_at,deleted_at=excluded.deleted_at
     returning to_jsonb(saved) into current_row;
   else
-    insert into public.user_preferences as saved (id,default_list_id,overview_mode,created_at,updated_at,deleted_at)
-    values (up.id,up.default_list_id,up.overview_mode,up.created_at,up.updated_at,up.deleted_at)
-    on conflict(id) do update set default_list_id=excluded.default_list_id,overview_mode=excluded.overview_mode,updated_at=excluded.updated_at,deleted_at=excluded.deleted_at
+    insert into public.user_preferences as saved (id,default_list_id,overview_mode,detailed_ratings,created_at,updated_at,deleted_at)
+    values (up.id,up.default_list_id,up.overview_mode,up.detailed_ratings,up.created_at,up.updated_at,up.deleted_at)
+    on conflict(id) do update set default_list_id=excluded.default_list_id,overview_mode=excluded.overview_mode,detailed_ratings=excluded.detailed_ratings,updated_at=excluded.updated_at,deleted_at=excluded.deleted_at
     returning to_jsonb(saved) into current_row;
   end if;
   return jsonb_build_object('table',p_table,'id',row_id,'kind','written','current',current_row);

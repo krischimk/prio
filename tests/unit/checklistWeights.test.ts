@@ -1,11 +1,22 @@
 import { describe, expect, it } from 'vitest'
-import { appendChecklistItem, checklistRemaining, checklistWeights, deleteChecklistItem, mergeChecklist, setChecklistWeight, validateChecklist, withChecklistWeights, type ChecklistItem } from '../../src/domain/checklist'
+import { appendChecklistItem, checklistRemaining, checklistWeights, deleteChecklistItem, mergeChecklist, setChecklistWeight, validateChecklist, withChecklistWeights, withoutChecklistWeights, type ChecklistItem } from '../../src/domain/checklist'
 import { ratingValues, startRating } from '../../src/domain/rating'
 
 const item = (id: string): ChecklistItem => ({ id, text: id, completed: false, deleted_at: null })
 const sum = (items: ChecklistItem[]) => [...checklistWeights(items).values()].reduce((a, b) => a + b, 0)
 
 describe('Gewichteter Checklistenfortschritt', () => {
+  it('startet ohne individuelle Gewichte und zählt nach dem Abschalten wieder gleichmäßig', () => {
+    const plain = appendChecklistItem([item('A')], item('B'))
+    expect(plain.every(row => row.weight === undefined)).toBe(true)
+    const weighted = setChecklistWeight(plain, 'A', 0.8).map(row => ({ ...row, completed: row.id === 'A' }))
+    expect(checklistRemaining(weighted)).toBeCloseTo(0.2)
+    const equal = withoutChecklistWeights(weighted)
+    expect(checklistRemaining(equal)).toBe(0.5)
+    expect(equal.every(row => !Object.hasOwn(row, 'weight'))).toBe(true)
+    expect(checklistRemaining(appendChecklistItem(equal, item('C')))).toBeCloseTo(2 / 3)
+    expect(weighted[0].weight).toBe(0.8)
+  })
   it('beginnt mit gleichen Anteilen und erhält beim Umverteilen die Größenverhältnisse', () => {
     const base = [item('A'), item('B'), item('C')]
     expect([...checklistWeights(base).values()]).toEqual([1 / 3, 1 / 3, 1 / 3])

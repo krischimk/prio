@@ -188,9 +188,17 @@ versehentlich Zugriff. Die Cloud braucht die Sammelmigration einschließlich
 * Bewertungen sind optional. Zunächst ist nur „Wichtigkeit einschätzen“ sichtbar;
   der erste Reglerklick aktiviert Wichtigkeit, Aufwand und Dringlichkeit gemeinsam.
   Die übrigen manuellen Startwerte liegen sichtbar in der Mitte. Eine Fälligkeit
-  allein bewertet nichts. Alle drei Einschätzungen und die gleichgewichtet daraus
-  berechnete Priorität werden als beschriftete Balken gezeigt. Der Listenbesitzer
-  kann Bewertungen ausblenden, ohne Daten zu löschen. Bestehende Listen starten
+  allein bewertet nichts. Standardmäßig zeigt die Aufgabenliste nur die daraus
+  berechnete Priorität. Im Formular stehen Wichtigkeit und Aufwand sowie ohne
+  Fälligkeit die Dringlichkeit; mit Fälligkeit bleibt der manuelle Modus unter
+  „Mehr Optionen“ erreichbar. Unter **Konto → Darstellung → Detaillierte
+  Bewertungen anzeigen** schaltet jeder persönlich für die ganze App alle vier
+  Anzeigen und die ausführlichen Regler ein. Diese Wahl wird synchronisiert.
+  Die Gesamtansicht kann nach höchster Priorität sortieren: bewertete Aufgaben
+  zuerst, unbewertete und Listen ohne Bewertungen darunter. Gleichstände bleiben
+  über Erstellzeit und Kennung stabil; die Reihenfolge in den Ursprungslisten
+  wird nicht verändert. Der Listenbesitzer kann Bewertungen ausblenden, ohne
+  Daten zu löschen. Bestehende Listen starten
   ausgeschaltet, neue Listen eingeschaltet.
 * Automatische Dringlichkeit steigt mit abnehmender Restzeit zunächst langsam,
   dann schneller. Mehr Aufwand zieht den Anstieg und das Maximum vor. Erstellung
@@ -202,9 +210,13 @@ versehentlich Zugriff. Die Cloud braucht die Sammelmigration einschließlich
   Testparameter, keine Zusage über reale Arbeitsstunden.
 * Checklisten reduzieren **standardmäßig** den verbleibenden Aufwand bewerteter
   Aufgaben. Der Aufwandregler stellt dann den **Gesamtaufwand** ein, die Anzeige
-  zeigt **Restaufwand**. Im Editor lässt sich diese Kopplung ausschalten und der
-  Anteil jedes Punkts über einen kleinen Slider ändern. Anfangs sind alle gleich;
-  beim Gewichten bleiben die Größenverhältnisse der übrigen Punkte erhalten.
+  zeigt in der Detailansicht **Restaufwand**. Im Editor lässt sich diese Kopplung
+  ausschalten. Zunächst zählen alle Punkte gleich. Nur bei eingeschalteter
+  Kopplung erscheint die zusätzliche, standardmäßig ausgeschaltete Option
+  „Checklistenpunkte unterschiedlich gewichten“. Sie blendet die kleinen Regler
+  ein; Ausschalten entfernt individuelle Gewichte und zählt wieder gleichmäßig.
+  Bestehende explizite Gewichte bleiben beim Update erhalten.
+  Beim Gewichten bleiben die Größenverhältnisse der übrigen Punkte erhalten.
   Ein neuer Punkt bekommt den neuen Durchschnittsanteil, Löschen normiert die
   übrigen Anteile. Abhaken und Wiederöffnen verändern nur den abgeleiteten Rest,
   niemals den eingestellten Gesamtaufwand. Wiederholungen übernehmen Gewichte
@@ -214,6 +226,9 @@ versehentlich Zugriff. Die Cloud braucht die Sammelmigration einschließlich
   jedem Textfeld auch noch nicht einzeln bestätigte Punkte und Tags. Nach dem
   Anlegen am PC liegt der Fokus wieder im Titelfeld. Die Hauptaufgabe lässt sich
   auch am Checklistenbereich ziehen; das Ablegen unter der Liste fügt hinten an.
+* Tagfilter und Aufgabenzähler stehen in der breiten Ansicht unter der Erfassung.
+  Tags stehen rechts in der letzten vorhandenen Informationszeile; lange
+  Tagzeilen werden gekürzt und zeigen beim Hover alle Namen.
 * Tags ergänzen Aufgaben ohne eigene Hierarchie. Vorhandene Tags werden beim
   Bearbeiten grau vorgeschlagen und lassen sich direkt auswählen. Groß- und
   Kleinschreibung erzeugen keine doppelten Tags derselben Aufgabe. Vorschläge

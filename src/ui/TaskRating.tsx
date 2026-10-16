@@ -1,4 +1,4 @@
-import { useId, type CSSProperties } from 'react'
+import { useId, type CSSProperties, type ReactNode } from 'react'
 import { changeUrgencyMode, ratingValues, startRating } from '../domain/rating'
 import type { TaskRating } from '../domain/rating'
 import type { ChecklistItem } from '../domain/checklist'
@@ -7,20 +7,23 @@ import type { TaskForm } from './useTaskForm'
 import { Hint } from './components/Hint'
 import { Button } from './components/Button'
 import { IconButton } from './components/IconButton'
-import { CloseIcon } from './icons'
+import { CloseIcon, ImportanceIcon, EffortIcon, UrgencyIcon, PriorityIcon } from './icons'
+import { useView } from './useView'
 
 const level = (value: number) => value < 2 ? 'sehr niedrig' : value < 4 ? 'niedrig' : value < 6 ? 'mittel' : value < 8 ? 'hoch' : 'sehr hoch'
 const fillStyle = (value: number): CSSProperties => ({ '--rating-fill': `${value * 10}%` } as CSSProperties)
 
-export function RatingSlider({ label, value, onChange, disabled = false, unassigned = false, hint, max = 10, compact = false }: {
+export function RatingSlider({ label, value, onChange, disabled = false, unassigned = false, hint, max = 10, compact = false, icon, actions }: {
   label: string; value: number; onChange: (value: number) => void; disabled?: boolean; unassigned?: boolean; hint: string
   max?: number; compact?: boolean
+  icon?: ReactNode; actions?: ReactNode
 }) {
   const id = useId()
   return <div className="min-w-0">
-    {!compact ? <div className="flex items-baseline justify-between gap-3">
-      <Hint text={hint}><label htmlFor={id} className="inline-block text-body text-ink-soft">{label}</label></Hint>
-      <span aria-hidden="true" className="shrink-0 text-label text-ink-faint">Gering → Hoch</span>
+    {!compact ? <div className="flex min-h-11 flex-wrap items-center gap-x-2">
+      <Hint text={hint}><label htmlFor={id} className="inline-flex items-center gap-2 text-body text-ink-soft">{icon}{label}</label></Hint>
+      {actions}
+      <span aria-hidden="true" className="ml-auto shrink-0 text-label text-ink-faint">Gering → Hoch</span>
     </div> : null}
     <input id={id} type="range" min="0" max={max} step={max / 100} value={value} disabled={disabled}
       aria-label={compact ? label : undefined}
@@ -35,51 +38,63 @@ export function RatingSlider({ label, value, onChange, disabled = false, unassig
 
 export function TaskRatingEditor({ form }: { form: TaskForm }) {
   const { nowMs } = useWorkspace()
+  const { overview } = useView()
+  const detailed = overview.userPreference?.detailed_ratings === true
   const rating = form.werte.rating
   const linked = rating?.effortFromChecklist && form.werte.checklist.some(item => item.deleted_at === null)
   const values = rating && ratingValues(rating, form.dueIso, nowMs, form.werte.checklist)
   return <section aria-label="Bewertung" data-no-drawer-swipe data-no-drag className="space-y-2 border-t border-line pt-3">
-    <div className="flex items-start gap-2">
-      <div className="min-w-0 flex-1"><RatingSlider label={rating ? 'Wichtigkeit' : 'Wichtigkeit einschätzen'} value={rating?.importance ?? 5} unassigned={!rating}
+    <RatingSlider label={rating ? 'Wichtigkeit' : 'Wichtigkeit einschätzen'} icon={<ImportanceIcon />} value={rating?.importance ?? 5} unassigned={!rating}
+        actions={rating ? <IconButton aria-label="Bewertung entfernen" variant="iconMuted" onClick={() => form.setzen('rating', null)}><CloseIcon /></IconButton> : undefined}
         hint={rating ? 'Wie wichtig ist dir das Ergebnis? Links geringer, rechts höher.' : 'Der erste Klick startet die Bewertung. Aufwand und manuelle Dringlichkeit beginnen sichtbar in der Mitte.'}
-        onChange={importance => form.setzen('rating', rating ? { ...rating, importance } : startRating(importance))} /></div>
-      {rating ? <IconButton aria-label="Bewertung entfernen" variant="iconMuted" onClick={() => form.setzen('rating', null)}><CloseIcon /></IconButton> : null}
-    </div>
+        onChange={importance => form.setzen('rating', rating ? { ...rating, importance } : startRating(importance))} />
     {rating && values ? <>
-      <RatingSlider label={linked ? 'Gesamtaufwand' : 'Aufwand'} value={rating.effort} hint={linked ? 'Geschätzter Aufwand für die gesamte Checkliste. Der offene gewichtete Anteil bestimmt den verbleibenden Aufwand.' : 'Wie viel Arbeit liegt ungefähr noch vor dir? Größerer Aufwand macht die Aufgabe automatisch früher dringlich.'}
+      <RatingSlider label={linked ? 'Gesamtaufwand' : 'Aufwand'} icon={<EffortIcon />} value={rating.effort} hint={linked ? 'Geschätzter Aufwand für die gesamte Checkliste. Der offene Anteil bestimmt den verbleibenden Aufwand.' : 'Wie viel Arbeit liegt ungefähr noch vor dir? Größerer Aufwand macht die Aufgabe automatisch früher dringlich.'}
         onChange={effort => form.setzen('rating', { ...rating, effort })} />
-      {linked ? <RatingMeter label="Restaufwand" value={values.effort} hint="Aus Gesamtaufwand und offenen gewichteten Checklistenpunkten berechnet." /> : null}
-      {form.dueIso ? <div role="group" aria-label="Dringlichkeitsmodus" className="flex flex-wrap gap-1">
-        <Button size="sm" variant={rating.urgencyMode === 'auto' ? 'secondary' : 'ghost'} aria-pressed={rating.urgencyMode === 'auto'}
-          onClick={() => form.setzen('rating', changeUrgencyMode(rating, 'auto', form.dueIso, nowMs, form.werte.checklist))}>Automatisch</Button>
-        <Button size="sm" variant={rating.urgencyMode === 'manual' ? 'secondary' : 'ghost'} aria-pressed={rating.urgencyMode === 'manual'}
-          onClick={() => form.setzen('rating', changeUrgencyMode(rating, 'manual', form.dueIso, nowMs, form.werte.checklist))}>Manuell</Button>
-      </div> : null}
-      <RatingSlider label="Dringlichkeit" value={values.urgency} disabled={values.automatic}
-        hint={values.automatic ? 'Automatisch aus verbleibender Zeit und Aufwand. Hoher Aufwand zieht den Anstieg und das Maximum vor. Wähle Manuell für einen eigenen Wert.' : 'Wie bald musst du dich darum kümmern? Links kann es warten, rechts ist es dringlicher.'}
-        onChange={urgency => form.setzen('rating', { ...rating, urgency, urgencyMode: 'manual' })} />
-      <RatingMeter label="Priorität" value={values.priority} hint="Gleichgewichtet aus Wichtigkeit und Dringlichkeit berechnet." prominent />
+      {linked && detailed ? <RatingMeter label="Restaufwand" icon={<EffortIcon className="size-icon-meta" />} value={values.effort} hint="Aus Gesamtaufwand und offenen Checklistenpunkten berechnet." /> : null}
+      {detailed || !form.dueIso ? <TaskUrgencyEditor form={form} /> : null}
+      {detailed ? <RatingMeter label="Priorität" icon={<PriorityIcon className="size-icon-meta" />} value={values.priority} hint="Gleichgewichtet aus Wichtigkeit und Dringlichkeit berechnet." prominent /> : null}
     </> : null}
   </section>
 }
 
-function RatingMeter({ label, value, hint, prominent = false }: { label: string; value: number; hint: string; prominent?: boolean }) {
+export function TaskUrgencyEditor({ form }: { form: TaskForm }) {
+  const { nowMs } = useWorkspace()
+  const rating = form.werte.rating
+  if (!rating) return null
+  const values = ratingValues(rating, form.dueIso, nowMs, form.werte.checklist)
+  return <RatingSlider label="Dringlichkeit" icon={<UrgencyIcon />} value={values.urgency} disabled={values.automatic}
+      actions={form.dueIso ? <div role="group" aria-label="Dringlichkeitsmodus" className="flex gap-1">
+        <Button size="sm" variant={rating.urgencyMode === 'auto' ? 'secondary' : 'ghost'} aria-pressed={rating.urgencyMode === 'auto'}
+          onClick={() => form.setzen('rating', changeUrgencyMode(rating, 'auto', form.dueIso, nowMs, form.werte.checklist))}>Automatisch</Button>
+        <Button size="sm" variant={rating.urgencyMode === 'manual' ? 'secondary' : 'ghost'} aria-pressed={rating.urgencyMode === 'manual'}
+          onClick={() => form.setzen('rating', changeUrgencyMode(rating, 'manual', form.dueIso, nowMs, form.werte.checklist))}>Manuell</Button>
+      </div> : undefined}
+        hint={values.automatic ? 'Automatisch aus verbleibender Zeit und Aufwand. Hoher Aufwand zieht den Anstieg und das Maximum vor. Wähle Manuell für einen eigenen Wert.' : 'Wie bald musst du dich darum kümmern? Links kann es warten, rechts ist es dringlicher.'}
+        onChange={urgency => form.setzen('rating', { ...rating, urgency, urgencyMode: 'manual' })} />
+}
+
+function RatingMeter({ label, value, hint, prominent = false, icon }: { label: string; value: number; hint: string; prominent?: boolean; icon: ReactNode }) {
   return <Hint text={`${label}: ${level(value)}. ${hint}`}><span role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={10} aria-valuenow={value} aria-valuetext={level(value)}
     className="block min-w-0 space-y-1">
-    <span className={`block text-meta ${prominent ? 'font-medium text-ink-soft' : 'text-ink-muted'}`}>{label}</span>
+    <span className={`flex items-center gap-1 text-meta ${prominent ? 'font-medium text-ink-soft' : 'text-ink-muted'}`}>{icon}{label}</span>
     <span aria-hidden="true" className="block h-1.5 overflow-hidden rounded-full bg-line"><span style={{ width: `${value * 10}%` }}
       className={`block h-full rounded-full ${prominent ? 'bg-brand-soft' : 'bg-ink-faint'}`} /></span>
   </span></Hint>
 }
 
-export function TaskRatingSummary({ rating, dueAt, checklist }: { rating: TaskRating; dueAt: string | null; checklist: ChecklistItem[] }) {
+export function TaskRatingSummary({ rating, dueAt, checklist, detailed: forceDetailed }: { rating: TaskRating; dueAt: string | null; checklist: ChecklistItem[]; detailed?: boolean }) {
   const { nowMs } = useWorkspace()
+  const { overview } = useView()
+  const detailed = forceDetailed ?? overview.userPreference?.detailed_ratings === true
   const values = ratingValues(rating, dueAt, nowMs, checklist)
   const linked = rating.effortFromChecklist && checklist.some(item => item.deleted_at === null)
-  return <span aria-label="Aufgabenbewertung" className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
-    <RatingMeter label="Wichtigkeit" value={values.importance} hint="Deine Einschätzung der Bedeutung." />
-    <RatingMeter label="Dringlichkeit" value={values.urgency} hint={values.automatic ? 'Automatisch aus Fälligkeit und Aufwand.' : 'Manuell eingeschätzt.'} />
-    <RatingMeter label={linked ? 'Restaufwand' : 'Aufwand'} value={values.effort} hint={linked ? 'Aus Gesamtaufwand und offenen gewichteten Checklistenpunkten.' : 'Grob eingeschätzte verbleibende Arbeit.'} />
-    <RatingMeter label="Priorität" value={values.priority} hint="Gleichgewichtet aus Wichtigkeit und Dringlichkeit." prominent />
+  return <span aria-label="Aufgabenbewertung" className={detailed ? 'mt-2 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4' : 'mt-1 block w-28 max-w-full'}>
+    {detailed ? <>
+    <RatingMeter label="Wichtigkeit" icon={<ImportanceIcon className="size-icon-meta" />} value={values.importance} hint="Deine Einschätzung der Bedeutung." />
+    <RatingMeter label="Dringlichkeit" icon={<UrgencyIcon className="size-icon-meta" />} value={values.urgency} hint={values.automatic ? 'Automatisch aus Fälligkeit und Aufwand.' : 'Manuell eingeschätzt.'} />
+    <RatingMeter label={linked ? 'Restaufwand' : 'Aufwand'} icon={<EffortIcon className="size-icon-meta" />} value={values.effort} hint={linked ? 'Aus Gesamtaufwand und offenen Checklistenpunkten.' : 'Grob eingeschätzte verbleibende Arbeit.'} />
+    </> : null}
+    <RatingMeter label="Priorität" icon={<PriorityIcon className="size-icon-meta" />} value={values.priority} hint="Gleichgewichtet aus Wichtigkeit und Dringlichkeit." prominent />
   </span>
 }

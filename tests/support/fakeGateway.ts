@@ -152,7 +152,7 @@ export class FakeGateway implements RemoteGateway {
             if (pref.user_id !== this.userId || !list || !this.server.isVisibleList(list, this.userId)) throw new RemoteError('server', 'Nur die eigene zugängliche Listenauswahl darf geändert werden.')
           } else if (table === 'userPreferences') {
             const pref = row as RemoteUserPreference
-            if (pref.id !== this.userId || !['by_list', 'newest'].includes(pref.overview_mode)) throw new RemoteError('server', 'Ungültige persönliche Einstellung.')
+            if (pref.id !== this.userId || !['by_list', 'newest', 'priority'].includes(pref.overview_mode)) throw new RemoteError('server', 'Ungültige persönliche Einstellung.')
             const target = pref.default_list_id && this.server.lists.get(pref.default_list_id)
             if (pref.default_list_id && pref.default_list_id !== (existing as RemoteUserPreference | undefined)?.default_list_id && (!target || !this.server.isVisibleList(target, this.userId))) throw new RemoteError('server', 'Kein Zugriff auf die Standardliste.')
           } else {

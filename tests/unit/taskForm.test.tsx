@@ -7,6 +7,7 @@ import { TaskDraftProvider } from '../../src/ui/TaskDraftProvider'
 import { useTaskForm } from '../../src/ui/useTaskForm'
 import { createFakeServer } from '../support/fakeGateway'
 import { createDevice, type DeviceHarness } from '../support/harness'
+import { startRating } from '../../src/domain/rating'
 
 let repositories: Repositories
 vi.mock('../../src/app/useWorkspace', () => ({ useWorkspace: () => ({ repositories }) }))
@@ -46,6 +47,18 @@ describe('Aufgabenentwürfe und Speichern', () => {
     expect(result.current.werte.tagText).toBe('Uni')
     await act(async () => { await result.current.speichern(event) })
     expect((await repositories.listTasks(listId))[0]).toMatchObject({ checklist: [expect.objectContaining({ text: 'Letzter Punkt', completed: false })], tags: ['Uni'] })
+  })
+
+  it('aktiviert durch Strg+Enter keine individuellen Gewichte bei gekoppeltem Restaufwand', async () => {
+    const { result } = open()
+    act(() => result.current.setzen('title', 'Gleich gewichtet'))
+    act(() => result.current.setzen('rating', startRating(5)))
+    act(() => result.current.setzen('checklistText', 'Noch nicht bestätigter Punkt'))
+    await act(async () => { await result.current.speichern(event) })
+    const [task] = await repositories.listTasks(listId)
+    expect(task.rating?.effortFromChecklist).toBe(true)
+    expect(task.checklist).toHaveLength(1)
+    expect(task.checklist[0]).not.toHaveProperty('weight')
   })
 
   it('behält eine neue Eingabe in ihrer Liste und speichert erst beim Hinzufügen', async () => {

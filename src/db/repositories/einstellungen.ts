@@ -54,14 +54,15 @@ export function einstellungen(ctx: Kontext): Pick<Repositories, 'listReminderPre
 
     async updateUserPreferences(userId, patch) {
       requireText(userId, 'Die Benutzerkennung')
-      if (patch.overviewMode !== undefined && !['by_list', 'newest'].includes(patch.overviewMode)) throw new ValidationError('invalid', 'Diese Ansicht ist nicht verfügbar.')
+      if (patch.overviewMode !== undefined && !['by_list', 'newest', 'priority'].includes(patch.overviewMode)) throw new ValidationError('invalid', 'Diese Ansicht ist nicht verfügbar.')
       await ctx.db.transaction('rw', ctx.db.lists, ctx.db.user_preferences, async () => {
         if (patch.defaultListId) await ctx.requireList(patch.defaultListId)
         const existing = await ctx.db.user_preferences.get(userId)
         const default_list_id = patch.defaultListId !== undefined ? patch.defaultListId : existing?.default_list_id ?? null
         const overview_mode = patch.overviewMode ?? existing?.overview_mode ?? 'by_list'
-        if ((!existing || existing.deleted_at === null) && default_list_id === (existing?.default_list_id ?? null) && overview_mode === (existing?.overview_mode ?? 'by_list')) return
-        await ctx.db.user_preferences.put({ id: userId, default_list_id, overview_mode, created_at: existing?.created_at ?? ctx.clock.now(), deleted_at: null, ...ctx.stamp() })
+        const detailed_ratings = patch.detailedRatings ?? existing?.detailed_ratings ?? false
+        if ((!existing || existing.deleted_at === null) && default_list_id === (existing?.default_list_id ?? null) && overview_mode === (existing?.overview_mode ?? 'by_list') && detailed_ratings === (existing?.detailed_ratings ?? false)) return
+        await ctx.db.user_preferences.put({ id: userId, default_list_id, overview_mode, detailed_ratings, created_at: existing?.created_at ?? ctx.clock.now(), deleted_at: null, ...ctx.stamp() })
       })
     },
 

@@ -124,7 +124,8 @@ export function normalisiereListenauswahl(row: LocalListPreference | RemoteListP
 export function normalisiereStartansicht(row: LocalUserPreference | RemoteUserPreference): LocalUserPreference {
   return {
     id: row.id, default_list_id: row.default_list_id ?? null,
-    overview_mode: row.overview_mode === 'newest' ? 'newest' : 'by_list',
+    overview_mode: row.overview_mode === 'newest' || row.overview_mode === 'priority' ? row.overview_mode : 'by_list',
+    detailed_ratings: row.detailed_ratings === true,
     created_at: normalizeIso(row.created_at), updated_at: normalizeIso(row.updated_at),
     deleted_at: normalizeIso(row.deleted_at ?? null), dirty: 'dirty' in row ? row.dirty : 0,
   }
