@@ -12,6 +12,7 @@ import { captureReopenContext, completionDeadline, completionExpired, reopenPlac
 import type { LocalTask } from '../../domain/types'
 import { insertionPosition, taskLocation } from '../../domain/taskPlacement'
 import { repeatChecklist, validateChecklist } from '../../domain/checklist'
+import { taskSeriesId, taskTitleKey } from '../../domain/taskTitles'
 import { parseTags } from '../../domain/tags'
 import { optionalText, requireText, ValidationError } from '../validation'
 import type { Kontext } from './context'
@@ -122,12 +123,15 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
           expired_at: null,
           reopen_context: null,
           successor_id: null,
+          recurrence_series_id: null,
           position: kleinste - 1,
           created_at: now,
           updated_at: now,
           deleted_at: null,
           dirty: 1,
         }
+        if (task.recurrence) task.recurrence_series_id = task.id
+        await ctx.requireUniqueTaskTitle(task)
         await ctx.db.tasks.add(task)
         if (input.rememberOverviewTargetFor) {
           const userId = requireText(input.rememberOverviewTargetFor, 'Die Benutzerkennung')
@@ -143,12 +147,14 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
     },
 
     async updateTask(taskId, patch, options) {
-      return ctx.db.transaction('rw', ctx.db.tasks, async () => {
+      return ctx.db.transaction('rw', ctx.db.lists, ctx.db.tasks, async () => {
         const task = await ctx.requireTask(taskId)
         const values = applyTaskEdit(task, patch, ctx.clock.nowMs(), options?.base)
         if (sameData(values, taskEditValues(task))) return task
         const scheduleChanged = values.due_at !== task.due_at || values.recurrence !== task.recurrence
         const updated: LocalTask = { ...task, ...values, available_from: scheduleChanged ? null : task.available_from, ...ctx.stamp() }
+        if (values.recurrence && !updated.recurrence_series_id) updated.recurrence_series_id = taskSeriesId(task, (await ctx.db.tasks.where('list_id').equals(task.list_id).toArray()).map(normalisiereAufgabe))
+        if (taskTitleKey(updated.title) !== taskTitleKey(task.title)) await ctx.requireUniqueTaskTitle(updated)
         await ctx.db.tasks.put(updated)
         return updated
       })
@@ -218,10 +224,13 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
         // WebCrypto ist kurz, aber kein IndexedDB-Aufruf. waitFor hält die
         // Transaktion während des Hashs offen; Netzwerk gehört nicht hier hinein.
         const nachfolgerId = await Dexie.waitFor(successorId(task.id, naechsterTermin))
+        const seriesId = taskSeriesId(task, (await ctx.db.tasks.where('list_id').equals(task.list_id).toArray()).map(normalisiereAufgabe))
+        erledigt.recurrence_series_id = seriesId
 
         const nachfolger: LocalTask = {
           ...task,
           id: nachfolgerId,
+          recurrence_series_id: seriesId,
           checklist: repeatChecklist(task.checklist),
           due_at: naechsterTermin,
           available_from: Date.parse(task.due_at) > Date.parse(now) ? task.due_at : null,
@@ -241,8 +250,10 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
 
         const vorhanden = await ctx.db.tasks.get(nachfolgerId)
         if (!vorhanden) {
+          await ctx.requireUniqueTaskTitle(nachfolger)
           await ctx.db.tasks.put(nachfolger)
         } else if (vorhanden.deleted_at !== null && !vorhanden.expired_at) {
+          await ctx.requireUniqueTaskTitle(nachfolger)
           // Nach einem Rückgängig war er weich gelöscht – jetzt wieder beleben,
           // aber den ursprünglichen Anlegezeitpunkt behalten.
           await ctx.db.tasks.put({ ...nachfolger, created_at: vorhanden.created_at })
@@ -294,6 +305,7 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
           completed_expires_at: wechselt && task.completed ? completionDeadline(ctx.clock.now(), liste.keep_completed) : task.completed_expires_at,
           ...ctx.stamp(),
         }
+        if (wechselt) await ctx.requireUniqueTaskTitle(updated)
         await ctx.db.tasks.put(updated)
         return updated
       })
@@ -322,6 +334,7 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
           position = index + 1
         }
         const updated: LocalTask = { ...task, list_id: list.id, section_id: placement.sectionId, position, ...ctx.stamp() }
+        if (task.list_id !== list.id) await ctx.requireUniqueTaskTitle(updated)
         await ctx.db.tasks.put(updated)
         return updated
       })
@@ -430,10 +443,11 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
      * erfahren, sonst bliebe sie dort gelöscht.
      */
     async restoreTask(taskId) {
-      return ctx.db.transaction('rw', ctx.db.tasks, async () => {
+      return ctx.db.transaction('rw', ctx.db.lists, ctx.db.tasks, async () => {
         const task = await ctx.db.tasks.get(taskId)
         if (!task) throw new ValidationError('not-found', 'Diese Aufgabe existiert nicht mehr.')
         if (completionExpired(normalisiereAufgabe(task), ctx.clock.nowMs())) throw new ValidationError('not-found', 'Diese Aufgabe ist endgültig abgelaufen.')
+        if (task.deleted_at !== null) await ctx.requireUniqueTaskTitle(normalisiereAufgabe(task))
         await ctx.db.tasks.put({ ...task, deleted_at: null, ...ctx.stamp() })
       })
     },

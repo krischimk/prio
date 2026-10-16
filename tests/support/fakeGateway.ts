@@ -2,6 +2,7 @@ import { CLOUD_TABLES, canonicalCloudRow, cloudRowId } from '../../src/domain/cl
 import { sameData } from '../../src/domain/equality'
 import { createFixedClock, type Clock } from '../../src/domain/clock'
 import { completionDeadline } from '../../src/domain/taskLifecycle'
+import { taskTitleKey } from '../../src/domain/taskTitles'
 import type {
   PushPayload,
   RemoteList,
@@ -148,6 +149,7 @@ export class FakeGateway implements RemoteGateway {
             if (!this.isOwner(member.list_id) && !ownLeave) throw new RemoteError('server', 'RLS: Nur der Besitzer verwaltet Mitglieder.')
           } else if (table === 'preferences') {
             const pref = row as RemoteListPreference
+            if (pref.sort_mode !== undefined && !['manual', 'priority', 'priority_flat'].includes(pref.sort_mode)) throw new RemoteError('server', 'Ungültige Sortierung.')
             const list = this.server.lists.get(pref.list_id)
             if (pref.user_id !== this.userId || !list || !this.server.isVisibleList(list, this.userId)) throw new RemoteError('server', 'Nur die eigene zugängliche Listenauswahl darf geändert werden.')
           } else if (table === 'userPreferences') {
@@ -179,6 +181,13 @@ export class FakeGateway implements RemoteGateway {
             saved = { ...list, completion_retention_started_at: !old ? new Date(Math.min(Date.parse(list.completion_retention_started_at ?? this.server.clock.now()),this.server.clock.nowMs())).toISOString() : old.keep_completed && !list.keep_completed ? this.server.clock.now() : old.completion_retention_started_at ?? null }
           } else if (table === 'tasks') {
             const task = row as RemoteTask; const old = existing as RemoteTask | undefined
+            if (old?.recurrence_series_id && task.recurrence_series_id !== old.recurrence_series_id) throw new RemoteError('server', 'Die Zuordnung zur Wiederholungsserie bleibt erhalten.')
+            if (!task.deleted_at && !task.expired_at && this.server.lists.get(task.list_id)?.allow_duplicate_titles === false
+              && (!old || old.deleted_at || old.list_id !== task.list_id || taskTitleKey(old.title) !== taskTitleKey(task.title))
+              && [...this.server.tasks.values()].some(peer => peer.id !== task.id && peer.list_id === task.list_id && !peer.deleted_at && !peer.expired_at
+                && taskTitleKey(peer.title) === taskTitleKey(task.title) && (!task.recurrence_series_id || peer.recurrence_series_id !== task.recurrence_series_id))) {
+              throw new RemoteError('server', 'In dieser Liste gibt es bereits eine offene oder erledigte Aufgabe mit diesem Namen.')
+            }
             if (old?.completed && task.completed && old.completed_at !== task.completed_at) throw new RemoteError('server', 'Der Abschlusszeitpunkt bleibt erhalten.')
             if ((task.expired_at ?? null) !== (old?.expired_at ?? null)) throw new RemoteError('server', 'Der Ablauf gehört dem Server.')
             const keep = this.server.lists.get(task.list_id)?.keep_completed === true

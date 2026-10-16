@@ -36,6 +36,7 @@ export const LISTEN_FELDER = [
   'sections',
   'keep_completed',
   'ratings_enabled',
+  'allow_duplicate_titles',
   'completion_retention_started_at',
   'created_at',
   'updated_at',
@@ -59,6 +60,7 @@ export const AUFGABEN_FELDER = [
   'expired_at',
   'reopen_context',
   'recurrence',
+  'recurrence_series_id',
   'successor_id',
   'reminders',
   'section_id',
@@ -78,7 +80,7 @@ export const MITGLIEDER_FELDER = [
   'dirty',
 ] as const satisfies readonly (keyof LocalListMember)[]
 
-export const LISTENAUSWAHL_FELDER = ['list_id', 'user_id', 'include_in_overview', 'position', 'hidden', 'created_at', 'updated_at', 'deleted_at', 'dirty'] as const satisfies readonly (keyof LocalListPreference)[]
+export const LISTENAUSWAHL_FELDER = ['list_id', 'user_id', 'include_in_overview', 'position', 'hidden', 'sort_mode', 'created_at', 'updated_at', 'deleted_at', 'dirty'] as const satisfies readonly (keyof LocalListPreference)[]
 export const STARTANSICHT_FELDER = ['id', 'default_list_id', 'overview_mode', 'detailed_ratings', 'created_at', 'updated_at', 'deleted_at', 'dirty'] as const satisfies readonly (keyof LocalUserPreference)[]
 
 // Wenn eine dieser Zusicherungen fehlschlägt, nennt der Fehler das Feld.

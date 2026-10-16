@@ -9,7 +9,7 @@ import { requireText, ValidationError } from '../validation'
 import type { Kontext } from './context'
 import type { Repositories } from './types'
 
-export function listen(ctx: Kontext): Pick<Repositories, 'createList' | 'renameList' | 'setListIcon' | 'setListKeepCompleted' | 'setListRatingsEnabled' | 'deleteList' | 'getList' | 'listLists' | 'listDeletedLists' | 'restoreList' | 'addListSection' | 'renameListSection' | 'deleteListSection'> {
+export function listen(ctx: Kontext): Pick<Repositories, 'createList' | 'renameList' | 'setListIcon' | 'setListKeepCompleted' | 'setListRatingsEnabled' | 'setListAllowDuplicateTitles' | 'deleteList' | 'getList' | 'listLists' | 'listDeletedLists' | 'restoreList' | 'addListSection' | 'renameListSection' | 'deleteListSection'> {
   return {
     async listDeletedLists() {
       const grenze = restoreCutoff(timeOf(ctx.clock.now()))
@@ -56,6 +56,7 @@ export function listen(ctx: Kontext): Pick<Repositories, 'createList' | 'renameL
         sections: [],
         keep_completed: options.keepCompleted ?? false,
         ratings_enabled: options.ratingsEnabled ?? true,
+        allow_duplicate_titles: options.allowDuplicateTitles ?? true,
         completion_retention_started_at: now,
         id: newId(),
         name: requireText(name, 'Der Listenname'),
@@ -73,12 +74,21 @@ export function listen(ctx: Kontext): Pick<Repositories, 'createList' | 'renameL
           requireText(ownerId, 'Die Benutzerkennung')
           await ctx.db.list_preferences.add({
             list_id: list.id, user_id: ownerId, include_in_overview: true,
-            position: null, hidden: false,
+            position: null, hidden: false, sort_mode: 'manual',
             created_at: now, updated_at: now, deleted_at: null, dirty: 1,
           })
         }
       })
       return list
+    },
+
+    async setListAllowDuplicateTitles(listId, userId, allowed) {
+      await ctx.db.transaction('rw', ctx.db.lists, async () => {
+        const list = await ctx.requireList(listId)
+        if (list.owner_id !== userId) throw new ValidationError('invalid', 'Nur der Besitzer darf diese Einstellung ändern.')
+        if (list.allow_duplicate_titles === allowed) return
+        await ctx.db.lists.put({ ...list, allow_duplicate_titles: allowed, ...ctx.stamp() })
+      })
     },
 
     async renameList(listId, name) {

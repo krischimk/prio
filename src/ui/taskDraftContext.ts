@@ -33,15 +33,16 @@ export interface NewListDraft {
   includeInOverview: boolean
   keepCompleted: boolean
   ratingsEnabled: boolean
+  allowDuplicateTitles: boolean
   busy: boolean
   error: string | null
 }
 export const emptyNewListDraft: NewListDraft = {
-  name: '', icon: null, includeInOverview: false, keepCompleted: false, ratingsEnabled: true, busy: false, error: null,
+  name: '', icon: null, includeInOverview: false, keepCompleted: false, ratingsEnabled: true, allowDuplicateTitles: true, busy: false, error: null,
 }
 export interface TaskDraftState {
   newList: NewListDraft
-  changeNewList(patch: Partial<Pick<NewListDraft, 'name' | 'icon' | 'includeInOverview' | 'keepCompleted' | 'ratingsEnabled'>>): void
+  changeNewList(patch: Partial<Pick<NewListDraft, 'name' | 'icon' | 'includeInOverview' | 'keepCompleted' | 'ratingsEnabled' | 'allowDuplicateTitles'>>): void
   beginListSave(): boolean
   listSaved(): void
   listFailed(message: string): void

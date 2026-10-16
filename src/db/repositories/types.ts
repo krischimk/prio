@@ -6,7 +6,7 @@
  */
 import type { TaskReminder } from '../../domain/reminder'
 import type { TaskEditInput, TaskEditOptions } from '../../domain/taskEdit'
-import type { LocalList, LocalListMember, LocalListPreference, LocalTask, LocalUserPreference, OverviewMode, ShareContact } from '../../domain/types'
+import type { LocalList, LocalListMember, LocalListPreference, LocalTask, LocalUserPreference, OverviewMode, ListSortMode, ShareContact } from '../../domain/types'
 import type { CloudConflict } from '../../domain/cloudMerge'
 import type { TaskPlacement } from '../../domain/taskPlacement'
 import type { ChecklistItem } from '../../domain/checklist'
@@ -36,11 +36,14 @@ export interface CreateListOptions {
   includeInOverview?: boolean
   keepCompleted?: boolean
   ratingsEnabled?: boolean
+  allowDuplicateTitles?: boolean
 }
 
 export interface Repositories {
+  setListAllowDuplicateTitles(listId: string, userId: string, allowed: boolean): Promise<void>
   listListPreferences(userId: string): Promise<LocalListPreference[]>
   setListInOverview(listId: string, userId: string, included: boolean): Promise<void>
+  setListSortMode(listId: string, userId: string, mode: ListSortMode): Promise<void>
   placeList(listId: string, userId: string, destination: { hidden: boolean; beforeListId: string | null }): Promise<void>
   getUserPreferences(userId: string): Promise<LocalUserPreference | undefined>
   updateUserPreferences(userId: string, patch: { defaultListId?: string | null; overviewMode?: OverviewMode; detailedRatings?: boolean }): Promise<void>

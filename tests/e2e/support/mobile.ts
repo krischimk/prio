@@ -54,7 +54,7 @@ export async function createTask(page: Page, title: string, description?: string
   await expect(page.getByRole('dialog', { name: 'Neue Aufgabe' })).toBeVisible()
   await page.getByLabel('Titel', { exact: true }).fill(title)
   if (description) {
-    await page.getByLabel('Beschreibung', { exact: true }).fill(description)
+    await page.getByLabel('Notiz', { exact: true }).fill(description)
   }
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
   await expect(page.getByRole('dialog', { name: 'Neue Aufgabe' })).toBeHidden()
@@ -65,7 +65,7 @@ export function taskRow(page: Page, title: string) {
   return page.getByTestId('task-row').filter({ hasText: title })
 }
 
-/** Die ganze Zeile samt Beschreibung, über ihren exakten Titel gefunden. */
+/** Die ganze Zeile samt Notiz, über ihren exakten Titel gefunden. */
 export function taskZeile(page: Page, title: string) {
   return page
     .getByTestId('task-row')

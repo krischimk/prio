@@ -30,9 +30,9 @@ for (const overview of [false, true]) test.describe(overview ? 'Erfassung Gesamt
     }
   })
 
-  test('Strg+Enter in der Beschreibung speichert und fokussiert den nächsten Titel', async ({ page, request }) => {
+  test('Strg+Enter in der Notiz speichert und fokussiert den nächsten Titel', async ({ page, request }) => {
     const composer = page.getByRole('form', { name: 'Neue Aufgabe anlegen', exact: true })
-    const description = composer.getByLabel('Beschreibung', { exact: true })
+    const description = composer.getByLabel('Notiz', { exact: true })
     await description.fill('Erster Absatz.')
     await description.press('Enter')
     await page.keyboard.type('Zweiter Absatz.')

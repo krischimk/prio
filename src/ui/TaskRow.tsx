@@ -10,7 +10,7 @@ import { Hint } from './components/Hint'
 import { TaskDeleteButton } from './TaskDeleteButton'
 import { TaskChecklist } from './TaskChecklist'
 import { TagIcon } from './icons'
-import { TaskRatingSummary } from './TaskRating'
+import { TaskPriorityBar, TaskRatingSummary } from './TaskRating'
 
 /** Die Aufgabenzeile ist in Einzel- und Gesamtansicht dieselbe. */
 export function TaskRow({ task, currentUserId, onOpen, origin, overview = false, elementRef, activatorRef, dragging = false, ratingsEnabled = false }: {
@@ -30,10 +30,10 @@ export function TaskRow({ task, currentUserId, onOpen, origin, overview = false,
   const content = <div data-testid="task-row"
         className={`col-span-3 col-start-1 row-start-1 min-h-14 w-full min-w-0 rounded-control pl-14 ${desktop ? 'pr-14' : 'pr-3'} pt-4 pb-3 text-left`}>
         <div className="flex min-w-0 items-end gap-3"><div className="min-w-0 flex-1">
-        <TaskFacts task={task} currentUserId={currentUserId} />
+        <TaskFacts task={task} currentUserId={currentUserId} afterTitle={ratingsEnabled && task.rating ? <TaskPriorityBar rating={task.rating} dueAt={task.due_at} checklist={task.checklist} /> : null} />
           {origin ? <span className="mt-1 block break-words text-meta text-ink-muted">{origin}</span> : null}
         {task.description ? <TaskDescription text={task.description} className="mt-1" /> : null}
-        {ratingsEnabled && task.rating ? <TaskRatingSummary rating={task.rating} dueAt={task.due_at} checklist={task.checklist} /> : null}
+        {ratingsEnabled && task.rating ? <TaskRatingSummary rating={task.rating} dueAt={task.due_at} checklist={task.checklist} includePriority={false} /> : null}
         </div>{!checklist ? tags : null}</div>
       </div>
   return <li ref={elementRef} data-task-row="true" data-id={task.id}

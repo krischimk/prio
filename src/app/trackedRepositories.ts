@@ -32,6 +32,7 @@ import type { Repositories } from '../db/repositories'
 /** Schreibende Operationen: lösen Abgleich und Neuladen aus. */
 export const SCHREIBEND = [
   'setListInOverview',
+  'setListSortMode',
   'placeList',
   'updateUserPreferences',
   'resolveCloudConflict',
@@ -40,6 +41,7 @@ export const SCHREIBEND = [
   'setListIcon',
   'setListKeepCompleted',
   'setListRatingsEnabled',
+  'setListAllowDuplicateTitles',
   'addListSection',
   'renameListSection',
   'deleteListSection',

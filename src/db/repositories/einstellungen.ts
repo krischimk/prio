@@ -26,8 +26,22 @@ const META_REMINDER_PRESETS = 'reminder_presets'
  * suchen, solange sie dort keinen Zweck erfüllen.
  */
 const META_SHARE_CONTACTS = 'share_contacts'
-export function einstellungen(ctx: Kontext): Pick<Repositories, 'listReminderPresets' | 'setReminderPresets' | 'listShareContacts' | 'rememberShareContact' | 'mergeShareContacts' | 'listCloudConflicts' | 'resolveCloudConflict' | 'listListPreferences' | 'setListInOverview' | 'placeList' | 'getUserPreferences' | 'updateUserPreferences'> {
+export function einstellungen(ctx: Kontext): Pick<Repositories, 'listReminderPresets' | 'setReminderPresets' | 'listShareContacts' | 'rememberShareContact' | 'mergeShareContacts' | 'listCloudConflicts' | 'resolveCloudConflict' | 'listListPreferences' | 'setListInOverview' | 'setListSortMode' | 'placeList' | 'getUserPreferences' | 'updateUserPreferences'> {
   return {
+    async setListSortMode(listId, userId, sortMode) {
+      requireText(userId, 'Die Benutzerkennung')
+      if (!['manual', 'priority', 'priority_flat'].includes(sortMode)) throw new ValidationError('invalid', 'Diese Sortierung ist nicht verfügbar.')
+      await ctx.db.transaction('rw', ctx.db.lists, ctx.db.list_preferences, async () => {
+        await ctx.requireList(listId)
+        const existing = await ctx.db.list_preferences.get([listId, userId])
+        if ((!existing || existing.deleted_at === null) && (existing?.sort_mode ?? 'manual') === sortMode) return
+        await ctx.db.list_preferences.put({
+          position: null, hidden: false, include_in_overview: false, ...existing,
+          list_id: listId, user_id: userId, sort_mode: sortMode,
+          created_at: existing?.created_at ?? ctx.clock.now(), deleted_at: null, ...ctx.stamp(),
+        })
+      })
+    },
     async placeList(listId, userId, destination) {
       requireText(userId, 'Die Benutzerkennung')
       await ctx.db.transaction('rw', ctx.db.lists, ctx.db.list_preferences, async () => {
@@ -42,6 +56,7 @@ export function einstellungen(ctx: Kontext): Pick<Repositories, 'listReminderPre
           await ctx.db.list_preferences.put({
             list_id: move.listId, user_id: userId, include_in_overview: old?.include_in_overview ?? false,
             position: move.position, hidden: move.hidden,
+            sort_mode: old?.sort_mode ?? 'manual',
             created_at: old?.created_at ?? ctx.clock.now(), deleted_at: null, ...ctx.stamp(),
           })
         }
@@ -81,7 +96,7 @@ export function einstellungen(ctx: Kontext): Pick<Repositories, 'listReminderPre
         if (existing?.deleted_at === null && existing.include_in_overview === included) return
         const now = ctx.clock.now()
         await ctx.db.list_preferences.put({
-          position: null, hidden: false, ...existing,
+          position: null, hidden: false, sort_mode: 'manual', ...existing,
           list_id: listId, user_id: userId, include_in_overview: included,
           created_at: existing?.created_at ?? now, deleted_at: null, ...ctx.stamp(),
         })

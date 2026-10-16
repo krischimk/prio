@@ -16,6 +16,7 @@ import { findListIcon } from './listIcons'
 import { ListIcon } from './ListIcon'
 import { useView } from './useView'
 import { overviewModeLabel } from './overviewMode'
+import { listSortModeLabel } from './listSortMode'
 import { checklistWeights } from '../domain/checklist'
 import { TaskRatingSummary } from './TaskRating'
 
@@ -34,7 +35,7 @@ function ConflictVersion({ conflict, row, viewerId }: { conflict: CloudConflict;
     const after = ordered[index + 1]
     return <>
       <p className="break-words font-medium">{task.title}</p>
-      {task.description ? <p className="whitespace-pre-wrap break-words">{task.description}</p> : show('description') ? <p>Keine Beschreibung.</p> : null}
+      {task.description ? <p className="whitespace-pre-wrap break-words">{task.description}</p> : show('description') ? <p>Keine Notiz.</p> : null}
       <p>{task.deleted_at ? 'Gelöscht' : task.completed ? 'Erledigt' : 'Offen'}</p>
       {show('created_at') ? <p>{formatCreatedLabel(task.created_at)}</p> : null}
       {show('completed_at') && task.completed_at ? <p>{formatCompletedLabel(task.completed_at)}</p> : null}
@@ -70,12 +71,14 @@ function ConflictVersion({ conflict, row, viewerId }: { conflict: CloudConflict;
       {show('sections') ? <p>Bereiche: {list.sections?.length ? list.sections.map(section => section.name).join(', ') : 'Keine'}</p> : null}
       {show('keep_completed') ? <p>Erledigte Aufgaben: {list.keep_completed ? 'Dauerhaft unter Erledigt' : 'Nach sieben Tagen endgültig löschen'}</p> : null}
       {show('ratings_enabled') ? <p>Bewertungen: {list.ratings_enabled ? 'An' : 'Aus'}</p> : null}
+      {show('allow_duplicate_titles') ? <p>Gleiche Aufgabennamen: {list.allow_duplicate_titles ? 'Erlaubt' : 'Neue Duplikate verhindern'}</p> : null}
     </>
   }
   if (conflict.table === 'preferences') {
     const preference = fromRemotePreference(row as RemoteListPreference)
     return <><p>Liste: {lists.find(list => list.id === preference.list_id)?.name ?? 'Nicht mehr verfügbar'}</p>
-      <p>{preference.include_in_overview ? 'In deiner Gesamtansicht' : 'Aus deiner Gesamtansicht ausgeschlossen'}</p></>
+      <p>{preference.include_in_overview ? 'In deiner Gesamtansicht' : 'Aus deiner Gesamtansicht ausgeschlossen'}</p>
+      <p>Sortierung: {listSortModeLabel[preference.sort_mode]}</p></>
   }
   if (conflict.table === 'userPreferences') {
     const preference = fromRemoteUserPreference(row as RemoteUserPreference)
@@ -92,8 +95,10 @@ function ConflictVersion({ conflict, row, viewerId }: { conflict: CloudConflict;
 }
 
 const fields: Record<string, string> = {
-  title: 'Titel', description: 'Beschreibung', name: 'Listenname', due_at: 'Fälligkeit', recurrence: 'Wiederholung', reminders: 'Erinnerungen',
+  title: 'Titel', description: 'Notiz', name: 'Listenname', due_at: 'Fälligkeit', recurrence: 'Wiederholung', reminders: 'Erinnerungen',
   checklist: 'Checkliste', tags: 'Tags', rating: 'Bewertung', ratings_enabled: 'Bewertungen verwenden',
+  allow_duplicate_titles: 'Gleiche Aufgabennamen erlauben', recurrence_series_id: 'Wiederholungsserie',
+  sort_mode: 'Listensortierung',
   completed: 'Erledigt-Status', completed_at: 'Abschlusszeitpunkt', successor_id: 'Seriennachfolger', list_id: 'Liste', section_id: 'Bereich',
   position: 'Reihenfolge', sections: 'Bereiche', icon: 'Listensymbol', is_shared: 'Freigabe', deleted_at: 'Löschstatus', keep_completed: 'Aufbewahrung erledigter Aufgaben', reopen_context: 'Rückkehr und Seriennachfolger',
   include_in_overview: 'Aufnahme in die Gesamtansicht', default_list_id: 'Letzte Gesamt-Zielliste', overview_mode: 'Bevorzugte Ansicht', detailed_ratings: 'Detaillierte Bewertungen',

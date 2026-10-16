@@ -50,8 +50,8 @@ grant usage on schema auth to authenticated,anon;`)
 const migrations = readFileSync(new URL('../supabase/all-migrations.sql', import.meta.url), 'utf8')
 sql(migrations)
 sql(`insert into auth.users(id,email) values ('${owner}','owner@prio.test'),('${member}','member@prio.test'),('${stranger}','stranger@prio.test')`)
-const list = { id: listId, owner_id: owner, name: 'Liste', is_shared: false, icon: null, sections: [], keep_completed: false, ratings_enabled: false, completion_retention_started_at: at, created_at: at, updated_at: at, deleted_at: null }
-const task = { id: taskId, list_id: listId, title: 'Anfang', description: null, checklist: [], tags: [], rating: null, due_at: null, available_from: null, completed: false, completed_at: null, completed_expires_at: null, expired_at: null, reopen_context: null, recurrence: null, successor_id: null, reminders: [], section_id: null, position: 0, created_at: at, updated_at: at, deleted_at: null }
+const list = { id: listId, owner_id: owner, name: 'Liste', is_shared: false, icon: null, sections: [], keep_completed: false, ratings_enabled: false, allow_duplicate_titles: true, completion_retention_started_at: at, created_at: at, updated_at: at, deleted_at: null }
+const task = { id: taskId, list_id: listId, title: 'Anfang', description: null, checklist: [], tags: [], rating: null, due_at: null, available_from: null, completed: false, completed_at: null, completed_expires_at: null, expired_at: null, reopen_context: null, recurrence: null, successor_id: null, recurrence_series_id: null, reminders: [], section_id: null, position: 0, created_at: at, updated_at: at, deleted_at: null }
 
 check('Bestehende Konten wählen einen eindeutigen Namen; Auth und Profil bleiben atomar', () => {
   assert.equal(sql(`select username is null from public.profiles where id='${owner}'`),'t')
@@ -195,7 +195,7 @@ check('Paralleles Anlegen schützt dieselbe Kennung auch mit anderer Großschrei
   assert.equal(sql(`select count(*) from public.tasks where id='${newId}'`),'1')
 })
 sql('drop trigger prio_test_pause on public.tasks; drop function public.prio_test_pause()')
-const personal = { list_id: listId, user_id: owner, include_in_overview: true, position: null, hidden: false, created_at: at, updated_at: at, deleted_at: null }
+const personal = { list_id: listId, user_id: owner, include_in_overview: true, position: null, hidden: false, sort_mode: 'manual', created_at: at, updated_at: at, deleted_at: null }
 const userSettings = { id: owner, default_list_id: listId, overview_mode: 'newest', detailed_ratings: false, created_at: at, updated_at: at, deleted_at: null }
 check('Persönliche Aufnahme und bevorzugte Ansicht: Schreiben, Retry und stale Basis', () => {
   assert.equal(push(owner,'preferences',personal).kind,'written')
@@ -206,7 +206,7 @@ check('Persönliche Aufnahme und bevorzugte Ansicht: Schreiben, Retry und stale 
 })
 check('Navigation überträgt neue Felder, akzeptiert eine alte Basis und bleibt persönlich', () => {
   const legacy = { ...personal }
-  delete legacy.position; delete legacy.hidden
+  delete legacy.position; delete legacy.hidden; delete legacy.sort_mode
   const moved = push(owner,'preferences',{...personal,position:1.5,hidden:true},legacy)
   assert.equal(moved.kind,'written')
   assert.equal(moved.current.hidden,true)
@@ -225,6 +225,16 @@ check('Appweite Detailansicht und Prioritätssortierung bleiben persönlich und 
   assert.equal(sql(actorSql(owner,'select overview_mode || \':\' || detailed_ratings from public.user_preferences')),'priority:true')
   assert.equal(push(stranger,'userPreferences',{...detailed,detailed_ratings:false},detailed).kind,'rejected')
   assert.equal(push(owner,'userPreferences',userSettings,detailed).kind,'written')
+})
+check('Listensortierung bleibt persönlich, validiert und über erneute Migration erhalten', () => {
+  const current=JSON.parse(sql(`select to_jsonb(p) from public.list_preferences p where user_id='${owner}' and list_id='${listId}'`))
+  const grouped=push(owner,'preferences',{...current,sort_mode:'priority'},current)
+  assert.equal(grouped.kind,'written')
+  assert.equal(push(member,'preferences',{...grouped.current,sort_mode:'manual'},grouped.current).kind,'rejected')
+  assert.equal(push(owner,'preferences',{...grouped.current,sort_mode:'invalid'},grouped.current).kind,'rejected')
+  sql(migrations)
+  assert.equal(sql(`select sort_mode from public.list_preferences where user_id='${owner}' and list_id='${listId}'`),'priority')
+  assert.equal(push(owner,'preferences',current,grouped.current).kind,'written')
 })
 check('Mitgliedsauswahl bleibt persönlich; fremde Einstellungen sind weder lesbar noch schreibbar', () => {
   const other = { ...personal, user_id: stranger }
@@ -535,5 +545,64 @@ check('Update von alten Zeilen lässt bestehende Listen aus und neue an; Wiederh
   sql(migration)
   assert.equal(sql(`select ratings_enabled from public.lists where id='${listId}'`),'f')
   assert.equal(sql(`select ratings_enabled from public.lists where id='${id}'`),'t')
+})
+check('Namensverbot berücksichtigt erledigte Aufgaben, normalisiert Leerzeichen und erhält bestehende Duplikate', () => {
+  const uniqueList={...list,id:'70000000-0000-0000-0000-000000000090',keep_completed:true,allow_duplicate_titles:false}
+  assert.equal(push(owner,'lists',uniqueList).kind,'written')
+  assert.equal(push(owner,'members',{...membership,list_id:uniqueList.id}).kind,'written')
+  const first={...task,id:'80000000-0000-0000-0000-000000000090',list_id:uniqueList.id,title:'Zelt aufbauen',completed:true,completed_at:new Date().toISOString()}
+  const saved=push(owner,'tasks',first).current
+  for(const title of [' ZELT  aufbauen ','Zelt\u00a0aufbauen','Zelt\u2009aufbauen']) {
+    const attempt=push(member,'tasks',{...task,id:'80000000-0000-0000-0000-000000000091',list_id:uniqueList.id,title})
+    assert.equal(attempt.kind,'rejected');assert.equal(attempt.code,'23505')
+  }
+  assert.equal(push(member,'lists',{...uniqueList,allow_duplicate_titles:true},uniqueList).kind,'rejected')
+  assert.equal(push(member,'tasks',{...saved,description:'Notiz trotz gleichem Titel'},saved).kind,'written')
+  const other={...task,id:'80000000-0000-0000-0000-000000000092',title:'Zelt aufbauen'}
+  const from=push(owner,'tasks',other).current
+  assert.equal(push(owner,'tasks',{...from,list_id:uniqueList.id},from).code,'23505')
+  assert.equal(sql(`select list_id from public.tasks where id='${other.id}'`),listId)
+  const renamed={...task,id:'80000000-0000-0000-0000-000000000093',list_id:uniqueList.id,title:'Schlafsack'}
+  const renameBase=push(owner,'tasks',renamed).current
+  assert.equal(push(owner,'tasks',{...renameBase,title:'Zelt aufbauen'},renameBase).code,'23505')
+  const deletedBase=push(owner,'tasks',{...task,id:'80000000-0000-0000-0000-000000000094',list_id:uniqueList.id,title:'Zelt aufbauen',deleted_at:at}).current
+  assert.equal(push(owner,'tasks',{...deletedBase,deleted_at:null},deletedBase).code,'23505')
+  // Aus Altbestand übernommene Duplikate bleiben erlaubt, aber keine neuen.
+  const allowed=push(owner,'lists',{...uniqueList,allow_duplicate_titles:true},uniqueList).current
+  assert.equal(push(owner,'tasks',{...task,id:'80000000-0000-0000-0000-000000000095',list_id:uniqueList.id,title:'Zelt aufbauen'}).kind,'written')
+  push(owner,'lists',{...allowed,allow_duplicate_titles:false},allowed)
+  const existing=JSON.parse(sql(`select to_jsonb(t) from public.tasks t where id='80000000-0000-0000-0000-000000000095'`))
+  assert.equal(push(owner,'tasks',{...existing,description:'Vorhandenes Duplikat bleibt editierbar'},existing).kind,'written')
+})
+const concurrentList={...list,id:'70000000-0000-0000-0000-000000000096',allow_duplicate_titles:false}
+push(owner,'lists',concurrentList)
+const names=['Zelt',' ZELT ']
+const simultaneous=await Promise.all(names.map((title,index)=>asyncSql(actorSql(owner,request([{table:'tasks',row:{...task,id:`80000000-0000-0000-0000-00000000009${6+index}`,list_id:concurrentList.id,title},expected:null}])))))
+check('Paralleles Cloud-Anlegen verschiedener Kennungen mit gleichem Namen wird serialisiert', () => {
+  assert.deepEqual(simultaneous.map(value=>JSON.parse(value)[0].kind).sort(),['rejected','written'])
+  assert.equal(sql(`select count(*) from public.tasks where list_id='${concurrentList.id}'`),'1')
+})
+check('Wiederholungen derselben Serie sind ausgenommen; eine manuell neue Serie bleibt blockiert', () => {
+  const routine={...list,id:'70000000-0000-0000-0000-000000000098',allow_duplicate_titles:false,keep_completed:true}
+  push(owner,'lists',routine)
+  const root={...task,id:'80000000-0000-0000-0000-000000000098',list_id:routine.id,title:'Lesen',recurrence:'daily',due_at:'2030-01-01T12:00:00Z',recurrence_series_id:'80000000-0000-0000-0000-000000000098'}
+  const first=push(owner,'tasks',root).current
+  const child={...root,id:'80000000-0000-0000-0000-000000000099',due_at:'2030-01-02T12:00:00Z'}
+  assert.equal(push(owner,'tasks',child).kind,'written')
+  assert.equal(push(owner,'tasks',{...root,id:'80000000-0000-0000-0000-000000000100',recurrence_series_id:'80000000-0000-0000-0000-000000000100'}).code,'23505')
+  assert.equal(push(owner,'tasks',{...first,recurrence_series_id:null},first).code,'22023')
+})
+check('Update ergänzt fehlende Felder und alte Serien einmalig; erneute Migration bewahrt spätere Änderungen', () => {
+  sql('alter table public.lists drop column allow_duplicate_titles; alter table public.tasks drop column recurrence_series_id; delete from private.data_migrations where name=\'0024_recurrence_series\'')
+  sql(`update public.tasks set successor_id='80000000-0000-0000-0000-000000000099' where id='80000000-0000-0000-0000-000000000098'`)
+  const migration=readFileSync(new URL('../supabase/migrations/0024_unique_task_titles.sql',import.meta.url),'utf8')
+  sql(migration)
+  assert.equal(sql('select bool_and(allow_duplicate_titles) from public.lists'),'t')
+  assert.equal(sql(`select count(distinct recurrence_series_id) from public.tasks where id in ('80000000-0000-0000-0000-000000000098','80000000-0000-0000-0000-000000000099')`),'1')
+  sql(`update public.lists set allow_duplicate_titles=false where id='${listId}';update public.tasks set title='Notiz nach Update' where id='${taskId}'`)
+  const before=sql(`select jsonb_agg(to_jsonb(t) order by id) from public.tasks t`)
+  sql(migration)
+  assert.equal(sql(`select allow_duplicate_titles from public.lists where id='${listId}'`),'f')
+  assert.equal(sql(`select jsonb_agg(to_jsonb(t) order by id) from public.tasks t`),before)
 })
 console.log(`${checks} PostgreSQL-Prüfungen bestanden.`)

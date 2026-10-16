@@ -284,6 +284,12 @@ export function FilterIcon({ className = iconClass }: { className?: string }) {
   </svg>
 }
 
+export function EraserIcon({ className = iconClass }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
+    <path d="m4 13 9-9a2 2 0 0 1 3 0l4 4a2 2 0 0 1 0 3l-9 9H7l-3-3a3 3 0 0 1 0-4zM9 8l7 7M11 20h10" />
+  </svg>
+}
+
 export function ImportanceIcon({ className = iconClass }: { className?: string }) {
   return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
     <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z" />

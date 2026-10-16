@@ -38,6 +38,46 @@ describe('Sync-Szenarien', () => {
     await device.dispose()
   })
 
+  it('verhindert neue gleichnamige Cloud-Aufgaben zweier Offline-Geräte und erhält den abgelehnten Entwurf lokal', async () => {
+    const list = await device.repositories.createList('Packen', userId, { allowDuplicateTitles: false })
+    await device.engine.sync()
+    const other = await createDevice({ userId, gateway: server.gatewayFor(userId) })
+    try {
+      await other.engine.sync()
+      const a = await device.repositories.createTask({ listId: list.id, title: 'Zelt' })
+      const b = await other.repositories.createTask({ listId: list.id, title: ' zelt ', description: 'Lokal erhalten' })
+      await device.engine.sync()
+      await other.engine.sync()
+      expect([...server.tasks.values()].filter(row => row.list_id === list.id)).toHaveLength(1)
+      expect(server.taskById(a.id)).toBeDefined()
+      expect(server.taskById(b.id)).toBeUndefined()
+      expect(await other.repositories.getTask(b.id)).toMatchObject({ description: 'Lokal erhalten', dirty: 1 })
+      // Nach Korrektur des Namens kann der unverlorene Stand hochgeladen werden.
+      await other.repositories.updateTask(b.id, { title: 'Ersatzzelt' })
+      await other.engine.sync()
+      expect(server.taskById(b.id)?.title).toBe('Ersatzzelt')
+    } finally { await other.dispose() }
+  })
+
+  it('synchronisiert die Namensregel und erzeugt trotz Namensverbot nur einen gemeinsamen Nachfolger', async () => {
+    const list = await device.repositories.createList('Routine', userId, { allowDuplicateTitles: false, keepCompleted: true })
+    const task = await device.repositories.createTask({ listId: list.id, title: 'Lesen', dueAt: '2026-01-01T20:00:00Z', recurrence: 'daily' })
+    await device.engine.sync()
+    const other = await createDevice({ userId, gateway: server.gatewayFor(userId) })
+    try {
+      await other.engine.sync()
+      expect((await other.repositories.getList(list.id))?.allow_duplicate_titles).toBe(false)
+      await device.repositories.setTaskCompleted(task.id, true)
+      await other.repositories.setTaskCompleted(task.id, true)
+      await device.engine.sync(); await other.engine.sync(); await device.engine.sync()
+      const tasks = [...server.tasks.values()].filter(row => row.list_id === list.id && !row.deleted_at)
+      expect(tasks).toHaveLength(2)
+      expect(tasks.filter(row => !row.completed)).toHaveLength(1)
+      expect(tasks.every(row => row.recurrence_series_id === task.id)).toBe(true)
+      expect(await countDirty(other.db)).toBe(0)
+    } finally { await other.dispose() }
+  })
+
   it('führt offline geänderte Checklistenpunkte und Tags zweier Geräte verlustfrei zusammen', async () => {
     const list = await device.repositories.createList('Gemeinsam', userId)
     const a = createChecklistItem('A'), b = createChecklistItem('B')
@@ -63,6 +103,7 @@ describe('Sync-Szenarien', () => {
   it('überträgt persönliche Listenreihenfolge und Verstecken, ohne die Gesamtansicht-Auswahl zu ändern', async () => {
     const a = await device.repositories.createList('A', userId, { includeInOverview: true })
     const b = await device.repositories.createList('B', userId)
+    await device.repositories.setListSortMode(a.id, userId, 'priority')
     await device.repositories.placeList(b.id, userId, { hidden: false, beforeListId: a.id })
     await device.repositories.placeList(a.id, userId, { hidden: true, beforeListId: null })
     await device.engine.sync()
@@ -70,7 +111,7 @@ describe('Sync-Szenarien', () => {
     try {
       await other.engine.sync()
       expect(await other.repositories.listListPreferences(userId)).toEqual(expect.arrayContaining([
-        expect.objectContaining({ list_id: a.id, hidden: true, include_in_overview: true, position: 1, dirty: 0 }),
+        expect.objectContaining({ list_id: a.id, hidden: true, include_in_overview: true, position: 1, dirty: 0, sort_mode: 'priority' }),
         expect.objectContaining({ list_id: b.id, hidden: false, position: 1, dirty: 0 }),
       ]))
     } finally { await other.dispose() }

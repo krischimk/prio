@@ -46,7 +46,7 @@ export interface TaskFieldsProps {
    * `getByLabel` in den Tests brauchen das.
    */
   idPrefix: string
-  /** Für die Eingabezeile: nur Beschreibung und Fälligkeit. */
+  /** Für die Eingabezeile: nur Notiz und Fälligkeit. */
   felder?: TaskFieldName[]
   /** Beim Anlegen auf dem Telefon steht der Schreibzeiger schon im Titelfeld. */
   titelAutofokus?: boolean
@@ -95,10 +95,10 @@ export function TaskFields({
       {zeigt('beschreibung') ? (
         <div className="flex items-start gap-3 px-2">
           <DescriptionIcon className="mt-3 h-5 w-5 shrink-0 text-ink-muted" />
-          <label htmlFor={`${idPrefix}-description`} className="sr-only">Beschreibung</label>
+          <label htmlFor={`${idPrefix}-description`} className="sr-only">Notiz</label>
           <AutoTextarea
             id={`${idPrefix}-description`}
-            placeholder="Beschreibung hinzufügen"
+            placeholder="Notiz hinzufügen"
             value={form.werte.description}
             onChange={(event) => form.setzen('description', event.target.value)}
           />
@@ -106,7 +106,6 @@ export function TaskFields({
       ) : null}
 
       {zeigt('checkliste') ? <ChecklistEditor form={form} ratingsEnabled={ratingsEnabled} /> : null}
-      {zeigt('tags') ? <TaskTagsEditor form={form} /> : null}
       {ratingsEnabled ? <TaskRatingEditor form={form} /> : null}
 
       {zeigt('faellig') ? (
@@ -135,6 +134,7 @@ export function TaskFields({
           onChange={(neu) => form.setzen('reminders', neu)}
         />
       ) : null}
+      {zeigt('tags') ? <TaskTagsEditor form={form} /> : null}
     </fieldset>
   )
 }

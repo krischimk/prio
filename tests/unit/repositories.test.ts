@@ -891,6 +891,7 @@ describe('Repositories (lokale Geschäftslogik)', () => {
         list_id: listId,
         section_id: null,
         title: 'Aus alter Zeit',
+        recurrence_series_id: null,
         checklist: [],
         tags: [],
         rating: null,

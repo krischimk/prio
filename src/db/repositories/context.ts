@@ -11,6 +11,7 @@ import type { LocalList, LocalTask } from '../../domain/types'
 import { completionExpired } from '../../domain/taskLifecycle'
 import type { LocalDatabase } from '../localDb'
 import { ValidationError } from '../validation'
+import { conflictingTaskTitle } from '../../domain/taskTitles'
 
 export interface Kontext {
   db: LocalDatabase
@@ -19,6 +20,7 @@ export interface Kontext {
   stamp(): { updated_at: string; dirty: 1 }
   requireList(listId: string): Promise<LocalList>
   requireTask(taskId: string): Promise<LocalTask>
+  requireUniqueTaskTitle(task: LocalTask): Promise<void>
 }
 
 export function createKontext(db: LocalDatabase, clock: Clock): Kontext {
@@ -47,5 +49,13 @@ async function requireTask(taskId: string): Promise<LocalTask> {
     if (completionExpired(normalized, clock.nowMs())) throw new ValidationError('not-found', 'Diese Aufgabe ist endgültig abgelaufen.')
     return normalized
   }
-  return { db, clock, mitAbschnittsplan, stamp, requireList, requireTask }
+  async function requireUniqueTaskTitle(task: LocalTask): Promise<void> {
+    const list = await requireList(task.list_id)
+    if (list.allow_duplicate_titles) return
+    const rows = (await db.tasks.where('list_id').equals(list.id).toArray()).map(normalisiereAufgabe)
+    if (conflictingTaskTitle(task, rows, clock.nowMs())) {
+      throw new ValidationError('invalid', 'In dieser Liste gibt es bereits eine offene oder erledigte Aufgabe mit diesem Namen.')
+    }
+  }
+  return { db, clock, mitAbschnittsplan, stamp, requireList, requireTask, requireUniqueTaskTitle }
 }

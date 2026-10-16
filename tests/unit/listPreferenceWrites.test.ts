@@ -11,6 +11,21 @@ describe('Persönliche Listenauswahl', () => {
   beforeEach(async () => { device = await createDevice({ userId: 'owner', gateway: createFakeServer().gatewayFor('owner') }) })
   afterEach(async () => { await device.dispose() })
 
+  it('merkt die Sortierung je Liste und bewahrt sie beim Verstecken und Ändern der Gesamtaufnahme', async () => {
+    const a = await device.repositories.createList('A', 'owner')
+    const b = await device.repositories.createList('B', 'owner')
+    await device.repositories.setListSortMode(a.id, 'owner', 'manual')
+    expect(await device.db.list_preferences.count()).toBe(0)
+    await device.repositories.setListSortMode(a.id, 'owner', 'priority')
+    await device.repositories.setListInOverview(a.id, 'owner', true)
+    await device.repositories.placeList(a.id, 'owner', { hidden: true, beforeListId: null })
+    expect((await device.repositories.listListPreferences('owner')).find(row => row.list_id === a.id)).toMatchObject({ sort_mode: 'priority', hidden: true, include_in_overview: true, dirty: 1 })
+    expect((await device.repositories.listListPreferences('owner')).find(row => row.list_id === b.id)?.sort_mode ?? 'manual').toBe('manual')
+    await device.repositories.setListSortMode(a.id, 'owner', 'priority_flat')
+    await device.repositories.setListSortMode(a.id, 'member', 'manual')
+    expect((await device.repositories.listListPreferences('owner')).find(row => row.list_id === a.id)?.sort_mode).toBe('priority_flat')
+  })
+
   it('aktiviert neue Listen erst ausdrücklich und erzeugt für den Default keinen Upload', async () => {
     const list = await device.repositories.createList('Liste', 'owner')
     expect(await device.repositories.listListPreferences('owner')).toEqual([])

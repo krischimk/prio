@@ -15,7 +15,7 @@ export function TaskTagsEditor({ form }: { form: TaskForm }) {
     form.setzen('tags', parseTags([...form.werte.tags, known.find(value => tagKey(value) === tagKey(tag)) ?? tag]))
     form.setzen('tagText', '')
   }
-  return <div className="min-w-0">
+  return <fieldset disabled={form.busy} className="min-w-0">
     <div className="flex min-h-11 items-center gap-3 px-2 text-body text-ink-muted"><TagIcon /><span>Tags</span></div>
     <div className="space-y-2 pl-10">
       {form.werte.tags.length ? <div role="group" className="flex flex-wrap gap-1" aria-label="Ausgewählte Tags">{form.werte.tags.map(tag => <Button key={tagKey(tag)} variant="secondary" size="sm" layout="max-w-full"
@@ -29,5 +29,5 @@ export function TaskTagsEditor({ form }: { form: TaskForm }) {
       {suggestions.length ? <div role="group" className="flex flex-wrap gap-1" aria-label="Vorhandene Tags">{suggestions.map(tag => <Button key={tagKey(tag)} size="sm" variant="ghost" layout="max-w-full" title={`Tag „${tag}“ hinzufügen`}
         onClick={() => add(tag)}><span className="min-w-0 break-words">{tag}</span></Button>)}</div> : null}
     </div>
-  </div>
+  </fieldset>
 }

@@ -394,6 +394,7 @@ async function handleRpc(name, request, response) {
       }
       if (table === 'tasks' && (!canAccessList(user.id,state.lists.get(row.list_id)) || (current && !canAccessList(user.id,state.lists.get(current.list_id))))) { rejected('Kein Zugriff auf die Aufgabe.'); continue }
       if (table === 'preferences' && (row.user_id !== user.id || !canAccessList(user.id,state.lists.get(row.list_id)))) { rejected('Nur deine eigene Listenauswahl darf geändert werden.'); continue }
+      if (table === 'preferences' && row.sort_mode !== undefined && !['manual','priority','priority_flat'].includes(row.sort_mode)) { rejected('Ungültige Sortierung.','23514'); continue }
       if (table === 'userPreferences' && (row.id !== user.id || !['by_list','newest','priority'].includes(row.overview_mode))) { rejected('Ungültige persönliche Einstellung.'); continue }
       if (table === 'userPreferences' && row.default_list_id && row.default_list_id !== current?.default_list_id && !canAccessList(user.id,state.lists.get(row.default_list_id))) { rejected('Kein Zugriff auf die Standardliste.'); continue }
       if ((table==='tasks' && !row.title?.trim()) || (table==='lists' && !row.name?.trim())) { rejected('Name darf nicht leer sein.','23514'); continue }
@@ -409,6 +410,14 @@ async function handleRpc(name, request, response) {
       if (table === 'lists') {
         saved={...row,completion_retention_started_at:!current ? new Date(Math.min(Date.parse(row.completion_retention_started_at ?? now),Date.now())).toISOString() : current.keep_completed && !row.keep_completed ? now : current.completion_retention_started_at ?? null}
       } else if (table === 'tasks') {
+        const titleKey=title=>title.trim().replace(/\s+/gu,' ').toLowerCase()
+        if (current?.recurrence_series_id && row.recurrence_series_id !== current.recurrence_series_id) { rejected('Die Zuordnung zur Wiederholungsserie bleibt erhalten.','22023'); continue }
+        if (!row.deleted_at && !row.expired_at && state.lists.get(row.list_id)?.allow_duplicate_titles === false
+          && (!current || current.deleted_at || current.list_id !== row.list_id || titleKey(current.title) !== titleKey(row.title))
+          && [...state.tasks.values()].some(peer=>peer.id !== row.id && peer.list_id === row.list_id && !peer.deleted_at && !peer.expired_at
+            && titleKey(peer.title) === titleKey(row.title) && (!row.recurrence_series_id || peer.recurrence_series_id !== row.recurrence_series_id))) {
+          rejected('In dieser Liste gibt es bereits eine offene oder erledigte Aufgabe mit diesem Namen.','23505'); continue
+        }
         if (current?.completed && row.completed && current.completed_at !== row.completed_at) { rejected('Der Abschlusszeitpunkt bleibt erhalten.','22023'); continue }
         if ((row.expired_at ?? null) !== (current?.expired_at ?? null)) { rejected('Der Ablauf gehört dem Server.','22023'); continue }
         const keep=state.lists.get(row.list_id)?.keep_completed === true

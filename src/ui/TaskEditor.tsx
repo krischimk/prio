@@ -11,6 +11,7 @@ import { TaskFormStatus } from './TaskFormStatus'
 import { useTaskForm } from './useTaskForm'
 import { errorBox } from './styles'
 import { TaskMoreOptions } from './TaskMoreOptions'
+import { TaskTagsEditor } from './TaskTagsEditor'
 import { useTaskDelete } from './useTaskDelete'
 import { formatCompletedLabel } from './datetime'
 import { submitTaskShortcut } from './taskFormKeyboard'
@@ -19,7 +20,7 @@ import { submitTaskShortcut } from './taskFormKeyboard'
  * Detail- und Bearbeitungsansicht einer Aufgabe.
  *
  * Auf dem Telefon ist das der Ort für alles, was in der Liste keinen Platz hat:
- * Beschreibung, Fälligkeit, Erledigt-Status, Verschieben und Löschen.
+ * Notiz, Fälligkeit, Erledigt-Status, Verschieben und Löschen.
  * Dieselbe Ansicht legt auch neue Aufgaben an (`task === null`).
  */
 export function TaskEditor({
@@ -149,9 +150,10 @@ export function TaskEditor({
               ratingsEnabled={lists.find(list => list.id === listId)?.ratings_enabled}
               listIsShared={lists.find((eintrag) => eintrag.id === listId)?.is_shared ?? false}
               idPrefix="detail"
-              felder={['titel', 'beschreibung', 'checkliste', 'tags', 'faellig', 'wiederholung', 'erinnerungen']}
+              felder={['titel', 'beschreibung', 'checkliste', 'faellig', 'wiederholung', 'erinnerungen']}
               titelAutofokus={isNew}
             />
+            <TaskTagsEditor form={form} />
             <TaskFormStatus form={form} />
             {error ? <p role="alert" className={errorBox}>{error}</p> : null}
             {deletion.error ? <p role="alert" className={errorBox}>{deletion.error}</p> : null}

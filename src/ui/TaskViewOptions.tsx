@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Popover } from '@ark-ui/react/popover'
-import type { OverviewMode } from '../domain/types'
+import type { OverviewMode, ListSortMode } from '../domain/types'
 import { parseTags, tagKey } from '../domain/tags'
 import { useView } from './useView'
 import { useBackLayer } from '../app/useBackLayer'
@@ -9,27 +9,40 @@ import { IconButton } from './components/IconButton'
 import { Button } from './components/Button'
 import { FilterIcon, SortIcon, TagIcon } from './icons'
 import { overviewModeLabel } from './overviewMode'
+import { listSortModeLabel } from './listSortMode'
 import { focusRing, input, layer } from './styles'
 
 /** Gleicher Tagfilter in Einzel- und Gesamtansicht; deren Listenwahl bleibt unverändert. */
-export function TaskViewOptions({ tags, mode, busy = false, onModeChange }: {
+export function TaskViewOptions({ tags, mode, busy = false, onModeChange, listMode, hasSections = false, onListModeChange }: {
   tags: string[]; mode?: OverviewMode; busy?: boolean; onModeChange?: (mode: OverviewMode) => void
+  listMode?: ListSortMode; hasSections?: boolean; onListModeChange?: (mode: ListSortMode) => void
 }) {
   const { tagFilter, setTagFilter } = useView()
   const known = useTaskTags()
   const [open, setOpen] = useState(false)
   useBackLayer(open, () => setOpen(false), 'aufgaben-ansicht')
   const choices = parseTags([...tagFilter, ...tags, ...known]).sort((a, b) => a.localeCompare(b, 'de'))
+  const listModes: Partial<Record<ListSortMode, string>> = hasSections
+    ? listSortModeLabel
+    : { manual: 'Manuelle Reihenfolge', priority: 'Höchste Priorität zuerst' }
+  const sorting = mode !== undefined || listMode !== undefined
+  const selectedListMode = !hasSections && listMode === 'priority_flat' ? 'priority' : listMode
   return <Popover.Root open={open} onOpenChange={details => setOpen(details.open)}
     onEscapeKeyDown={event => { event.preventDefault(); setOpen(false) }} positioning={{ strategy: 'fixed', placement: 'bottom-end' }} lazyMount unmountOnExit>
-    <Popover.Trigger asChild><IconButton aria-label={mode ? 'Sortierung ändern' : 'Nach Tags filtern'} variant={tagFilter.length ? 'iconActive' : 'icon'}
-      title={mode ? `Sortierung ändern und nach Tags filtern. Aktuell: ${overviewModeLabel[mode]}.` : 'Aufgaben nach Tags filtern.'}>
-      {mode ? <SortIcon /> : <FilterIcon />}
+    <Popover.Trigger asChild><IconButton aria-label={sorting ? 'Sortierung ändern' : 'Nach Tags filtern'} variant={tagFilter.length ? 'iconActive' : 'icon'}
+      title={sorting ? `Sortierung ändern und nach Tags filtern. Aktuell: ${mode ? overviewModeLabel[mode] : listModes[selectedListMode!]}.` : 'Aufgaben nach Tags filtern.'}>
+      {sorting ? <SortIcon /> : <FilterIcon />}
     </IconButton></Popover.Trigger>
     <Popover.Positioner className={layer.raised}><Popover.Content className="w-72 max-w-[calc(100vw-2rem)] space-y-3 rounded-card border border-line-strong bg-raised p-3 shadow-lg shadow-page/50">
       {mode && onModeChange ? <label className="block text-meta text-ink-muted"><span className="sr-only">Ansicht der Gesamtansicht</span>
         <select aria-label="Ansicht der Gesamtansicht" className={input} value={mode} disabled={busy} onChange={event => { onModeChange(event.target.value as OverviewMode); setOpen(false) }}>
           {Object.entries(overviewModeLabel).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+        </select>
+      </label> : null}
+      {listMode && onListModeChange ? <label className="block text-meta text-ink-muted"><span className="sr-only">Sortierung der Liste</span>
+        <select aria-label="Sortierung der Liste" className={input} value={selectedListMode} disabled={busy}
+          onChange={event => { onListModeChange(event.target.value as ListSortMode); setOpen(false) }}>
+          {Object.entries(listModes).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </select>
       </label> : null}
       <fieldset className="space-y-1"><legend className="mb-1 flex items-center gap-2 text-meta text-ink-muted"><TagIcon className="size-icon-meta" />Nach Tags filtern</legend>

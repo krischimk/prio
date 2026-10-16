@@ -29,6 +29,8 @@ App. Sie sind so geschrieben, dass sie sich gefahrlos erneut ausführen lassen
 | `0021_task_checklists_and_tags.sql` | Aufgabenfelder `checklist` und `tags` mit leeren Defaults und Formprüfung; endgültiger Ablauf entfernt auch diese Inhalte |
 | `0022_incremental_sync.sql` | Privater letzter Schreibstand je Zeile und paginierter `sync_pull` mit PostgreSQL-Snapshot; erkennt neue Freigaben und Rechteentzug ohne Geräteuhren |
 | `0023_task_ratings.sql` | Gekoppelte optionale Aufgabenbewertung, Besitzer-Schalter `ratings_enabled` (Bestand aus, neue Listen an), Inhaltsprüfung und Entfernen der Bewertung beim endgültigen Ablauf |
+| `0024_unique_task_titles.sql` | Besitzer-Regel `allow_duplicate_titles` (zunächst an), stabile `recurrence_series_id` und einmaliges Backfill alter Serien. Namensprüfung in `sync_push` unter Listensperre, einschließlich erledigter Aufgaben; vorhandene Duplikate bleiben erhalten |
+| `0025_list_sort_mode.sql` | Persönliche Sortierung je Liste (`manual`, `priority` mit Bereichen, `priority_flat` gemeinsam); bestehende Zeilen starten manuell |
 
 ### Bewertungen und Checklistenanteile
 
@@ -210,7 +212,7 @@ automatisch abgeglichen; daraus entsteht kein Benutzerkonflikt.
 
 Ab Ablauf ist weder Öffnen, Verschieben noch Wiederherstellen zulässig.
 `expired_at` wird ausschließlich vom Server gesetzt. Die private Ablauffunktion
-entfernt Titel, Beschreibung, Termin, Erinnerungen, Wiederholung und
+entfernt Titel, Notiz, Termin, Erinnerungen, Wiederholung und
 Rückkehrkontext. Identität und notwendige Synchronisationsdaten bleiben als
 endgültiger Löschvermerk erhalten. Ein alter Upload oder das erneute
 Einschalten von „Abgehakt“ kann ihn nicht zurücknehmen.

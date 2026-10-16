@@ -73,7 +73,7 @@ try {
   await page.getByRole('button', { name: 'Neue Aufgabe', exact: true }).click()
   const editor = page.getByRole('dialog', { name: 'Neue Aufgabe', exact: true })
   await editor.getByLabel('Titel', { exact: true }).fill('Die neue Prio-Fassung ausprobieren')
-  await editor.getByLabel('Beschreibung', { exact: true }).fill('Listen, Gesamtansicht und den gemeinsamen Editor testen.')
+  await editor.getByLabel('Notiz', { exact: true }).fill('Listen, Gesamtansicht und den gemeinsamen Editor testen.')
   await editor.getByRole('button', { name: 'Fälligkeit und Wiederholung bearbeiten', exact: true }).click()
   const due = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)
   const pad = value => String(value).padStart(2, '0')

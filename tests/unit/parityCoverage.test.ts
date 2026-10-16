@@ -24,10 +24,12 @@ import { SCHREIBEND } from '../../src/app/trackedRepositories'
  */
 const ABDECKUNG: Record<(typeof SCHREIBEND)[number], string | null> = {
   setListInOverview: 'Liste in die Gesamtansicht aufnehmen',
+  setListSortMode: 'Listen manuell oder nach Priorität mit und ohne Bereiche sortieren',
   placeList: 'Listen umsortieren und verstecken',
   setListKeepCompleted: 'Erledigt am Listenende einstellen und wieder öffnen',
   setListRatingsEnabled: 'Aufgaben bewerten und Bewertungen listenweise ausschalten',
-    updateUserPreferences: 'Letzte Gesamt-Zielliste und bevorzugte Ansicht merken',
+  setListAllowDuplicateTitles: 'Gleiche Aufgabennamen listenweise erlauben oder verhindern',
+  updateUserPreferences: 'Letzte Gesamt-Zielliste und bevorzugte Ansicht merken',
   resolveCloudConflict: 'Cloud-Schreibkonflikt klären',
   createList: 'Liste anlegen',
   renameList: 'Liste umbenennen',
@@ -39,7 +41,7 @@ const ABDECKUNG: Record<(typeof SCHREIBEND)[number], string | null> = {
   renameListSection: null,
   deleteListSection: null,
   createTask: 'Aufgabe anlegen',
-  updateTask: 'Aufgabe bearbeiten: Titel und Beschreibung',
+  updateTask: 'Aufgabe bearbeiten: Titel und Notiz',
   setTaskCompleted: 'Aufgabe abhaken und rückgängig machen',
   setChecklistItemCompleted: 'Checkliste unabhängig von der Hauptaufgabe bedienen',
   moveTask: 'Aufgabe in eine andere Liste verschieben',

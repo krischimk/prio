@@ -46,7 +46,7 @@ begin
   if p_table = 'lists' then
     list_row := jsonb_populate_record(null::public.lists, p_row);
     wanted := to_jsonb(list_row);
-    expected := case when p_expected is null or p_expected = 'null'::jsonb then null else to_jsonb(jsonb_populate_record(null::public.lists, p_expected)) end;
+    expected := case when p_expected is null or p_expected = 'null'::jsonb then null else to_jsonb(jsonb_populate_record(null::public.lists, jsonb_build_object('allow_duplicate_titles',true) || p_expected)) end;
     select to_jsonb(r) into current_row from public.lists r where r.id = list_row.id for update;
     if list_row.owner_id is distinct from actor or (current_row is not null and (current_row->>'owner_id')::uuid <> actor) then
       raise exception 'Nur der Besitzer darf diese Liste ändern.' using errcode = '42501';
@@ -97,6 +97,23 @@ begin
   end if;
   original_wanted := wanted;
   moment := clock_timestamp();
+  -- Namensregel gilt unter derselben Listensperre für Anlegen, Umbenennen,
+  -- Verschieben und Wiederherstellen. Vorhandene Duplikate bleiben bearbeitbar.
+  if p_table='tasks' and task_row.deleted_at is null and task_row.expired_at is null
+     and (current_row is null or old_task.deleted_at is not null
+       or old_task.list_id is distinct from task_row.list_id
+       or private.task_title_key(old_task.title) is distinct from private.task_title_key(task_row.title))
+     and not (select allow_duplicate_titles from public.lists where id=task_row.list_id)
+     and exists(select 1 from public.tasks t where t.list_id=task_row.list_id and t.id<>task_row.id
+       and t.deleted_at is null and t.expired_at is null
+       and private.task_title_key(t.title)=private.task_title_key(task_row.title)
+       and (task_row.recurrence_series_id is null or t.recurrence_series_id is distinct from task_row.recurrence_series_id)) then
+    raise exception 'In dieser Liste gibt es bereits eine offene oder erledigte Aufgabe mit diesem Namen.' using errcode='23505';
+  end if;
+  if p_table='tasks' and old_task.recurrence_series_id is not null
+     and task_row.recurrence_series_id is distinct from old_task.recurrence_series_id then
+    raise exception 'Die Zuordnung zur Wiederholungsserie bleibt erhalten.' using errcode='22023';
+  end if;
   if p_table='lists' then
     list_row.completion_retention_started_at := case when current_row is null then least(list_row.completion_retention_started_at,moment) when (current_row->>'keep_completed')::boolean and not list_row.keep_completed then moment else (current_row->>'completion_retention_started_at')::timestamptz end;
   elsif p_table='tasks' then
@@ -122,8 +139,8 @@ begin
     end if;
   end if;
   if p_table = 'lists' then
-    insert into public.lists as saved (id, owner_id, name, is_shared, created_at, updated_at, deleted_at, icon, sections, keep_completed, completion_retention_started_at, ratings_enabled) values (list_row.id, list_row.owner_id, list_row.name, list_row.is_shared, list_row.created_at, list_row.updated_at, list_row.deleted_at, list_row.icon, list_row.sections, list_row.keep_completed, list_row.completion_retention_started_at, list_row.ratings_enabled)
-    on conflict (id) do update set owner_id=excluded.owner_id, name=excluded.name, is_shared=excluded.is_shared, created_at=excluded.created_at, updated_at=excluded.updated_at, deleted_at=excluded.deleted_at, icon=excluded.icon, sections=excluded.sections, keep_completed=excluded.keep_completed, completion_retention_started_at=excluded.completion_retention_started_at, ratings_enabled=excluded.ratings_enabled
+    insert into public.lists as saved (id, owner_id, name, is_shared, created_at, updated_at, deleted_at, icon, sections, keep_completed, completion_retention_started_at, ratings_enabled, allow_duplicate_titles) values (list_row.id, list_row.owner_id, list_row.name, list_row.is_shared, list_row.created_at, list_row.updated_at, list_row.deleted_at, list_row.icon, list_row.sections, list_row.keep_completed, list_row.completion_retention_started_at, list_row.ratings_enabled, list_row.allow_duplicate_titles)
+    on conflict (id) do update set owner_id=excluded.owner_id, name=excluded.name, is_shared=excluded.is_shared, created_at=excluded.created_at, updated_at=excluded.updated_at, deleted_at=excluded.deleted_at, icon=excluded.icon, sections=excluded.sections, keep_completed=excluded.keep_completed, completion_retention_started_at=excluded.completion_retention_started_at, ratings_enabled=excluded.ratings_enabled, allow_duplicate_titles=excluded.allow_duplicate_titles
     returning to_jsonb(saved) into current_row;
     if expected is not null and (expected->>'keep_completed')::boolean is distinct from list_row.keep_completed then
       update public.tasks set completed_expires_at=case when list_row.keep_completed then null else moment + interval '7 days' end, updated_at=moment
@@ -134,8 +151,8 @@ begin
     on conflict (list_id,user_id) do update set created_at=excluded.created_at, updated_at=excluded.updated_at, deleted_at=excluded.deleted_at
     returning to_jsonb(saved) into current_row;
   elsif p_table = 'tasks' then
-    insert into public.tasks as saved (id, list_id, title, description, due_at, completed, created_at, updated_at, deleted_at, position, completed_at, recurrence, successor_id, reminders, section_id, completed_expires_at, expired_at, reopen_context, available_from, checklist, tags, rating) values (task_row.id, task_row.list_id, task_row.title, task_row.description, task_row.due_at, task_row.completed, task_row.created_at, task_row.updated_at, task_row.deleted_at, task_row.position, task_row.completed_at, task_row.recurrence, task_row.successor_id, task_row.reminders, task_row.section_id, task_row.completed_expires_at, task_row.expired_at, task_row.reopen_context, task_row.available_from, task_row.checklist, task_row.tags, task_row.rating)
-    on conflict (id) do update set list_id=excluded.list_id, title=excluded.title, description=excluded.description, due_at=excluded.due_at, completed=excluded.completed, created_at=excluded.created_at, updated_at=excluded.updated_at, deleted_at=excluded.deleted_at, position=excluded.position, completed_at=excluded.completed_at, recurrence=excluded.recurrence, successor_id=excluded.successor_id, reminders=excluded.reminders, section_id=excluded.section_id, completed_expires_at=excluded.completed_expires_at, expired_at=excluded.expired_at, reopen_context=excluded.reopen_context, available_from=excluded.available_from, checklist=excluded.checklist, tags=excluded.tags, rating=excluded.rating
+    insert into public.tasks as saved (id, list_id, title, description, due_at, completed, created_at, updated_at, deleted_at, position, completed_at, recurrence, successor_id, recurrence_series_id, reminders, section_id, completed_expires_at, expired_at, reopen_context, available_from, checklist, tags, rating) values (task_row.id, task_row.list_id, task_row.title, task_row.description, task_row.due_at, task_row.completed, task_row.created_at, task_row.updated_at, task_row.deleted_at, task_row.position, task_row.completed_at, task_row.recurrence, task_row.successor_id, task_row.recurrence_series_id, task_row.reminders, task_row.section_id, task_row.completed_expires_at, task_row.expired_at, task_row.reopen_context, task_row.available_from, task_row.checklist, task_row.tags, task_row.rating)
+    on conflict (id) do update set list_id=excluded.list_id, title=excluded.title, description=excluded.description, due_at=excluded.due_at, completed=excluded.completed, created_at=excluded.created_at, updated_at=excluded.updated_at, deleted_at=excluded.deleted_at, position=excluded.position, completed_at=excluded.completed_at, recurrence=excluded.recurrence, successor_id=excluded.successor_id, recurrence_series_id=excluded.recurrence_series_id, reminders=excluded.reminders, section_id=excluded.section_id, completed_expires_at=excluded.completed_expires_at, expired_at=excluded.expired_at, reopen_context=excluded.reopen_context, available_from=excluded.available_from, checklist=excluded.checklist, tags=excluded.tags, rating=excluded.rating
     returning to_jsonb(saved) into current_row;
   end if;
   if p_table='tasks' then

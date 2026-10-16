@@ -1,4 +1,5 @@
 import type { LocalTask } from '../domain/types'
+import type { ReactNode } from 'react'
 import { formatDueLabel } from './datetime'
 import { BellIcon, BellOffIcon, RepeatIcon, CalendarIcon } from './icons'
 import { Hint } from './components/Hint'
@@ -10,6 +11,7 @@ import { isUpcomingRepeat } from '../domain/recurrence'
 export interface TaskFactsProps {
   task: LocalTask
   currentUserId: string
+  afterTitle?: ReactNode
 }
 
 /**
@@ -21,7 +23,7 @@ export interface TaskFactsProps {
  * Zeile war einmal `text-ink-muted` und einmal `text-ink-faint`. Hier entsteht
  * der Inhalt einmal; TaskRow setzt die gemeinsame klickbare Aufgabenfläche.
  */
-export function TaskFacts({ task, currentUserId }: TaskFactsProps) {
+export function TaskFacts({ task, currentUserId, afterTitle }: TaskFactsProps) {
   const due = task.due_at === null ? null : formatDueLabel(task.due_at, task.completed)
   const wiederholung = describeRecurrence(task.recurrence)
   const upcoming = isUpcomingRepeat(task)
@@ -34,6 +36,7 @@ export function TaskFacts({ task, currentUserId }: TaskFactsProps) {
       >
         {task.title}
       </span>
+      {afterTitle}
 
       {due || wiederholung || erinnerungen.length ? <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
       {due ? (

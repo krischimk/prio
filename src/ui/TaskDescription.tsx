@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { focusRing, mutedText } from './styles'
 
 /**
- * Die Beschreibung einer Aufgabe in der Übersicht.
+ * Die Notiz einer Aufgabe in der Übersicht.
  *
  * Zugeklappt endet die einzeilige Vorschau am ersten Zeilenumbruch. Weitere
  * Absätze werden erst beim Aufklappen gezeigt, statt sie aneinanderzuhängen.
@@ -12,7 +12,7 @@ import { focusRing, mutedText } from './styles'
  * sonst sieht man nicht, dass es weitergeht.
  *
  * Der Schalter erscheint **nur**, wenn es etwas aufzuklappen gibt: bei Absätzen
- * immer, bei einer einzeiligen Beschreibung nur, wenn sie wirklich abgeschnitten
+ * immer, bei einer einzeiligen Notiz nur, wenn sie wirklich abgeschnitten
  * wird. Gemessen wird am Element (`scrollWidth` gegen `clientWidth`) und bei
  * jeder Größenänderung erneut.
  */
@@ -57,7 +57,7 @@ export function TaskDescription({ text, className = '' }: { text: string; classN
           aria-expanded={offen}
           data-testid="beschreibung-mehr"
           onClick={(event) => {
-            // Die Beschreibung liegt in der Aufgabenfläche; dieser Knopf
+            // Die Notiz liegt in der Aufgabenfläche; dieser Knopf
             // klappt nur den Text auf und öffnet nicht zusätzlich den Editor.
             event.stopPropagation()
             setOffen((vorher) => !vorher)

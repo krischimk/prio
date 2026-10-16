@@ -35,6 +35,7 @@ async function feldEntfernen(page: import('@playwright/test').Page) {
           for (const zeile of alle.result as Record<string, unknown>[]) {
             delete zeile.sections
             delete zeile.ratings_enabled
+            delete zeile.allow_duplicate_titles
             delete zeile.keep_completed
             delete zeile.completion_retention_started_at
             speicher.put(zeile)
@@ -49,6 +50,7 @@ async function feldEntfernen(page: import('@playwright/test').Page) {
             delete zeile.reopen_context
             delete zeile.available_from
             delete zeile.rating
+            delete zeile.recurrence_series_id
             delete zeile.checklist
             delete zeile.tags
             aufgaben.put(zeile)
@@ -60,6 +62,7 @@ async function feldEntfernen(page: import('@playwright/test').Page) {
           for (const zeile of alteAuswahl.result as Record<string, unknown>[]) {
             delete zeile.position
             delete zeile.hidden
+            delete zeile.sort_mode
             auswahl.put(zeile)
           }
         }

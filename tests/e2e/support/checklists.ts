@@ -85,7 +85,7 @@ export async function tagFilterParity(page: Page, mobile: boolean) {
   await editor.getByRole('button', { name: 'Schließen', exact: true }).click()
   for (const overview of [false, true]) {
     if (overview) await openOverview(page, mobile)
-    await page.getByRole('button', { name: overview ? 'Sortierung ändern' : 'Nach Tags filtern', exact: true }).click()
+    await page.getByRole('button', { name: /^(Sortierung ändern|Nach Tags filtern)$/, exact: true }).click()
     await page.getByLabel('Tagfilter: Uni', { exact: true }).check()
     await page.getByLabel('Tagfilter: Dringend', { exact: true }).check()
     await page.keyboard.press('Escape')

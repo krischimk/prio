@@ -10,6 +10,8 @@ import { createCloudConflict } from './support/cloudConflict'
 import { openOverview, rememberOverviewTarget } from './support/overview'
 import { checklistParity, tagFilterParity } from './support/checklists'
 import { ratingParity, weightedChecklistParity, compactRatingParity } from './support/ratings'
+import { duplicateTitlesParity } from './support/duplicateTitles'
+import { listSortingParity } from './support/listSorting'
 
 /**
  * Oberflächenparität: Jede Funktion muss in beiden Ansichten erreichbar sein.
@@ -55,6 +57,16 @@ async function changeOrder(page: Page) {
 }
 
 const funktionen: Funktion[] = [
+  {
+    name: 'Listen manuell oder nach Priorität mit und ohne Bereiche sortieren',
+    breit: page => listSortingParity(page, false),
+    telefon: page => listSortingParity(page, true),
+  },
+  {
+    name: 'Gleiche Aufgabennamen listenweise erlauben oder verhindern',
+    breit: page => duplicateTitlesParity(page, false),
+    telefon: page => duplicateTitlesParity(page, true),
+  },
   {
     name: 'Kompakte Bewertungen, persönliche Detailansicht und Prioritätssortierung',
     breit: page => compactRatingParity(page, false),
@@ -374,7 +386,7 @@ const funktionen: Funktion[] = [
     },
   },
   {
-    name: 'Aufgabe bearbeiten: Titel und Beschreibung',
+    name: 'Aufgabe bearbeiten: Titel und Notiz',
     breit: async (page) => {
       await breit.register(page, uniqueEmail('p-bearbeiten-b'))
       await breit.createList(page, 'Haushalt')
@@ -383,7 +395,7 @@ const funktionen: Funktion[] = [
       await openTaskEditor(page, 'Alter Titel')
       const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
       await formular.getByLabel('Titel', { exact: true }).fill('Neuer Titel')
-      await formular.getByLabel('Beschreibung', { exact: true }).fill('Mit Notiz')
+      await formular.getByLabel('Notiz', { exact: true }).fill('Mit Notiz')
       await formular.getByRole('button', { name: 'Speichern' }).click()
 
       const neu = breit.taskItem(page, 'Neuer Titel')
@@ -398,12 +410,12 @@ const funktionen: Funktion[] = [
       await openTaskEditor(page, 'Alter Titel')
       await expect(page.getByRole('dialog', { name: 'Aufgabe' })).toBeVisible()
       await page.getByLabel('Titel', { exact: true }).fill('Neuer Titel')
-      await page.getByLabel('Beschreibung', { exact: true }).fill('Mit Notiz')
+      await page.getByLabel('Notiz', { exact: true }).fill('Mit Notiz')
       await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
       const neu = telefon.taskRow(page, 'Neuer Titel')
       await expect(neu).toBeVisible()
-      // Die ganze Aufgabenfläche enthält auch die Beschreibung.
+      // Die ganze Aufgabenfläche enthält auch die Notiz.
       await expect(telefon.taskZeile(page, 'Neuer Titel')).toContainText('Mit Notiz')
     },
   },
@@ -615,7 +627,7 @@ const funktionen: Funktion[] = [
     },
   },
   {
-    name: 'Beschreibung in der Übersicht auf- und zuklappen',
+    name: 'Notiz in der Übersicht auf- und zuklappen',
     breit: async (page) => {
       await breit.register(page, uniqueEmail('p-beschreibung-b'))
       await breit.createList(page, 'Haushalt')
@@ -624,7 +636,7 @@ const funktionen: Funktion[] = [
       await openTaskEditor(page, 'Einkauf')
       const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
       await formular
-        .getByLabel('Beschreibung', { exact: true })
+        .getByLabel('Notiz', { exact: true })
         .fill('Erster Absatz.\n\nZweiter Absatz.')
       await formular.getByRole('button', { name: 'Speichern' }).click()
 

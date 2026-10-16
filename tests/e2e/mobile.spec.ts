@@ -111,7 +111,7 @@ test('öffnet per Antippen die Detailansicht und ändert den Titel', async ({ pa
   await expect(page.getByRole('dialog', { name: 'Aufgabe' })).toBeVisible()
 
   await page.getByLabel('Titel', { exact: true }).fill('Neuer Titel')
-  await page.getByLabel('Beschreibung', { exact: true }).fill('Mit Notiz')
+  await page.getByLabel('Notiz', { exact: true }).fill('Mit Notiz')
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
   await expect(page.getByRole('dialog', { name: 'Aufgabe' })).toBeHidden()

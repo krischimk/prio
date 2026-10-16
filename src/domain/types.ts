@@ -82,6 +82,7 @@ export interface LocalList extends SyncableRow, LocalOnly {
   /** Gemeinsame Listenregel; nur der Besitzer stellt sie ein, zunächst aus. */
   keep_completed: boolean
   ratings_enabled: boolean
+  allow_duplicate_titles: boolean
   /** Letzte Einführung/Abschaltung der Aufbewahrung; vom Server bestätigt. */
   completion_retention_started_at: IsoDateTime | null
   created_at: IsoDateTime
@@ -122,6 +123,8 @@ export interface LocalTask extends SyncableRow, LocalOnly {
    * genauso – eine neue Wiederholungsart soll keine Datenbankänderung brauchen.
    */
   recurrence: string | null
+  /** Stabile Kennung einer Wiederholungsserie, unabhängig von Titel und Termin. */
+  recurrence_series_id: string | null
   /**
    * Die beim Abhaken entstandene Nachfolgeaufgabe.
    *
@@ -189,9 +192,12 @@ export interface LocalListPreference extends SyncableRow, LocalOnly {
   include_in_overview: boolean
   position: number | null
   hidden: boolean
+  sort_mode: ListSortMode
   created_at: IsoDateTime
 }
-export type RemoteListPreference = Omit<LocalListPreference, 'dirty'>
+export type RemoteListPreference = Omit<LocalListPreference, 'dirty' | 'sort_mode'> & { sort_mode?: ListSortMode }
+
+export type ListSortMode = 'manual' | 'priority' | 'priority_flat'
 
 export type OverviewMode = 'by_list' | 'newest' | 'priority'
 
@@ -244,7 +250,8 @@ export interface LocalReminder {
  * angeblich immer da ist, würde beim Lesen zu einer Lüge – genau dafür steht
  * `parseSections` bereit.
  */
-export type RemoteList = Omit<LocalList, 'dirty' | 'sections' | 'keep_completed' | 'completion_retention_started_at' | 'ratings_enabled'> & {
+export type RemoteList = Omit<LocalList, 'dirty' | 'sections' | 'keep_completed' | 'completion_retention_started_at' | 'ratings_enabled' | 'allow_duplicate_titles'> & {
+  allow_duplicate_titles?: boolean
   ratings_enabled?: boolean
   sections?: ListSection[] | null
   keep_completed?: boolean
@@ -252,7 +259,8 @@ export type RemoteList = Omit<LocalList, 'dirty' | 'sections' | 'keep_completed'
 }
 
 /** Eine Aufgabenzeile vom Server; `section_id` fehlt vor Migration 0013. */
-export type RemoteTask = Omit<LocalTask, 'dirty' | 'section_id' | 'completed_expires_at' | 'expired_at' | 'reopen_context' | 'available_from' | 'checklist' | 'tags' | 'rating'> & {
+export type RemoteTask = Omit<LocalTask, 'dirty' | 'section_id' | 'completed_expires_at' | 'expired_at' | 'reopen_context' | 'available_from' | 'checklist' | 'tags' | 'rating' | 'recurrence_series_id'> & {
+  recurrence_series_id?: string | null
   rating?: TaskRating | null
   checklist?: ChecklistItem[]
   tags?: string[]

@@ -41,17 +41,6 @@ export function ChecklistEditor({ form, ratingsEnabled = false }: { form: TaskFo
       {items.length ? <span className={`text-meta ${numeric}`}>{progress.completed}/{progress.total}</span> : null}
       <ChevronIcon offen={open} className="size-icon-meta shrink-0" />
     </button>
-    {ratingsEnabled && form.werte.rating && items.length > 0 ? <label className="ml-2 flex min-h-11 items-center gap-3 pl-2 text-meta text-ink-muted">
-      <input type="checkbox" className="size-5 shrink-0 accent-brand" checked={linked} onChange={event => {
-        form.setzen('rating', { ...form.werte.rating!, effortFromChecklist: event.target.checked })
-      }} />
-      <span>Checkliste reduziert den Restaufwand</span>
-    </label> : null}
-    {linked && items.length > 0 ? <label className="ml-2 flex min-h-11 items-center gap-3 pl-2 text-meta text-ink-muted">
-      <input type="checkbox" className="size-5 shrink-0 accent-brand" checked={weighted}
-        onChange={event => form.setzen('checklist', event.target.checked ? withChecklistWeights(form.werte.checklist) : withoutChecklistWeights(form.werte.checklist))} />
-      <span>Checklistenpunkte unterschiedlich gewichten</span>
-    </label> : null}
     {open ? <div id={`${group}-items`} className="ml-2 min-w-0 border-l border-line pl-2">
       <DragDropProvider sensors={defaults => [...defaults.filter(sensor => sensor !== PointerSensor && sensor !== KeyboardSensor), pointer, keyboard]}
         modifiers={[RestrictToWindow]}
@@ -68,13 +57,23 @@ export function ChecklistEditor({ form, ratingsEnabled = false }: { form: TaskFo
           onWeight={value => form.setzen('checklist', setChecklistWeight(form.werte.checklist, item.id, value))}
           onChange={patch => change(item.id, patch)} onDelete={() => form.setzen('checklist', deleteChecklistItem(form.werte.checklist, item.id, new Date().toISOString()))} />)}</ul>
       </DragDropProvider>
-    </div> : null}
       <div className="ml-2 flex items-center gap-1 pl-2">
         <IconButton aria-label="Checklistenpunkt hinzufügen" variant="iconMuted" disabled={!form.werte.checklistText.trim() || form.busy} onClick={add}><PlusIcon /></IconButton>
         <input ref={addInput} aria-label="Neuer Checklistenpunkt" placeholder="Neuer Checklistenpunkt…" className={checklistInput}
           value={form.werte.checklistText} onChange={event => form.setzen('checklistText', event.target.value)}
           onKeyDown={event => { if (event.key === 'Enter' && !event.nativeEvent.isComposing) { event.preventDefault(); add() } }} />
       </div>
+      {ratingsEnabled && form.werte.rating && items.length > 0 ? <label className="flex min-h-11 items-center gap-3 pl-2 text-meta text-ink-muted">
+        <input type="checkbox" className="size-5 shrink-0 accent-brand" checked={linked}
+          onChange={event => form.setzen('rating', { ...form.werte.rating!, effortFromChecklist: event.target.checked })} />
+        <span>Checkliste reduziert den Restaufwand</span>
+      </label> : null}
+      {linked && items.length > 0 ? <label className="flex min-h-11 items-center gap-3 pl-2 text-meta text-ink-muted">
+        <input type="checkbox" className="size-5 shrink-0 accent-brand" checked={weighted}
+          onChange={event => form.setzen('checklist', event.target.checked ? withChecklistWeights(form.werte.checklist) : withoutChecklistWeights(form.werte.checklist))} />
+        <span>Checklistenpunkte unterschiedlich gewichten</span>
+      </label> : null}
+    </div> : null}
   </div>
 }
 

@@ -25,6 +25,7 @@ export function localTask(overrides: Partial<LocalTask> = {}): LocalTask {
     expired_at: null,
     reopen_context: null,
     recurrence: null,
+    recurrence_series_id: null,
     successor_id: null,
     reminders: [],
     position: 0,
@@ -51,6 +52,7 @@ export function localList(overrides: Partial<LocalList> = {}): LocalList {
     sections: [],
     keep_completed: false,
     ratings_enabled: false,
+    allow_duplicate_titles: true,
     completion_retention_started_at: null,
     created_at: T0,
     updated_at: T0,
@@ -85,7 +87,7 @@ export function remoteMember(overrides: Partial<RemoteListMember> = {}): RemoteL
 export { createFixedClock }
 
 export function localListPreference(overrides: Partial<LocalListPreference> = {}): LocalListPreference {
-  return { list_id: 'list-1', user_id: 'user-1', include_in_overview: false, position: null, hidden: false, created_at: T0, updated_at: T0, deleted_at: null, dirty: 0, ...overrides }
+  return { list_id: 'list-1', user_id: 'user-1', include_in_overview: false, position: null, hidden: false, sort_mode: 'manual', created_at: T0, updated_at: T0, deleted_at: null, dirty: 0, ...overrides }
 }
 
 export function localUserPreference(overrides: Partial<LocalUserPreference> = {}): LocalUserPreference {

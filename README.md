@@ -104,10 +104,10 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
   Gruppierung ist nur die erste Voreinstellung. Die gewählte Ansicht bleibt
   nach Neustart erhalten und wird zwischen Geräten synchronisiert.
 * Auf dem Desktop werden neue Aufgaben in beiden Ansichten direkt im sichtbaren
-  Titelfeld mit Enter angelegt. Beschreibung, Termin und Erinnerungen klappen
+  Titelfeld mit Enter angelegt. Notiz, Termin und Erinnerungen klappen
   beim Arbeiten mit dem Titelfeld auf und verwenden dieselben Felder wie der
   Editor. Seltene Aktionen liegen unter „Mehr Optionen“.
-  Strg+Enter legt die Aufgabe auch aus der Beschreibung heraus an; Enter allein
+  Strg+Enter legt die Aufgabe auch aus der Notiz heraus an; Enter allein
   fügt dort einen Zeilenumbruch ein. Nach erfolgreichem Anlegen steht der Fokus
   wieder im leeren Titelfeld, damit die nächste Eingabe sofort beginnen kann.
   In der Gesamtansicht kann zuerst geschrieben werden. Erst das Hinzufügen
@@ -185,11 +185,19 @@ versehentlich Zugriff. Die Cloud braucht die Sammelmigration einschließlich
   Griff und Löschen gibt es ausschließlich dort; in der breiten Ansicht erscheinen
   sie bei Hover oder Tastaturfokus. In der Aufgabenliste werden nur Häkchen bedient.
   Neue Wiederholungen übernehmen die Punkttexte und Reihenfolge, mit offenen Häkchen.
+* **Gleiche Aufgabennamen erlauben** ist zunächst für alle Listen eingeschaltet.
+  Schaltet der Besitzer es aus, zählen offene und erledigte Aufgaben zusammen;
+  Großschreibung und zusätzliche Leerzeichen machen keinen Unterschied. Vorhandene
+  Duplikate bleiben erhalten und bearbeitbar. Anlegen, Umbenennen, Verschieben und
+  Wiederherstellen prüfen neue Kollisionen lokal und unter einer Listensperre in
+  der Cloud. Automatische Wiederholungen derselben Serie bleiben möglich; eine
+  manuell angelegte zweite Serie mit gleichem Namen ist kein Ausnahmefall.
 * Bewertungen sind optional. Zunächst ist nur „Wichtigkeit einschätzen“ sichtbar;
   der erste Reglerklick aktiviert Wichtigkeit, Aufwand und Dringlichkeit gemeinsam.
   Die übrigen manuellen Startwerte liegen sichtbar in der Mitte. Eine Fälligkeit
   allein bewertet nichts. Standardmäßig zeigt die Aufgabenliste nur die daraus
-  berechnete Priorität. Im Formular stehen Wichtigkeit und Aufwand sowie ohne
+  berechnete Priorität als Balken direkt unter dem Titel. Der Farbverlauf liegt
+  fest über der Gesamtbreite; kleine Werte zeigen nur seinen Anfang. Im Formular stehen Wichtigkeit und Aufwand sowie ohne
   Fälligkeit die Dringlichkeit; mit Fälligkeit bleibt der manuelle Modus unter
   „Mehr Optionen“ erreichbar. Unter **Konto → Darstellung → Detaillierte
   Bewertungen anzeigen** schaltet jeder persönlich für die ganze App alle vier
@@ -200,6 +208,12 @@ versehentlich Zugriff. Die Cloud braucht die Sammelmigration einschließlich
   wird nicht verändert. Der Listenbesitzer kann Bewertungen ausblenden, ohne
   Daten zu löschen. Bestehende Listen starten
   ausgeschaltet, neue Listen eingeschaltet.
+* In Listen mit Bewertungen lässt sich zwischen manueller Reihenfolge und
+  Priorität wechseln. Mit Bereichen gibt es zwei Prioritätsansichten: innerhalb
+  der Bereiche (Bereiche selbst nach ihrer höchsten Aufgabenpriorität) oder alle
+  Aufgaben gemeinsam mit Bereichsangabe. Die Auswahl ist persönlich, je Liste
+  synchronisiert und startet manuell. Umschalten verändert keine gespeicherten
+  Positionen. Ohne Bewertungen gilt wieder die manuelle Ansicht.
 * Automatische Dringlichkeit steigt mit abnehmender Restzeit zunächst langsam,
   dann schneller. Mehr Aufwand zieht den Anstieg und das Maximum vor. Erstellung
   und Alter beeinflussen sie nicht. „Manuell“ friert den aktuellen Wert ein und
@@ -210,8 +224,8 @@ versehentlich Zugriff. Die Cloud braucht die Sammelmigration einschließlich
   Testparameter, keine Zusage über reale Arbeitsstunden.
 * Checklisten reduzieren **standardmäßig** den verbleibenden Aufwand bewerteter
   Aufgaben. Der Aufwandregler stellt dann den **Gesamtaufwand** ein, die Anzeige
-  zeigt in der Detailansicht **Restaufwand**. Im Editor lässt sich diese Kopplung
-  ausschalten. Zunächst zählen alle Punkte gleich. Nur bei eingeschalteter
+  zeigt in der Detailansicht **Restaufwand**. Die beiden Optionen stehen unter den Punkten und klappen mit der Checkliste
+  ein. Im Editor lässt sich diese Kopplung ausschalten. Zunächst zählen alle Punkte gleich. Nur bei eingeschalteter
   Kopplung erscheint die zusätzliche, standardmäßig ausgeschaltete Option
   „Checklistenpunkte unterschiedlich gewichten“. Sie blendet die kleinen Regler
   ein; Ausschalten entfernt individuelle Gewichte und zählt wieder gleichmäßig.
@@ -226,6 +240,8 @@ versehentlich Zugriff. Die Cloud braucht die Sammelmigration einschließlich
   jedem Textfeld auch noch nicht einzeln bestätigte Punkte und Tags. Nach dem
   Anlegen am PC liegt der Fokus wieder im Titelfeld. Die Hauptaufgabe lässt sich
   auch am Checklistenbereich ziehen; das Ablegen unter der Liste fügt hinten an.
+* Tags sind das letzte reguläre Formularfeld vor der Trennlinie und „Mehr Optionen“.
+  „Bewertung entfernen“ steht unter „Mehr Optionen“ und verkürzt keinen Regler.
 * Tagfilter und Aufgabenzähler stehen in der breiten Ansicht unter der Erfassung.
   Tags stehen rechts in der letzten vorhandenen Informationszeile; lange
   Tagzeilen werden gekürzt und zeigen beim Hover alle Namen.
@@ -259,7 +275,7 @@ versehentlich Zugriff. Die Cloud braucht die Sammelmigration einschließlich
   Kommentare
 
 Der Aufgabeneditor verwendet kompakte, aufklappbare Terminangaben und eine
-Beschreibung, deren Höhe dem Text folgt. Kalender beginnen montags und zeigen
+Notiz, deren Höhe dem Text folgt. Kalender beginnen montags und zeigen
 deutsche Monats-/Datumsnamen; Eingabe `TT.MM.JJJJ`, Uhrzeit `HH:mm` in der
 lokalen Gerätezeitzone. Erinnerungsvorlagen folgen der Fälligkeit auch bei
 einmaligen Aufgaben; eigene feste Zeitpunkte bleiben unabhängig. „Mehr Optionen“ enthält Bereich,
@@ -649,7 +665,7 @@ Folgelaufs können erneut genau einen weiteren Lauf vormerken.
 
 Offene Aufgaben haben einen lokalen Zustandsindex. Ein eingeklappter Erledigt-Bereich
 fragt nur die Anzahl ab, auch mit UND-Tagfilter; Inhalte werden erst beim Öffnen
-nachgeladen. Der lokale Tagindex liefert Vorschläge ohne Beschreibungen oder
+nachgeladen. Der lokale Tagindex liefert Vorschläge ohne Notizen oder
 Checklisten zu lesen. Die abgeleiteten Indexwerte verlassen IndexedDB nicht.
 
 Geräteuhren bestimmen keinen Gewinner. Bestätigte Serverzeilen werden exakt
@@ -872,7 +888,7 @@ erreichbaren Aufgabenbereich.
 ├──────────────────────────────┤
 │ 2 offene Aufgaben            │  ← zählt nur, was in der Liste steht
 │ ☐  Rechnung Strom bezahlen   │
-│    Abschlag Q2                │  ← Titel, darunter Beschreibung,
+│    Abschlag Q2                │  ← Titel, darunter Notiz,
 │    Mehr                       │    einzeilig, mit „Mehr" zum Aufklappen
 │    15.02.2027, 18:30         │    darunter Fälligkeit
 │ ☐  Wohnung saugen            │
@@ -935,7 +951,7 @@ größer als Aufgabentitel, Listenüberschriften in der Gesamtansicht eine Stufe
 darüber. „Erledigt“ behält seine zurückgenommene Rolle.
 
 Der Titel öffnet den gemeinsamen Editor, die Checkbox erledigt die Aufgabe.
-Beschreibung und Metadaten bleiben direkt lesbar. Verschieben, Löschen und
+Notiz und Metadaten bleiben direkt lesbar. Verschieben, Löschen und
 „Reihenfolge ändern“ liegen im Editor. Umsortieren ist damit auch ohne Ziehen
 möglich; der Langdruck bleibt ein zusätzlicher Weg auf dem Telefon.
 
@@ -1213,16 +1229,16 @@ Zugeklappt oder offen ist **Ansichtssache je Gerät**: Das steht in
 
 ### Aufgabenbeschreibung in der Übersicht
 
-Eine Beschreibung steht in der Liste **einzeilig**. Die Vorschau endet am
+Eine Notiz steht in der Liste **einzeilig**. Die Vorschau endet am
 ersten Zeilenumbruch; ein Auslassungszeichen weist auf weiteren Text hin.
 Folgende Absätze werden erst beim Aufklappen sichtbar. Ein Klick auf *Mehr* klappt sie auf,
 *Weniger* wieder zu; aufgeklappt ist die Höhe auf rund 15 Zeilen begrenzt,
-danach wird gescrollt. Eine sehr lange Beschreibung soll die Liste nicht in
+danach wird gescrollt. Eine sehr lange Notiz soll die Liste nicht in
 eine Textseite verwandeln.
 
 Der Schalter erscheint bei weiteren Zeilen oder einer abgeschnittenen ersten
 Zeile. Die verfügbare Breite wird erneut gemessen, wenn sich das Fenster ändert.
-Das Aufklappen betrifft ausschließlich die Beschreibung und öffnet keinen Editor.
+Das Aufklappen betrifft ausschließlich die Notiz und öffnet keinen Editor.
 
 **Systemleisten (Edge-to-Edge).** Android 15+ erzwingt Edge-to-Edge für Apps ab
 `targetSdk 35`. Die App aktiviert deshalb in `MainActivity.onCreate`
