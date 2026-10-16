@@ -24,13 +24,17 @@ export function RatingSlider({ label, value, onChange, disabled = false, unassig
       {actions}
       <span aria-hidden="true" className="ml-auto shrink-0 text-label text-ink-faint">Gering → Hoch</span>
     </div> : null}
-    <div className={compact ? undefined : 'pl-8'}><input id={id} type="range" min="0" max={max} step={max / 100} value={value} disabled={disabled}
+    <div className={compact ? undefined : 'pl-8'}><div className="relative">
+    {!compact ? <span aria-hidden="true" className={`rating-ruler ${disabled ? 'opacity-40' : ''}`}>{[1, 2, 3, 4, 5, 6, 7].map(tick => <span key={tick}
+      className={tick === 4 ? 'rating-tick-half' : tick % 2 === 0 ? 'rating-tick-quarter' : 'rating-tick-eighth'}
+      style={{ left: `calc(0.625rem + (100% - 1.25rem) * ${tick / 8})` }} />)}</span> : null}
+    <input id={id} type="range" min="0" max={max} step={max / 100} value={value} disabled={disabled}
       aria-label={compact ? label : undefined}
       title={compact ? `${Math.round(value * 100)} % des Gesamtaufwands. ${hint}` : undefined}
       aria-valuetext={unassigned ? 'Noch nicht bewertet' : compact ? `${Math.round(value * 100)} Prozent des Gesamtaufwands` : level(value)} aria-describedby={`${id}-hint`}
       className={`rating-slider w-full ${unassigned ? 'rating-unassigned' : ''}`} style={fillStyle(unassigned ? 0 : value / max * 10)}
       onChange={event => onChange(event.currentTarget.valueAsNumber)}
-      onPointerUp={event => { if (unassigned) onChange(event.currentTarget.valueAsNumber) }} /></div>
+      onPointerUp={event => { if (unassigned) onChange(event.currentTarget.valueAsNumber) }} /></div></div>
     <span id={`${id}-hint`} className="sr-only">{hint}</span>
   </div>
 }

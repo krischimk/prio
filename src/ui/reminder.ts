@@ -56,11 +56,8 @@ export interface ReminderLabel {
 }
 
 /**
- * Die Erinnerungen als Zeilen unter einer Aufgabe – **eine je Erinnerung**.
- *
- * Leer, wenn es nichts zu sagen gibt: ohne Erinnerung, oder wenn eine ohnehin
- * zur Fälligkeit passiert – dann stünde in jeder Zeile dasselbe wie in der
- * Zeile darüber.
+ * Einzelheiten für den Hinweis an der gemeinsamen Erinnerungsglocke.
+ * Auch Erinnerungen zur Fälligkeit zählen: Die Glocke zeigt ihre Aktivierung.
  */
 export function describeReminders(task: LocalTask, viewerId: string | null = null): ReminderLabel[] {
   const dueMs = task.due_at === null ? null : Date.parse(task.due_at)
@@ -73,14 +70,7 @@ export function describeReminders(task: LocalTask, viewerId: string | null = nul
     const atMs = Date.parse(at)
     if (!Number.isFinite(atMs)) return []
 
-    // Eine stummgeschaltete Erinnerung bleibt sichtbar – sonst wüsste man nicht
-    // mehr, warum man nicht geweckt wird. Sie wird nur als solche benannt.
-    //
-    // Deshalb wird sie auch dann gezeigt, wenn sie genau zur Fälligkeit
-    // passiert: Für die anderen wäre das eine Dublette zur Zeile darüber, für
-    // die stummgeschaltete Person ist es die einzige Spur ihrer Entscheidung.
     const muted = viewerId !== null && isMutedFor(reminder, viewerId)
-    if (dueMs !== null && dueMs === atMs && !muted) return []
     return [
       {
         text: muted ? `${formatReminderLabel(at)} · für mich stumm` : formatReminderLabel(at),

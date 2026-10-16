@@ -28,6 +28,8 @@ export function TaskFacts({ task, currentUserId, afterTitle }: TaskFactsProps) {
   const wiederholung = describeRecurrence(task.recurrence)
   const upcoming = isUpcomingRepeat(task)
   const erinnerungen = describeReminders(task, currentUserId)
+  const allMuted = erinnerungen.length > 0 && erinnerungen.every(reminder => reminder.muted)
+  const reminderHint = `Erinnerungen: ${erinnerungen.map(reminder => reminder.text).join(' · ')}`
 
   return (
     <>
@@ -52,21 +54,16 @@ export function TaskFacts({ task, currentUserId, afterTitle }: TaskFactsProps) {
         </span>
       ) : null}
 
-      {erinnerungen.map((erinnerung, index) => (
-        <span
-          key={index}
-          className={`flex items-center gap-1 text-meta ${numeric} ${
-            erinnerung.afterDue && !erinnerung.muted ? attentionText : mutedText
-          }`}
-        >
-          {erinnerung.muted ? (
+      {erinnerungen.length ? <Hint text={reminderHint}>
+        <span role="img" aria-label={reminderHint}
+          className={`inline-flex items-center text-meta ${erinnerungen.some(reminder => reminder.afterDue && !reminder.muted) ? attentionText : mutedText}`}>
+          {allMuted ? (
             <BellOffIcon className="size-icon-meta shrink-0" />
           ) : (
             <BellIcon className="size-icon-meta shrink-0" />
           )}
-          {erinnerung.text}
         </span>
-      ))}
+      </Hint> : null}
       </span> : null}
     </>
   )

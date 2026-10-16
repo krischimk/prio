@@ -7,9 +7,9 @@ describe('Relative Fälligkeit', () => {
     ['2026-10-14T12:00:30Z', 'In weniger als einer Minute'],
     ['2026-10-14T12:05:00Z', 'In 5 Minuten'],
     ['2026-10-14T15:20:00Z', 'In 3 Stunden und 20 Minuten'],
-    ['2026-10-15T13:20:00Z', 'In 1 Tag'],
-    ['2026-10-17T12:00:00Z', 'In 3 Tagen'],
-    ['2026-10-31T12:00:00Z', 'In 2 Wochen und 3 Tagen'],
+    ['2026-10-15T13:20:00Z', 'In 1 Tag (Do)'],
+    ['2026-10-17T12:00:00Z', 'In 3 Tagen (Sa)'],
+    ['2026-10-31T12:00:00Z', 'In 2 Wochen und 3 Tagen (Sa)'],
     ['2026-12-28T12:00:00Z', 'In 2 Monaten und 2 Wochen'],
     ['2029-01-14T12:00:00Z', 'In 2 Jahren und 3 Monaten'],
   ])('zeigt %s als %s', (due, text) => {
@@ -21,6 +21,17 @@ describe('Relative Fälligkeit', () => {
   it('rechnet mit Kalender-Monaten und begrenzt am Monatsende', () => {
     expect(formatDueLabel('2026-02-28T12:00:00Z', false, Date.parse('2026-01-31T12:00:00Z')).text).toBe('In 1 Monat')
     expect(formatDueLabel('2025-02-28T12:00:00Z', false, Date.parse('2024-02-29T12:00:00Z')).text).toBe('In 1 Jahr')
+  })
+  it('zählt Kalendertage statt abgerundeter 24-Stunden-Blöcke', () => {
+    const start = new Date(2026, 9, 16, 20)
+    const due = new Date(2026, 9, 19, 9)
+    expect(formatDueLabel(due.toISOString(), false, start.getTime()).text).toBe('In 3 Tagen (Mo)')
+    expect(formatDueLabel(start.toISOString(), false, due.getTime()).text).toBe('Seit 3 Tagen überfällig (Fr)')
+  })
+  it('zeigt unter 24 Stunden weiterhin Stunden und Minuten, auch über Mitternacht', () => {
+    const start = new Date(2026, 9, 16, 23)
+    const due = new Date(2026, 9, 17, 22, 30)
+    expect(formatDueLabel(due.toISOString(), false, start.getTime()).text).toBe('In 23 Stunden und 30 Minuten')
   })
   it('unterscheidet laufende und überschrittene Fälligkeit', () => {
     expect(formatDueLabel('2026-10-14T12:00:00Z', false, now)).toMatchObject({ text: 'Jetzt fällig', overdue: false })

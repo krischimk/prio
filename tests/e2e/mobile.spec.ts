@@ -1,3 +1,4 @@
+import { expectReminders } from './support/reminders'
 import { addReminder, fillDateTime, moreOptions, setDueAt } from './support/taskForms'
 import { openTaskEditor } from './support/helpers'
 import { listAction } from './support/helpers'
@@ -419,7 +420,7 @@ test('setzt auf dem Telefon einen eigenen Vorlauf für eine wiederkehrende Aufga
   await expect(page.getByText(/1 Std 30 Min vorher/)).toBeVisible()
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
-  await expect(taskRow(page, 'Zähne putzen')).toContainText('Erinnert:')
+  await expectReminders(taskRow(page, 'Zähne putzen'), 1)
 })
 
 test('legt auf dem Telefon mehrere Erinnerungen an', async ({ page }) => {
@@ -443,8 +444,8 @@ test('legt auf dem Telefon mehrere Erinnerungen an', async ({ page }) => {
   await expect(page.getByLabel('Erinnerung', { exact: true })).toHaveCount(2)
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
-  // Beide stehen als eigene Zeile unter der Aufgabe.
-  await expect(taskRow(page, 'Medikament').getByText('Erinnert:')).toHaveCount(2)
+  // Eine Glocke hält beide Zeitpunkte im Hinweis verfügbar.
+  await expectReminders(taskRow(page, 'Medikament'), 2)
 })
 
 test('entfernt auf dem Telefon eine von zwei Erinnerungen', async ({ page }) => {
@@ -465,7 +466,7 @@ test('entfernt auf dem Telefon eine von zwei Erinnerungen', async ({ page }) => 
   await expect(page.getByLabel('Erinnerung', { exact: true })).toHaveCount(1)
 
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
-  await expect(taskRow(page, 'Gießen').getByText('Erinnert:')).toHaveCount(1)
+  await expectReminders(taskRow(page, 'Gießen'), 1)
 })
 
 test('nimmt einen Vorlauf auf dem Telefon in die Schnellauswahl auf', async ({ page }) => {
@@ -508,7 +509,7 @@ test('erlaubt auf dem Telefon eine Erinnerung ohne Fälligkeitsdatum', async ({ 
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
   const zeile = taskRow(page, 'Jonna anrufen')
-  await expect(zeile).toContainText('Erinnert:')
+  await expectReminders(zeile, 1)
   await expect(zeile).not.toContainText('Fällig:')
 })
 
@@ -549,7 +550,7 @@ test('schaltet eine Erinnerung auf dem Telefon nur für sich stumm', async ({ pa
   ).toBeVisible()
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
-  await expect(taskRow(page, 'Müll rausbringen').getByText('für mich stumm')).toHaveCount(1)
+  await expect(taskRow(page, 'Müll rausbringen').getByRole('img', { name: /^Erinnerungen:/ })).toHaveAttribute('aria-label', /für mich stumm/)
 })
 
 /**

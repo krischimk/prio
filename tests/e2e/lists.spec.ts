@@ -1,3 +1,4 @@
+import { expectReminders } from './support/reminders'
 import { addReminder, fillDateTime, setDueAt } from './support/taskForms'
 import { closeListSettings } from './support/helpers'
 import { listAction } from './support/helpers'
@@ -187,7 +188,7 @@ test('setzt in der breiten Ansicht einen eigenen Vorlauf für eine wiederkehrend
   await expect(formular.getByText(/4 Std vorher/)).toBeVisible()
   await formular.getByRole('button', { name: 'Speichern' }).click()
 
-  await expect(zeile).toContainText('Erinnert:')
+  await expectReminders(zeile, 1)
 })
 
 test('legt in der breiten Ansicht mehrere Erinnerungen an', async ({ page }) => {
@@ -213,7 +214,7 @@ test('legt in der breiten Ansicht mehrere Erinnerungen an', async ({ page }) => 
   await expect(formular.getByLabel('Erinnerung', { exact: true })).toHaveCount(2)
   await formular.getByRole('button', { name: 'Speichern' }).click()
 
-  await expect(zeile.getByText('Erinnert:')).toHaveCount(2)
+  await expectReminders(zeile, 2)
 })
 
 test('erlaubt in der breiten Ansicht eine Erinnerung ohne Fälligkeitsdatum', async ({ page }) => {
@@ -234,7 +235,7 @@ test('erlaubt in der breiten Ansicht eine Erinnerung ohne Fälligkeitsdatum', as
   await fillDateTime(formular, 'Erinnerung am', morgenUm(17))
   await formular.getByRole('button', { name: 'Speichern' }).click()
 
-  await expect(zeile).toContainText('Erinnert:')
+  await expectReminders(zeile, 1)
   await expect(zeile).not.toContainText('Fällig:')
 })
 
@@ -281,8 +282,8 @@ test('schaltet eine Erinnerung in der breiten Ansicht nur für sich stumm', asyn
 
   // In der Liste steht es dran – sonst wüsste man nicht, warum man nicht
   // geweckt wird.
-  await expect(zeile.getByText('für mich stumm')).toHaveCount(1)
-  await expect(zeile.getByText('Erinnert:')).toHaveCount(2)
+  await expect(zeile.getByRole('img', { name: /^Erinnerungen:/ })).toHaveAttribute('aria-label', /für mich stumm/)
+  await expectReminders(zeile, 2)
 })
 
 /**

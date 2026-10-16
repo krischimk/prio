@@ -64,11 +64,10 @@ describe('Erinnerungen einer Aufgabe beschreiben', () => {
     expect(describeReminders(localTask({ due_at: DUE }))).toEqual([])
   })
 
-  it('schweigt, wenn die Erinnerung ohnehin zur Fälligkeit passiert', () => {
-    // Sonst stünde in jeder Zeile dasselbe wie in der Zeile darüber.
+  it('benennt auch eine Erinnerung zur Fälligkeit für die Glocke', () => {
     expect(
       describeReminders(localTask({ due_at: DUE, reminders: [{ form: 'absolute', at: DUE }] })),
-    ).toEqual([])
+    ).toHaveLength(1)
   })
 
   it('nennt den Zeitpunkt, wenn er von der Fälligkeit abweicht', () => {
@@ -125,7 +124,7 @@ describe('Erinnerungen einer Aufgabe beschreiben', () => {
     // stummgeschaltete Person ist sie die einzige Spur ihrer Entscheidung.
     const task = localTask({ due_at: DUE, reminders: [{ form: 'absolute', at: DUE, mutedBy: ['a'] }] })
     expect(describeReminders(task, 'a')).toHaveLength(1)
-    expect(describeReminders(task, 'b')).toHaveLength(0)
+    expect(describeReminders(task, 'b')).toHaveLength(1)
   })
 
   it('benennt sie nicht für andere', () => {
@@ -148,12 +147,12 @@ describe('Erinnerungen einer Aufgabe beschreiben', () => {
     expect(labels[0]?.afterDue).toBe(false)
   })
 
-  it('schweigt bei einem Vorlauf von 0', () => {
+  it('benennt auch einen Vorlauf von 0 für die Glocke', () => {
     expect(
       describeReminders(
         localTask({ due_at: DUE, recurrence: 'daily', reminders: [{ form: 'offset', minutes: 0 }] }),
       ),
-    ).toEqual([])
+    ).toHaveLength(1)
   })
 })
 

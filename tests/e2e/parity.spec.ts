@@ -1,3 +1,4 @@
+import { expectReminders } from './support/reminders'
 import { usernameFor } from './support/helpers'
 import { addReminder, expectOverviewMode, moreOptions, setDueAt, setOverviewMode } from './support/taskForms'
 import { openTaskEditor } from './support/helpers'
@@ -534,7 +535,7 @@ const funktionen: Funktion[] = [
       await formular.getByLabel('Erinnerung', { exact: true }).nth(1).selectOption('60')
       await formular.getByRole('button', { name: 'Speichern' }).click()
 
-      await expect(breit.taskItem(page, 'Medikament').getByText('Erinnert:')).toHaveCount(2)
+      await expectReminders(breit.taskItem(page, 'Medikament'), 2)
     },
     telefon: async (page) => {
       await telefon.register(page, uniqueEmail('p-erinnerungen-t'))
@@ -550,7 +551,7 @@ const funktionen: Funktion[] = [
       await page.getByLabel('Erinnerung', { exact: true }).nth(1).selectOption('60')
       await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
-      await expect(telefon.taskRow(page, 'Medikament').getByText('Erinnert:')).toHaveCount(2)
+      await expectReminders(telefon.taskRow(page, 'Medikament'), 2)
     },
   },
   {
@@ -590,7 +591,7 @@ const funktionen: Funktion[] = [
       ).toBeVisible()
       await erneut.getByRole('button', { name: 'Speichern' }).click()
 
-      await expect(zeile.getByText('für mich stumm')).toHaveCount(1)
+      await expect(zeile.getByRole('img', { name: /^Erinnerungen:/ })).toHaveAttribute('aria-label', /für mich stumm/)
     },
     telefon: async (page, request) => {
       const mitglied = uniqueEmail('p-stumm-t-mitglied')
@@ -623,7 +624,7 @@ const funktionen: Funktion[] = [
       ).toBeVisible()
       await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
-      await expect(telefon.taskRow(page, 'Müll rausbringen').getByText('für mich stumm')).toHaveCount(1)
+      await expect(telefon.taskRow(page, 'Müll rausbringen').getByRole('img', { name: /^Erinnerungen:/ })).toHaveAttribute('aria-label', /für mich stumm/)
     },
   },
   {

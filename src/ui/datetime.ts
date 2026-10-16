@@ -117,7 +117,8 @@ export function formatDueLabel(dueAt: string, completed: boolean, now = Date.now
   const past = due.getTime() < now
   const overdue = !completed && past
   const span = relativeTimeSpan(past ? due : new Date(now), past ? new Date(now) : due)
-  const text = due.getTime() === now ? 'Jetzt fällig' : overdue ? `Seit ${span} überfällig` : `${past ? 'Vor' : 'In'} ${span}`
+  const weekday = span.includesDays ? ` (${due.toLocaleDateString('de-DE', { weekday: 'short' }).replace(/\.$/, '')})` : ''
+  const text = due.getTime() === now ? 'Jetzt fällig' : (overdue ? `Seit ${span.text} überfällig` : `${past ? 'Vor' : 'In'} ${span.text}`) + weekday
   return { text, absoluteText, overdue }
 }
 
