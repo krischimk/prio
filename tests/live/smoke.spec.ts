@@ -90,9 +90,10 @@ test('die veröffentlichte Fassung startet, meldet sich an und gleicht ab', asyn
     expect(inhalt, `Verdächtiger Text: ${verdacht}`).not.toContain(verdacht)
   }
 
-  // Aufräumen: die Prüfliste wieder entfernen. Das Menü ist offen, also erst
-  // schließen – die Listeneinstellungen öffnet ein Tippen auf den Listennamen.
-  await page.keyboard.press('Escape')
+  // Aufräumen: das Menü ausdrücklich schließen. Ein eingeblendeter Hinweis
+  // verarbeitet Escape zuerst; die Listenverwaltung liegt dann noch darunter.
+  await page.getByRole('button', { name: 'Menü schließen', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: 'Menü', exact: true })).toBeHidden()
   await page.getByTestId('app-bar-title').click()
   await expect(page.getByRole('dialog', { name: 'Liste verwalten' })).toBeVisible()
   // Kein Bestätigungsdialog mehr: Löschen wirkt sofort, die Rückgängig-Leiste
