@@ -73,8 +73,8 @@ check('Teilen per Benutzername schützt Besitz und gibt nur verbundene Namen her
     insert into public.lists(id,owner_id,name) values('${temporary}','${owner}','Namen prüfen');
     set local role authenticated;set local request.jwt.claim.sub='${owner}';
     select public.share_list_by_username('${temporary}','MEMBER_Name');
-    select username from public.co_member_contacts();rollback;`)
-  assert.equal(result,`${member}\nmember_name`)
+    select username || ':' || (email='')::text from public.co_member_contacts();rollback;`)
+  assert.equal(result,`${member}\nmember_name:true`)
   sql(`insert into public.lists(id,owner_id,name) values('${temporary}','${owner}','Veralteter Name')`)
   assert.throws(() => sql(actorSql(owner,`select public.share_list_by_username('${temporary}','member_name','${stranger}')`)), /anderen Konto/)
   assert.equal(sql(`select count(*) from public.list_members where list_id='${temporary}'`),'0')

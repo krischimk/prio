@@ -7,8 +7,8 @@ import { normalizeUsername, validUsername } from '../domain/username'
  *
  * Für Capacitor vorbereitet:
  *  - `detectSessionInUrl: false`, weil Magic-Links/OAuth-Weiterleitungen in
- *    einer Capacitor-App eigene Deep-Link-Behandlung bräuchten. Version 0.1
- *    nutzt ausschließlich E-Mail + Passwort.
+ *    einer Capacitor-App eigene Deep-Link-Behandlung bräuchten. Passwort-Links
+ *    öffnen stattdessen den eigenständigen Web-Weg `/konto/passwort`.
  *  - `persistSession: true` speichert die Sitzung in `localStorage`, das auch
  *    im Capacitor-WebView dauerhaft vorhanden ist.
  *  - Es werden keine Browser-APIs benutzt, die im WebView fehlen.
@@ -91,7 +91,16 @@ function classifyAuthError(error: unknown): AuthError {
   return new AuthError('unknown', message, { cause: error })
 }
 
-export function createSupabaseAuthPort(client: SupabaseClient): AuthPort {
+function recoveryError(error: unknown): AuthError {
+  const classified = classifyAuthError(error)
+  return classified.kind === 'offline' ? classified
+    : new AuthError('recovery-link-invalid', 'recovery-link-invalid', { cause: error })
+}
+
+export function createSupabaseAuthPort(client: SupabaseClient, resetRedirectUrl?: string): AuthPort {
+  // React kann die Initialisierung im Entwicklungslauf zweimal anfordern.
+  // Ein Einmalcode wird dabei genau einmal beim Auth-Server eingelöst.
+  let recoveryAttempt: Promise<AuthUser> | null = null
   async function checkUsername(value: string) {
     const username = normalizeUsername(value)
     if (!validUsername(username)) throw new AuthError('username-invalid', 'username-invalid')
@@ -101,6 +110,37 @@ export function createSupabaseAuthPort(client: SupabaseClient): AuthPort {
     return username
   }
   return {
+    async requestPasswordReset(email) {
+      const { error } = await client.auth.resetPasswordForEmail(email.trim(), { redirectTo: resetRedirectUrl })
+      if (error) throw classifyAuthError(error)
+    },
+
+    completePasswordRecovery(url) {
+      recoveryAttempt ??= (async () => {
+        const address = new URL(url)
+        const hash = new URLSearchParams(address.hash.slice(1))
+        if (hash.has('error') || address.searchParams.has('error')) throw new AuthError('recovery-link-invalid', 'recovery-link-invalid')
+        const code = address.searchParams.get('code')
+        const access = hash.get('access_token'), refresh = hash.get('refresh_token')
+        if (code || (hash.get('type') === 'recovery' && access && refresh)) {
+          const result = code ? await client.auth.exchangeCodeForSession(code)
+            : await client.auth.setSession({ access_token: access!, refresh_token: refresh! })
+          if (result.error) throw recoveryError(result.error)
+        } else if (hash.size || address.searchParams.size) throw new AuthError('recovery-link-invalid', 'recovery-link-invalid')
+        // Nach Neuladen der bereits bereinigten Seite ist die bestätigte
+        // Sitzung weiter gültig. Der Server prüft sie erneut.
+        const { data, error } = await client.auth.getUser()
+        const user = toAuthUser(data.user)
+        if (error || !user) throw recoveryError(error)
+        return user
+      })()
+      return recoveryAttempt
+    },
+
+    async setPassword(password) {
+      const { error } = await client.auth.updateUser({ password })
+      if (error) throw classifyAuthError(error)
+    },
     async getCurrentUser() {
       // `getSession` liest die gespeicherte Sitzung und funktioniert damit auch
       // ohne Netzwerk. Ein abgelaufenes Token wird nur bei bestehender

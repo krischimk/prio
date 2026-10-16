@@ -5,6 +5,7 @@ import { createSupabaseServices, readSupabaseConfig } from './app/services'
 import { registerServiceWorker } from './pwa/registerServiceWorker'
 import './index.css'
 import { applyTheme, currentTheme } from './app/theme'
+import { PasswordRecoveryScreen } from './ui/PasswordRecoveryScreen'
 
 applyTheme(currentTheme())
 
@@ -46,7 +47,8 @@ if (kueche) {
 
   root.render(
     <StrictMode>
-      <App services={services} />
+      {services && window.location.pathname === '/konto/passwort'
+        ? <PasswordRecoveryScreen port={services.auth} /> : <App services={services} />}
     </StrictMode>,
   )
 

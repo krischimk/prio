@@ -1,23 +1,15 @@
 -- -----------------------------------------------------------------------------
 -- Wer mit wem eine Liste teilt
 --
--- Beim Teilen tippt man die Adresse der anderen Person. Für die nächste Liste
--- wäre sie erneut zu tippen – und auch auf der anderen Seite: Wer eine Liste
--- mit jemandem teilt, möchte diesen Jemand später für eine eigene Liste
--- vorschlagen können.
---
--- Dafür braucht der Client die Adressen der Personen, mit denen er schon eine
--- Liste teilt. Lokal liegen sie nicht: Mitglieder werden bewusst nur über ihre
--- Benutzer-ID geführt (`0001_schema.sql`, Datensparsamkeit). Die Funktion gibt
--- deshalb genau diesen Kreis heraus, und nichts darüber hinaus:
+-- Die App schlägt Benutzernamen vor und benennt damit bestehende Mitglieder.
+-- Mitgliedszeilen selbst enthalten nur Benutzerkennungen. Die Funktion liefert
+-- Namen ausschließlich für den Kreis gemeinsamer Listen:
 --
 --   * nur wer mit dem Aufrufer über eine nicht gelöschte Liste verbunden ist,
---   * die eigene Adresse nicht,
---   * keine Parameter – es lässt sich also keine beliebige Adresse nachschlagen.
---
--- Das ist eine bewusste Umkehr der früheren Linie: Bisher sah niemand die
--- Adresse eines anderen Nutzers. Für Vorschläge ist das unvermeidbar – wer
--- gemeinsam an einer Liste arbeitet, sieht nun, mit wem.
+--   * den eigenen Namen nicht,
+--   * keine Parameter – kein beliebiges Profil lässt sich nachschlagen.
+-- E-Mails bleiben privat. Das alte Rückgabefeld `email` ist aus Gründen der
+-- Schnittstellenkompatibilität noch vorhanden, enthält aber einen leeren Text.
 -- -----------------------------------------------------------------------------
 drop function if exists public.co_member_contacts();
 create or replace function private.co_member_contacts()
@@ -60,12 +52,13 @@ begin
       join meine_listen ml on ml.id = m.list_id
       where m.deleted_at is null
     )
-    select distinct p.id, lower(p.email), p.username
+    -- Die alte Rückgabeform bleibt kompatibel; die private E-Mail wird nicht
+    -- mehr weitergegeben. Vorschläge und Mitgliedsnamen nutzen den Benutzernamen.
+    select distinct p.id, ''::text, p.username
     from beteiligte b
     join public.profiles p on p.id = b.user_id
     where b.user_id <> auth.uid()
-      and p.email is not null
-    order by lower(p.email);
+    order by p.username, p.id;
 end;
 $$;
 
@@ -76,7 +69,7 @@ returns table(user_id uuid,email text,username text)
 language sql stable security invoker set search_path='' as $$ select * from private.co_member_contacts() $$;
 
 comment on function public.co_member_contacts() is
-  'Adressen der Personen, mit denen der Aufrufer eine Liste teilt – Grundlage für Vorschläge beim Teilen.';
+  'Benutzernamen gemeinsamer Listen; das frühere E-Mail-Feld bleibt leer.';
 
 revoke all on function public.co_member_contacts() from public;
 grant execute on function public.co_member_contacts() to authenticated;

@@ -120,7 +120,11 @@ Die anonym erlaubte `username_available(text)` gibt nur ein Boolean zurück.
 `share_list_by_username(uuid,text,uuid)` erfordert Anmeldung und Listenbesitz;
 ein bekannter Kontakt wird zusätzlich gegen die erwartete Benutzer-ID geprüft.
 Namen in `co_member_contacts()` sind ausschließlich für den Kreis gemeinsamer
-Listen lesbar. Exponierte Funktionen sind `SECURITY INVOKER`, die eigentliche
+Listen lesbar. Das frühere Feld `email` enthält nur noch einen leeren Text;
+private Adressen werden nicht an andere Konten geliefert. Der Client behält
+Vorschläge über `user_id` und `username` und entfernt alte Cloud-Adressen beim
+Auffrischen. Bereits selbst eingegebene Adressen bleiben als Eingabe möglich.
+Exponierte Funktionen sind `SECURITY INVOKER`, die eigentliche
 Rechteprüfung steht im privaten Schema. Die Sammelmigration meldet ihren neuen
 API-Stand an den PostgREST-Schemacache und wird vor der App eingespielt.
 

@@ -113,6 +113,23 @@ describe('Gelesene Adressen', () => {
 })
 
 describe('Adressen aus gemeinsamen Listen', () => {
+  it('behält mehrere reine Benutzernamen auch nach Neuladen und erneuter Verwendung', () => {
+    const contacts = withCoMemberContacts([], [
+      { userId: 'anna', username: 'anna_name', email: '' },
+      { userId: 'bea', username: 'bea_name', email: '' },
+    ], '2026-01-01')
+    expect(contacts).toHaveLength(2)
+    expect(parseShareContacts(JSON.stringify(contacts))).toEqual(contacts)
+    const recent = withShareContact(contacts, '', 'bea', '2026-02-01')
+    expect(recent.map(contact => contact.user_id)).toEqual(['bea', 'anna'])
+    expect(recent[0].last_used_at).toBe('2026-02-01')
+  })
+  it('entfernt früher vom Server gelieferte E-Mails, ohne Namen oder Reihenfolge zu verlieren', () => {
+    const old = [{ ...kontakt('private@example.com', 'anna', '2026-01-01'), username: 'anna_name' }]
+    const current = withCoMemberContacts(old, [{ userId: 'anna', email: '', username: 'anna_name' }], '2026-02-01')
+    expect(current).toEqual([{ ...old[0], email: '' }])
+    expect(withCoMemberContacts(current, [{ userId: 'anna', email: '', username: 'anna_name' }], '2026-03-01')).toBe(current)
+  })
   it('frischt umbenannte Mitglieder auf, ohne die Vorschlagsreihenfolge neu zu setzen', () => {
     const known = [{ ...kontakt('anna@example.com', 'anna', '2026-01-01'), username: 'alter_name' }]
     const refreshed = withCoMemberContacts(known, [{ userId: 'anna', email: 'anna@example.com', username: 'neuer_name' }], '2026-02-01')

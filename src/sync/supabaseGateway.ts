@@ -120,7 +120,7 @@ export function createSupabaseGateway(client: SupabaseClient): RemoteGateway {
             .toLowerCase(),
           username: typeof zeile.username === 'string' ? zeile.username : null,
         }))
-        .filter((kontakt) => kontakt.userId.length > 0 && kontakt.email.length > 0)
+        .filter((kontakt) => kontakt.userId.length > 0 && (kontakt.email.length > 0 || !!kontakt.username))
     },
   }
 }

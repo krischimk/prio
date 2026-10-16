@@ -21,6 +21,7 @@ export type AuthFailureKind =
   | 'username-invalid'
   | 'username-taken'
   | 'profile-error'
+  | 'recovery-link-invalid'
   | 'unknown'
 
 export class AuthError extends Error {
@@ -46,6 +47,9 @@ export interface AuthPort {
   setUsername(username: string): Promise<AuthUser>
   signIn(email: string, password: string): Promise<AuthUser>
   signOut(): Promise<void>
+  requestPasswordReset(email: string): Promise<void>
+  completePasswordRecovery(url: string): Promise<AuthUser>
+  setPassword(password: string): Promise<void>
   onAuthStateChange(listener: (user: AuthUser | null) => void): () => void
 }
 
@@ -56,7 +60,7 @@ export function authErrorMessage(error: unknown): string {
   }
   switch (error.kind) {
     case 'offline':
-      return 'Keine Verbindung – Anmelden ist nur online möglich. Deine lokalen Daten bleiben erhalten.'
+      return 'Keine Verbindung – diese Aktion ist nur online möglich. Deine lokalen Daten bleiben erhalten.'
     case 'invalid-credentials':
       return 'E-Mail-Adresse oder Passwort ist falsch.'
     case 'email-not-confirmed':
@@ -71,6 +75,8 @@ export function authErrorMessage(error: unknown): string {
       return 'Dieser Benutzername ist bereits vergeben. Wähle einen anderen.'
     case 'profile-error':
       return 'Der Benutzername konnte nicht gespeichert werden. Er ist möglicherweise inzwischen vergeben. Bitte versuche einen anderen Namen.'
+    case 'recovery-link-invalid':
+      return 'Dieser Link ist ungültig oder abgelaufen. Bitte fordere einen neuen an.'
     default:
       return error.message || 'Unbekannter Fehler bei der Anmeldung.'
   }

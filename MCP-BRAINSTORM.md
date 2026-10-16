@@ -103,7 +103,13 @@ geliefert. Termine brauchen eine eindeutige Zeitzone. Das Speichern einer
 Erinnerungsregel ist von der tatsächlichen Zustellung auf einem Telefon zu
 unterscheiden. MCP darf keine erfolgte Benachrichtigung behaupten.
 
-## Sinnvolle erste Lieferung und offene Entscheidungen
+## Bestätigte Entscheidungen und nächste Lieferung
+
+Am 16. Oktober bestätigt: Eine Verbindung erhält Zugriff auf alle Listen, auf
+die das Konto Zugriff hat, einschließlich der üblichen Schreibaktionen. Teilen
+und Mitgliederverwaltung brauchen eine zusätzliche Freigabe für genau diese
+Verbindung. Die E-Mail bleibt privat und dient auch der Passwort-Wiederherstellung;
+Benutzernamen bleiben die sichtbare Identität beim Teilen.
 
 1. Anmeldung und widerrufbare Verbindung; Listen und Aufgaben suchen/lesen.
 2. Sichere Aufgabenbefehle samt Checklisten, Bewertung und Wiederholungen.
@@ -114,7 +120,16 @@ unzugänglich; Wiederholung eines Auftrags erzeugt keine Duplikate; gleichzeitig
 schreibende App und Agent verlieren keine Änderungen; Abschluss samt Nachfolger
 ist atomar; Entzug der Verbindung sperrt weitere Zugriffe.
 
-Vor der Umsetzung zu klären: Soll jede Verbindung alle zugänglichen Listen
-sehen oder eine ausdrückliche Auswahl bekommen? Sollen Löschen und Teilen eigene
-Freigaben benötigen? Die Supabase-Vorlage ist der bevorzugte Kandidat zur Prüfung;
-ihr Einsatz ist noch keine getroffene technische Entscheidung.
+Die öffentliche OAuth-Erkennung des Projekts lieferte am 16. Oktober noch keine
+Metadaten (HTTP 404); ein asymmetrischer ES256-Signierschlüssel ist vorhanden.
+Der nächste externe Einrichtungsschritt ist deshalb der Supabase-OAuth-Server
+unter Auth → OAuth Server. Die Anmeldung in der App muss dafür nicht ersetzt
+werden. Hinzu kommen die Prio-Freigabeseite und die widerrufbaren Rechte in der
+Datenbank. Die vorhandenen Supabase-Schlüssel im App-Bundle sind öffentlich und
+reichen nicht zum Verwalten dieser Projekteinstellungen.
+
+Die Passwort-Wiederherstellung ist im Code ergänzt und wird gegen den lokalen
+Auth-Mock geprüft. Reale Mailzustellung sowie die Freigabe der Rückkehradresse
+bleiben getrennte Einrichtungsschritte. Registrierung versendet derzeit keine
+Bestätigungsmail (`mailer_autoconfirm=true`, öffentlich am 16. Oktober geprüft).
+Keine dieser Angaben bedeutet, dass bereits ein MCP-Endpunkt veröffentlicht ist.

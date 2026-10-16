@@ -10,10 +10,8 @@ import { normalizeUsername, validUsername } from './username'
  * Vorlaufzeiten) und nicht synchronisiert – fremde E-Mail-Adressen haben in
  * der Cloud nichts zu suchen, solange sie dafür keinen Zweck erfüllen.
  *
- * Gepflegt wird sie ausschließlich aus dem, was der Benutzer selbst eingetragen
- * hat: Beim Teilen gibt der Server die Benutzer-ID zurück, und nur dieses Paar
- * wird gemerkt. Es gibt keinen Weg, aus der App heraus fremde Adressen
- * einzusammeln.
+ * E-Mail-Adressen stammen aus eigenen Eingaben. Der Server ergänzt für
+ * gemeinsame Listen nur Benutzernamen und Kennungen, keine privaten Adressen.
  */
 
 /** So viele Adressen werden behalten – die zuletzt verwendeten. */
@@ -52,7 +50,7 @@ export function parseShareContacts(raw: string | null): ShareContact[] {
         return { email: normalizeShareEmail(eintrag.email), user_id: eintrag.user_id, last_used_at: eintrag.last_used_at,
           ...(eintrag.username !== undefined ? { username: username && validUsername(username) ? username : null } : {}) }
       })
-      .filter((eintrag) => eintrag.email.length > 0)
+      .filter((eintrag) => eintrag.user_id.length > 0 && (eintrag.email.length > 0 || !!eintrag.username))
 
   } catch {
     return []
@@ -72,10 +70,10 @@ export function withShareContact(
   at: string,
 ): ShareContact[] {
   const adresse = normalizeShareEmail(email)
-  if (adresse.length === 0 || userId.length === 0) return contacts
-
-  const ohne = contacts.filter((eintrag) => eintrag.email !== adresse)
   const username = contacts.find(contact => contact.user_id === userId)?.username
+  if ((!adresse && !username) || userId.length === 0) return contacts
+
+  const ohne = contacts.filter((eintrag) => eintrag.user_id !== userId && (!adresse || eintrag.email !== adresse))
   const next = [{ email: adresse, user_id: userId, last_used_at: at, ...(username !== undefined ? { username } : {}) }, ...ohne]
   // Namen aktueller Mitwirkender dienen auch der Anzeige, nicht nur Vorschlägen.
   return next.filter((contact, index) => index < SHARE_CONTACTS_MAX || contact.username !== undefined)
@@ -98,8 +96,8 @@ export function suggestShareContacts(
 }
 
 /**
- * Ergänzt Adressen, die der Server kennt: Personen, mit denen eine gemeinsame
- * Liste besteht (siehe Migration `0012`).
+ * Ergänzt Benutzernamen gemeinsamer Listen. Der Server liefert keine privaten
+ * E-Mail-Adressen mehr; ein leerer Adresswert entfernt auch alte Cloud-Kopien.
  *
  * Bekannte Adressen bleiben, wo sie sind, und behalten ihr `last_used_at` –
  * sonst würde die Reihenfolge bei jedem Abgleich neu gewürfelt. Neu
@@ -113,20 +111,22 @@ export function withCoMemberContacts(
   const byUser = new Map(additions.map(contact => [contact.userId, contact]))
   const existing = contacts.map(contact => {
     const current = byUser.get(contact.user_id)
-    return current && current.username !== undefined ? { ...contact, username: current.username } : contact
+    return current && current.username !== undefined
+      ? { ...contact, email: normalizeShareEmail(current.email), username: current.username } : contact
   })
   const known = new Set(existing.map(contact => contact.user_id))
-  const emails = new Set(existing.map(contact => contact.email))
+  const emails = new Set(existing.map(contact => contact.email).filter(Boolean))
   const added = additions.filter(contact => {
     const email = normalizeShareEmail(contact.email)
-    if (!contact.userId || !email || known.has(contact.userId) || emails.has(email)) return false
-    known.add(contact.userId); emails.add(email)
+    const username = typeof contact.username === 'string' ? normalizeUsername(contact.username) : ''
+    if (!contact.userId || (!email && !validUsername(username)) || known.has(contact.userId) || (email && emails.has(email))) return false
+    known.add(contact.userId); if (email) emails.add(email)
     return true
   })
     .map(contact => ({ email: normalizeShareEmail(contact.email), user_id: contact.userId, last_used_at: at,
       ...(contact.username !== undefined ? { username: contact.username } : {}) }))
-    .sort((a, b) => a.email.localeCompare(b.email))
+    .sort((a, b) => (a.username || a.email).localeCompare(b.username || b.email))
   // Aktuelle Mitwirkende bleiben vollständig lesbar; die Vorschlagsliste selbst
   // begrenzt weiterhin, wie viele Einträge auf einmal angeboten werden.
-  return added.length === 0 && existing.every((contact, index) => contact.username === contacts[index].username) ? contacts : [...added, ...existing]
+  return added.length === 0 && existing.every((contact, index) => contact.username === contacts[index].username && contact.email === contacts[index].email) ? contacts : [...added, ...existing]
 }

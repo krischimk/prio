@@ -7,6 +7,7 @@ import {
   readSupabaseConfig,
   type SupabaseConfig,
 } from '../auth/supabaseAuth'
+import { isNativeApp } from './platform'
 import { createSupabaseGateway } from '../sync/supabaseGateway'
 
 /**
@@ -34,7 +35,8 @@ export interface AppServices {
 export function createSupabaseServices(config: SupabaseConfig): AppServices {
   const client = createSupabaseClient(config)
   return {
-    auth: createSupabaseAuthPort(client),
+    auth: createSupabaseAuthPort(client, new URL('/konto/passwort', isNativeApp()
+      ? import.meta.env.VITE_PUBLIC_APP_URL?.trim() || 'https://prio-krischi.pages.dev' : window.location.origin).href),
     gateway: createSupabaseGateway(client),
     network: createBrowserNetworkMonitor(),
     backendUrl: config.url,

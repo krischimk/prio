@@ -11,7 +11,7 @@ import { normalizeUsername } from '../domain/username'
 
 /**
  * Teilen mit Benutzername oder E-Mail, über die serverseitige Rechteprüfung.
- * Namen und Adressen werden nur für den Kreis gemeinsamer Listen geliefert.
+ * Der Server liefert Benutzernamen gemeinsamer Listen; E-Mail bleibt privat.
  * Bekannte Empfänger bleiben beim Wiederverwenden eines Namens an ihre ID
  * gebunden, damit eine spätere Namensvergabe niemand anderem Zugriff gibt.
  */
@@ -87,7 +87,7 @@ export function SharePanel({ list, currentUserId }: { list: LocalList; currentUs
           </h3>
           <ul className="flex flex-wrap gap-2">
             {vorschlaege.map((contact) => (
-              <li key={contact.email}>
+              <li key={contact.user_id}>
                 {/*
                   Ein Klick setzt die Adresse ins Feld, statt sofort freizugeben:
                   Ein zweiter Klick auf „Freigeben" bestätigt. So kann ein
@@ -127,7 +127,7 @@ export function SharePanel({ list, currentUserId }: { list: LocalList; currentUs
             {members.map((member) => (
               <li key={member.user_id} className="flex items-center justify-between gap-2 text-meta">
                 <span className="truncate text-ink-soft">
-                  {(() => { const contact = contacts.find(row => row.user_id === member.user_id); return contact?.username ? `@${contact.username}` : contact?.email ?? 'Name noch nicht geladen' })()}
+                  {(() => { const contact = contacts.find(row => row.user_id === member.user_id); return contact?.username ? `@${contact.username}` : contact?.email || 'Benutzername noch nicht gewählt' })()}
                 </span>
                 <Button
                   variant="danger" size="sm"

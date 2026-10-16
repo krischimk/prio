@@ -113,6 +113,14 @@ export function AuthProvider({ port, children }: { port: AuthPort; children: Rea
     setNotice(null)
   }, [])
 
+  const requestPasswordReset = useCallback(async (email: string) => {
+    setError(null); setNotice(null)
+    try {
+      await port.requestPasswordReset(email)
+      setNotice('Falls für diese Adresse ein Konto besteht, erhältst du eine E-Mail mit einem Link für ein neues Passwort.')
+    } catch (cause) { setError(authErrorMessage(cause)); throw cause }
+  }, [port])
+
   const setUsername = useCallback(async (username: string) => {
     setError(null)
     try {
@@ -122,8 +130,8 @@ export function AuthProvider({ port, children }: { port: AuthPort; children: Rea
   }, [port])
 
   const value = useMemo<AuthContextValue>(
-    () => ({ state, error, notice, signIn, signUp, setUsername, signOut, clearMessages }),
-    [state, error, notice, signIn, signUp, setUsername, signOut, clearMessages],
+    () => ({ state, error, notice, signIn, signUp, setUsername, signOut, clearMessages, requestPasswordReset }),
+    [state, error, notice, signIn, signUp, setUsername, signOut, clearMessages, requestPasswordReset],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

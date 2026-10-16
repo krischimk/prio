@@ -60,10 +60,14 @@ test('E2E 4: Benutzer A teilt eine Liste mit Benutzer B', async ({ browser, requ
     await pageB.reload()
     await pageB.getByLabel('E-Mail', { exact: true }).fill(emailB)
     await pageB.getByLabel('Passwort', { exact: true }).fill('geheim123')
+    const contactResponse = pageB.waitForResponse(response => response.url().endsWith('/rest/v1/rpc/co_member_contacts'))
     await pageB.getByRole('button', { name: 'Anmelden', exact: true }).click()
 
     await selectList(pageB, 'Projekt gemeinsam')
     await expect(pageB.getByText('geteilt').first()).toBeVisible()
+    const contacts = await (await contactResponse).json()
+    expect(contacts).toContainEqual(expect.objectContaining({ username: usernameFor(emailA), email: '' }))
+    expect(contacts.every((contact: { email: string }) => contact.email === '')).toBe(true)
 
     // 4. B erstellt eine Aufgabe.
     await createTask(pageB, 'Aufgabe von B')
@@ -83,6 +87,8 @@ test('E2E 4: Benutzer A teilt eine Liste mit Benutzer B', async ({ browser, requ
     //    Serverfunktion `co_member_contacts` gäbe es hier nichts vorzuschlagen,
     //    weil Mitglieder lokal nur über ihre Benutzer-ID geführt werden.
     await createList(pageB, 'Liste von B')
+    await pageB.reload()
+    await selectList(pageB, 'Liste von B')
     await listAction(pageB, 'Teilen')
 
     const vorschlag = pageB.getByRole('button', { name: '@' + usernameFor(emailA) })

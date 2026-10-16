@@ -102,6 +102,7 @@ export interface RemoteGateway extends SyncTransport, ShareDirectory {}
 /** Eine Person, mit der eine Liste geteilt wird. */
 export interface CoMemberContact {
   userId: string
+  /** Leeres Kompatibilitätsfeld: E-Mails bleiben privat. */
   email: string
   username?: string | null
 }

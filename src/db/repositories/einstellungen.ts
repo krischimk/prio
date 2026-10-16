@@ -133,7 +133,7 @@ export function einstellungen(ctx: Kontext): Pick<Repositories, 'listReminderPre
 
     async rememberShareContact(email, userId) {
       const adresse = normalizeShareEmail(email)
-      if (adresse.length === 0 || userId.length === 0) return
+      if (userId.length === 0) return
       const bisher = parseShareContacts(await readMeta(ctx.db, META_SHARE_CONTACTS))
       const { updated_at } = ctx.stamp()
       const neu = withShareContact(bisher, adresse, userId, updated_at)

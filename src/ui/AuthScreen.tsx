@@ -13,8 +13,8 @@ import { AppBrand } from './AppBrand'
  * ist der Unterschied nur ein zusätzlicher Knopf.
  */
 export function AuthScreen() {
-  const { signIn, signUp, error, notice, clearMessages } = useAuth()
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+  const { signIn, signUp, error, notice, clearMessages, requestPasswordReset } = useAuth()
+  const [mode, setMode] = useState<'signin' | 'signup' | 'reset'>('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
@@ -25,7 +25,8 @@ export function AuthScreen() {
     if (busy) return
     setBusy(true)
     try {
-      if (mode === 'signin') await signIn(email, password)
+      if (mode === 'reset') await requestPasswordReset(email)
+      else if (mode === 'signin') await signIn(email, password)
       else await signUp(email, password, username)
     } catch {
       // Die Fehlermeldung steht bereits im Auth-Kontext.
@@ -47,7 +48,8 @@ export function AuthScreen() {
           Aufgaben offline erfassen – synchronisiert wird, sobald das Netz da ist.
         </p>
 
-        <form onSubmit={submit} className="space-y-3" aria-label="Anmeldung">
+        <form onSubmit={submit} className="space-y-3" aria-label={mode === 'reset' ? 'Passwort zurücksetzen' : 'Anmeldung'}>
+          {mode === 'reset' ? <h2 className="text-heading text-ink">Passwort vergessen?</h2> : null}
           {mode === 'signup' ? <UsernameField value={username} onChange={setUsername} disabled={busy} /> : null}
           <div>
             <label htmlFor="email" className="mb-1 block text-body text-ink-soft">
@@ -59,12 +61,13 @@ export function AuthScreen() {
               autoComplete="email"
               required
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(event) => { setEmail(event.target.value); if (mode === 'reset') clearMessages() }}
               className={input}
             />
+            {mode === 'signup' ? <p className="mt-1 text-meta text-ink-muted">Bleibt privat. Damit kannst du dein Passwort zurücksetzen.</p> : null}
           </div>
 
-          <div>
+          {mode !== 'reset' ? <div>
             <label htmlFor="password" className="mb-1 block text-body text-ink-soft">
               Passwort
             </label>
@@ -78,7 +81,7 @@ export function AuthScreen() {
               onChange={(event) => setPassword(event.target.value)}
               className={input}
             />
-          </div>
+          </div> : null}
 
           {error ? (
             <p role="alert" className={errorBox}>
@@ -91,13 +94,15 @@ export function AuthScreen() {
             </p>
           ) : null}
 
-          <Button type="submit" variant="primary" layout="w-full" disabled={busy}>
-            {mode === 'signin' ? 'Anmelden' : 'Konto erstellen'}
+          <Button type="submit" variant="primary" layout="w-full" disabled={busy || (mode === 'reset' && notice !== null)}>
+            {mode === 'signin' ? 'Anmelden' : mode === 'signup' ? 'Konto erstellen' : 'Link anfordern'}
           </Button>
         </form>
 
+        {mode === 'signin' ? <button type="button" className={`${link} mt-3 text-body`} onClick={() => { clearMessages(); setMode('reset') }}>Passwort vergessen?</button> : null}
+
         <p className="mt-4 text-body text-ink-muted">
-          {mode === 'signin' ? 'Noch kein Konto?' : 'Schon registriert?'}{' '}
+          {mode === 'signin' ? 'Noch kein Konto?' : mode === 'signup' ? 'Schon registriert?' : ''}{' '}
           <button type="button" onClick={toggleMode} className={link}>
             {mode === 'signin' ? 'Registrieren' : 'Anmelden'}
           </button>

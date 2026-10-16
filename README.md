@@ -159,6 +159,27 @@ Server. Die E-Mail dient weiterhin der Anmeldung; der Server ist das Ziel des
 Cloudabgleichs und unterscheidet insbesondere Mock und echtes Projekt. Beides
 steht nicht mehr ständig im Arbeitsbereich. Abmelden ist auf beiden Ansichten
 nur innerhalb von „Konto“ erreichbar; sein Symbol steht im breiten Kopf rechts.
+Die E-Mail bleibt privat; zum Teilen und Anzeigen dient der Benutzername.
+Auch die Vorschlagsfunktion gemeinsamer Listen liefert nur Namen und Kennungen;
+das frühere E-Mail-Feld bleibt leer. Bereits geladene Cloud-Adressen werden beim
+Auffrischen entfernt. Eine selbst bekannte Adresse kann weiterhin eingegeben werden.
+„Passwort vergessen?“ fordert einen Link per E-Mail an. Über `/konto/passwort`
+lässt sich anschließend ein neues Passwort setzen, auch in einem anderen Browser
+ohne bestehende Sitzung. Die Android-App verwendet dafür die öffentliche
+Web-Adresse (`VITE_PUBLIC_APP_URL`, Vorgabe `https://prio-krischi.pages.dev`).
+Der Link wird vor dem Speichern serverseitig geprüft; Codes und Sitzungstokens
+werden sofort aus der Adresszeile entfernt. Ungültige oder abgelaufene Links
+öffnen kein Passwortformular. Die Anforderung verrät nicht, ob ein Konto existiert.
+
+**Versand einrichten:** In Supabase unter Auth → URL Configuration die Adresse
+`https://prio-krischi.pages.dev/konto/passwort` als Redirect URL erlauben; für die
+Entwicklung zusätzlich den entsprechenden lokalen Ursprung samt Pfad. Ein eigener
+SMTP-Versand muss für reguläre Nutzer eingerichtet sein: Der Supabase-Testmailer
+ist auf Adressen des Projektteams beschränkt. Dieser Versand ist eine externe
+Voraussetzung und wird durch die Mock-Tests nicht nachgewiesen.
+[Supabase: Passwort-Links](https://supabase.com/docs/guides/auth/passwords),
+[SMTP-Einrichtung](https://supabase.com/docs/guides/auth/auth-smtp).
+
 Der Kopf zeigt das tatsächliche
 App-Symbol und für den Sync einen einzelnen farbigen Punkt mit erklärendem
 Hinweis und manueller Synchronisation per Klick.
@@ -1421,11 +1442,11 @@ Seite heißt je nach Fassung *Settings* bzw. *Sign In / Providers*):
 | --- | --- | --- |
 | *Email* (Anbieter) | **an** | Anmeldung mit E-Mail und Passwort. Ohne das geht gar nichts. |
 | *Allow new users to sign up* | **an** | Wer die Adresse der App kennt, kann sich ein Konto anlegen. |
-| *Confirm email* | **an** | Das Konto wird erst nach einem Klick auf den Link in der Mail nutzbar. |
+| *Confirm email* | derzeit **aus** (am 16.10.2026 geprüft) | Registrierung erzeugt sofort eine Sitzung und verschickt keine Bestätigungsmail. Die App unterstützt auch eingeschaltete Bestätigung. |
 
 **Was das beim Registrieren bedeutet**
 
-1. Die Person öffnet die Adresse, tippt *Registrieren*, gibt E-Mail und Passwort
+1. Die Person öffnet die Adresse, tippt *Registrieren*, gibt Benutzername, E-Mail und Passwort
    ein und drückt *Konto erstellen*.
 2. Mit *Confirm email* **an** schickt Supabase eine Mail und die App meldet
    „Konto erstellt. Bitte die E-Mail-Adresse bestätigen und dann anmelden."
@@ -1436,17 +1457,17 @@ Seite heißt je nach Fassung *Settings* bzw. *Sign In / Providers*):
 
 **Was das beim Teilen bedeutet**
 
-Beim Teilen trägst du die E-Mail-Adresse der anderen Person ein. Der Server
-prüft, ob es dazu ein **registriertes Konto** gibt; sonst steht dort
-„Es gibt keinen registrierten Nutzer mit dieser E-Mail-Adresse." Bestätigt sein
-muss das Konto dafür nicht – sie kann die Liste aber erst sehen, wenn sie sich
-anmelden kann, und das geht erst nach der Bestätigung.
+Beim Teilen gibst du den Benutzernamen der anderen Person ein. Der Server prüft
+das registrierte Konto und deinen Listenbesitz. Eine bereits bekannte E-Mail
+kann weiterhin eingegeben werden; sie wird nicht über Kontaktvorschläge verraten.
+Die andere Person muss sich anmelden können. Bei eingeschalteter
+E-Mail-Bestätigung muss sie deshalb vorher ihre Adresse bestätigen.
 
-Die Reihenfolge ist deshalb: Adresse weitergeben → die Person registriert sich
-und bestätigt → du teilst die Liste. Genau dafür bleibt die Registrierung offen;
-mit geschlossenem Schalter wäre „Teilen" für neue Personen abgeschaltet.
+Die Reihenfolge ist: Die Person registriert sich und wählt ihren Benutzernamen →
+du teilst die Liste mit diesem Namen. Die derzeit offene Registrierung ermöglicht
+das ohne manuelle Anlage eines Kontos im Dashboard.
 
-**Eingestellt wird: Registrierung zu.** Wer mit einer Handvoll bekannter Leute
+**Option: Registrierung schließen.** Wer mit einer Handvoll bekannter Leute
 teilt, fährt damit enger: *Authentication → Users → Add user* (Konto anlegen)
 oder *Invite* (Einladung per Mail, je nach Fassung). Danach kann die Person sich
 anmelden, und du kannst teilen. Offene Registrierung bringt dann nichts mehr mit,

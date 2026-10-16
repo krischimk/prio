@@ -41,7 +41,7 @@ export interface LocalOnly {
  */
 export interface ShareContact {
   username?: string | null
-  /** Kleingeschrieben und ohne Leerzeichen – so wird verglichen. */
+  /** Nur selbst eingegebene Altadressen; Cloud-Kontakte liefern hier ''. */
   email: string
   /** Benutzer-ID aus der Antwort des Servers. */
   user_id: string

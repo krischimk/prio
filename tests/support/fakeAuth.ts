@@ -69,6 +69,15 @@ export class FakeAuthPort implements AuthPort {
   async signOut(): Promise<void> {
     this.setCurrent(null)
   }
+  async requestPasswordReset(_email: string): Promise<void> {}
+  async completePasswordRecovery(_url: string): Promise<AuthUser> {
+    if (!this.currentUser) throw new AuthError('recovery-link-invalid', 'recovery-link-invalid')
+    return this.currentUser
+  }
+  async setPassword(password: string): Promise<void> {
+    if (!this.currentUser) throw new AuthError('recovery-link-invalid', 'recovery-link-invalid')
+    this.accounts.get(this.currentUser.email)!.password = password
+  }
   async setUsername(username: string): Promise<AuthUser> {
     if (!this.currentUser) throw new AuthError('unknown', 'Bitte anmelden.')
     const user = { ...this.currentUser, username }

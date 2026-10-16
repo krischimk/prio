@@ -205,6 +205,11 @@ describe('Supabase-Gateway', () => {
     })
   })
 
+  it('liest gemeinsame Benutzernamen ohne private E-Mail', async () => {
+    const { client } = createMockClient({ rpc: () => ({ data: [{ user_id: 'member', email: '', username: 'member_name' }], error: null }) })
+    expect(await createSupabaseGateway(client).coMemberContacts()).toEqual([{ userId: 'member', email: '', username: 'member_name' }])
+  })
+
   it('reicht eine Fehlermeldung des Teilens verständlich weiter', async () => {
     const { client } = createMockClient({
       rpc: () => ({ data: null, error: { message: 'Es gibt keinen registrierten Nutzer mit dieser E-Mail-Adresse.' } }),

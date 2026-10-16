@@ -30,6 +30,8 @@ function emptyState() {
     users: new Map(),
     sessions: new Map(), // access_token -> user_id
     refreshTokens: new Map(), // refresh_token -> user_id
+    recoveryLinks: [], // ausschließlich die Test-Mailbox, kein echter Versand
+    recoveryTokens: new Map(),
     lists: new Map(),
     members: new Map(), // `${list_id}:${user_id}` -> row
     tasks: new Map(),
@@ -188,8 +190,36 @@ async function handle(request, response) {
     send(response, 200, { ok: true })
     return
   }
+  if (path === '/__test__/recovery-mailbox') {
+    send(response, 200, state.recoveryLinks)
+    return
+  }
 
   // --- Auth (GoTrue) --------------------------------------------------------
+  if (path === '/auth/v1/recover' && request.method === 'POST') {
+    const body = await readBody(request)
+    const email = String(body?.email ?? '').trim().toLowerCase()
+    const user = [...state.users.values()].find(candidate => candidate.email === email)
+    if (user) {
+      const token = randomUUID()
+      state.recoveryTokens.set(token, { userId: user.id, redirectTo: url.searchParams.get('redirect_to') })
+      state.recoveryLinks.push({ email, url: `http://127.0.0.1:${PORT}/auth/v1/verify?type=recovery&token=${token}` })
+    }
+    send(response, 200, {}) // unbekannte Adresse hat dieselbe Antwort
+    return
+  }
+  if (path === '/auth/v1/verify' && request.method === 'GET') {
+    const token = url.searchParams.get('token')
+    const recovery = state.recoveryTokens.get(token)
+    if (!recovery) { send(response, 403, { message: 'Link abgelaufen' }); return }
+    state.recoveryTokens.delete(token)
+    const session = createSession(state.users.get(recovery.userId))
+    const target = new URL(recovery.redirectTo)
+    target.hash = new URLSearchParams({ type: 'recovery', access_token: session.access_token,
+      refresh_token: session.refresh_token, expires_in: '3600', token_type: 'bearer' }).toString()
+    send(response, 303, undefined, { Location: target.href })
+    return
+  }
   if (path === '/auth/v1/signup' && request.method === 'POST') {
     const body = await readBody(request)
     const email = String(body?.email ?? '').trim().toLowerCase()
@@ -255,11 +285,17 @@ async function handle(request, response) {
     const user = authenticatedUser(request)
     if (!user) { send(response, 401, { message: 'invalid login credentials' }); return }
     const body = await readBody(request)
-    const username = String(body?.data?.username ?? '').trim().toLowerCase()
-    if (!/^[a-z0-9][a-z0-9_]{2,29}$/.test(username) || [...state.users.values()].some(other => other.id !== user.id && other.username === username)) {
-      send(response, 422, { message: 'Benutzername ungültig oder bereits vergeben.' }); return
+    if (body?.data?.username !== undefined) {
+      const username = String(body.data.username).trim().toLowerCase()
+      if (!/^[a-z0-9][a-z0-9_]{2,29}$/.test(username) || [...state.users.values()].some(other => other.id !== user.id && other.username === username)) {
+        send(response, 422, { message: 'Benutzername ungültig oder bereits vergeben.' }); return
+      }
+      user.username = username
     }
-    user.username = username
+    if (body?.password !== undefined) {
+      if (String(body.password).length < 6) { send(response, 422, { message: 'Password should be at least 6 characters' }); return }
+      user.password = String(body.password)
+    }
     send(response, 200, publicUser(user))
     return
   }
@@ -464,8 +500,8 @@ async function handleRpc(name, request, response) {
     }
 
     const zeilen = [...kontakte]
-      .map(([userId, email]) => ({ user_id: userId, email, username: state.users.get(userId)?.username ?? null }))
-      .sort((a, b) => a.email.localeCompare(b.email))
+      .map(([userId]) => ({ user_id: userId, email: '', username: state.users.get(userId)?.username ?? null }))
+      .sort((a, b) => (a.username ?? '').localeCompare(b.username ?? ''))
     send(response, 200, zeilen)
     return
   }
