@@ -68,6 +68,14 @@ test('die veröffentlichte Fassung startet, meldet sich an und gleicht ab', asyn
   }
   await expect(page.getByTestId('app-bar-title')).toBeVisible()
 
+  // Der Test prüft unten den Restaufwand. Diese Anzeige ist persönlich und
+  // standardmäßig kompakt; den benötigten Detailmodus ausdrücklich einschalten.
+  await page.getByRole('button', { name: 'Menü öffnen', exact: true }).click()
+  await page.getByRole('button', { name: 'Konto', exact: true }).click()
+  const account = page.getByRole('dialog', { name: 'Konto', exact: true })
+  await account.getByLabel('Detaillierte Bewertungen anzeigen', { exact: true }).check()
+  await account.getByRole('button', { name: 'Schließen', exact: true }).click()
+
   const listenname = `Rauchprüfung ${new Date().toISOString().slice(0, 16)}`
   await page.getByRole('button', { name: /Menü/ }).click()
   await page.getByLabel('Name der neuen Liste', { exact: true }).fill(listenname)
