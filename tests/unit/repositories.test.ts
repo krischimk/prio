@@ -893,6 +893,7 @@ describe('Repositories (lokale Geschäftslogik)', () => {
         title: 'Aus alter Zeit',
         checklist: [],
         tags: [],
+        rating: null,
         description: null,
         due_at: null,
         completed: false,

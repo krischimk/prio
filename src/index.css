@@ -448,3 +448,38 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* Native Regler: ein Klick/Tap setzt den Wert, Pfeiltasten bleiben verfügbar.
+ * Zahlen sind intern; Position, Füllung und Endbeschriftungen tragen die Skala. */
+.rating-slider {
+  appearance: none;
+  display: block;
+  height: 2.75rem;
+  cursor: pointer;
+  background: linear-gradient(to right, var(--color-brand-soft) var(--rating-fill), var(--color-line-strong) var(--rating-fill)) center / 100% 0.375rem no-repeat;
+  border-radius: var(--radius-control);
+}
+.rating-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: var(--color-brand-soft);
+  border: 2px solid var(--color-page);
+}
+.rating-slider::-moz-range-thumb {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: var(--color-brand-soft);
+  border: 2px solid var(--color-page);
+}
+.rating-slider:focus-visible { outline: 2px solid var(--color-brand-soft); outline-offset: 2px; }
+/* Mausflächen können dichter sein; Touch behält 44 px Trefferhöhe. */
+@media (hover: hover) and (pointer: fine) {
+  .rating-slider { height: 2rem; }
+}
+.rating-slider:disabled { opacity: 0.55; cursor: default; }
+.rating-unassigned { opacity: 0.65; }
+.rating-unassigned::-webkit-slider-thumb { opacity: 0; }
+.rating-unassigned::-moz-range-thumb { opacity: 0; }

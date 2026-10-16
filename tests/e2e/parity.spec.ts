@@ -9,6 +9,7 @@ import * as telefon from './support/mobile'
 import { createCloudConflict } from './support/cloudConflict'
 import { openOverview, rememberOverviewTarget } from './support/overview'
 import { checklistParity, tagFilterParity } from './support/checklists'
+import { ratingParity, weightedChecklistParity } from './support/ratings'
 
 /**
  * Oberflächenparität: Jede Funktion muss in beiden Ansichten erreichbar sein.
@@ -54,6 +55,16 @@ async function changeOrder(page: Page) {
 }
 
 const funktionen: Funktion[] = [
+  {
+    name: 'Checklisten gewichten und Restaufwand reversibel ableiten',
+    breit: page => weightedChecklistParity(page, false),
+    telefon: page => weightedChecklistParity(page, true),
+  },
+  {
+    name: 'Aufgaben bewerten und Bewertungen listenweise ausschalten',
+    breit: page => ratingParity(page, false),
+    telefon: page => ratingParity(page, true),
+  },
   {
     name: 'Checkliste unabhängig von der Hauptaufgabe bedienen',
     breit: (page, request) => checklistParity(page, false, request),

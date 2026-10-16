@@ -26,6 +26,7 @@ const ABDECKUNG: Record<(typeof SCHREIBEND)[number], string | null> = {
   setListInOverview: 'Liste in die Gesamtansicht aufnehmen',
   placeList: 'Listen umsortieren und verstecken',
   setListKeepCompleted: 'Erledigt am Listenende einstellen und wieder öffnen',
+  setListRatingsEnabled: 'Aufgaben bewerten und Bewertungen listenweise ausschalten',
     updateUserPreferences: 'Letzte Gesamt-Zielliste und bevorzugte Ansicht merken',
   resolveCloudConflict: 'Cloud-Schreibkonflikt klären',
   createList: 'Liste anlegen',

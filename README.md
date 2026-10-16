@@ -185,6 +185,35 @@ versehentlich Zugriff. Die Cloud braucht die Sammelmigration einschließlich
   Griff und Löschen gibt es ausschließlich dort; in der breiten Ansicht erscheinen
   sie bei Hover oder Tastaturfokus. In der Aufgabenliste werden nur Häkchen bedient.
   Neue Wiederholungen übernehmen die Punkttexte und Reihenfolge, mit offenen Häkchen.
+* Bewertungen sind optional. Zunächst ist nur „Wichtigkeit einschätzen“ sichtbar;
+  der erste Reglerklick aktiviert Wichtigkeit, Aufwand und Dringlichkeit gemeinsam.
+  Die übrigen manuellen Startwerte liegen sichtbar in der Mitte. Eine Fälligkeit
+  allein bewertet nichts. Alle drei Einschätzungen und die gleichgewichtet daraus
+  berechnete Priorität werden als beschriftete Balken gezeigt. Der Listenbesitzer
+  kann Bewertungen ausblenden, ohne Daten zu löschen. Bestehende Listen starten
+  ausgeschaltet, neue Listen eingeschaltet.
+* Automatische Dringlichkeit steigt mit abnehmender Restzeit zunächst langsam,
+  dann schneller. Mehr Aufwand zieht den Anstieg und das Maximum vor. Erstellung
+  und Alter beeinflussen sie nicht. „Manuell“ friert den aktuellen Wert ein und
+  erlaubt eine eigene Einschätzung; „Automatisch“ berechnet ihn neu. Die erste
+  Testkurve erreicht bei mittlerem Aufwand drei Tage vor Fälligkeit die Hälfte,
+  zwölf Stunden davor das Maximum. Bei minimalem/maximalem Aufwand sind beide
+  Abstände durch drei geteilt beziehungsweise verdreifacht. Das sind anpassbare
+  Testparameter, keine Zusage über reale Arbeitsstunden.
+* Checklisten reduzieren **standardmäßig** den verbleibenden Aufwand bewerteter
+  Aufgaben. Der Aufwandregler stellt dann den **Gesamtaufwand** ein, die Anzeige
+  zeigt **Restaufwand**. Im Editor lässt sich diese Kopplung ausschalten und der
+  Anteil jedes Punkts über einen kleinen Slider ändern. Anfangs sind alle gleich;
+  beim Gewichten bleiben die Größenverhältnisse der übrigen Punkte erhalten.
+  Ein neuer Punkt bekommt den neuen Durchschnittsanteil, Löschen normiert die
+  übrigen Anteile. Abhaken und Wiederöffnen verändern nur den abgeleiteten Rest,
+  niemals den eingestellten Gesamtaufwand. Wiederholungen übernehmen Gewichte
+  und Gesamtaufwand mit offenen Punkten. Eine leere Checkliste lässt den vollen
+  Aufwand stehen, eine vollständig erledigte den Rest bei null.
+* Checklisten- und Tagfelder sind direkt erreichbar. Strg+Enter speichert aus
+  jedem Textfeld auch noch nicht einzeln bestätigte Punkte und Tags. Nach dem
+  Anlegen am PC liegt der Fokus wieder im Titelfeld. Die Hauptaufgabe lässt sich
+  auch am Checklistenbereich ziehen; das Ablegen unter der Liste fügt hinten an.
 * Tags ergänzen Aufgaben ohne eigene Hierarchie. Vorhandene Tags werden beim
   Bearbeiten grau vorgeschlagen und lassen sich direkt auswählen. Groß- und
   Kleinschreibung erzeugen keine doppelten Tags derselben Aufgabe. Vorschläge
@@ -211,7 +240,7 @@ versehentlich Zugriff. Die Cloud braucht die Sammelmigration einschließlich
   [Erinnerungen](#erinnerungen)
 * Wiederkehrende Aufgaben: täglich, wöchentlich, monatlich oder jährlich –
   Details unter [Wiederkehrende Aufgaben](#wiederkehrende-aufgaben)
-* Bewusst nicht enthalten: Prioritäten, Unteraufgaben, Anhänge,
+* Bewusst nicht enthalten: Prioritätsmatrix, Unteraufgaben, Anhänge,
   Kommentare
 
 Der Aufgabeneditor verwendet kompakte, aufklappbare Terminangaben und eine

@@ -110,7 +110,7 @@ function DesktopWorkspace() {
           </div>
         </header>
 
-        <main key={selectedListId ?? 'overview'} className="scroll-area min-h-0 flex-1 overflow-y-auto">
+        <main key={selectedListId ?? 'overview'} className="scroll-area flex min-h-0 flex-1 flex-col overflow-y-auto">
         {selected ? (
           <TaskPanel key={selected.id} list={selected} currentUserId={user?.id ?? ''} />
         ) : (

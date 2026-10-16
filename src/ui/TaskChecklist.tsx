@@ -31,7 +31,7 @@ export function TaskChecklist({ task }: { task: LocalTask }) {
       setPending(previous => Object.fromEntries(Object.entries(previous).filter(([key]) => key !== id)))
     } finally { writing.current.delete(id); setPending(previous => ({ ...previous })) }
   }
-  return <div data-no-drag data-no-drawer-swipe className="min-w-0">
+  return <div data-no-drawer-swipe className="min-w-0">
     <Hint text={`Checkliste ${open ? 'einklappen' : 'aufklappen'}: ${progress.completed} von ${progress.total} Punkten erledigt. Die Hauptaufgabe bleibt unabhängig.`}>
       <button type="button" aria-label={`Checkliste: ${task.title}`} aria-expanded={open} onClick={() => setOpen(value => !value)}
         className={`${focusRing} inline-flex min-h-8 items-center gap-1 rounded-control px-1 text-meta text-ink-muted hover:bg-raised hover:text-ink`}>
@@ -39,11 +39,11 @@ export function TaskChecklist({ task }: { task: LocalTask }) {
       </button>
     </Hint>
     {open ? <ul aria-label={`Checkliste: ${task.title}`} className="mt-1">{task.checklist.filter(item => item.deleted_at === null).map(item => <li key={item.id}>
-      <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-control px-1 text-body hover:bg-raised active:bg-raised">
+      <div className="flex min-h-11 items-center gap-3 rounded-control px-1 text-body hover:bg-raised active:bg-raised">
         <input type="checkbox" className="size-5 shrink-0 accent-brand" checked={pending[item.id] ?? item.completed} disabled={Object.hasOwn(pending, item.id)}
           aria-label={`Checklistenpunkt: ${item.text}`} onChange={event => void change(item.id, event.target.checked)} />
         <span className={`break-words ${item.completed ? 'text-ink-faint line-through' : 'text-ink-soft'}`}>{item.text}</span>
-      </label>
+      </div>
     </li>)}</ul> : null}
     {error ? <p role="alert" className={errorBox}>{error}</p> : null}
   </div>

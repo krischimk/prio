@@ -9,6 +9,7 @@ import { DescriptionIcon } from './icons'
 import { TaskScheduleFields } from './TaskScheduleFields'
 import { ChecklistEditor } from './ChecklistEditor'
 import { TaskTagsEditor } from './TaskTagsEditor'
+import { TaskRatingEditor } from './TaskRating'
 
 /** Welche Felder ein Formular zeigt. */
 export type TaskFieldName =
@@ -49,6 +50,7 @@ export interface TaskFieldsProps {
   felder?: TaskFieldName[]
   /** Beim Anlegen auf dem Telefon steht der Schreibzeiger schon im Titelfeld. */
   titelAutofokus?: boolean
+  ratingsEnabled?: boolean
 }
 
 /**
@@ -71,6 +73,7 @@ export function TaskFields({
   idPrefix,
   felder = ALLE,
   titelAutofokus = false,
+  ratingsEnabled = false,
 }: TaskFieldsProps) {
   const zeigt = (feld: TaskFieldName) => felder.includes(feld)
 
@@ -102,8 +105,9 @@ export function TaskFields({
         </div>
       ) : null}
 
-      {zeigt('checkliste') ? <ChecklistEditor form={form} /> : null}
+      {zeigt('checkliste') ? <ChecklistEditor form={form} ratingsEnabled={ratingsEnabled} /> : null}
       {zeigt('tags') ? <TaskTagsEditor form={form} /> : null}
+      {ratingsEnabled ? <TaskRatingEditor form={form} /> : null}
 
       {zeigt('faellig') ? (
         <TaskScheduleFields form={form} idPrefix={idPrefix} recurrence={zeigt('wiederholung')} />

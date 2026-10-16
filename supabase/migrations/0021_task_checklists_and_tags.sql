@@ -12,8 +12,13 @@ returns boolean language sql immutable set search_path = '' as $$
       or jsonb_typeof(item->'id') is distinct from 'string' or btrim(item->>'id')=''
       or jsonb_typeof(item->'text') is distinct from 'string' or (item->'deleted_at'='null'::jsonb and btrim(item->>'text')='')
       or jsonb_typeof(item->'completed') is distinct from 'boolean'
-      or not (item ? 'deleted_at') or jsonb_typeof(item->'deleted_at') not in ('null','string'))
+      or not (item ? 'deleted_at') or jsonb_typeof(item->'deleted_at') not in ('null','string')
+      or (item ? 'weight' and case when jsonb_typeof(item->'weight')='number' then (item->>'weight')::numeric not between 0 and 1 else true end))
     and (select count(*)=count(distinct item->>'id') from jsonb_array_elements(p_checklist) item)
+    and (not exists (select 1 from jsonb_array_elements(p_checklist) item where item->'deleted_at'='null'::jsonb and item ? 'weight') or (
+      not exists (select 1 from jsonb_array_elements(p_checklist) item where item->'deleted_at'='null'::jsonb and not (item ? 'weight'))
+      and abs((select coalesce(sum(case when jsonb_typeof(item->'weight')='number' then (item->>'weight')::numeric else 0 end),0)
+        from jsonb_array_elements(p_checklist) item where item->'deleted_at'='null'::jsonb)-1) < 0.00000001))
     and not exists (select 1 from jsonb_array_elements(p_tags) tag where jsonb_typeof(tag) is distinct from 'string' or btrim(tag#>>'{}')='')
   else false end;
 $$;

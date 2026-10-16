@@ -1503,3 +1503,54 @@ Spalten, geschützte Zugriffe, privaten Delta-Leseweg und den unveränderten Abl
 Der signierte Android-Releasebuild trägt 0.27.0 / versionCode 2700 und denselben
 Zertifikatfingerabdruck wie 0.26.0. Der Emulator entfällt auf ausdrücklichen
 Nutzerwunsch; die Geräteprüfung erfolgt mit dieser Testfassung auf dem Telefon.
+
+
+## 25. Bewertungen und gewichteter Restaufwand – Auftrag vom 16. Oktober 2026
+
+Dieser bestätigte Folgeauftrag ersetzt die früheren Bewertungsannahmen (drei
+Null-Defaults, Zahleneingabe, noch offene Listendefaults) für die erste Testfassung:
+
+- Unbewertet ist `rating = null`. Einstieg ausschließlich über Wichtigkeit;
+  erster Klick startet alle drei Werte, übrige manuelle Werte in der Mitte.
+  Fälligkeit allein startet nichts. Zahlen bleiben intern (0–10, Slider 0,1).
+- Besitzer-Schalter für die gesamte Liste. Bestandslisten aus, neue Listen an;
+  Ausschalten erhält Daten. Ohne Schalter sind Eingaben und Anzeigen verborgen.
+- Automatisch/Manuell für Dringlichkeit. Automatik hängt von Restzeit und Aufwand
+  ab, nicht von Erstellzeit oder früherer manueller Bewertung. Testkurve:
+  Faktor $f=3^{(A-5)/5}$; halbe Stärke bei $72f$ Stunden Restzeit, Maximum bei
+  $12f$ Stunden. Dazwischen und davor exponentieller, zunehmend schneller Anstieg;
+  danach gedeckelt. Priorität ist zunächst $(W+D)/2$, beide gleichgewichtet.
+- Vier transparente Balken zum Ausprobieren. Keine neue Rangsortierung, Matrix
+  oder farbliche Hervorhebung in diesem Paket.
+- Checklisten-Kopplung standardmäßig **an**, pro Aufgabe abschaltbar. Gesamtaufwand
+  einstellen, gewichteten offenen Rest anzeigen und für die Automatik verwenden.
+  Neue Punkte erhalten $1/(n+1)$; vorhandene Anteile schrumpfen proportional.
+  Slideränderungen erhalten die bisherigen Größenverhältnisse der anderen Punkte.
+  Löschen normiert, Wiederöffnen stellt den Anteil wieder her. Alle Punkte erledigt
+  ergibt Rest null, ohne die Hauptaufgabe abzuhaken. Leere Checkliste: voller Aufwand.
+  Neue Wiederholung übernimmt Gesamtaufwand und Gewichte mit offenen Häkchen.
+- Checklisten-/Tagfelder direkt erreichbar; Strg+Enter aus jedem Textfeld.
+  Ziehen auch über Checklistentext; Ablegen unter der Liste fügt am Ende ein.
+
+Abnahme vor Auslieferung: Fachtests für Kurve, Gewichte, Wiederholung und Konflikte;
+Update ohne neue Felder; echter PostgreSQL-Updateweg und Schutz gegen ungültige
+Werte/Fremdzugriff; beide Bedienmodelle; Telefonbilder Hoch-/Querformat; vollständige
+CI und Browserregression. Cloudmigration vor dem ersten neuen Client. Ein Testrelease
+am Ende; Emulator wie ausdrücklich gewünscht ausgelassen.
+
+
+Abnahme für 0.28.0: 660 Unit-/Integrationstests und 46 Prüfungen gegen echtes
+PostgreSQL bestehen. Alle 215 Browserabläufe sind abgedeckt: In den zwei
+vollständigen Testblöcken bestanden 210 sofort; vier Tests fokussierten noch den
+inzwischen nicht mehr interaktiven inneren Textcontainer, einer startete über
+Chromes Touch-Zielkorrektur auf einem bewusst vom Wischen ausgenommenen Input.
+Mit den korrigierten Testzielen bestehen diese fünf Abläufe ebenfalls; die
+Wischfolge wurde dreimal erfolgreich wiederholt. Am geprüften App-Code wurde
+dabei nichts mehr geändert. Telefonbilder in beiden Themen und im Querformat
+wurden angesehen. Die Regler sind kompakter; Kästchen, Griff und Löschen sitzen
+bei gewichteten Punkten mittig neben Text und Slider.
+
+Die Sammelmigration bis 0023 ist eingespielt und `db:check` bestätigt den
+Cloudstand. Der signierte Android-Build trägt 0.28.0 / versionCode 2800 und
+dasselbe Zertifikat wie 0.27.0. Auf ausdrücklichen Wunsch entfällt der Emulator;
+die Fassung ist zum Testen auf dem echten Telefon bestimmt.

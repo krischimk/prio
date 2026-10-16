@@ -10,6 +10,7 @@ import type { LocalList, LocalListMember, LocalListPreference, LocalTask, LocalU
 import type { CloudConflict } from '../../domain/cloudMerge'
 import type { TaskPlacement } from '../../domain/taskPlacement'
 import type { ChecklistItem } from '../../domain/checklist'
+import type { TaskRating } from '../../domain/rating'
 
 export interface CreateTaskInput {
   listId: string
@@ -21,6 +22,7 @@ export interface CreateTaskInput {
   description?: string | null
   checklist?: ChecklistItem[]
   tags?: string[]
+  rating?: TaskRating | null
   dueAt?: string | null
   recurrence?: string | null
   /** Die Erinnerungen der Aufgabe. Fehlt das Feld, bleibt die bisherige Liste. */
@@ -33,6 +35,7 @@ export interface CreateListOptions {
   icon?: string | null
   includeInOverview?: boolean
   keepCompleted?: boolean
+  ratingsEnabled?: boolean
 }
 
 export interface Repositories {
@@ -54,6 +57,7 @@ export interface Repositories {
    */
   setListIcon(listId: string, icon: string | null): Promise<LocalList>
   setListKeepCompleted(listId: string, userId: string, keep: boolean): Promise<void>
+  setListRatingsEnabled(listId: string, userId: string, enabled: boolean): Promise<void>
   deleteList(listId: string): Promise<void>
   getList(listId: string): Promise<LocalList | undefined>
   /** Gelöschte Listen der letzten Tage – für „Wiederherstellen". */

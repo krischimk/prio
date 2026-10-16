@@ -9,7 +9,7 @@ import { requireText, ValidationError } from '../validation'
 import type { Kontext } from './context'
 import type { Repositories } from './types'
 
-export function listen(ctx: Kontext): Pick<Repositories, 'createList' | 'renameList' | 'setListIcon' | 'setListKeepCompleted' | 'deleteList' | 'getList' | 'listLists' | 'listDeletedLists' | 'restoreList' | 'addListSection' | 'renameListSection' | 'deleteListSection'> {
+export function listen(ctx: Kontext): Pick<Repositories, 'createList' | 'renameList' | 'setListIcon' | 'setListKeepCompleted' | 'setListRatingsEnabled' | 'deleteList' | 'getList' | 'listLists' | 'listDeletedLists' | 'restoreList' | 'addListSection' | 'renameListSection' | 'deleteListSection'> {
   return {
     async listDeletedLists() {
       const grenze = restoreCutoff(timeOf(ctx.clock.now()))
@@ -55,6 +55,7 @@ export function listen(ctx: Kontext): Pick<Repositories, 'createList' | 'renameL
         // nach dem ersten Anlegen.
         sections: [],
         keep_completed: options.keepCompleted ?? false,
+        ratings_enabled: options.ratingsEnabled ?? true,
         completion_retention_started_at: now,
         id: newId(),
         name: requireText(name, 'Der Listenname'),
@@ -99,6 +100,15 @@ export function listen(ctx: Kontext): Pick<Repositories, 'createList' | 'renameL
           .map(task => ({ ...task, completed_expires_at: completionDeadline(now, keep), ...ctx.stamp() }))
         await ctx.db.lists.put({ ...list, keep_completed: keep, completion_retention_started_at: keep ? list.completion_retention_started_at : now, ...ctx.stamp() })
         if (changed.length) await ctx.db.tasks.bulkPut(changed)
+      })
+    },
+
+    async setListRatingsEnabled(listId, userId, enabled) {
+      await ctx.db.transaction('rw', ctx.db.lists, async () => {
+        const list = await ctx.requireList(listId)
+        if (list.owner_id !== userId) throw new ValidationError('invalid', 'Nur der Besitzer kann diese Listenregel ändern.')
+        if (list.ratings_enabled === enabled) return
+        await ctx.db.lists.put({ ...list, ratings_enabled: enabled, ...ctx.stamp() })
       })
     },
 

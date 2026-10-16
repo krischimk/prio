@@ -50,8 +50,8 @@ grant usage on schema auth to authenticated,anon;`)
 const migrations = readFileSync(new URL('../supabase/all-migrations.sql', import.meta.url), 'utf8')
 sql(migrations)
 sql(`insert into auth.users(id,email) values ('${owner}','owner@prio.test'),('${member}','member@prio.test'),('${stranger}','stranger@prio.test')`)
-const list = { id: listId, owner_id: owner, name: 'Liste', is_shared: false, icon: null, sections: [], keep_completed: false, completion_retention_started_at: at, created_at: at, updated_at: at, deleted_at: null }
-const task = { id: taskId, list_id: listId, title: 'Anfang', description: null, checklist: [], tags: [], due_at: null, available_from: null, completed: false, completed_at: null, completed_expires_at: null, expired_at: null, reopen_context: null, recurrence: null, successor_id: null, reminders: [], section_id: null, position: 0, created_at: at, updated_at: at, deleted_at: null }
+const list = { id: listId, owner_id: owner, name: 'Liste', is_shared: false, icon: null, sections: [], keep_completed: false, ratings_enabled: false, completion_retention_started_at: at, created_at: at, updated_at: at, deleted_at: null }
+const task = { id: taskId, list_id: listId, title: 'Anfang', description: null, checklist: [], tags: [], rating: null, due_at: null, available_from: null, completed: false, completed_at: null, completed_expires_at: null, expired_at: null, reopen_context: null, recurrence: null, successor_id: null, reminders: [], section_id: null, position: 0, created_at: at, updated_at: at, deleted_at: null }
 
 check('Bestehende Konten wählen einen eindeutigen Namen; Auth und Profil bleiben atomar', () => {
   assert.equal(sql(`select username is null from public.profiles where id='${owner}'`),'t')
@@ -482,5 +482,48 @@ check('Erneute Migration ändert die bestätigten Delta-Versionen nicht', () => 
   const before=pull(owner)
   sql(readFileSync(new URL('../supabase/migrations/0022_incremental_sync.sql',import.meta.url),'utf8'))
   assert.deepEqual(pull(owner,before.checkpoint).changes,[])
+})
+check('Bewertungen und Gewichtungen werden atomar validiert; Mitglieder können keine Listenregel ändern', () => {
+  const ratedList={...list,id:'10000000-0000-0000-0000-000000000081',ratings_enabled:true}
+  assert.equal(push(owner,'lists',ratedList).kind,'written')
+  assert.equal(push(owner,'members',{...membership,list_id:ratedList.id}).kind,'written')
+  const rating={importance:7.5,urgency:5,effort:6,urgencyMode:'auto',effortFromChecklist:true}
+  const checklist=[{id:'a',text:'Groß',completed:false,deleted_at:null,weight:0.75},{id:'b',text:'Klein',completed:false,deleted_at:null,weight:0.25}]
+  const rated={...task,id:'20000000-0000-0000-0000-000000000081',list_id:ratedList.id,rating,checklist}
+  const first=push(owner,'tasks',rated)
+  assert.equal(first.kind,'written')
+  assert.deepEqual(first.current.rating,rating)
+  assert.deepEqual(first.current.checklist,checklist)
+  for(const invalid of [
+    {...rating,importance:11}, {...rating,urgency:-1}, {...rating,effort:'6'},
+    {...rating,urgencyMode:null}, {...rating,effortFromChecklist:'true'}, {...rating,extra:true},
+    {importance:5},
+  ]) assert.equal(push(owner,'tasks',{...rated,rating:invalid},first.current).kind,'rejected')
+  for(const invalid of [
+    [{...checklist[0],weight:-0.1},checklist[1]],
+    [{...checklist[0],weight:0.5},checklist[1]],
+    [checklist[0],{id:'b',text:'Klein',completed:false,deleted_at:null}],
+  ]) assert.equal(push(owner,'tasks',{...rated,checklist:invalid},first.current).kind,'rejected')
+  assert.equal(push(member,'lists',{...ratedList,ratings_enabled:false},ratedList).kind,'rejected')
+  const changed=push(member,'tasks',{...rated,rating:{...rating,importance:8}},first.current)
+  assert.equal(changed.kind,'written')
+  assert.equal(push(owner,'lists',{...ratedList,ratings_enabled:false},ratedList).kind,'written')
+  assert.deepEqual(JSON.parse(sql(`select rating from public.tasks where id='${rated.id}'`)),changed.current.rating)
+  sql(`update public.tasks set completed=true,completed_at=now()-interval '8 days',completed_expires_at=now()-interval '1 second' where id='${rated.id}';select private.expire_completed_in_list('${ratedList.id}')`)
+  assert.equal(sql(`select rating is null from public.tasks where id='${rated.id}'`),'t')
+})
+check('Update von alten Zeilen lässt bestehende Listen aus und neue an; Wiederholung bewahrt Einstellungen', () => {
+  // Tatsächlicher Update-Weg von vor 0023; nur in der wegwerfbaren Datenbank.
+  sql('alter table public.lists drop column ratings_enabled; alter table public.tasks drop column rating')
+  const migration=readFileSync(new URL('../supabase/migrations/0023_task_ratings.sql',import.meta.url),'utf8')
+  sql(migration)
+  assert.equal(sql('select bool_and(not ratings_enabled) from public.lists'),'t')
+  assert.equal(sql('select bool_and(rating is null) from public.tasks'),'t')
+  const id='10000000-0000-0000-0000-000000000082'
+  sql(`insert into public.lists(id,owner_id,name) values('${id}','${owner}','Neue bewertete Liste')`)
+  assert.equal(sql(`select ratings_enabled from public.lists where id='${id}'`),'t')
+  sql(migration)
+  assert.equal(sql(`select ratings_enabled from public.lists where id='${listId}'`),'f')
+  assert.equal(sql(`select ratings_enabled from public.lists where id='${id}'`),'t')
 })
 console.log(`${checks} PostgreSQL-Prüfungen bestanden.`)

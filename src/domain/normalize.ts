@@ -3,6 +3,7 @@ import { parseReminders } from './reminder'
 import { parseSections } from './sections'
 import { parseChecklist } from './checklist'
 import { parseTags } from './tags'
+import { parseRating } from './rating'
 import type { LocalList, LocalListMember, LocalListPreference, LocalTask, LocalUserPreference, RemoteList, RemoteListMember, RemoteListPreference, RemoteTask, RemoteUserPreference } from './types'
 
 /**
@@ -42,6 +43,7 @@ export function normalisiereListe(zeile: LocalList | RemoteList): LocalList {
     icon: roh.icon ?? null,
     sections: parseSections(roh.sections),
     keep_completed: roh.keep_completed === true,
+    ratings_enabled: roh.ratings_enabled === true,
     completion_retention_started_at: normalizeIso(roh.completion_retention_started_at ?? null),
     created_at: normalizeIso(zeile.created_at),
     updated_at: normalizeIso(zeile.updated_at),
@@ -59,6 +61,7 @@ export function normalisiereAufgabe(zeile: LocalTask | RemoteTask): LocalTask {
     description: roh.description ?? '',
     checklist: parseChecklist(roh.checklist),
     tags: parseTags(roh.tags),
+    rating: parseRating(roh.rating),
     due_at: normalizeIso(roh.due_at ?? null),
     available_from: normalizeIso(roh.available_from ?? null),
     completed: roh.completed ?? false,

@@ -11,6 +11,7 @@
 
 import type { TaskReminder } from './reminder'
 import type { ChecklistItem } from './checklist'
+import type { TaskRating } from './rating'
 
 /** ISO-8601-Zeitstempel in UTC, z. B. `2026-01-31T12:00:00.000Z`. */
 export type IsoDateTime = string
@@ -80,6 +81,7 @@ export interface LocalList extends SyncableRow, LocalOnly {
   sections: ListSection[]
   /** Gemeinsame Listenregel; nur der Besitzer stellt sie ein, zunächst aus. */
   keep_completed: boolean
+  ratings_enabled: boolean
   /** Letzte Einführung/Abschaltung der Aufbewahrung; vom Server bestätigt. */
   completion_retention_started_at: IsoDateTime | null
   created_at: IsoDateTime
@@ -98,6 +100,7 @@ export interface LocalTask extends SyncableRow, LocalOnly {
   description: string | null
   checklist: ChecklistItem[]
   tags: string[]
+  rating: TaskRating | null
   due_at: IsoDateTime | null
   /** Frühes Abhaken: der Nachfolger tritt bis zur bisherigen Fälligkeit zurück. */
   available_from: IsoDateTime | null
@@ -240,14 +243,16 @@ export interface LocalReminder {
  * angeblich immer da ist, würde beim Lesen zu einer Lüge – genau dafür steht
  * `parseSections` bereit.
  */
-export type RemoteList = Omit<LocalList, 'dirty' | 'sections' | 'keep_completed' | 'completion_retention_started_at'> & {
+export type RemoteList = Omit<LocalList, 'dirty' | 'sections' | 'keep_completed' | 'completion_retention_started_at' | 'ratings_enabled'> & {
+  ratings_enabled?: boolean
   sections?: ListSection[] | null
   keep_completed?: boolean
   completion_retention_started_at?: IsoDateTime | null
 }
 
 /** Eine Aufgabenzeile vom Server; `section_id` fehlt vor Migration 0013. */
-export type RemoteTask = Omit<LocalTask, 'dirty' | 'section_id' | 'completed_expires_at' | 'expired_at' | 'reopen_context' | 'available_from' | 'checklist' | 'tags'> & {
+export type RemoteTask = Omit<LocalTask, 'dirty' | 'section_id' | 'completed_expires_at' | 'expired_at' | 'reopen_context' | 'available_from' | 'checklist' | 'tags' | 'rating'> & {
+  rating?: TaskRating | null
   checklist?: ChecklistItem[]
   tags?: string[]
   available_from?: IsoDateTime | null

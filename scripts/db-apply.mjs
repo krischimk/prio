@@ -130,6 +130,8 @@ const ERWARTET = [
   ['tasks', 'available_from', '0020'],
   ['tasks', 'checklist', '0021'],
   ['tasks', 'tags', '0021'],
+  ['tasks', 'rating', '0023'],
+  ['lists', 'ratings_enabled', '0023'],
   ['list_preferences', 'position', '0020'],
   ['list_preferences', 'hidden', '0020'],
   ['tasks', 'reminders', '0011'],

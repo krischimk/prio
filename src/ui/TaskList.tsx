@@ -11,7 +11,7 @@ import { taskLocation } from '../domain/taskPlacement'
 import { groupTasks } from '../domain/sections'
 import { useView } from './useView'
 import { useCollapsedSections } from './collapsedSections'
-import { dragGroups, groupOfTask, projectTaskPointer, sidebarDropListId, taskGroupId, taskGroupLocation, type DragGroups } from './taskDrag'
+import { dragGroups, groupOfTask, projectTaskPointer, sidebarDropListId, taskGroupId, taskGroupLocation, taskEndId, isTaskEnd, type DragGroups } from './taskDrag'
 import { SectionHeader } from './SectionHeader'
 import { TaskRow } from './TaskRow'
 import { ListIcon } from './ListIcon'
@@ -87,6 +87,11 @@ export function TaskList({ lists, tasks: allTasks, currentUserId, overview = fal
       const state = current.current
       if (!state) return
       if (sidebarDropListId(event.operation.target?.id)) { event.preventDefault(); return }
+      if (isTaskEnd(event.operation.target?.id) && event.operation.source) {
+        const next = projectTaskPointer(state.groups, String(event.operation.source.id), event.operation.target.id, true)
+        if (next !== state.groups) updatePreview({ ...state, groups: next })
+        event.preventDefault(); return
+      }
       const pointerGesture = event.operation.activatorEvent && !isKeyboardEvent(event.operation.activatorEvent)
       if (pointerGesture) {
         projectPointer(event.operation.source?.id, event.operation.target?.id, event.operation.position.current.y, event.operation.target?.shape?.center.y)
@@ -138,12 +143,13 @@ export function TaskList({ lists, tasks: allTasks, currentUserId, overview = fal
   return <>
     {error ? <p role="alert" className={errorBox}>{error}</p> : null}
     {shown?.saving ? <p role="status" className="sr-only">Position wird gespeichert …</p> : null}
-    <div data-testid="task-list" className="space-y-abschnitt">
+    <div data-testid="task-list" className="flex flex-1 flex-col space-y-abschnitt">
       {mode === 'newest' ? <ul aria-label="Aufgaben in der Gesamtansicht">
         {[...visibleTasks].sort((a, b) => b.created_at.localeCompare(a.created_at) || a.id.localeCompare(b.id)).map(task => {
           const list = visibleLists.find(entry => entry.id === task.list_id)!
           const section = list.sections.find(entry => entry.id === task.section_id)
           return <NewestTaskRow key={task.id} task={task} currentUserId={currentUserId} overview={overview}
+            ratingsEnabled={list.ratings_enabled}
             origin={`${list.name}${section ? ` · ${section.name}` : ''}`} onOpen={open} />
         })}
         {tasks.length === 0 ? <li className={emptyState}>{tagFilter.length ? 'Keine passenden Aufgaben.' : 'Keine offenen Aufgaben.'}</li> : null}
@@ -155,7 +161,7 @@ export function TaskList({ lists, tasks: allTasks, currentUserId, overview = fal
 }
 
 /** Chronologische Ansicht: Ziehen wechselt nur die Liste, nicht die Sortierung. */
-function NewestTaskRow(props: { task: LocalTask; currentUserId: string; overview: boolean; origin: string; onOpen: (task: LocalTask) => void }) {
+function NewestTaskRow(props: { task: LocalTask; currentUserId: string; overview: boolean; origin: string; ratingsEnabled: boolean; onOpen: (task: LocalTask) => void }) {
   const { ref, handleRef, isDragging } = useDraggable({ id: props.task.id, type: 'task', data: { listId: props.task.list_id } })
   return <TaskRow {...props} elementRef={ref} activatorRef={handleRef} dragging={isDragging} />
 }
@@ -167,7 +173,7 @@ function ListBlock({ list, groups, byId, currentUserId, overview, activeId, onOp
   const { zugeklappt, umschalten } = useCollapsedSections(list.id)
   const desktop = useIsDesktop()
   const count = groupTasks([], list.sections).reduce((sum, group) => sum + (groups[taskGroupId(list.id, group.section?.id ?? null)]?.length ?? 0), 0)
-  return <section aria-label={overview ? `Aufgaben aus ${list.name}` : `Aufgaben in ${list.name}`} className="min-w-0">
+  return <section aria-label={overview ? `Aufgaben aus ${list.name}` : `Aufgaben in ${list.name}`} className="flex min-w-0 shrink-0 flex-col last:flex-1">
     {overview ? <div className="mb-2 flex items-center justify-between gap-3 border-b border-line py-2">
       <h2 className="min-w-0"><button type="button" aria-label={`Liste ${list.name} öffnen`} onClick={() => onSelectList(list.id)}
         className={`${focusRing} flex min-h-11 items-center gap-2 rounded-control text-list-heading font-semibold text-ink-strong hover:text-brand-soft`}>
@@ -180,16 +186,19 @@ function ListBlock({ list, groups, byId, currentUserId, overview, activeId, onOp
       return <TaskGroup key={id} id={id} ids={ids} name={group.section?.name} sectionId={group.section?.id}
         open={group.section === null || !zugeklappt.has(group.id) || (activeId !== null && ids.includes(activeId))}
         onToggle={() => umschalten(group.id)} byId={byId} currentUserId={currentUserId} overview={overview}
+        ratingsEnabled={list.ratings_enabled}
         activeId={activeId} onOpen={onOpen} />
     })}
+    <ListEndDrop listId={list.id} active={activeId !== null} />
     {count === 0 && activeId === null ? <p className={emptyState}>{overview ? 'Keine offenen Aufgaben in dieser Liste.' : leerAufgaben(desktop ? 'breit' : 'mobil')}</p> : null}
     {list.keep_completed ? <CompletedTasksSection lists={[list]} currentUserId={currentUserId} overview={overview} /> : null}
   </section>
 }
 
-function TaskGroup({ id, ids, name, sectionId, open, onToggle, byId, currentUserId, overview, activeId, onOpen }: {
+function TaskGroup({ id, ids, name, sectionId, open, onToggle, byId, currentUserId, overview, activeId, onOpen, ratingsEnabled }: {
   id: string; ids: string[]; name?: string; sectionId?: string; open: boolean; onToggle: () => void
   byId: Map<string, LocalTask>; currentUserId: string; overview: boolean; activeId: string | null; onOpen: (task: LocalTask) => void
+  ratingsEnabled: boolean
 }) {
   // Container haben geringere Priorität als Aufgaben. So trifft man konkrete
   // Nachbarn und erreicht auch leere, kopflose Gruppen.
@@ -199,16 +208,27 @@ function TaskGroup({ id, ids, name, sectionId, open, onToggle, byId, currentUser
       gruppe={id} hervorgehoben={activeId !== null && isDropTarget} /> : null}
     {open ? <ul>{ids.map((taskId, index) => {
       const task = byId.get(taskId)
-      return task ? <SortableTaskRow key={task.id} task={task} index={index} group={id} currentUserId={currentUserId} overview={overview} onOpen={onOpen} /> : null
+      return task ? <SortableTaskRow key={task.id} task={task} index={index} group={id} currentUserId={currentUserId} overview={overview} onOpen={onOpen} ratingsEnabled={ratingsEnabled} /> : null
     })}</ul> : null}
     {activeId !== null && (ids.length === 0 || !open) ? <div className="min-h-11 rounded-control border border-dashed border-line-strong" data-testid="gruppe-leer" aria-hidden="true" /> : null}
   </div>
 }
 
-function SortableTaskRow({ task, index, group, currentUserId, overview, onOpen }: {
+function ListEndDrop({ listId, active }: { listId: string; active: boolean }) {
+  // Eigenes, eindeutiges Ziel mit Zeigerschnitt; es konkurriert weder mit
+  // Aufgaben noch mit der Seitenleiste. Platz existiert nur während des Ziehens.
+  const { ref, isDropTarget } = useDroppable({ id: taskEndId(listId), type: 'group', accept: 'task', disabled: !active,
+    collisionPriority: CollisionPriority.Low, collisionDetector: pointerIntersection })
+  return <div ref={ref} data-list-end={listId} aria-hidden="true"
+    className={active ? `min-h-24 flex-1 rounded-control ${isDropTarget ? 'bg-brand-tint/40' : ''}` : 'h-0'} />
+}
+
+function SortableTaskRow({ task, index, group, currentUserId, overview, onOpen, ratingsEnabled }: {
   task: LocalTask; index: number; group: string; currentUserId: string; overview: boolean; onOpen: (task: LocalTask) => void
+  ratingsEnabled: boolean
 }) {
   const { ref, handleRef, isDragging } = useSortable({ id: task.id, index, group, type: 'task', accept: 'task', data: { listId: task.list_id }, collisionDetector: pointerIntersection })
   return <TaskRow task={task} currentUserId={currentUserId} overview={overview} onOpen={onOpen}
+    ratingsEnabled={ratingsEnabled}
     elementRef={ref} activatorRef={handleRef} dragging={isDragging} />
 }

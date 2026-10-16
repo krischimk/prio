@@ -77,8 +77,20 @@ test('die veröffentlichte Fassung startet, meldet sich an und gleicht ab', asyn
   await page.getByRole('button', { name: 'Neue Aufgabe' }).click()
   await expect(page.getByRole('dialog', { name: 'Neue Aufgabe' })).toBeVisible()
   await page.getByLabel('Titel', { exact: true }).fill('Rauchprüfung')
+  // Der echte Schreibweg muss auch den neuen vollständigen Bewertungssatz
+  // und normierte Checklistenanteile akzeptieren, nicht nur leere Defaults.
+  await page.getByRole('slider', { name: 'Wichtigkeit einschätzen', exact: true }).press('End')
+  for (const text of ['Erster Schritt', 'Zweiter Schritt']) {
+    await page.getByLabel('Neuer Checklistenpunkt', { exact: true }).fill(text)
+    await page.getByLabel('Neuer Checklistenpunkt', { exact: true }).press('Enter')
+  }
+  await expect(page.getByLabel('Checkliste reduziert den Restaufwand', { exact: true })).toBeChecked()
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
   await expect(page.getByTestId('task-row').filter({ hasText: 'Rauchprüfung' })).toBeVisible()
+  const row = page.locator('[data-task-row]').filter({ has: page.getByTestId('task-row').getByText('Rauchprüfung', { exact: true }) })
+  await row.getByRole('button', { name: 'Checkliste: Rauchprüfung', exact: true }).click()
+  await row.getByLabel('Checklistenpunkt: Erster Schritt', { exact: true }).check()
+  await expect(row.getByRole('meter', { name: 'Restaufwand', exact: true })).toHaveAttribute('aria-valuenow', '2.5')
 
   // Abgleich: Der Status steht im Menü. Hier schlägt PGRST204 oder eine
   // verletzte Regel sichtbar fehl.

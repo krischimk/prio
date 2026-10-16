@@ -24,7 +24,7 @@ export function MobileWorkspace() {
   return <div {...motion.handlers} className={`mobile-workspace min-h-screen ${appBackground} text-ink`}>
     <MobileAppBar listId={selected?.id ?? null} listName={selected?.name ?? null} listIcon={selected?.icon ?? null}
       onOpenMenu={() => setDrawerMode('open')} onOpenList={() => { if (selected) setListSettingsId(selected.id) }} />
-    <main className="app-bar-offset fab-offset">
+    <main className="app-bar-offset fab-offset flex min-h-screen flex-col">
       {selected === null ? <OverviewPanel currentUserId={userId} /> : <TaskPanel list={selected} currentUserId={userId} />}
     </main>
     {selected !== null || (overview.status === 'ready' && overview.lists.length > 0) ? <div className={`safe-bottom pointer-events-none fixed bottom-0 right-5 ${layer.fab}`}>

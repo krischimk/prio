@@ -1,15 +1,13 @@
-import { useState } from 'react'
 import { useTaskTags } from '../app/hooks'
 import { parseTags, tagKey } from '../domain/tags'
 import { CloseIcon, PlusIcon, TagIcon } from './icons'
 import { Button } from './components/Button'
 import { IconButton } from './components/IconButton'
-import { focusRing, input } from './styles'
+import { input } from './styles'
 import type { TaskForm } from './useTaskForm'
 
 export function TaskTagsEditor({ form }: { form: TaskForm }) {
   const known = useTaskTags()
-  const [open, setOpen] = useState(form.werte.tags.length > 0 || !!form.werte.tagText)
   const selected = new Set(form.werte.tags.map(tagKey))
   const suggestions = known.filter(tag => !selected.has(tagKey(tag)) && tagKey(tag).includes(tagKey(form.werte.tagText)))
   const add = (tag: string) => {
@@ -18,11 +16,8 @@ export function TaskTagsEditor({ form }: { form: TaskForm }) {
     form.setzen('tagText', '')
   }
   return <div className="min-w-0">
-    <button type="button" aria-label={form.werte.tags.length ? 'Tags bearbeiten' : 'Tags hinzufügen'} aria-expanded={open} onClick={() => setOpen(value => !value)}
-      className={`${focusRing} flex min-h-11 w-full items-center gap-3 rounded-control px-2 text-body text-ink-muted hover:bg-raised hover:text-ink`}>
-      <TagIcon /><span className="min-w-0 break-words text-left">{form.werte.tags.length ? form.werte.tags.join(' · ') : 'Tags hinzufügen'}</span>
-    </button>
-    {open ? <div className="space-y-2 pl-10">
+    <div className="flex min-h-11 items-center gap-3 px-2 text-body text-ink-muted"><TagIcon /><span>Tags</span></div>
+    <div className="space-y-2 pl-10">
       {form.werte.tags.length ? <div role="group" className="flex flex-wrap gap-1" aria-label="Ausgewählte Tags">{form.werte.tags.map(tag => <Button key={tagKey(tag)} variant="secondary" size="sm" layout="max-w-full"
         aria-label={`Tag entfernen: ${tag}`} onClick={() => form.setzen('tags', form.werte.tags.filter(value => tagKey(value) !== tagKey(tag)))}><span className="min-w-0 break-words">{tag}</span><CloseIcon className="size-icon-meta" /></Button>)}</div> : null}
       <div className="flex min-w-0 items-center gap-1">
@@ -33,6 +28,6 @@ export function TaskTagsEditor({ form }: { form: TaskForm }) {
       </div>
       {suggestions.length ? <div role="group" className="flex flex-wrap gap-1" aria-label="Vorhandene Tags">{suggestions.map(tag => <Button key={tagKey(tag)} size="sm" variant="ghost" layout="max-w-full" title={`Tag „${tag}“ hinzufügen`}
         onClick={() => add(tag)}><span className="min-w-0 break-words">{tag}</span></Button>)}</div> : null}
-    </div> : null}
+    </div>
   </div>
 }

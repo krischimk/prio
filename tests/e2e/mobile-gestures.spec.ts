@@ -147,8 +147,10 @@ test('direktes Wischen folgt dem Finger, lässt sich umkehren und auch rechts sc
   await expect(page.getByRole('dialog', { name: 'Menü', exact: true })).toBeHidden()
   await expect(page.getByRole('dialog', { name: 'Aufgabe', exact: true })).toBeHidden()
 
-  await touch(client, 'touchStart', 60, y)
-  await touch(client, 'touchMove', 280, y)
+  // Freie Aufgabenfläche: nahe am Kästchen löst Chromes Touch-Zielkorrektur
+  // eine Berührung des Inputs aus. Eingabefelder sind vom Wischen ausgenommen.
+  await touch(client, 'touchStart', 140, y)
+  await touch(client, 'touchMove', 350, y)
   await touch(client, 'touchEnd')
   await menuSettled(page)
   await touch(client, 'touchStart', 382, 420)

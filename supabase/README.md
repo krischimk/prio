@@ -28,6 +28,24 @@ App. Sie sind so geschrieben, dass sie sich gefahrlos erneut ausführen lassen
 | `0020_navigation_and_recurrence.sql` | Persönliche Listenposition und Verstecken; `tasks.available_from` kennzeichnet den noch zurückgenommenen nächsten Serientermin. Wiederholbare Spaltenergänzung ohne Umschreiben bestehender Daten |
 | `0021_task_checklists_and_tags.sql` | Aufgabenfelder `checklist` und `tags` mit leeren Defaults und Formprüfung; endgültiger Ablauf entfernt auch diese Inhalte |
 | `0022_incremental_sync.sql` | Privater letzter Schreibstand je Zeile und paginierter `sync_pull` mit PostgreSQL-Snapshot; erkennt neue Freigaben und Rechteentzug ohne Geräteuhren |
+| `0023_task_ratings.sql` | Gekoppelte optionale Aufgabenbewertung, Besitzer-Schalter `ratings_enabled` (Bestand aus, neue Listen an), Inhaltsprüfung und Entfernen der Bewertung beim endgültigen Ablauf |
+
+### Bewertungen und Checklistenanteile
+
+`tasks.rating` ist `null` oder ein atomarer Satz aus `importance`, `urgency`,
+`effort` (endliche Zahlen 0–10), `urgencyMode` (`auto`/`manual`) und
+`effortFromChecklist` (boolesch, im Client standardmäßig an). Der Server akzeptiert
+nur vollständige gültige Sätze. Abgeleitete Dringlichkeit, Restaufwand und Priorität
+werden lokal aus Fachwerten und aktueller Zeit berechnet und nicht geschrieben.
+`lists.ratings_enabled` kann ausschließlich der Besitzer ändern. Die Migration
+füllt beim ersten Anlegen der Spalte Bestandslisten mit `false`, setzt anschließend
+nur den Default neuer Zeilen auf `true`; Wiederholung ändert keinen Listenwert.
+
+Checklistenpunkte dürfen `weight` enthalten. Aktive Punkte sind entweder alle
+ungewichtet (gleich groß) oder alle gewichtet mit Werten 0–1 und Summe 1
+(Toleranz für Gleitkomma). Gelöschte Punkte zählen nicht mit. Gewicht und Häkchen
+werden wie andere Punktfelder zusammengeführt; widersprüchliche Gewichtungen
+bleiben Konflikte. Der Gesamtaufwand wird beim Abhaken nicht überschrieben.
 
 ### Checklisten und Tags
 

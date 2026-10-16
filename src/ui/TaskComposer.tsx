@@ -10,6 +10,7 @@ import { PlusIcon } from './icons'
 import { useView } from './useView'
 import { TaskDraftContext } from './taskDraftContext'
 import { useExpandableForm } from './useExpandableForm'
+import { submitTaskShortcut } from './taskFormKeyboard'
 
 /** Erst schreiben; Gesamt- und Listenentwurf bleiben unabhängig. */
 export function TaskComposer({ listId, autoFocus = false, onCreated }: { listId?: string; autoFocus?: boolean; onCreated?: () => void }) {
@@ -47,11 +48,7 @@ export function TaskComposer({ listId, autoFocus = false, onCreated }: { listId?
       focus()
       if (listId === undefined && drafts.overviewTarget === null) drafts.selectOverviewTarget(targetId)
     }} onBlurCapture={blur}
-    onKeyDown={event => {
-      if (event.defaultPrevented || event.nativeEvent.isComposing || event.key !== 'Enter' || !event.ctrlKey || !(event.target instanceof HTMLTextAreaElement)) return
-      event.preventDefault()
-      event.currentTarget.requestSubmit()
-    }}
+    onKeyDownCapture={submitTaskShortcut}
     onSubmit={event => {
       if (!targetId) { event.preventDefault(); setChooseRequested(true); return }
       void form.speichern(event)
@@ -82,7 +79,7 @@ export function TaskComposer({ listId, autoFocus = false, onCreated }: { listId?
       </label> : null}
       {excluded ? <p role="status" className="text-meta text-ink-muted">Die Aufgabe wird in „{target.name}“ gespeichert. Diese Liste ist nicht in deiner Gesamtansicht enthalten.</p> : null}
       <TaskFields form={form} felder={['beschreibung', 'checkliste', 'tags', 'faellig', 'wiederholung', 'erinnerungen']} sections={target?.sections ?? []}
-        currentUserId={currentUserId} listIsShared={target?.is_shared ?? false} idPrefix={idPrefix} />
+        currentUserId={currentUserId} listIsShared={target?.is_shared ?? false} ratingsEnabled={target?.ratings_enabled} idPrefix={idPrefix} />
       <TaskMoreOptions form={form} sections={target?.sections ?? []} idPrefix={idPrefix} />
     </div> : null}
     <TaskFormStatus form={form} />

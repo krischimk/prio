@@ -231,3 +231,31 @@ werden für die kleine einzelne Checkliste mit eigenem Kontext, dediziertem Grif
 Die lokale Indexpflege folgt den dokumentierten
 [Creating-/Updating-Hooks](https://dexie.org/docs/Table/Table.hook('updating')):
 Updates liefern zusätzliche Änderungen zurück und verändern das alte Objekt nicht.
+
+
+## 17. Optionale Bewertungen und Checklistenanteile
+
+- Die erste Einschätzung ist Wichtigkeit. Danach bleiben Wichtigkeit, Aufwand,
+  Dringlichkeit und abgeleitete Priorität sichtbar, bis die Bewertung entfernt
+  wird. Ohne Bewertung bleiben Aufgaben ruhig. Eine Fälligkeit aktiviert keine
+  Bewertung. Der Besitzer kann die gesamte Funktion je Liste ausblenden.
+- Regler nehmen mit einem Klick/Tap Werte an und unterstützen Pfeiltasten,
+  Anfang und Ende. Die Richtung ist mit „Gering“/„Hoch“ beschriftet; Füllung
+  zeigt die Stärke. Zahlen sind intern, die Einschätzung bleibt visuell.
+  Richtungshinweis und Name teilen sich eine Zeile; Checklistenregler haben
+  keinen eigenen Beschriftungsblock. Touch behält 44 px Trefferhöhe, Maus 32 px.
+- Automatische Dringlichkeit zeigt den wirksamen Wert mit erklärtem Modus.
+  „Manuell“ übernimmt den aktuellen Wert auf der Reglerpräzision; ein bloß
+  deaktivierter Regler ohne Erklärung reicht nicht.
+- Checklisten-Kopplung ist standardmäßig an. Bei vorhandenen Punkten heißen
+  Eingabe und Ergebnis ausdrücklich Gesamtaufwand und Restaufwand. Die Anteile
+  stehen ausschließlich in den Einstellungen unter dem jeweiligen Punkt.
+  Die übrigen Anteile ändern sich proportional. Häkchen verändern den Rest
+  reversibel; die Hauptaufgabe bleibt unabhängig.
+- Die vier beschrifteten Balken sind zunächst eine Testdarstellung. Sie ändern
+  weder Reihenfolge noch Trefferfläche einer Aufgabe. Matrix, Altersfarben und
+  abgestufte Hervorhebung bleiben eigene nachfolgende Entscheidungen.
+
+Prüfbar durch `rating.test.ts`, `checklistWeights.test.ts`, `taskRatings.test.ts`,
+`ratingSync.test.ts`, die beiden Bewertungsfälle der Paritätstabelle und echte
+PostgreSQL-Prüfungen für Migration, Form und Berechtigungen.

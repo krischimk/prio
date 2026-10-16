@@ -17,7 +17,6 @@ export async function openChecklistEditor(editor: Locator) {
 }
 
 export async function addTags(editor: Locator, tags: string[]) {
-  await editor.getByRole('button', { name: 'Tags hinzufügen', exact: true }).click()
   for (const tag of tags) {
     await editor.getByLabel('Neuer Tag', { exact: true }).fill(tag)
     await editor.getByLabel('Neuer Tag', { exact: true }).press('Enter')
@@ -82,8 +81,6 @@ export async function tagFilterParity(page: Page, mobile: boolean) {
     await expect(editor).toBeHidden()
   }
   const editor = await desktop.openTaskEditor(page, 'Privat')
-  const tags = editor.getByRole('button', { name: 'Tags bearbeiten', exact: true })
-  if (await tags.getAttribute('aria-expanded') !== 'true') await tags.click()
   await expect(editor.getByRole('group', { name: 'Vorhandene Tags' }).getByRole('button', { name: /^Uni$/ })).toBeEnabled()
   await editor.getByRole('button', { name: 'Schließen', exact: true }).click()
   for (const overview of [false, true]) {

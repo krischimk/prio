@@ -13,6 +13,7 @@ import { errorBox } from './styles'
 import { TaskMoreOptions } from './TaskMoreOptions'
 import { useTaskDelete } from './useTaskDelete'
 import { formatCompletedLabel } from './datetime'
+import { submitTaskShortcut } from './taskFormKeyboard'
 
 /**
  * Detail- und Bearbeitungsansicht einer Aufgabe.
@@ -96,7 +97,7 @@ export function TaskEditor({
       header={null}
     >
       <form id="task-detail-form" aria-label={isNew ? 'Neue Aufgabe anlegen' : `Aufgabe bearbeiten: ${task.title}`}
-        onSubmit={form.speichern} className="flex min-h-0 flex-1 flex-col">
+        onSubmit={form.speichern} onKeyDownCapture={submitTaskShortcut} className="flex min-h-0 flex-1 flex-col">
         <div className="safe-top border-b border-line">
           <header className="flex min-h-16 shrink-0 flex-wrap items-center gap-2 px-2 py-1">
             <IconButton
@@ -145,6 +146,7 @@ export function TaskEditor({
               form={form}
               sections={sections}
               currentUserId={currentUserId}
+              ratingsEnabled={lists.find(list => list.id === listId)?.ratings_enabled}
               listIsShared={lists.find((eintrag) => eintrag.id === listId)?.is_shared ?? false}
               idPrefix="detail"
               felder={['titel', 'beschreibung', 'checkliste', 'tags', 'faellig', 'wiederholung', 'erinnerungen']}

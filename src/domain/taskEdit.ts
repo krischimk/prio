@@ -5,6 +5,7 @@ import type { LocalTask } from './types'
 import { optionalText, requireText } from './validation'
 import { mergeChecklist, parseChecklist, validateChecklist, type ChecklistItem } from './checklist'
 import { mergeTags, parseTags } from './tags'
+import { parseRating, validateRating, type TaskRating } from './rating'
 
 /** Fachliche Eingabe; unveränderte Felder werden nicht mitgeschickt. */
 export interface TaskEditInput {
@@ -12,13 +13,14 @@ export interface TaskEditInput {
   description?: string | null
   checklist?: ChecklistItem[]
   tags?: string[]
+  rating?: TaskRating | null
   dueAt?: string | null
   recurrence?: string | null
   reminders?: TaskReminder[]
   sectionId?: string | null
 }
 
-type EditableTask = Pick<LocalTask, 'title' | 'description' | 'checklist' | 'tags' | 'due_at' | 'recurrence' | 'reminders' | 'section_id'>
+type EditableTask = Pick<LocalTask, 'title' | 'description' | 'checklist' | 'tags' | 'rating' | 'due_at' | 'recurrence' | 'reminders' | 'section_id'>
 export interface TaskEditBase {
   taskId: string
   listId: string
@@ -43,6 +45,7 @@ export function taskEditValues(task: LocalTask): EditableTask {
     description: optionalText(task.description),
     checklist: parseChecklist(task.checklist),
     tags: parseTags(task.tags),
+    rating: parseRating(task.rating),
     due_at: normalizeIso(task.due_at),
     recurrence: task.recurrence ?? null,
     reminders: parseReminders(task.reminders),
@@ -67,6 +70,7 @@ export function applyTaskEdit(task: LocalTask, patch: TaskEditInput, nowMs: numb
   const fields: Array<keyof EditableTask> = []
   if (patch.title !== undefined) fields.push('title')
   if (patch.description !== undefined) fields.push('description')
+  if (patch.rating !== undefined) fields.push('rating')
   if (patch.sectionId !== undefined) fields.push('section_id')
   const changesSchedule = patch.dueAt !== undefined || patch.recurrence !== undefined || patch.reminders !== undefined
   if (changesSchedule) fields.push('due_at', 'recurrence', 'reminders')
@@ -88,6 +92,7 @@ export function applyTaskEdit(task: LocalTask, patch: TaskEditInput, nowMs: numb
     ...current,
     checklist,
     tags,
+    rating: patch.rating === undefined ? current.rating : validateRating(patch.rating),
     title: patch.title === undefined ? current.title : requireText(patch.title, 'Der Titel'),
     description: patch.description === undefined ? current.description : optionalText(patch.description),
     section_id: patch.sectionId === undefined ? current.section_id : patch.sectionId,

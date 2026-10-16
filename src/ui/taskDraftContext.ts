@@ -2,6 +2,7 @@ import { createContext } from 'react'
 import type { TaskEditBase } from '../domain/taskEdit'
 import type { TaskReminder } from '../domain/reminder'
 import type { ChecklistItem } from '../domain/checklist'
+import type { TaskRating } from '../domain/rating'
 
 export interface TaskFormWerte {
   title: string
@@ -10,6 +11,7 @@ export interface TaskFormWerte {
   checklistText: string
   tags: string[]
   tagText: string
+  rating: TaskRating | null
   dueAt: string
   recurrence: string
   reminders: TaskReminder[]
@@ -30,15 +32,16 @@ export interface NewListDraft {
   icon: string | null
   includeInOverview: boolean
   keepCompleted: boolean
+  ratingsEnabled: boolean
   busy: boolean
   error: string | null
 }
 export const emptyNewListDraft: NewListDraft = {
-  name: '', icon: null, includeInOverview: false, keepCompleted: false, busy: false, error: null,
+  name: '', icon: null, includeInOverview: false, keepCompleted: false, ratingsEnabled: true, busy: false, error: null,
 }
 export interface TaskDraftState {
   newList: NewListDraft
-  changeNewList(patch: Partial<Pick<NewListDraft, 'name' | 'icon' | 'includeInOverview' | 'keepCompleted'>>): void
+  changeNewList(patch: Partial<Pick<NewListDraft, 'name' | 'icon' | 'includeInOverview' | 'keepCompleted' | 'ratingsEnabled'>>): void
   beginListSave(): boolean
   listSaved(): void
   listFailed(message: string): void

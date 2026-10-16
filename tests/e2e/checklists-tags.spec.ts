@@ -42,7 +42,6 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Punkte Telefon' : 'P
     await expect(page.getByRole('alertdialog', { name: 'Änderungen verwerfen' })).toBeHidden()
     await expect(destination).toHaveValue('Ladekabel')
     await editor.getByLabel('Checklistenpunkt erledigt: Kleidung', { exact: true }).check()
-    await editor.getByRole('button', { name: 'Tags hinzufügen', exact: true }).click()
     await editor.getByLabel('Neuer Tag', { exact: true }).fill('Reise')
     await page.evaluate(() => Promise.all(document.getAnimations().filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity).map(animation => animation.finished.catch(() => undefined))))
     await page.screenshot({ path: info.outputPath('checklist-editor-dark.png') })

@@ -16,6 +16,7 @@ import { parseTags } from '../../domain/tags'
 import { optionalText, requireText, ValidationError } from '../validation'
 import type { Kontext } from './context'
 import type { Repositories } from './types'
+import { validateRating } from '../../domain/rating'
 import { completedTaskIdsWithTags } from '../taskReadIndex'
 
 /**
@@ -103,6 +104,7 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
           description: optionalText(input.description),
           checklist: validateChecklist(input.checklist ?? []),
           tags: parseTags(input.tags),
+          rating: validateRating(input.rating),
           // `undefined` heißt „nicht mitgeschickt" – siehe `ReminderTarget`.
           ...alignReminders(
             null,

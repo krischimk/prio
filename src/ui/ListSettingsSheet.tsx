@@ -4,6 +4,7 @@ import { useUndo } from './useUndo'
 import { useListNameDraft } from './useListNameDraft'
 import { ListOverviewChoice } from './ListOverviewChoice'
 import { ListCompletionChoice } from './ListCompletionChoice'
+import { ListRatingChoice } from './ListRatingChoice'
 import { ListNavigationChoice } from './ListNavigationChoice'
 import type { LocalList } from '../domain/types'
 import { ListIcon } from './ListIcon'
@@ -120,6 +121,7 @@ export function ListSettingsSheet({
               <section className="space-y-2 border-t border-line pt-4" aria-label="Gemeinsame Listenregeln">
               <h3 className="text-meta font-medium text-ink-muted">Für diese Liste</h3>
               <ListCompletionChoice key={list.id} list={list} currentUserId={currentUserId} />
+              <ListRatingChoice key={`rating:${list.id}`} list={list} currentUserId={currentUserId} />
               </section>
               <div className="grid grid-cols-2 gap-2 border-t border-line pt-4">
               {istBesitzer ? (

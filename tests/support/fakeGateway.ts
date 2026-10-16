@@ -59,7 +59,7 @@ export class FakeServer {
   expireCompleted(): void {
     for (const [id, task] of this.tasks) {
       if (task.completed && !task.expired_at && task.completed_expires_at && Date.parse(task.completed_expires_at) <= this.clock.nowMs()) {
-        this.tasks.set(id, { ...task, expired_at: this.clock.now(), deleted_at: this.clock.now(), updated_at: this.clock.now(), title: 'Abgelaufene Aufgabe', description: null, due_at: null, available_from: null, checklist: [], tags: [], reminders: [], recurrence: null, successor_id: null, section_id: null, reopen_context: null })
+        this.tasks.set(id, { ...task, expired_at: this.clock.now(), deleted_at: this.clock.now(), updated_at: this.clock.now(), title: 'Abgelaufene Aufgabe', description: null, due_at: null, available_from: null, checklist: [], tags: [], rating: null, reminders: [], recurrence: null, successor_id: null, section_id: null, reopen_context: null })
       }
     }
   }

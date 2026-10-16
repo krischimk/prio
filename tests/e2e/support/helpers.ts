@@ -127,9 +127,7 @@ export async function closeListSettings(page: Page): Promise<void> {
 
 export async function openTaskEditor(page: Page, title: string): Promise<Locator> {
   await closeListSettings(page)
-  const desktop = taskItem(page, title).getByRole('button', { name: 'Bearbeiten', exact: true })
-  const phone = page.getByTestId('task-row').filter({ hasText: title })
-  await desktop.or(phone).click()
+  await page.getByTestId('task-row').filter({ hasText: title }).click()
   return page.getByRole('dialog', { name: 'Aufgabe', exact: true })
 }
 

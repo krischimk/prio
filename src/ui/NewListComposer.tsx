@@ -6,6 +6,7 @@ import { ListIcon } from './ListIcon'
 import { ListIconChoice } from './ListIconPicker'
 import { ListOverviewField } from './ListOverviewChoice'
 import { ListCompletionField } from './ListCompletionChoice'
+import { ListRatingField } from './ListRatingChoice'
 import { Button } from './components/Button'
 import { IconButton } from './components/IconButton'
 import { Sheet } from './components/Sheet'
@@ -26,7 +27,7 @@ export function NewListComposer({ currentUserId, onCreated }: { currentUserId: s
     if (!draft.name.trim() || !drafts.beginListSave()) return
     try {
       const list = await repositories.createList(draft.name, currentUserId, {
-        icon: draft.icon, includeInOverview: draft.includeInOverview, keepCompleted: draft.keepCompleted,
+        icon: draft.icon, includeInOverview: draft.includeInOverview, keepCompleted: draft.keepCompleted, ratingsEnabled: draft.ratingsEnabled,
       })
       drafts.listSaved()
       onCreated(list.id)
@@ -45,6 +46,7 @@ export function NewListComposer({ currentUserId, onCreated }: { currentUserId: s
       {expanded ? <div className="space-y-2 pb-2" role="group" aria-label="Einstellungen der neuen Liste">
         <ListOverviewField included={draft.includeInOverview} disabled={draft.busy} onChange={includeInOverview => drafts.changeNewList({ includeInOverview })} />
         <ListCompletionField keep={draft.keepCompleted} disabled={draft.busy} onChange={keepCompleted => drafts.changeNewList({ keepCompleted })} />
+        <ListRatingField enabled={draft.ratingsEnabled} disabled={draft.busy} onChange={ratingsEnabled => drafts.changeNewList({ ratingsEnabled })} />
       </div> : null}
       <Button type="submit" variant="primary" layout="w-full" disabled={draft.busy || !draft.name.trim()}><PlusIcon />Liste anlegen</Button>
       {draft.error ? <p role="alert" className={errorMessage}>{draft.error}</p> : null}

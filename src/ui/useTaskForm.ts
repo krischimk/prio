@@ -5,7 +5,7 @@ import { taskEditBase, TaskEditConflict, type TaskEditInput } from '../domain/ta
 import type { LocalTask } from '../domain/types'
 import { TaskDraftContext, type TaskDraft, type TaskFormWerte } from './taskDraftContext'
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from './datetime'
-import { createChecklistItem } from '../domain/checklist'
+import { appendChecklistItem, createChecklistItem } from '../domain/checklist'
 import { parseTags } from '../domain/tags'
 
 export type { TaskFormWerte } from './taskDraftContext'
@@ -30,6 +30,7 @@ function werteVon(task: LocalTask | null): TaskFormWerte {
     checklistText: '',
     tags: task?.tags ?? [],
     tagText: '',
+    rating: task?.rating ?? null,
     dueAt: toDateTimeLocalValue(task?.due_at ?? null),
     recurrence: task?.recurrence ?? '',
     reminders: task?.reminders ?? [],
@@ -78,8 +79,9 @@ export function useTaskForm({ task, listId, onSaved, overviewUserId }: {
       const eingabe = {
         title: werte.title,
         description: werte.description,
-        checklist: [...werte.checklist, ...(werte.checklistText.trim() ? [createChecklistItem(werte.checklistText)] : [])],
+        checklist: werte.checklistText.trim() ? appendChecklistItem(werte.checklist, createChecklistItem(werte.checklistText), werte.rating?.effortFromChecklist) : werte.checklist,
         tags: parseTags([...werte.tags, werte.tagText]),
+        rating: werte.rating,
         dueAt: fromDateTimeLocalValue(werte.dueAt),
         recurrence: werte.recurrence === '' ? null : werte.recurrence,
         reminders: werte.reminders,
@@ -93,6 +95,7 @@ export function useTaskForm({ task, listId, onSaved, overviewUserId }: {
         if (werte.description !== start.description) patch.description = eingabe.description
         if (!sameData(werte.checklist, start.checklist) || werte.checklistText.trim()) patch.checklist = eingabe.checklist
         if (!sameData(werte.tags, start.tags) || werte.tagText.trim()) patch.tags = eingabe.tags
+        if (!sameData(werte.rating, start.rating)) patch.rating = eingabe.rating
         if (werte.dueAt !== start.dueAt) patch.dueAt = eingabe.dueAt
         if (werte.recurrence !== start.recurrence) patch.recurrence = eingabe.recurrence
         if (!sameData(werte.reminders, start.reminders)) patch.reminders = eingabe.reminders

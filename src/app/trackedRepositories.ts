@@ -39,6 +39,7 @@ export const SCHREIBEND = [
   'renameList',
   'setListIcon',
   'setListKeepCompleted',
+  'setListRatingsEnabled',
   'addListSection',
   'renameListSection',
   'deleteListSection',

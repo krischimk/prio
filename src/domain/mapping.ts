@@ -3,6 +3,7 @@ import { normalisiereAufgabe, normalisiereListe, normalisiereMitglied, normalisi
 import { parseSections } from './sections'
 import { parseChecklist } from './checklist'
 import { parseTags } from './tags'
+import { parseRating } from './rating'
 import type {
   LocalList,
   LocalListMember,
@@ -36,6 +37,7 @@ export function toRemoteList(local: LocalList): RemoteList {
     icon: local.icon,
     sections: parseSections(local.sections),
     keep_completed: local.keep_completed === true,
+    ratings_enabled: local.ratings_enabled === true,
     completion_retention_started_at: normalizeIso(local.completion_retention_started_at ?? null),
     created_at: normalizeIso(local.created_at),
     updated_at: normalizeIso(local.updated_at),
@@ -56,6 +58,7 @@ export function toRemoteTask(local: LocalTask): RemoteTask {
     description: local.description,
     checklist: parseChecklist(local.checklist),
     tags: parseTags(local.tags),
+    rating: parseRating(local.rating),
     due_at: normalizeIso(local.due_at),
     available_from: normalizeIso(local.available_from ?? null),
     completed: local.completed,

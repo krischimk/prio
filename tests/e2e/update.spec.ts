@@ -34,6 +34,7 @@ async function feldEntfernen(page: import('@playwright/test').Page) {
         alle.onsuccess = () => {
           for (const zeile of alle.result as Record<string, unknown>[]) {
             delete zeile.sections
+            delete zeile.ratings_enabled
             delete zeile.keep_completed
             delete zeile.completion_retention_started_at
             speicher.put(zeile)
@@ -47,6 +48,7 @@ async function feldEntfernen(page: import('@playwright/test').Page) {
             delete zeile.expired_at
             delete zeile.reopen_context
             delete zeile.available_from
+            delete zeile.rating
             delete zeile.checklist
             delete zeile.tags
             aufgaben.put(zeile)
