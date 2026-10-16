@@ -181,6 +181,37 @@ test('horizontale Bewegung in einem Eingabefeld schließt das Menü nicht', asyn
   await expect(input).toHaveValue('Dieser Entwurf bleibt')
 })
 
+test('Menü schließt durch Wischen auf Listen und freier Fläche ohne Randstart', async ({ page, context }) => {
+  await setup(page)
+  const client = await context.newCDPSession(page)
+  await page.evaluate(() => {
+    const log: unknown[] = []
+    Object.assign(window, { swipeEvidence: log })
+    for (const name of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'gotpointercapture', 'lostpointercapture']) {
+      document.addEventListener(name, event => {
+        const pointer = event as PointerEvent
+        log.push({ type: name, x: pointer.clientX, y: pointer.clientY, target: (event.target as HTMLElement).tagName,
+          motion: document.querySelector('[data-drawer-motion]')?.getAttribute('data-drawer-motion') })
+      }, true)
+    }
+  })
+  const menu = page.getByRole('dialog', { name: 'Menü', exact: true })
+  for (const area of ['list', 'header', 'blank'] as const) {
+    await phone.openMenu(page)
+    await menuSettled(page)
+    const box = (await menu.getByRole('button', { name: 'Arbeit', exact: true }).boundingBox())!
+    const y = area === 'list' ? box.y + box.height / 2 : area === 'header' ? 90 : 805
+    await touch(client, 'touchStart', 270, y)
+    for (const [x, dy] of [[250, 2], [210, 5], [150, 8], [80, 10]] as const) {
+      await touch(client, 'touchMove', x, y + dy)
+      await page.waitForTimeout(35)
+    }
+    await touch(client, 'touchEnd')
+    await expect(menu, JSON.stringify(await page.evaluate(() => (window as unknown as { swipeEvidence: unknown[] }).swipeEvidence))).toBeHidden()
+    await expect(phone.taskRow(page, 'Bericht')).toBeVisible()
+  }
+})
+
 test('senkrechtes Wischen scrollt Aufgaben, ohne Menü oder Editor zu öffnen', async ({ page, context }) => {
   await phone.register(page, desktop.uniqueEmail('swipe-scroll'))
   await phone.createList(page, 'Lang')

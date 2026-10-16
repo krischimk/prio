@@ -434,6 +434,10 @@ body {
 }
 
 .drawer-sheet {
+  /* Der Browser prüft touch-action nur bis zum nächsten Scrollcontainer.
+   * Die Regel am äußeren Arbeitsbereich erreicht freie Menüflächen daher
+   * nicht: Schon leicht schräge Schließgesten wurden per pointercancel beendet. */
+  touch-action: pan-y;
   transform: translateX(calc((var(--drawer-progress) - 1) * 100%));
 }
 
