@@ -8,6 +8,8 @@ import { appBackground, focusRing } from './styles'
 import { formatCompletedLabel } from './datetime'
 import { Hint } from './components/Hint'
 import { TaskDeleteButton } from './TaskDeleteButton'
+import { TaskChecklist } from './TaskChecklist'
+import { TagIcon } from './icons'
 
 /** Die Aufgabenzeile ist in Einzel- und Gesamtansicht dieselbe. */
 export function TaskRow({ task, currentUserId, onOpen, origin, overview = false, elementRef, activatorRef, dragging = false }: {
@@ -29,6 +31,9 @@ export function TaskRow({ task, currentUserId, onOpen, origin, overview = false,
         <TaskFacts task={task} currentUserId={currentUserId} />
           {origin ? <span className="mt-1 block break-words text-meta text-ink-muted">{origin}</span> : null}
         {task.description ? <TaskDescription text={task.description} className="mt-1" /> : null}
+        {task.tags.length ? <span aria-label={`Tags: ${task.tags.join(', ')}`} className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-meta text-ink-muted">
+          <TagIcon className="size-icon-meta" />{task.tags.map(tag => <span key={tag} className="min-w-0 max-w-full break-words">{tag}</span>)}
+        </span> : null}
       </div>
   return <li ref={elementRef} data-task-row="true" data-id={task.id}
     data-completed={task.completed ? 'true' : undefined} data-dragging={dragging ? 'true' : undefined}
@@ -37,5 +42,6 @@ export function TaskRow({ task, currentUserId, onOpen, origin, overview = false,
     {task.completed_at ? <Hint text={formatCompletedLabel(task.completed_at)}>{content}</Hint> : content}
     <div className="pointer-events-none col-start-1 row-start-1 flex items-center"><TaskCheckbox task={task} /></div>
     {desktop ? <div className="pointer-events-none col-start-3 row-start-1 flex items-center"><TaskDeleteButton task={task} disabled={dragging} /></div> : null}
+    {task.checklist.some(item => item.deleted_at === null) ? <div className="col-span-3 col-start-1 row-start-2 min-w-0 pl-14 pr-3 pb-2"><TaskChecklist task={task} /></div> : null}
   </li>
 }

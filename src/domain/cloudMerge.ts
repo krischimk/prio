@@ -2,6 +2,8 @@ import { sameData } from './equality'
 import { fromRemoteList, fromRemoteMember, fromRemoteTask, fromRemotePreference, fromRemoteUserPreference, toRemoteList, toRemoteMember, toRemoteTask, toRemotePreference, toRemoteUserPreference } from './mapping'
 import type { RemoteList, RemoteListMember, RemoteListPreference, RemoteTask, RemoteUserPreference } from './types'
 import { optionalText } from './validation'
+import { mergeChecklist, parseChecklist } from './checklist'
+import { mergeTags, parseTags } from './tags'
 
 export const CLOUD_TABLES = ['lists', 'members', 'tasks', 'preferences', 'userPreferences'] as const
 export type CloudTable = typeof CLOUD_TABLES[number]
@@ -76,6 +78,16 @@ export function mergeCloudRow(table: CloudTable, base: CloudRow | null | undefin
   const conflicts: string[] = []
   for (const fields of parts) {
     if (sameData(values(l, fields), values(b, fields))) continue
+    if (table === 'tasks' && fields.length === 1 && fields[0] === 'checklist') {
+      const result = mergeChecklist(parseChecklist((b as RemoteTask).checklist), parseChecklist((l as RemoteTask).checklist), parseChecklist((r as RemoteTask).checklist), preferLocal)
+      merged.checklist = result.items
+      if (result.conflict) conflicts.push('checklist')
+      continue
+    }
+    if (table === 'tasks' && fields.length === 1 && fields[0] === 'tags') {
+      merged.tags = mergeTags(parseTags((b as RemoteTask).tags), parseTags((l as RemoteTask).tags), parseTags((r as RemoteTask).tags))
+      continue
+    }
     if (!preferLocal && !sameData(values(r, fields), values(b, fields)) && !sameData(values(l, fields), values(r, fields))) {
       conflicts.push(...fields)
     }

@@ -60,15 +60,17 @@ export async function applyRemoteTasks(db: LocalDatabase, remote: RemoteTask[]):
 }
 
 /** Persönliche Einstellungen werden nur für den angemeldeten Benutzer gelesen. */
-export async function applyRemotePreferences(db: LocalDatabase, preferences: RemoteListPreference[], userPreferences: RemoteUserPreference[], userId: string): Promise<void> {
+export async function applyRemotePreferences(db: LocalDatabase, preferences: RemoteListPreference[], userPreferences: RemoteUserPreference[], userId: string): Promise<ApplyStats> {
+  const stats = emptyStats()
   await db.transaction('rw', db.list_preferences, db.user_preferences, db.meta, async () => {
     for (const row of preferences) {
-      if (row.user_id === userId) await acceptCloudRow(db, 'preferences', row)
+      if (row.user_id === userId) addOutcome(stats, await acceptCloudRow(db, 'preferences', row))
     }
     for (const row of userPreferences) {
-      if (row.id === userId) await acceptCloudRow(db, 'userPreferences', row)
+      if (row.id === userId) addOutcome(stats, await acceptCloudRow(db, 'userPreferences', row))
     }
   })
+  return stats
 }
 
 /**
@@ -103,6 +105,7 @@ export async function applyRemoteMembers(
           await db.tasks.where('list_id').equals(remoteMember.list_id).delete()
           await db.list_members.where('list_id').equals(remoteMember.list_id).delete()
           await db.lists.delete(remoteMember.list_id)
+          stats.remoteWins += 1
         }
         continue
       }

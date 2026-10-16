@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useOverviewPreferences, useTasksQuery } from '../../src/app/hooks'
 import { localList, localTask, localUserPreference } from '../support/factories'
 
-const workspace = vi.hoisted(() => ({ repositories: { listLists: vi.fn(), listListPreferences: vi.fn(), getUserPreferences: vi.fn(), listTasks: vi.fn() }, dataVersion: 0 }))
+const workspace = vi.hoisted(() => ({ repositories: { listLists: vi.fn(), listListPreferences: vi.fn(), getUserPreferences: vi.fn(), listTasks: vi.fn() }, dataVersion: 0, nowMs: Date.parse('2026-01-01T10:00:00Z') }))
 vi.mock('../../src/app/useWorkspace', () => ({ useWorkspace: () => workspace }))
 beforeEach(() => {
   Object.values(workspace.repositories).forEach(mock => mock.mockReset())

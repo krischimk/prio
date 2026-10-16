@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTaskQuery } from '../../src/app/hooks'
 import { localTask } from '../support/factories'
 
-const workspace = vi.hoisted(() => ({ repositories: { getTask: vi.fn() }, dataVersion: 0 }))
+const workspace = vi.hoisted(() => ({ repositories: { getTask: vi.fn() }, dataVersion: 0, nowMs: Date.parse('2026-01-01T10:00:00Z') }))
 const getTask = workspace.repositories.getTask
 vi.mock('../../src/app/useWorkspace', () => ({ useWorkspace: () => workspace }))
 

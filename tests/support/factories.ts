@@ -14,6 +14,8 @@ export function localTask(overrides: Partial<LocalTask> = {}): LocalTask {
     section_id: null,
     title: 'Aufgabe',
     description: null,
+    checklist: [],
+    tags: [],
     due_at: null,
     available_from: null,
     completed: false,

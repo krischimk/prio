@@ -1,6 +1,8 @@
 import { normalizeIso } from './clock'
 import { parseReminders } from './reminder'
 import { parseSections } from './sections'
+import { parseChecklist } from './checklist'
+import { parseTags } from './tags'
 import type { LocalList, LocalListMember, LocalListPreference, LocalTask, LocalUserPreference, RemoteList, RemoteListMember, RemoteListPreference, RemoteTask, RemoteUserPreference } from './types'
 
 /**
@@ -55,6 +57,8 @@ export function normalisiereAufgabe(zeile: LocalTask | RemoteTask): LocalTask {
     list_id: roh.list_id ?? '',
     title: zeile.title,
     description: roh.description ?? '',
+    checklist: parseChecklist(roh.checklist),
+    tags: parseTags(roh.tags),
     due_at: normalizeIso(roh.due_at ?? null),
     available_from: normalizeIso(roh.available_from ?? null),
     completed: roh.completed ?? false,

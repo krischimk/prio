@@ -16,6 +16,8 @@ export interface WorkspaceValue {
    * neuen Daten) erhöht. Hooks lesen daraufhin neu aus IndexedDB.
    */
   dataVersion: number
+  /** Löst nur ein Neuzeichnen zeitabhängiger Angaben aus. */
+  nowMs: number
   /** Status des letzten Sync-Durchlaufs. */
   syncStatus: SyncResult | null
   /** Anzahl noch nicht hochgeladener lokaler Änderungen. */

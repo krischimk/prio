@@ -1,4 +1,4 @@
-import type { PushPayload, RemoteSnapshot } from '../domain/types'
+import type { PushPayload, RemoteSnapshot, RemoteCheckpoint } from '../domain/types'
 import type { CloudConflict, CloudRow, CloudTable } from '../domain/cloudMerge'
 
 /**
@@ -38,8 +38,8 @@ export class RemoteError extends Error {
  * jetzt `SyncTransport`.
  */
 export interface SyncTransport {
-  /** Lädt den kompletten sichtbaren Serverbestand. */
-  pull(): Promise<RemoteSnapshot>
+  /** Lädt Änderungen seit der bestätigten Serversicht; ohne diese den Bestand. */
+  pull(checkpoint?: RemoteCheckpoint | null): Promise<RemoteSnapshot>
   /**
    * Schreibt jede Zeile gegen ihren bestätigten Ausgangsstand. Ergebnis und
    * Ablehnung gehören zu einzelnen Zeilen, gruppiert nach Tabelle. Ein Retry

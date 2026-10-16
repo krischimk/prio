@@ -1,10 +1,15 @@
 import { createContext } from 'react'
 import type { TaskEditBase } from '../domain/taskEdit'
 import type { TaskReminder } from '../domain/reminder'
+import type { ChecklistItem } from '../domain/checklist'
 
 export interface TaskFormWerte {
   title: string
   description: string
+  checklist: ChecklistItem[]
+  checklistText: string
+  tags: string[]
+  tagText: string
   dueAt: string
   recurrence: string
   reminders: TaskReminder[]

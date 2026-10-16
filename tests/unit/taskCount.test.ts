@@ -18,4 +18,9 @@ describe('Zähler offener Aufgaben', () => {
   it('nennt auch die leere Liste', () => {
     expect(formatOpenTasks(0)).toBe('0 offene Aufgaben')
   })
+
+  it('zeigt bei einem Filter Treffer und gesamten offenen Bestand', () => {
+    expect(formatOpenTasks(2, 7)).toBe('2 von 7 offenen Aufgaben')
+    expect(formatOpenTasks(0, 1)).toBe('0 von 1 offener Aufgabe')
+  })
 })

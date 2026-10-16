@@ -147,7 +147,7 @@ export function TaskEditor({
               currentUserId={currentUserId}
               listIsShared={lists.find((eintrag) => eintrag.id === listId)?.is_shared ?? false}
               idPrefix="detail"
-              felder={['titel', 'beschreibung', 'faellig', 'wiederholung', 'erinnerungen']}
+              felder={['titel', 'beschreibung', 'checkliste', 'tags', 'faellig', 'wiederholung', 'erinnerungen']}
               titelAutofokus={isNew}
             />
             <TaskFormStatus form={form} />

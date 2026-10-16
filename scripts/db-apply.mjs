@@ -128,6 +128,8 @@ const ERWARTET = [
   ['lists', 'sections', '0013'],
   ['tasks', 'section_id', '0013'],
   ['tasks', 'available_from', '0020'],
+  ['tasks', 'checklist', '0021'],
+  ['tasks', 'tags', '0021'],
   ['list_preferences', 'position', '0020'],
   ['list_preferences', 'hidden', '0020'],
   ['tasks', 'reminders', '0011'],
@@ -198,7 +200,11 @@ if (checkOnly) {
     console.log('\nAlle erwarteten Spalten sind da.')
   }
   const guarded = spawnSync('psql', [...base, '-tAc', `select
-    to_regprocedure('public.sync_push(jsonb)') is not null
+    to_regprocedure('public.sync_pull(text,uuid[],text,integer)') is not null
+    and has_function_privilege('authenticated','public.sync_pull(text,uuid[],text,integer)','EXECUTE')
+    and not has_function_privilege('anon','public.sync_pull(text,uuid[],text,integer)','EXECUTE')
+    and not has_table_privilege('authenticated','private.sync_row_versions','SELECT,INSERT,UPDATE,DELETE')
+    and to_regprocedure('public.sync_push(jsonb)') is not null
     and has_function_privilege('authenticated','public.sync_push(jsonb)','EXECUTE')
     and not has_function_privilege('anon','public.sync_push(jsonb)','EXECUTE')
     and to_regprocedure('private.sync_preference(text,jsonb,jsonb)') is not null

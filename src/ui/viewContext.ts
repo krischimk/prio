@@ -23,6 +23,8 @@ export interface ViewValue {
   /** Ihre Kennung – für `aria-current` und die Aufgabenabfrage. */
   selectedListId: string | null
   selectList: (id: string | null) => void
+  tagFilter: string[]
+  setTagFilter: (tags: string[]) => void
   restoreOpen: boolean
   accountOpen: boolean
   setAccountOpen: (open: boolean) => void

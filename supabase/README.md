@@ -26,6 +26,48 @@ App. Sie sind so geschrieben, dass sie sich gefahrlos erneut ausführen lassen
 | `0018_completion_cron.sql` | Benannter minütlicher Datenbankjob, unabhängig von App/MCP; setzt `pg_cron` voraus |
 | `0019_usernames.sql` | Eindeutige Benutzernamen, atomarer Auth-/Profil-Trigger, reine Verfügbarkeitsabfrage und Freigabe per Name mit Besitzprüfung und optionaler erwarteter Benutzer-ID |
 | `0020_navigation_and_recurrence.sql` | Persönliche Listenposition und Verstecken; `tasks.available_from` kennzeichnet den noch zurückgenommenen nächsten Serientermin. Wiederholbare Spaltenergänzung ohne Umschreiben bestehender Daten |
+| `0021_task_checklists_and_tags.sql` | Aufgabenfelder `checklist` und `tags` mit leeren Defaults und Formprüfung; endgültiger Ablauf entfernt auch diese Inhalte |
+| `0022_incremental_sync.sql` | Privater letzter Schreibstand je Zeile und paginierter `sync_pull` mit PostgreSQL-Snapshot; erkennt neue Freigaben und Rechteentzug ohne Geräteuhren |
+
+### Checklisten und Tags
+
+`tasks.checklist` enthält geordnete Punkte mit stabiler Kennung, Text, Häkchen
+und internem Löschvermerk. `tasks.tags` ist ein Array lesbarer Namen. Beide
+Sammlungen gehören zur bestehenden Aufgabenzeile und verwenden deren Lese- und
+Schreibrechte. Zusätzliche Freigaben oder öffentliche Tagverzeichnisse entstehen
+nicht. Verschiedene Punktänderungen und Tags werden clientseitig anhand der
+bestätigten Basis zusammengeführt; der Server prüft die vollständige Basis
+weiterhin atomar. Konflikte bleiben sichtbar, statt eine ganze alte Checkliste
+blind zu übernehmen. Schema und geschützter Schreibweg werden gemeinsam durch
+die vollständige Sammelmigration einschließlich 0021 aktualisiert.
+
+### Inkrementelles Lesen
+
+`sync_pull(p_since,p_lists,p_after,p_limit)` gibt höchstens 500 Änderungen je
+Seite, einen Checkpoint und entzogene Listenkennungen zurück. Der erste
+Seiten-Checkpoint gilt für den gesamten Durchlauf. Ein Client bestätigt ihn
+zusammen mit allen Zeilen atomar in seiner lokalen Datenbank. Änderungen
+während weiterer Seiten erscheinen nötigenfalls beim nächsten Pull erneut.
+
+`private.sync_row_versions` enthält pro Geschäftszeile die letzte Haupttransaktion
+als `xid8`. Ein Trigger ändert ausschließlich diese privaten Metadaten, niemals
+`updated_at`. `pg_visible_in_snapshot` erkennt auch beim letzten Lesen noch
+laufende Transaktionen; ein einfaches Sequenzmaximum wäre dafür nicht ausreichend.
+Neue Listenberechtigungen veranlassen einen vollständigen Abgleich. Entzogene
+Berechtigungen liefern keine fremden Inhalte; die Meldung entfernt lokale fremde
+Kopien auch dann, wenn nur die Liste selbst gelöscht wurde.
+
+Die private Tabelle hat RLS und keine App-Rechte. Die öffentliche Funktion läuft
+als Aufrufer; ihre private Definer-Funktion hat einen leeren Suchpfad, verlangt
+`auth.uid()` und bildet die SELECT-Regeln aller fünf Geschäftstabellen ab.
+`anon` erhält kein Ausführungsrecht. `db:test` vergleicht die gelieferten Kennungen
+mit echten RLS-Abfragen und prüft späte Commits über zwei Datenbankverbindungen.
+`db:check` prüft die Funktion und die gesperrten Metadatenrechte.
+
+Die [PostgreSQL-Snapshot-Funktionen](https://www.postgresql.org/docs/current/functions-info.html#FUNCTIONS-PG-SNAPSHOT)
+und die [STABLE-Sichtbarkeit](https://www.postgresql.org/docs/current/xfunc-volatility.html)
+begründen den Cursorvertrag: die Leseanfrage verwendet eine einheitliche Sicht;
+Gerätezeitstempel bestimmen den Download nicht.
 
 ### Persönliche Navigation und kommende Wiederholungen
 
@@ -80,7 +122,7 @@ Schreibrechte bis zum Erreichen von `0014` vorübergehend wieder zu erteilen.
 
 ### Übergang zu Migrationen 0014 bis 0018
 
-Die neue App braucht die vollständige Sammeldatei einschließlich `0018`,
+Die neue App braucht die vollständige Sammeldatei einschließlich `0022`,
 bevor ihr neuer Cloud-Zugriff benutzt wird. `0014`
 entzieht `authenticated`, `anon` und `PUBLIC` direkte
 INSERT-/UPDATE-/DELETE-/TRUNCATE-Rechte an Listen, Mitgliedschaften und Aufgaben.
@@ -100,7 +142,7 @@ beim Update erhalten.
    als gemeinsame Umschaltung planen; eine kurze Schreibpause ist möglich.
    Der neue Client fällt bei fehlendem RPC ausdrücklich nicht auf alte Upserts
    zurück und bewahrt ausstehende lokale Eingaben.
-3. `pg_cron` bereitstellen, die Sammeldatei einschließlich `0018` einspielen,
+3. `pg_cron` bereitstellen, die Sammeldatei einschließlich `0022` einspielen,
    `db:check` einschließlich aktivem Ablaufjob durchführen,
    kompatible App ausliefern und den echten Update-/Schreibweg prüfen.
 4. Ältere Offline-Eingaben auf der kompatiblen App prüfen. Saubere Zeilen

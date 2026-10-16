@@ -1,4 +1,4 @@
-import type { IsoDateTime, LocalList, LocalListMember, LocalListPreference, LocalTask, LocalUserPreference, PushPayload } from '../domain/types'
+import type { IsoDateTime, LocalList, LocalListMember, LocalListPreference, LocalTask, LocalUserPreference, PushPayload, RemoteCheckpoint } from '../domain/types'
 import type { LocalDatabase } from '../db/localDb'
 import { readMeta, writeMeta } from '../db/metaStore'
 import type { PushTabelle } from './remoteGateway'
@@ -22,6 +22,16 @@ import { canonicalCloudRow, type CloudRow } from '../domain/cloudMerge'
 
 export const META_LAST_SYNC_AT = 'last_sync_at'
 export const META_LAST_SYNC_STATUS = 'last_sync_status'
+export const META_PULL_CHECKPOINT = 'pull_checkpoint'
+export const META_APPLIED_DATA_VERSION = 'applied_cloud_data_version'
+
+export async function readPullCheckpoint(db: LocalDatabase): Promise<RemoteCheckpoint | null> {
+  try {
+    const parsed = JSON.parse(await readMeta(db, META_PULL_CHECKPOINT) ?? 'null') as RemoteCheckpoint | null
+    return parsed && typeof parsed.snapshot === 'string' && Array.isArray(parsed.listIds)
+      && parsed.listIds.every(id => typeof id === 'string') ? parsed : null
+  } catch { return null }
+}
 
 /**
  * Das Ablagefach für Zeilen, die der Server **dauerhaft** ablehnt.

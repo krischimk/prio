@@ -7,11 +7,15 @@ import type { TaskForm } from './useTaskForm'
 import { AutoTextarea } from './components/AutoTextarea'
 import { DescriptionIcon } from './icons'
 import { TaskScheduleFields } from './TaskScheduleFields'
+import { ChecklistEditor } from './ChecklistEditor'
+import { TaskTagsEditor } from './TaskTagsEditor'
 
 /** Welche Felder ein Formular zeigt. */
 export type TaskFieldName =
   | 'titel'
   | 'beschreibung'
+  | 'checkliste'
+  | 'tags'
   | 'faellig'
   | 'bereich'
   | 'wiederholung'
@@ -20,6 +24,8 @@ export type TaskFieldName =
 const ALLE: TaskFieldName[] = [
   'titel',
   'beschreibung',
+  'checkliste',
+  'tags',
   'faellig',
   'bereich',
   'wiederholung',
@@ -95,6 +101,9 @@ export function TaskFields({
           />
         </div>
       ) : null}
+
+      {zeigt('checkliste') ? <ChecklistEditor form={form} /> : null}
+      {zeigt('tags') ? <TaskTagsEditor form={form} /> : null}
 
       {zeigt('faellig') ? (
         <TaskScheduleFields form={form} idPrefix={idPrefix} recurrence={zeigt('wiederholung')} />

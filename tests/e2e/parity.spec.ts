@@ -8,6 +8,7 @@ import { createAccount, resetServer, uniqueEmail } from './support/helpers'
 import * as telefon from './support/mobile'
 import { createCloudConflict } from './support/cloudConflict'
 import { openOverview, rememberOverviewTarget } from './support/overview'
+import { checklistParity, tagFilterParity } from './support/checklists'
 
 /**
  * Oberflächenparität: Jede Funktion muss in beiden Ansichten erreichbar sein.
@@ -53,6 +54,16 @@ async function changeOrder(page: Page) {
 }
 
 const funktionen: Funktion[] = [
+  {
+    name: 'Checkliste unabhängig von der Hauptaufgabe bedienen',
+    breit: (page, request) => checklistParity(page, false, request),
+    telefon: (page, request) => checklistParity(page, true, request),
+  },
+  {
+    name: 'Tags vorschlagen und Aufgaben in Liste und Gesamtansicht filtern',
+    breit: page => tagFilterParity(page, false),
+    telefon: page => tagFilterParity(page, true),
+  },
   {
     name: 'Listen umsortieren und verstecken',
     breit: async page => (await import('./support/listNavigation')).checkListSorting(page, false),
@@ -601,19 +612,22 @@ const funktionen: Funktion[] = [
         .fill('Erster Absatz.\n\nZweiter Absatz.')
       await formular.getByRole('button', { name: 'Speichern' }).click()
 
-      // Zugeklappt: eine Zeile. Aufgeklappt: der ganze Text.
+      // Zugeklappt endet die Vorschau am ersten Absatz; offen ist alles lesbar.
+      await expect(page.getByTestId('task-description')).not.toContainText('Zweiter Absatz.')
       await page.getByTestId('beschreibung-mehr').click()
       await expect(page.getByTestId('beschreibung-mehr')).toHaveText('Weniger')
       await expect(page.getByTestId('task-description')).toContainText('Zweiter Absatz.')
 
       await page.getByTestId('beschreibung-mehr').click()
       await expect(page.getByTestId('beschreibung-mehr')).toHaveText('Mehr')
+      await expect(page.getByTestId('task-description')).not.toContainText('Zweiter Absatz.')
     },
     telefon: async (page) => {
       await telefon.register(page, uniqueEmail('p-beschreibung-t'))
       await telefon.createList(page, 'Haushalt')
       await telefon.createTask(page, 'Einkauf', 'Erster Absatz.\n\nZweiter Absatz.')
 
+      await expect(page.getByTestId('task-description')).not.toContainText('Zweiter Absatz.')
       await page.getByTestId('beschreibung-mehr').click()
       await expect(page.getByTestId('beschreibung-mehr')).toHaveText('Weniger')
       await expect(page.getByTestId('task-description')).toContainText('Zweiter Absatz.')
@@ -623,6 +637,7 @@ const funktionen: Funktion[] = [
 
       await page.getByTestId('beschreibung-mehr').click()
       await expect(page.getByTestId('beschreibung-mehr')).toHaveText('Mehr')
+      await expect(page.getByTestId('task-description')).not.toContainText('Zweiter Absatz.')
     },
   },
   {

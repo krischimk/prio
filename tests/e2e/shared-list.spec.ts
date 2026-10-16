@@ -183,7 +183,7 @@ test('E2E 5: der Abgleich läuft nicht in einer Schleife, wenn ein Kontakt bekan
 
     let abrufe = 0
     pageB.on('request', (anfrage) => {
-      if (anfrage.method() === 'GET' && anfrage.url().includes('/rest/v1/lists')) abrufe += 1
+      if (anfrage.method() === 'POST' && anfrage.url().includes('/rest/v1/rpc/sync_pull')) abrufe += 1
     })
 
     await expect

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useId, useRef, useState } from 'react'
+import { useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { useAuth } from '../auth/useAuth'
 import { useTaskForm } from './useTaskForm'
 import { TaskFields } from './TaskFields'
@@ -23,7 +23,6 @@ export function TaskComposer({ listId, autoFocus = false, onCreated }: { listId?
   const [chooseRequested, setChooseRequested] = useState(false)
   const targetSelect = useRef<HTMLSelectElement>(null)
   const titleInput = useRef<HTMLInputElement>(null)
-  const returnToTitle = useRef(false)
   const available = overview.lists
   const candidate = drafts.overviewTarget ?? overview.userPreference?.default_list_id ?? ''
   const targetId = listId ?? (available.some(list => list.id === candidate) ? candidate : '')
@@ -33,12 +32,12 @@ export function TaskComposer({ listId, autoFocus = false, onCreated }: { listId?
     onSaved: () => {
       if (listId === undefined) drafts.selectOverviewTarget(targetId)
       setChooseRequested(false)
-      if (returnToTitle.current) focusAfterSave.current = true
+      focusAfterSave.current = true
       onCreated?.()
     } })
   const expanded = focused || form.geaendert || chooseRequested
   useEffect(() => { if (chooseRequested) targetSelect.current?.focus() }, [chooseRequested])
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!focusAfterSave.current || form.busy) return
     titleInput.current?.focus()
     focusAfterSave.current = false
@@ -48,9 +47,13 @@ export function TaskComposer({ listId, autoFocus = false, onCreated }: { listId?
       focus()
       if (listId === undefined && drafts.overviewTarget === null) drafts.selectOverviewTarget(targetId)
     }} onBlurCapture={blur}
+    onKeyDown={event => {
+      if (event.defaultPrevented || event.nativeEvent.isComposing || event.key !== 'Enter' || !event.ctrlKey || !(event.target instanceof HTMLTextAreaElement)) return
+      event.preventDefault()
+      event.currentTarget.requestSubmit()
+    }}
     onSubmit={event => {
       if (!targetId) { event.preventDefault(); setChooseRequested(true); return }
-      returnToTitle.current = document.activeElement === titleInput.current
       void form.speichern(event)
     }}>
     <div className="flex gap-2">
@@ -78,7 +81,7 @@ export function TaskComposer({ listId, autoFocus = false, onCreated }: { listId?
         </select>
       </label> : null}
       {excluded ? <p role="status" className="text-meta text-ink-muted">Die Aufgabe wird in „{target.name}“ gespeichert. Diese Liste ist nicht in deiner Gesamtansicht enthalten.</p> : null}
-      <TaskFields form={form} felder={['beschreibung', 'faellig', 'wiederholung', 'erinnerungen']} sections={target?.sections ?? []}
+      <TaskFields form={form} felder={['beschreibung', 'checkliste', 'tags', 'faellig', 'wiederholung', 'erinnerungen']} sections={target?.sections ?? []}
         currentUserId={currentUserId} listIsShared={target?.is_shared ?? false} idPrefix={idPrefix} />
       <TaskMoreOptions form={form} sections={target?.sections ?? []} idPrefix={idPrefix} />
     </div> : null}

@@ -10,6 +10,7 @@ import type {
   RemoteUserPreference,
   RemoteSnapshot,
   RemoteTask,
+  RemoteCheckpoint,
 } from '../../src/domain/types'
 import {
   classifyRemoteError,
@@ -58,7 +59,7 @@ export class FakeServer {
   expireCompleted(): void {
     for (const [id, task] of this.tasks) {
       if (task.completed && !task.expired_at && task.completed_expires_at && Date.parse(task.completed_expires_at) <= this.clock.nowMs()) {
-        this.tasks.set(id, { ...task, expired_at: this.clock.now(), deleted_at: this.clock.now(), updated_at: this.clock.now(), title: 'Abgelaufene Aufgabe', description: null, due_at: null, reminders: [], recurrence: null, successor_id: null, section_id: null, reopen_context: null })
+        this.tasks.set(id, { ...task, expired_at: this.clock.now(), deleted_at: this.clock.now(), updated_at: this.clock.now(), title: 'Abgelaufene Aufgabe', description: null, due_at: null, available_from: null, checklist: [], tags: [], reminders: [], recurrence: null, successor_id: null, section_id: null, reopen_context: null })
       }
     }
   }
@@ -102,7 +103,7 @@ export class FakeGateway implements RemoteGateway {
     this.userId = userId
   }
 
-  async pull(): Promise<RemoteSnapshot> {
+  async pull(_checkpoint?: RemoteCheckpoint | null): Promise<RemoteSnapshot> {
     this.server.pullCalls += 1
     if (this.server.failPullWith) throw this.server.failPullWith
     this.server.expireCompleted()
@@ -331,7 +332,7 @@ export function createFakeServer(): FakeServer {
 export function createLazyGateway(server: FakeServer, currentUserId: () => string): RemoteGateway {
   const resolve = (): FakeGateway => server.gatewayFor(currentUserId())
   return {
-    pull: () => resolve().pull(),
+    pull: checkpoint => resolve().pull(checkpoint),
     push: (payload, bases) => resolve().push(payload, bases),
     shareListByEmail: (listId, email) => resolve().shareListByEmail(listId, email),
     shareListByUsername: (listId, username, expectedUserId) => resolve().shareListByUsername(listId, username, expectedUserId),

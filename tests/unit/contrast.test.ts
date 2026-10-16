@@ -119,10 +119,16 @@ for (const mode of ['dark', 'light'] as const) describe(`Kontrast ${mode}`, () =
   })
 
   it('hält Statusfarben lesbar', () => {
-    for (const rolle of ['danger', 'ok', 'warn', 'brand-soft']) {
+    for (const rolle of ['danger', 'ok', 'warn-ink', 'brand-soft']) {
       for (const flaeche of FLAECHEN) {
         expect(kontrast(FARBEN[rolle], FARBEN[flaeche]), `${rolle} auf ${flaeche}`).toBeGreaterThanOrEqual(4.5)
       }
+    }
+  })
+
+  it('hält gelbe Statusmarkierungen erkennbar, während Warntexte ihre eigene Rolle haben', () => {
+    for (const flaeche of FLAECHEN) {
+      expect(kontrast(FARBEN.warn, FARBEN[flaeche]), `warn auf ${flaeche}`).toBeGreaterThanOrEqual(3)
     }
   })
 

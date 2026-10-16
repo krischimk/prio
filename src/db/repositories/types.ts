@@ -9,6 +9,7 @@ import type { TaskEditInput, TaskEditOptions } from '../../domain/taskEdit'
 import type { LocalList, LocalListMember, LocalListPreference, LocalTask, LocalUserPreference, OverviewMode, ShareContact } from '../../domain/types'
 import type { CloudConflict } from '../../domain/cloudMerge'
 import type { TaskPlacement } from '../../domain/taskPlacement'
+import type { ChecklistItem } from '../../domain/checklist'
 
 export interface CreateTaskInput {
   listId: string
@@ -18,6 +19,8 @@ export interface CreateTaskInput {
   sectionId?: string | null
   title: string
   description?: string | null
+  checklist?: ChecklistItem[]
+  tags?: string[]
   dueAt?: string | null
   recurrence?: string | null
   /** Die Erinnerungen der Aufgabe. Fehlt das Feld, bleibt die bisherige Liste. */
@@ -77,6 +80,8 @@ export interface Repositories {
   createTask(input: CreateTaskInput): Promise<LocalTask>
   updateTask(taskId: string, patch: UpdateTaskInput, options?: TaskEditOptions): Promise<LocalTask>
   setTaskCompleted(taskId: string, completed: boolean): Promise<LocalTask>
+  setChecklistItemCompleted(taskId: string, itemId: string, completed: boolean): Promise<LocalTask>
+  listTaskTags(): Promise<string[]>
   /** Verschiebt eine Aufgabe in eine andere Liste (beide müssen zugänglich sein). */
   moveTask(taskId: string, targetListId: string, zielAbschnitt?: string | null): Promise<LocalTask>
   /** Liste, Bereich und Nachbarposition werden gemeinsam geprüft und geschrieben. */
@@ -100,6 +105,7 @@ export interface Repositories {
   listTasks(listId: string): Promise<LocalTask[]>
   /** Dauerhaft aufbewahrte erledigte Aufgaben der dafür aktivierten Liste. */
   listCompletedTasks(listId: string): Promise<LocalTask[]>
+  countCompletedTasks(listId: string, tags?: string[]): Promise<number>
   /**
    * Abgehakte Aufgaben aller Listen, die noch wiederhergestellt werden können –
    * zuletzt abgehakte zuerst.
@@ -147,7 +153,7 @@ export interface Repositories {
   mergeShareContacts(
     contacts: ReadonlyArray<{ userId: string; email: string; username?: string | null }>,
     at: string,
-  ): Promise<void>
+  ): Promise<boolean>
 
   // Mitgliedschaften
   listMembers(listId: string): Promise<LocalListMember[]>

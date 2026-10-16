@@ -3,18 +3,22 @@ import { sameData } from './equality'
 import { alignReminders, parseReminders, type TaskReminder } from './reminder'
 import type { LocalTask } from './types'
 import { optionalText, requireText } from './validation'
+import { mergeChecklist, parseChecklist, validateChecklist, type ChecklistItem } from './checklist'
+import { mergeTags, parseTags } from './tags'
 
 /** Fachliche Eingabe; unveränderte Felder werden nicht mitgeschickt. */
 export interface TaskEditInput {
   title?: string
   description?: string | null
+  checklist?: ChecklistItem[]
+  tags?: string[]
   dueAt?: string | null
   recurrence?: string | null
   reminders?: TaskReminder[]
   sectionId?: string | null
 }
 
-type EditableTask = Pick<LocalTask, 'title' | 'description' | 'due_at' | 'recurrence' | 'reminders' | 'section_id'>
+type EditableTask = Pick<LocalTask, 'title' | 'description' | 'checklist' | 'tags' | 'due_at' | 'recurrence' | 'reminders' | 'section_id'>
 export interface TaskEditBase {
   taskId: string
   listId: string
@@ -37,6 +41,8 @@ export function taskEditValues(task: LocalTask): EditableTask {
   return {
     title: task.title,
     description: optionalText(task.description),
+    checklist: parseChecklist(task.checklist),
+    tags: parseTags(task.tags),
     due_at: normalizeIso(task.due_at),
     recurrence: task.recurrence ?? null,
     reminders: parseReminders(task.reminders),
@@ -56,6 +62,8 @@ export function taskEditBase(task: LocalTask): TaskEditBase {
  */
 export function applyTaskEdit(task: LocalTask, patch: TaskEditInput, nowMs: number, base?: TaskEditBase): EditableTask {
   const current = taskEditValues(task)
+  let checklist = patch.checklist === undefined ? current.checklist : validateChecklist(patch.checklist)
+  let tags = patch.tags === undefined ? current.tags : parseTags(patch.tags)
   const fields: Array<keyof EditableTask> = []
   if (patch.title !== undefined) fields.push('title')
   if (patch.description !== undefined) fields.push('description')
@@ -65,6 +73,12 @@ export function applyTaskEdit(task: LocalTask, patch: TaskEditInput, nowMs: numb
 
   if (base) {
     const conflicts: TaskEditConflict['fields'] = fields.filter(field => !sameData(current[field], base.values[field]))
+    if (patch.checklist !== undefined) {
+      const merged = mergeChecklist(base.values.checklist ?? [], checklist, current.checklist)
+      if (merged.conflict) conflicts.push('checklist')
+      checklist = merged.items
+    }
+    if (patch.tags !== undefined) tags = mergeTags(base.values.tags ?? [], tags, current.tags)
     if (task.id !== base.taskId) conflicts.push('id')
     if (task.list_id !== base.listId) conflicts.push('list_id')
     if (conflicts.length) throw new TaskEditConflict(conflicts)
@@ -72,6 +86,8 @@ export function applyTaskEdit(task: LocalTask, patch: TaskEditInput, nowMs: numb
 
   return {
     ...current,
+    checklist,
+    tags,
     title: patch.title === undefined ? current.title : requireText(patch.title, 'Der Titel'),
     description: patch.description === undefined ? current.description : optionalText(patch.description),
     section_id: patch.sectionId === undefined ? current.section_id : patch.sectionId,

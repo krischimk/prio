@@ -10,6 +10,7 @@
  */
 
 import type { TaskReminder } from './reminder'
+import type { ChecklistItem } from './checklist'
 
 /** ISO-8601-Zeitstempel in UTC, z. B. `2026-01-31T12:00:00.000Z`. */
 export type IsoDateTime = string
@@ -95,6 +96,8 @@ export interface LocalTask extends SyncableRow, LocalOnly {
   section_id: string | null
   title: string
   description: string | null
+  checklist: ChecklistItem[]
+  tags: string[]
   due_at: IsoDateTime | null
   /** Frühes Abhaken: der Nachfolger tritt bis zur bisherigen Fälligkeit zurück. */
   available_from: IsoDateTime | null
@@ -244,7 +247,9 @@ export type RemoteList = Omit<LocalList, 'dirty' | 'sections' | 'keep_completed'
 }
 
 /** Eine Aufgabenzeile vom Server; `section_id` fehlt vor Migration 0013. */
-export type RemoteTask = Omit<LocalTask, 'dirty' | 'section_id' | 'completed_expires_at' | 'expired_at' | 'reopen_context' | 'available_from'> & {
+export type RemoteTask = Omit<LocalTask, 'dirty' | 'section_id' | 'completed_expires_at' | 'expired_at' | 'reopen_context' | 'available_from' | 'checklist' | 'tags'> & {
+  checklist?: ChecklistItem[]
+  tags?: string[]
   available_from?: IsoDateTime | null
   section_id?: string | null
   completed_expires_at?: IsoDateTime | null
@@ -262,6 +267,16 @@ export interface RemoteSnapshot {
   /** Fehlt bei älteren Transporten; keine Auswahl bedeutet keine Aufnahme. */
   preferences?: RemoteListPreference[]
   userPreferences?: RemoteUserPreference[]
+  /** Bestätigbare Serversicht; erst zusammen mit allen Zeilen lokal sichern. */
+  checkpoint?: RemoteCheckpoint
+  /** Seit der bestätigten Sicht nicht mehr zugängliche Listen. */
+  removedListIds?: string[]
+}
+
+export interface RemoteCheckpoint {
+  /** Opaquer PostgreSQL-Snapshot, unabhängig von Geräteuhren. */
+  snapshot: string
+  listIds: string[]
 }
 
 export interface PushPayload {

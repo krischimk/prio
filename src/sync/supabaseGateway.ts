@@ -1,15 +1,7 @@
 import { CLOUD_TABLES, canonicalCloudRow, cloudRowId, type CloudRow, type CloudTable } from '../domain/cloudMerge'
 import { sameData } from '../domain/equality'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type {
-  PushPayload,
-  RemoteList,
-  RemoteListMember,
-  RemoteListPreference,
-  RemoteUserPreference,
-  RemoteSnapshot,
-  RemoteTask,
-} from '../domain/types'
+import type { PushPayload, RemoteSnapshot, RemoteCheckpoint } from '../domain/types'
 import {
   classifyRemoteError,
   leeresPushErgebnis,
@@ -23,50 +15,39 @@ import {
 /**
  * Supabase-Implementierung des `RemoteGateway`.
  *
- * Vollständiges paginiertes Lesen und geschütztes Schreiben:
- *
- *  - **Vollständiger Pull statt Delta.** `pull()` lädt alle sichtbaren Zeilen.
- *    Ein inkrementeller Sync über `updated_at > cursor` wäre schneller, hat
- *    aber eine heikle Lücke: Wird ein Benutzer zu einer bereits existierenden
- *    Liste hinzugefügt, deren `updated_at` älter ist als der Cursor, würde die
- *    Liste nie nachgeladen. Bei den kleinen Datenmengen eines Prototyps ist
- *    der vollständige Pull die robustere und deutlich einfachere Variante.
- *
- *  - **Geschützter RPC ohne Hard Delete.** `sync_push` prüft Berechtigung und
- *    den erwarteten Stand atomar. Löschungen bleiben `deleted_at`. Es gibt
- *    keinen Rückfall auf direkte Tabellen-Schreiboperationen.
- *
- *  - **Keine Supabase-Typgenerierung.** Die Zeilen werden auf die Typen in
- *    `domain/types.ts` abgebildet und dort normalisiert. Ein generiertes
- *    `database.types.ts` ist für diesen Schreibvertrag nicht erforderlich.
+ * `sync_pull` liefert seit der bestätigten PostgreSQL-Sicht geänderte Zeilen.
+ * Freigaben älterer Listen lösen einen vollständigen Neuabgleich aus. Die erste
+ * Seite liefert den Checkpoint: Änderungen während weiterer Seiten werden beim
+ * nächsten Pull erneut geliefert. Geräteuhren entscheiden über keine Lücke.
+ * Schreiben bleibt ausschließlich der atomare `sync_push` mit Basisprüfung.
  */
 export function createSupabaseGateway(client: SupabaseClient): RemoteGateway {
   return {
-    async pull(): Promise<RemoteSnapshot> {
-      const read = async (table: 'lists' | 'list_members' | 'tasks' | 'list_preferences' | 'user_preferences'): Promise<unknown[]> => {
-        const rows: unknown[] = []
-        for (;;) {
-          let query = client.from(table).select('*', { count: 'exact' })
-          query = table === 'list_members' || table === 'list_preferences' ? query.order('list_id').order('user_id') : query.order('id')
-          const { data, count, error } = await query.range(rows.length, rows.length + 499)
-          throwIfError(error, 'Daten konnten nicht geladen werden.')
-          if (!data?.length) break
-          rows.push(...data)
-          if (count !== null ? rows.length >= count : data.length < 500) break
+    async pull(checkpoint?: RemoteCheckpoint | null): Promise<RemoteSnapshot> {
+      const snapshot: RemoteSnapshot = { lists: [], members: [], tasks: [], preferences: [], userPreferences: [] }
+      const rows = Object.fromEntries(CLOUD_TABLES.map(table => [table, new Map<string, CloudRow>()])) as Record<CloudTable, Map<string, CloudRow>>
+      const removed = new Set<string>()
+      let after: string | null = null
+      for (;;) {
+        const { data, error, status }: { data: unknown; error: unknown; status?: number } = await client.rpc('sync_pull', {
+          p_since: checkpoint?.snapshot ?? null, p_lists: checkpoint?.listIds ?? [], p_after: after, p_limit: 500,
+        })
+        if (error) throw classifyRemoteError(error, status)
+        if (!isPullPage(data)) throw new RemoteError('server', 'sync-protocol', { retryable: true })
+        snapshot.checkpoint ??= data.checkpoint
+        for (const change of data.changes) {
+          const id = cloudRowId(change.table, change.row)
+          if (typeof id !== 'string' || !id || !checkedRow(change.table, id, change.row)) throw new RemoteError('server', 'sync-protocol', { retryable: true })
+          rows[change.table].set(id, change.row)
         }
-        return rows
+        for (const id of data.removedListIds) removed.add(id)
+        if (!data.hasMore) break
+        if (!data.changes.length || !data.nextAfter || (after !== null && data.nextAfter <= after)) throw new RemoteError('server', 'sync-protocol', { retryable: true })
+        after = data.nextAfter
       }
-      const [lists, members, tasks, preferences, userPreferences] = await Promise.all([
-        read('lists'), read('list_members'), read('tasks'), read('list_preferences'), read('user_preferences'),
-      ])
-
-      return {
-        lists: lists as RemoteList[],
-        members: members as RemoteListMember[],
-        tasks: tasks as RemoteTask[],
-        ...(preferences.length ? { preferences: preferences as RemoteListPreference[] } : {}),
-        ...(userPreferences.length ? { userPreferences: userPreferences as RemoteUserPreference[] } : {}),
-      }
+      for (const table of CLOUD_TABLES) for (const row of rows[table].values()) snapshot[table]!.push(row as never)
+      snapshot.removedListIds = [...removed]
+      return snapshot
     },
 
     async push(payload: PushPayload, bases: PushBases = { lists: {}, members: {}, tasks: {} }): Promise<PushErgebnis> {
@@ -159,4 +140,21 @@ function throwIfError(error: unknown, fallbackMessage: string): void {
   // hilfreich – die eigene Formulierung erklärt das Verhalten besser.
   const message = classified.kind === 'offline' ? fallbackMessage : classified.message || fallbackMessage
   throw new RemoteError(classified.kind, message, { cause: error })
+}
+
+interface PullPage {
+  changes: Array<{ table: CloudTable; row: CloudRow }>
+  checkpoint: RemoteCheckpoint
+  removedListIds: string[]
+  hasMore: boolean
+  nextAfter: string | null
+}
+function isPullPage(value: unknown): value is PullPage {
+  if (!value || typeof value !== 'object') return false
+  const page = value as PullPage
+  return Array.isArray(page.changes) && page.changes.every(change => change && CLOUD_TABLES.includes(change.table) && change.row && typeof change.row === 'object')
+    && typeof page.hasMore === 'boolean' && (page.nextAfter === null || typeof page.nextAfter === 'string')
+    && Array.isArray(page.removedListIds) && page.removedListIds.every(id => typeof id === 'string')
+    && !!page.checkpoint && typeof page.checkpoint.snapshot === 'string' && !!page.checkpoint.snapshot
+    && Array.isArray(page.checkpoint.listIds) && page.checkpoint.listIds.every(id => typeof id === 'string')
 }

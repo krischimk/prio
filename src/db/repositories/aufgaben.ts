@@ -11,9 +11,12 @@ import { compareRestorable, compareTasks, restoreCutoff } from '../../domain/ord
 import { captureReopenContext, completionDeadline, completionExpired, reopenPlacement, successorSnapshot } from '../../domain/taskLifecycle'
 import type { LocalTask } from '../../domain/types'
 import { insertionPosition, taskLocation } from '../../domain/taskPlacement'
+import { repeatChecklist, validateChecklist } from '../../domain/checklist'
+import { parseTags } from '../../domain/tags'
 import { optionalText, requireText, ValidationError } from '../validation'
 import type { Kontext } from './context'
 import type { Repositories } from './types'
+import { completedTaskIdsWithTags } from '../taskReadIndex'
 
 /**
  * Öffnet eine abgehakte Aufgabe wieder.
@@ -65,7 +68,7 @@ async function wiederOeffnen(ctx: Kontext, task: LocalTask, now: string): Promis
   return geoeffnet
 }
 
-export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updateTask' | 'setTaskCompleted' | 'moveTask' | 'placeTask' | 'reorderTasks' | 'deleteTask' | 'getTask' | 'listTasks' | 'listCompletedTasks' | 'listRestorableTasks' | 'listDeletedTasks' | 'restoreTask'> {
+export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updateTask' | 'setTaskCompleted' | 'setChecklistItemCompleted' | 'listTaskTags' | 'moveTask' | 'placeTask' | 'reorderTasks' | 'deleteTask' | 'getTask' | 'listTasks' | 'listCompletedTasks' | 'countCompletedTasks' | 'listRestorableTasks' | 'listDeletedTasks' | 'restoreTask'> {
   return {
 
     async createTask(input) {
@@ -98,6 +101,8 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
           section_id: input.sectionId ?? null,
           title: requireText(input.title, 'Der Titel'),
           description: optionalText(input.description),
+          checklist: validateChecklist(input.checklist ?? []),
+          tags: parseTags(input.tags),
           // `undefined` heißt „nicht mitgeschickt" – siehe `ReminderTarget`.
           ...alignReminders(
             null,
@@ -147,6 +152,29 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
       })
     },
 
+    async setChecklistItemCompleted(taskId, itemId, completed) {
+      return ctx.db.transaction('rw', ctx.db.tasks, async () => {
+        const task = await ctx.requireTask(taskId)
+        const item = task.checklist.find(item => item.id === itemId && item.deleted_at === null)
+        if (!item) throw new ValidationError('not-found', 'Dieser Checklistenpunkt ist nicht mehr verfügbar.')
+        if (item.completed === completed) return task
+        const updated = { ...task, checklist: task.checklist.map(row => row.id === itemId ? { ...row, completed } : row), ...ctx.stamp() }
+        await ctx.db.tasks.put(updated)
+        return updated
+      })
+    },
+
+    async listTaskTags() {
+      const lists = new Set((await ctx.db.lists.toArray()).filter(list => list.deleted_at === null).map(list => list.id))
+      const keys = await ctx.db.tasks.orderBy('read_tag_keys').uniqueKeys()
+      return parseTags(keys.flatMap(key => {
+        if (!Array.isArray(key)) return []
+        const [listId, state, , until, label]: unknown[] = key
+        return typeof listId === 'string' && lists.has(listId) && state !== 'deleted'
+          && typeof until === 'number' && until > ctx.clock.nowMs() && typeof label === 'string' ? [label] : []
+      })).sort((a, b) => a.localeCompare(b, 'de'))
+    },
+
     /**
      * Abhaken setzt den Zeitpunkt, Wiederöffnen löscht ihn wieder. Nur so weiß
      * die Wiederherstellen-Liste, wie lange eine Aufgabe noch dorthin gehört.
@@ -192,6 +220,7 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
         const nachfolger: LocalTask = {
           ...task,
           id: nachfolgerId,
+          checklist: repeatChecklist(task.checklist),
           due_at: naechsterTermin,
           available_from: Date.parse(task.due_at) > Date.parse(now) ? task.due_at : null,
           completed: false,
@@ -346,7 +375,7 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
     },
 
     async listTasks(listId) {
-      const tasks = await ctx.db.tasks.where('list_id').equals(listId).toArray()
+      const tasks = await ctx.db.tasks.where('[list_id+read_state]').equals([listId, 'open']).toArray()
       // Abgehakte Aufgaben verschwinden aus der Liste; sie sind über die
       // Einstellungen noch eine Weile zu finden.
       return tasks
@@ -358,8 +387,15 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
     async listCompletedTasks(listId) {
       const list = await ctx.requireList(listId)
       if (!list.keep_completed) return []
-      return (await ctx.db.tasks.where('list_id').equals(listId).toArray()).map(normalisiereAufgabe)
+      return (await ctx.db.tasks.where('[list_id+read_state+read_until]').between([listId, 'completed', ctx.clock.nowMs()], [listId, 'completed', Number.MAX_SAFE_INTEGER], false, true).toArray()).map(normalisiereAufgabe)
         .filter(task => task.completed && task.deleted_at === null && !completionExpired(task, ctx.clock.nowMs())).sort(compareRestorable)
+    },
+
+    async countCompletedTasks(listId, tags = []) {
+      const list = await ctx.requireList(listId)
+      if (!list.keep_completed) return 0
+      if (tags.length) return (await completedTaskIdsWithTags(ctx.db, listId, tags, ctx.clock.nowMs())).length
+      return ctx.db.tasks.where('[list_id+read_state+read_until]').between([listId, 'completed', ctx.clock.nowMs()], [listId, 'completed', Number.MAX_SAFE_INTEGER], false, true).count()
     },
 
     async listDeletedTasks() {

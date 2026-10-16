@@ -8,6 +8,7 @@
  * verschwinden aus der Liste (siehe `listTasks`), also enthält sie
  * ausschließlich offene. Beide Zahlen wären immer gleich.
  */
-export function formatOpenTasks(count: number): string {
+export function formatOpenTasks(count: number, total?: number): string {
+  if (total !== undefined) return `${count} von ${total} ${total === 1 ? 'offener Aufgabe' : 'offenen Aufgaben'}`
   return count === 1 ? '1 offene Aufgabe' : `${count} offene Aufgaben`
 }

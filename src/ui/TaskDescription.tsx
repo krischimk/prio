@@ -4,9 +4,8 @@ import { focusRing, mutedText } from './styles'
 /**
  * Die Beschreibung einer Aufgabe in der Übersicht.
  *
- * Zugeklappt ist sie **eine** Zeile – auch wenn Absätze darin stehen. Ein
- * Absatzumbruch in einer Listenzeile macht die Liste unruhig und schiebt die
- * nächste Aufgabe aus dem Blick.
+ * Zugeklappt endet die einzeilige Vorschau am ersten Zeilenumbruch. Weitere
+ * Absätze werden erst beim Aufklappen gezeigt, statt sie aneinanderzuhängen.
  *
  * Aufgeklappt bleibt die Höhe begrenzt (rund 15 Zeilen), danach wird gescrollt;
  * die Scrollleiste ist dabei sichtbar (siehe `.scroll-flaeche` in `index.css`),
@@ -23,10 +22,11 @@ export function TaskDescription({ text, className = '' }: { text: string; classN
   const textRef = useRef<HTMLSpanElement | null>(null)
 
   const messen = useCallback(() => {
+    if (offen) return
     const element = textRef.current
     if (!element) return
     setAbgeschnitten(element.scrollWidth > element.clientWidth + 1)
-  }, [])
+  }, [offen])
 
   // Nach dem Zeichnen messen – und erneut, wenn sich die Breite ändert
   // (Drehen des Geräts, anderes Fenster).
@@ -36,9 +36,9 @@ export function TaskDescription({ text, className = '' }: { text: string; classN
     return () => window.removeEventListener('resize', messen)
   }, [messen])
 
-  // Absätze werden zugeklappt zu einer Zeile zusammengezogen – das ist immer
-  // etwas zum Aufklappen, auch wenn die Zeile zufällig hineinpasst.
-  const brauchtSchalter = text.includes('\n') || abgeschnitten
+  const ersteZeile = text.split(/\r\n?|\n/, 1)[0]
+  const mehrzeilig = ersteZeile.length < text.length
+  const brauchtSchalter = mehrzeilig || abgeschnitten
 
   return (
     <div className={className}>
@@ -49,7 +49,7 @@ export function TaskDescription({ text, className = '' }: { text: string; classN
           offen ? 'scroll-flaeche max-h-60 overflow-y-auto whitespace-pre-wrap' : 'truncate'
         } ${mutedText}`}
       >
-        {text}
+        {offen ? text : mehrzeilig ? `${ersteZeile}…` : ersteZeile}
       </span>
       {brauchtSchalter ? (
         <button

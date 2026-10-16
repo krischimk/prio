@@ -27,11 +27,22 @@ function createMockClient(behaviour: MockBehaviour) {
   const upsert = vi.fn(async (table: string, rows: unknown, options: unknown) =>
     behaviour.upsert?.(table, rows, options) ?? { error: null },
   )
-  const rpc = vi.fn(async (name: string, args: unknown) => behaviour.rpc?.(name, args) ?? {
+  const rpc = vi.fn(async (name: string, args: unknown) => {
+    if (behaviour.rpc) return behaviour.rpc(name,args)
+    if (name === 'sync_pull') {
+      const changes: Array<{table:string;row:unknown}> = []
+      for (const [table, wire] of [['lists','lists'],['members','list_members'],['tasks','tasks'],['preferences','list_preferences'],['userPreferences','user_preferences']]) {
+        const answer = behaviour.select?.(wire) ?? {data:[],error:null}
+        if (answer.error) return {data:null,error:answer.error}
+        changes.push(...(answer.data ?? []).map(row=>({table,row})))
+      }
+      return {data:{changes,checkpoint:{snapshot:'10:10:',listIds:[]},removedListIds:[],hasMore:false,nextAfter:null},error:null}
+    }
+    return {
     data: name === 'sync_push' ? (args as { p_changes: Array<{ table: string; row: Record<string, unknown> }> }).p_changes.map(change => ({
       table: change.table, id: change.table === 'members' || change.table === 'preferences' ? `${change.row.list_id}:${change.row.user_id}` : change.row.id, kind: 'written', current: change.row,
     })) : null, error: null,
-  })
+  } })
 
   const client = {
     from: (table: string) => ({
@@ -73,7 +84,7 @@ describe('Supabase-Gateway', () => {
     const pushed = await gateway.push({ lists: [], members: [], tasks: [], preferences: [preference], userPreferences: [userPreference] })
     expect(pushed.hochgeladen.preferences).toEqual([preference])
     expect(pushed.hochgeladen.userPreferences).toEqual([userPreference])
-    expect(rpc.mock.calls[0]?.[0]).toBe('sync_push')
+    expect(rpc.mock.calls.find(call => call[0] === 'sync_push')).toBeDefined()
   })
 
   it('sendet Listen → Mitglieder → Aufgaben durch den geschützten Serverpfad', async () => {
@@ -146,11 +157,28 @@ describe('Supabase-Gateway', () => {
     expect(result.hochgeladen.tasks).toEqual([good])
   })
 
-  it('liest über das Seitenlimit hinaus, auch bei einer kleineren Projektgrenze', async () => {
-    const rows = Array.from({length: 1201}, (_,index)=>localTask({id: `task-${index}`}))
-    const { client, select } = createMockClient({ select: (table,from=0) => ({ data: table === 'tasks' ? rows.slice(from,from+250) : [], count: table === 'tasks' ? rows.length : 0, error: null }) })
-    expect((await createSupabaseGateway(client).pull()).tasks).toHaveLength(1201)
-    expect(select.mock.calls.filter(call=>call[0]==='tasks').map(call=>call[1])).toEqual([0,250,500,750,1000])
+  it('liest alle Delta-Seiten und bestätigt die erste Sicht, auch bei Änderungen während weiterer Seiten', async () => {
+    const rows = Array.from({length:1201},(_,index)=>localTask({id:`task-${String(index).padStart(4,'0')}`}))
+    const {client,rpc,select} = createMockClient({rpc: (name,args) => {
+      expect(name).toBe('sync_pull')
+      const request = args as {p_since:string;p_lists:string[];p_after:string|null}
+      expect(request.p_since).toBe('5:5:')
+      expect(request.p_lists).toEqual(['list-1'])
+      const start = request.p_after ? Number(request.p_after.split('-')[1])+1 : 0
+      const page = rows.slice(start,start+250), more = start+page.length < rows.length
+      return {data:{changes:page.map(row=>({table:'tasks',row})),checkpoint:{snapshot:`${10+start}:${10+start}:`,listIds:['list-1']},removedListIds:[],hasMore:more,nextAfter:more ? `tasks:${page.at(-1)!.id}` : null},error:null}
+    }})
+    const result = await createSupabaseGateway(client).pull({snapshot:'5:5:',listIds:['list-1']})
+    expect(result.tasks).toHaveLength(1201)
+    expect(result.checkpoint?.snapshot).toBe('10:10:')
+    expect(rpc).toHaveBeenCalledTimes(5)
+    expect(select).not.toHaveBeenCalled()
+  })
+
+  it('bestätigt bei einer fehlenden oder unvollständigen Seite keinen Cursor', async () => {
+    let calls=0
+    const {client}=createMockClient({rpc:()=> ++calls===1 ? {data:{changes:[{table:'lists',row:remoteList()}],checkpoint:{snapshot:'10:10:',listIds:['list-1']},removedListIds:[],hasMore:true,nextAfter:'lists:list-1'},error:null} : {data:null,error:{message:'Failed to fetch'}}})
+    await expect(createSupabaseGateway(client).pull()).rejects.toMatchObject({kind:'offline'})
   })
 
   it('fällt bei fehlender Serverfunktion nicht auf ungeschützte Upserts zurück', async () => {

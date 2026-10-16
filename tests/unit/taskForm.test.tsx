@@ -33,6 +33,21 @@ describe('Aufgabenentwürfe und Speichern', () => {
     return { ...hook, onSaved }
   }
 
+  it('bewahrt Checklisten-/Tagentwürfe und übernimmt auch die letzte noch nicht bestätigte Eingabe', async () => {
+    const other = await repositories.createList('Andere Liste', 'form')
+    const { result, rerender } = open()
+    act(() => result.current.setzen('title', 'Mit Details'))
+    act(() => result.current.setzen('checklistText', 'Letzter Punkt'))
+    act(() => result.current.setzen('tagText', 'Uni'))
+    rerender({ task: null, listId: other.id })
+    expect(result.current.werte.checklistText).toBe('')
+    rerender({ task: null, listId })
+    expect(result.current.werte.checklistText).toBe('Letzter Punkt')
+    expect(result.current.werte.tagText).toBe('Uni')
+    await act(async () => { await result.current.speichern(event) })
+    expect((await repositories.listTasks(listId))[0]).toMatchObject({ checklist: [expect.objectContaining({ text: 'Letzter Punkt', completed: false })], tags: ['Uni'] })
+  })
+
   it('behält eine neue Eingabe in ihrer Liste und speichert erst beim Hinzufügen', async () => {
     const other = await repositories.createList('Arbeit', 'form')
     const { result, rerender } = open()

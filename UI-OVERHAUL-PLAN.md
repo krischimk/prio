@@ -1402,3 +1402,104 @@ Das tatsächliche Android-Bundle für 0.26.0 ist synchronisiert und das native
 Debug-APK mit JDK 21 erfolgreich gebaut. Die Laufzeitprüfung im Emulator
 entfällt auf ausdrücklichen Nutzerwunsch. Native Systemgesten, Systemleisten
 und Gerätebesonderheiten werden mit dem Testrelease auf dem Telefon beurteilt.
+
+## 22. Rückmeldungen nach 0.26.0
+
+- Der heutige Tag erhält im Kalender ausschließlich eine Umrahmung. Diese bleibt
+  unabhängig von der Auswahl sichtbar; der zusätzliche Punkt entfällt.
+- Enter im Titel und Strg+Enter in der Beschreibung legen Aufgaben aus der
+  Erfassung an. Nach Erfolg kehrt der Fokus direkt ins leere Titelfeld zurück.
+  Enter in der Beschreibung bleibt ein normaler Zeilenumbruch.
+- Die Beschreibungsvorschau bleibt eine Zeile und endet am ersten Zeilenumbruch.
+  Weitere Absätze werden ausschließlich aufgeklappt gezeigt, mit unveränderter
+  Formatierung. Die erste Zeile erhält bei folgendem Text ein Auslassungszeichen.
+- Gelbe Markierungen im Hellmodus werden etwas heller; die übrige Palette bleibt
+  bestehen. Warntexte verwenden ihre eigene lesbare Farbrolle.
+- Die in 0.26.0 ergänzte Logoseite und HTML-Startgrafik werden zurückgenommen.
+  Die vorhandene native Startanzeige und das verzögerte Einblenden von
+  Ladehinweisen bleiben bestehen.
+
+## 23. Checklisten und Tags – bestätigter Auftrag vom 16. Oktober 2026
+
+Die Screenshots beschreiben die kompakte Fortschrittsanzeige, eine aufklappbare
+Checkliste und die Bearbeitung mit Ziehgriff. Folgende Regeln sind verbindlich:
+
+- Beliebig viele Punkte je Aufgabe, sichtbar ausschließlich Text und offen/erledigt.
+- Alle Punkte erledigt schließt die Aufgabe nicht ab. Abschließen und Wiederöffnen
+  der Aufgabe ändern deren Punkte nicht. Der Fortschritt zählt nur vorhandene Punkte.
+- Neue Wiederholungen übernehmen die vorhandenen Punkttexte in derselben Reihenfolge,
+  beginnen aber vollständig offen. Die erledigte Fassung bleibt unverändert.
+- Punkte sind in den Einstellungen hinzufügbar, bearbeitbar, löschbar und per Griff
+  umsortierbar. Griff und Löschen erscheinen im Web bei Hover beziehungsweise
+  Tastaturfokus. In der Aufgabenliste sind ausschließlich Häkchen und Fortschritt.
+- Tags gehören zur Aufgabe und bleiben beim Listenwechsel und bei Wiederholung erhalten.
+  Vorhandene Tags aus zugänglichen Aufgaben werden grau, aber auswählbar vorgeschlagen.
+- Filtern erfolgt unmittelbar in der jeweiligen Liste und in der Gesamtansicht.
+  Mehrere Tags sind mit UND verknüpft. Die persönliche Listenaufnahme bleibt maßgeblich.
+
+Arbeitsliste und Abnahme:
+
+- [x] Datenvertrag, Leserand, Feldkatalog, lokale Operationen und Cloud-Abbildung.
+- [x] Hauptaufgabe und Punkte unabhängig; neue Wiederholungen offen; bearbeitete
+  Seriennachfolger werden beim Wiederöffnen nicht zurückgenommen.
+- [x] Verschiedene Punktänderungen und Tags anhand der bestätigten Basis zusammenführen.
+  Widersprüchliche Änderungen oder Löschen/Bearbeiten bleiben als Konflikt erhalten.
+- [x] Gemeinsame Bearbeitung und Fortschrittsanzeige in beiden Oberflächen ergänzen.
+- [x] Tagvorschläge und gemeinsame Filterbedienung; Entwürfe bleiben erhalten.
+- [x] Browserabläufe für Bearbeitung, beide Hauptaufgaben-Zustände, Vorschläge,
+  UND-Filter, Maus/Touch/Tastatur, Abbruch, Neustart und Offline-Betrieb bestehen.
+- [x] Telefon-Hoch-/Querformat sowie helle/dunkle Darstellung ansehen.
+- [x] Vollständige Tests und wiederholbare SQL-Migration einschließlich Zugriffsprüfung.
+- [x] Sammelmigration bis 0022 vor Benutzung mit dem echten Cloudbestand einspielen;
+  Spalten, gesperrte direkte Schreibrechte und Ablaufjob anschließend kontrollieren.
+
+Checkliste und Tags sind zwei JSON-Sammlungen der bestehenden Aufgabenzeile.
+Stabile Punktkennungen und Löschvermerke ermöglichen konkrete Häkchenoperationen
+und das Zusammenführen verschiedener Änderungen. Dafür entstehen keine neue
+Aufgabenhierarchie, Tagrollen oder zusätzlichen Zustandsspeicher. Gleichzeitige
+widersprüchliche Reihenfolgen verlangen eine Entscheidung; Geräteuhren gewinnen nicht.
+
+
+## 24. Wiederkehrende Arbeit und Cloudverbrauch – Auftrag vom 16. Oktober 2026
+
+Die ersten vier Punkte betreffen den gemeinsamen Sync-Pfad, danach folgen die
+beiden lokalen Leser. Fachliche Aufbewahrung und Löschfristen bleiben unverändert.
+
+| Punkt | Messung vor Änderung | Umsetzung / überprüfbares Ergebnis |
+| --- | --- | --- |
+| Vollständiger Download | Jeder Pull liest alle fünf sichtbaren Tabellen. | `sync_pull` verwendet den bestätigten PostgreSQL-Snapshot; unveränderter Bestand liefert null Geschäftszeilen. Erstabgleich und neue Freigaben laden den Bestand paginiert. |
+| Unveränderte Downloads | Zusätzlicher Leseimpuls und eine Erinnerungsprüfung; der 30-Sekunden-Timer liest ebenfalls neu. | Datenversion und Erinnerungen ändern sich nur nach echten Übernahmen/Konflikten. Zeitabhängige Anzeigen verwenden einen getrennten Zeitimpuls. |
+| Vergleichsstände | 101 Meta-Schreibvorgänge für 100 identische Aufgaben und eine Liste. | Null erneute Vergleichsschreibvorgänge bei identischen Inhalten, auch für unveränderte Konflikte. |
+| Sync-Stau | Ein Lauf plus 100 weitere Anforderungen erzeugen 101 Läufe. | Zwei Läufe für dieselbe Anforderungssammlung. Ein boolescher Merker begrenzt ausstehende Arbeit; Aufrufer warten einschließlich des Folgelaufs. |
+| Offene Aufgaben | 1.002 gelesene Zeilen für zwei offene Aufgaben. | Zwei gelesene Zeilen über den lokalen Zustandsindex. |
+| Eingeklapptes Erledigt | Alle erledigten Aufgaben samt Beschreibungen und Checklisten geladen. | Reine Zählung, bei Tagfiltern Schnittmenge von Index-Kennungen; Inhalte erst beim Öffnen. Tagvorschläge lesen ebenfalls nur Indexwerte. |
+
+- [x] Vorherige Aufwände durch Regressionstests nachstellen.
+- [x] Checkpoint und Datenübernahme in einer lokalen Transaktion; fehlerhafte Seite
+  oder fehlgeschlagene Schreibung bestätigt nichts. Neustart verwendet den Cursor weiter.
+- [x] Echte PostgreSQL-Prüfungen für Rechte, alte Freigaben, Entzug, mehr als 1.000
+  Zeilen, Änderungen während des Blätterns, verspäteten Commit und wiederholte Migration.
+- [x] Version-8-IndexedDB aktualisieren, ohne Fachwerte oder Dirty-Markierung zu ändern.
+- [x] Geschlossene Laufzeiten übernehmen keine verspäteten Antworten; tatsächliche
+  Übernahmen anderer Browser-Tabs werden erkannt, reine Cursorfortschritte nicht.
+- [x] Vollständiges CI, Browserregression und Telefonbilder nach allen Änderungen prüfen.
+- [x] Sammelmigration bis 0022 einspielen, Cloudstand kontrollieren, ein Testrelease bauen.
+
+Grenze: Kein Realtime-Abonnement, kein Server-Eventarchiv, kein neuer UI-Datenspeicher.
+Die bestehende atomare Schreibprüfung bleibt bestehen. Lokale Indexwerte sind
+ableitbare Datenbanktechnik und werden nicht zu neuen Aufgabenfeldern in der Cloud.
+
+
+Abnahme für 0.27.0: `npm run ci` mit 642 Unit-/Integrationstests, 44 Prüfungen
+gegen echtes lokales PostgreSQL, Browserregression über 207 Abläufe. Im großen
+Browserlauf bestand ein veralteter Tooltip-Textvergleich nicht; nach der
+präzisierten Beschriftung bestehen sämtliche 22 Fälle der betroffenen Dateien
+im Nachlauf. Die übrigen 206 Fälle einschließlich PWA-Offline-Neustart sind im
+vollständigen Lauf grün. Telefonbilder in beiden Themen und im Querformat sowie
+der breite Editor wurden angesehen.
+
+Die Sammelmigration bis 0022 ist in der Cloud eingespielt; `db:check` bestätigt
+Spalten, geschützte Zugriffe, privaten Delta-Leseweg und den unveränderten Ablaufjob.
+Der signierte Android-Releasebuild trägt 0.27.0 / versionCode 2700 und denselben
+Zertifikatfingerabdruck wie 0.26.0. Der Emulator entfällt auf ausdrücklichen
+Nutzerwunsch; die Geräteprüfung erfolgt mit dieser Testfassung auf dem Telefon.

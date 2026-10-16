@@ -59,7 +59,7 @@ describe('Upgrade der lokalen Datenbank', () => {
 
     // Version 8 ergänzt die persönlichen Tabellen, ohne bestehende Listen
     // automatisch in die Gesamtansicht aufzunehmen.
-    expect(db.verno).toBe(8)
+    expect(db.verno).toBe(9)
     expect(await db.list_preferences.count()).toBe(0)
     expect(await db.user_preferences.count()).toBe(0)
     expect(await db.tasks.count()).toBe(1)
@@ -155,7 +155,7 @@ describe('Upgrade der lokalen Datenbank', () => {
 
   it('legt eine frische Datenbank direkt in der neuesten Version an', async () => {
     const db = await openLocalDatabase(createTestUserId('frisch'))
-    expect(db.verno).toBe(8)
+    expect(db.verno).toBe(9)
     expect(await db.list_preferences.count()).toBe(0)
     expect(await db.user_preferences.count()).toBe(0)
     expect(await db.reminders.count()).toBe(0)

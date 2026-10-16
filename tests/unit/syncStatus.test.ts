@@ -3,7 +3,7 @@ import type { SyncResult } from '../../src/sync/syncEngine'
 import { OFFLINE_TEXT, describeSyncState } from '../../src/ui/status/syncStatus'
 
 function status(kind: SyncResult['kind'], message: string | null = null): SyncResult {
-  return { kind, pushed: 0, pulled: 0, message, at: '2026-01-01T00:00:00.000Z' }
+  return { kind, pushed: 0, pulled: 0, changed: false, message, at: '2026-01-01T00:00:00.000Z' }
 }
 
 describe('Statusanzeige der Synchronisation', () => {
@@ -59,6 +59,7 @@ describe('Abgelehnte Änderungen', () => {
     kind: 'ok',
     pushed: 1,
     pulled: 0,
+    changed: false,
     message: null,
     at: '2026-01-01T00:00:00.000Z',
   }

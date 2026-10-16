@@ -107,6 +107,9 @@ Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
   Titelfeld mit Enter angelegt. Beschreibung, Termin und Erinnerungen klappen
   beim Arbeiten mit dem Titelfeld auf und verwenden dieselben Felder wie der
   Editor. Seltene Aktionen liegen unter „Mehr Optionen“.
+  Strg+Enter legt die Aufgabe auch aus der Beschreibung heraus an; Enter allein
+  fügt dort einen Zeilenumbruch ein. Nach erfolgreichem Anlegen steht der Fokus
+  wieder im leeren Titelfeld, damit die nächste Eingabe sofort beginnen kann.
   In der Gesamtansicht kann zuerst geschrieben werden. Erst das Hinzufügen
   verlangt eine Zielliste, solange dort noch keine Aufgabe erstellt wurde.
   Danach bleibt die zuletzt **in der Gesamtansicht verwendete** Zielliste
@@ -175,6 +178,21 @@ versehentlich Zugriff. Die Cloud braucht die Sammelmigration einschließlich
   `reminders` (Liste, siehe [Erinnerungen](#erinnerungen)), `created_at`,
   `updated_at`, `deleted_at`
 * Erstellen, bearbeiten, erledigen, in eine andere Liste verschieben, löschen
+* Aufgaben können beliebig viele einfache Checklistenpunkte tragen: Text und
+  offen/erledigt, unabhängig vom Status der Hauptaufgabe. Die Aufgabenzeile zeigt
+  den aufklappbaren Fortschritt, etwa **3/5**. Im Editor und der Erfassung lassen
+  sich Punkte hinzufügen, bearbeiten, löschen und mit dem Griff umsortieren.
+  Griff und Löschen gibt es ausschließlich dort; in der breiten Ansicht erscheinen
+  sie bei Hover oder Tastaturfokus. In der Aufgabenliste werden nur Häkchen bedient.
+  Neue Wiederholungen übernehmen die Punkttexte und Reihenfolge, mit offenen Häkchen.
+* Tags ergänzen Aufgaben ohne eigene Hierarchie. Vorhandene Tags werden beim
+  Bearbeiten grau vorgeschlagen und lassen sich direkt auswählen. Groß- und
+  Kleinschreibung erzeugen keine doppelten Tags derselben Aufgabe. Vorschläge
+  stammen aus aktuell zugänglichen, nicht gelöschten oder abgelaufenen Aufgaben.
+  Einzel- und Gesamtansicht lassen sich über das Ansichtssymbol nach Tags filtern;
+  mehrere ausgewählte Tags müssen **alle** zutreffen. Filter gelten auch für
+  „Erledigt“, überschreiben keine Listenaufnahme und bleiben je Ansicht während
+  der Sitzung erhalten. Aktive Filter sind sichtbar und einzeln entfernbar.
 * Der Besitzer kann **„Erledigt am Listenende“** je Liste einschalten; zunächst
   ist die Einstellung aus. An: dauerhaft aufbewahren, ausschließlich im
   zunächst eingeklappten Bereich „Erledigt“ mit Anzahl. Aus: sieben Tage unter
@@ -193,7 +211,7 @@ versehentlich Zugriff. Die Cloud braucht die Sammelmigration einschließlich
   [Erinnerungen](#erinnerungen)
 * Wiederkehrende Aufgaben: täglich, wöchentlich, monatlich oder jährlich –
   Details unter [Wiederkehrende Aufgaben](#wiederkehrende-aufgaben)
-* Bewusst nicht enthalten: Prioritäten, Tags, Unteraufgaben, Anhänge,
+* Bewusst nicht enthalten: Prioritäten, Unteraufgaben, Anhänge,
   Kommentare
 
 Der Aufgabeneditor verwendet kompakte, aufklappbare Terminangaben und eine
@@ -571,10 +589,24 @@ Ein Durchlauf (`src/sync/syncEngine.ts`):
    geschrieben. Termin/Wiederholung/Erinnerungen/Abschluss/Seriennachfolger
    bilden eine Gruppe, Liste/Bereich/Reihenfolge eine weitere. Löschung gegen
    gleichzeitige Bearbeitung betrifft den ganzen Datensatz.
-5. **Pull:** den sichtbaren Bestand nach Primärschlüssel geordnet in Seiten
-   herunterladen. Saubere lokale Zeilen übernehmen die Cloudfassung auch bei
-   identischem oder älterem Zeitstempel. Schmutzige Zeilen werden nach derselben
-   Drei-Wege-Regel behandelt.
+5. **Pull:** `sync_pull` lädt seit dem bestätigten PostgreSQL-Snapshot geänderte
+   Zeilen, geordnet in Seiten. Die erste Seite bestimmt die bestätigbare Sicht.
+   Alle Zeilen, Rechteentzüge und der Checkpoint werden gemeinsam lokal übernommen;
+   ein Seiten- oder Schreibfehler lässt den bisherigen Checkpoint bestehen.
+   Neue Freigaben lösen einmal einen vollständigen Bestandsabgleich aus, damit
+   auch lange unveränderte Aufgaben der freigegebenen Liste ankommen.
+
+Ein unveränderter Durchlauf liefert keine Aufgabenzeilen. Identische Vergleichsstände
+werden nicht erneut geschrieben; Oberfläche und Erinnerungen reagieren auf tatsächliche
+Daten-/Konfliktänderungen. Zeitabhängige Texte werden separat aktualisiert, ohne alle
+Daten neu zu lesen. Gleichzeitige Sync-Anforderungen teilen sich einen laufenden
+Abgleich und höchstens einen vorgemerkten Folgelauf; neue Änderungen während des
+Folgelaufs können erneut genau einen weiteren Lauf vormerken.
+
+Offene Aufgaben haben einen lokalen Zustandsindex. Ein eingeklappter Erledigt-Bereich
+fragt nur die Anzahl ab, auch mit UND-Tagfilter; Inhalte werden erst beim Öffnen
+nachgeladen. Der lokale Tagindex liefert Vorschläge ohne Beschreibungen oder
+Checklisten zu lesen. Die abgeleiteten Indexwerte verlassen IndexedDB nicht.
 
 Geräteuhren bestimmen keinen Gewinner. Bestätigte Serverzeilen werden exakt
 als Basis in der vorhandenen lokalen `meta`-Tabelle bewahrt; die Anzeige nutzt
@@ -599,8 +631,9 @@ nicht. Ein allgemeiner Export-/Wiederaufnahmeweg für entzogene Listenrechte
 ist noch offen.
 
 **Auslieferung:** Dieser lokale Stand braucht die vollständige Sammelmigration
-einschließlich `0014`–`0018`. `0014` sperrt direkte Schreiboperationen älterer
-Apps; `0018` richtet den unabhängigen Ablaufjob ein. App-Update und Migration müssen
+einschließlich `0022`. `0014` sperrt direkte Schreiboperationen älterer
+Apps; `0018` richtet den unabhängigen Ablaufjob ein, `0021` ergänzt die Aufgabenfelder
+und `0022` den inkrementellen Leseweg. App-Update und Migration müssen
 koordiniert geliefert werden; vor der Migration bleibt der neue Client beim
 geschützten Schreiben stehen und bewahrt seine Eingaben. Der Übergang ist in
 [supabase/README.md](supabase/README.md) beschrieben. Ein alter Client kann den
@@ -846,11 +879,12 @@ weiter mit vollständig schwarzem Hintergrund. Beide Paletten verwenden
 dieselben Informationsrollen und werden auf Kontrast geprüft.
 Sync-Punkt, Warnungen und Fehler wechseln dabei ihre Helligkeit passend zum
 Thema. Das App-Symbol hat ebenfalls eine helle und eine dunkle Variante;
-beide stehen auch für den Offline-Start bereit.
+beide stehen der Oberfläche auch offline bereit. Gelbe Statuspunkte sind im
+hellen Modus heller; Warntexte verwenden eine eigene, gut lesbare Farbrolle.
 
 Kurze Ladezustände bleiben still: Ein Hinweis erscheint erst nach 200 ms und
-blendet sanft ein. Der Start zeigt das App-Symbol statt einer leeren schwarzen
-Fläche. Aktionssymbole verwenden ein gemeinsames 24er-Zeichenraster und
+blendet sanft ein. Das vorhandene native Startbild wird verwendet; eine
+zusätzliche Logoseite entfällt. Aktionssymbole verwenden ein gemeinsames 24er-Zeichenraster und
 20-CSS-Pixel-Größe; kleine Metadatensymbole haben eine eigene 14er-Rolle.
 Trefferflächen bleiben unabhängig von der Zeichengröße. Bereiche sind
 größer als Aufgabentitel, Listenüberschriften in der Gesamtansicht eine Stufe
@@ -1135,18 +1169,16 @@ Zugeklappt oder offen ist **Ansichtssache je Gerät**: Das steht in
 
 ### Aufgabenbeschreibung in der Übersicht
 
-Eine Beschreibung steht in der Liste **einzeilig** – auch wenn Absätze darin
-stehen. Ein Absatzumbruch in einer Listenzeile macht die Liste unruhig und
-schiebt die nächste Aufgabe aus dem Blick. Ein Klick auf *Mehr* klappt sie auf,
+Eine Beschreibung steht in der Liste **einzeilig**. Die Vorschau endet am
+ersten Zeilenumbruch; ein Auslassungszeichen weist auf weiteren Text hin.
+Folgende Absätze werden erst beim Aufklappen sichtbar. Ein Klick auf *Mehr* klappt sie auf,
 *Weniger* wieder zu; aufgeklappt ist die Höhe auf rund 15 Zeilen begrenzt,
 danach wird gescrollt. Eine sehr lange Beschreibung soll die Liste nicht in
 eine Textseite verwandeln.
 
-Der Schalter ist immer da, wenn es eine Beschreibung gibt – statt erst
-nachzumessen, ob der Text abgeschnitten wird: Eine Messung hinge an
-Schriftgröße und Fensterbreite und wäre nicht prüfbar. In der mobilen Zeile
-liegt er **neben** dem Knopf „Aufgabe öffnen" (ein Knopf kann keinen Knopf
-enthalten), damit das Aufklappen nicht die Detailansicht mit öffnet.
+Der Schalter erscheint bei weiteren Zeilen oder einer abgeschnittenen ersten
+Zeile. Die verfügbare Breite wird erneut gemessen, wenn sich das Fenster ändert.
+Das Aufklappen betrifft ausschließlich die Beschreibung und öffnet keinen Editor.
 
 **Systemleisten (Edge-to-Edge).** Android 15+ erzwingt Edge-to-Edge für Apps ab
 `targetSdk 35`. Die App aktiviert deshalb in `MainActivity.onCreate`
@@ -1201,11 +1233,11 @@ jeweiligen Stelle kommentiert.
    Benutzerautorisierung und gespeicherte Mutationsquittungen. Ein exakt
    gleicher Zeilen-Retry ist bereits idempotent.
 
-2. **Vollständiger Pull statt Delta.** Ein inkrementeller Sync über
-   `updated_at > cursor` hätte eine heikle Lücke: Wird jemand zu einer bereits
-   existierenden Liste hinzugefügt, deren `updated_at` älter ist als der Cursor,
-   würde die Liste nie nachgeladen. Bei den kleinen Datenmengen eines Prototyps
-   ist der vollständige Pull die robustere und deutlich einfachere Variante.
+2. **Delta nach Serversicht statt Gerätezeit.** Der PostgreSQL-Snapshot enthält
+   auch die beim Lesen noch laufenden Transaktionen. Pro Entität speichert der
+   Server nur die letzte schreibende Haupttransaktion, keine wachsende Historie.
+   Dadurch geht ein späterer Commit mit alter Transaktionskennung nicht verloren.
+   Ein `updated_at > cursor` wäre wegen Geräteuhren und alten Freigaben ungeeignet.
 
 3. **`updated_at` kommt vom Client.** Es ist ein Änderungszeitpunkt; der
    Schreibschutz vergleicht den bestätigten Inhalt und entscheidet unabhängig
@@ -1868,5 +1900,6 @@ Light Mode, Offline-Anmeldung ohne vorherige Sitzung, Rollen jenseits von
 Besitzer/Mitglied.
 
 > Wiederholungen und Benachrichtigungen standen hier ursprünglich auch – beide
-> sind inzwischen gebaut (siehe [Wiederkehrende
-> Aufgaben](#wiederkehrende-aufgaben) und [Erinnerungen](#erinnerungen)).
+> sind inzwischen gebaut. Checklisten, Tags, deren Filter und Hellmodus sind
+> ebenfalls hinzugekommen. Siehe [Wiederkehrende
+> Aufgaben](#wiederkehrende-aufgaben) und [Erinnerungen](#erinnerungen).

@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { LocalList, LocalListMember, LocalListPreference, LocalUserPreference, LocalTask, ShareContact } from '../domain/types'
 import { useWorkspace } from './useWorkspace'
 import type { CloudConflict } from '../domain/cloudMerge'
 import { orderedLists } from '../domain/listNavigation'
+import { completionExpired } from '../domain/taskLifecycle'
+import { restoreCutoff } from '../domain/ordering'
 
 /**
  * Lese-Hooks auf die lokale Datenbank.
@@ -53,6 +55,14 @@ export function useLists(): LocalList[] {
   return lists
 }
 
+/** Vorschläge stammen nur aus den aktuell zugänglichen, noch vorhandenen Aufgaben. */
+export function useTaskTags(): string[] {
+  const { repositories, dataVersion } = useWorkspace()
+  const [tags, setTags] = useState<string[]>([])
+  useEffect(() => subscribe(() => repositories.listTaskTags(), setTags), [repositories, dataVersion])
+  return tags
+}
+
 export interface OverviewPreferencesQuery {
   status: 'loading' | 'ready' | 'error'
   lists: LocalList[]
@@ -85,7 +95,7 @@ export function useOverviewPreferences(userId: string): OverviewPreferencesQuery
 
 /** Derselbe abgegrenzte Leser für einzelne Listen und die Gesamtansicht. */
 function useScopedTasks(listIds: string[], completed = false): { status: 'loading' | 'ready' | 'error'; tasks: LocalTask[]; retry: () => void } {
-  const { repositories, dataVersion } = useWorkspace()
+  const { repositories, dataVersion, nowMs } = useWorkspace()
   const scope = JSON.stringify([completed, listIds])
   const [attempt, setAttempt] = useState(0)
   const [result, setResult] = useState<{ scope: string; status: 'ready' | 'error'; tasks: LocalTask[] }>({ scope: '[]', status: 'ready', tasks: [] })
@@ -100,7 +110,11 @@ function useScopedTasks(listIds: string[], completed = false): { status: 'loadin
     return () => { active = false }
   }, [repositories, dataVersion, scope, attempt])
   const retry = () => setAttempt(value => value + 1)
-  return result.scope === scope ? { ...result, retry } : { status: 'loading', tasks: [], retry }
+  const tasks = useMemo(() => {
+    const visible = result.tasks.filter(task => !completionExpired(task, nowMs))
+    return visible.length === result.tasks.length ? result.tasks : visible
+  }, [result.tasks, nowMs])
+  return result.scope === scope ? { ...result, tasks, retry } : { status: 'loading', tasks: [], retry }
 }
 
 export function useTasksQuery(listIds: string[]) { return useScopedTasks(listIds) }
@@ -118,6 +132,24 @@ export function useTasks(listId: string | null): LocalTask[] {
 
 export function useCompletedTasks(listId: string | string[]) { return useScopedTasks(Array.isArray(listId) ? listId : [listId], true) }
 
+/** Eingeklappt nur zählen; Beschreibungen und Checklisten bleiben in IndexedDB. */
+export function useCompletedTaskCount(listIds: string[], tags: string[]) {
+  const { repositories, dataVersion } = useWorkspace()
+  const scope = JSON.stringify([listIds, tags])
+  const [attempt, setAttempt] = useState(0)
+  const [result, setResult] = useState<{ scope: string; count: number; status: 'ready' | 'error' }>({ scope: '', count: 0, status: 'ready' })
+  useEffect(() => {
+    let active = true
+    const [ids, filter]: [string[], string[]] = JSON.parse(scope)
+    Promise.all(ids.map(id => repositories.countCompletedTasks(id, filter))).then(counts => {
+      if (active) setResult({ scope, count: counts.reduce((sum, count) => sum + count, 0), status: 'ready' })
+    }).catch(() => { if (active) setResult(previous => ({ scope, count: previous.scope === scope ? previous.count : 0, status: 'error' })) })
+    return () => { active = false }
+  }, [repositories, dataVersion, scope, attempt])
+  const retry = () => setAttempt(value => value + 1)
+  return result.scope === scope ? { ...result, retry } : { status: 'loading' as const, count: 0, retry }
+}
+
 /**
  * Gelöschte Aufgaben der letzten Tage – zuletzt gelöschte zuerst.
  *
@@ -125,24 +157,24 @@ export function useCompletedTasks(listId: string | string[]) { return useScopedT
  * Lesevorgang für ein unsichtbares Fenster ist verschwendet.
  */
 export function useDeletedTasks(aktiv = true): LocalTask[] {
-  const { repositories, dataVersion } = useWorkspace()
+  const { repositories, dataVersion, nowMs } = useWorkspace()
   const [tasks, setTasks] = useState<LocalTask[]>([])
   useEffect(() => {
     if (!aktiv) return
     return subscribe(() => repositories.listDeletedTasks(), setTasks)
   }, [repositories, dataVersion, aktiv])
-  return tasks
+  return tasks.filter(task => task.deleted_at !== null && task.deleted_at >= restoreCutoff(nowMs) && !completionExpired(task, nowMs))
 }
 
 /** Gelöschte Listen der letzten Tage – zuletzt gelöschte zuerst. */
 export function useDeletedLists(aktiv = true): LocalList[] {
-  const { repositories, dataVersion } = useWorkspace()
+  const { repositories, dataVersion, nowMs } = useWorkspace()
   const [lists, setLists] = useState<LocalList[]>([])
   useEffect(() => {
     if (!aktiv) return
     return subscribe(() => repositories.listDeletedLists(), setLists)
   }, [repositories, dataVersion, aktiv])
-  return lists
+  return lists.filter(list => list.deleted_at !== null && list.deleted_at >= restoreCutoff(nowMs))
 }
 
 /**
@@ -162,7 +194,7 @@ export function useTaskQuery(taskId: string | null): {
   task: LocalTask | null
   retry: () => void
 } {
-  const { repositories, dataVersion } = useWorkspace()
+  const { repositories, dataVersion, nowMs } = useWorkspace()
   const [attempt, setAttempt] = useState(0)
   const [result, setResult] = useState<{ id: string | null; status: 'ready' | 'error'; task: LocalTask | null }>({ id: null, status: 'ready', task: null })
   useEffect(() => {
@@ -180,7 +212,7 @@ export function useTaskQuery(taskId: string | null): {
   if (taskId === null) return { status: 'ready', task: null, retry }
   // Ein schneller ID-Wechsel darf niemals kurz die vorherige Aufgabe liefern.
   if (result.id !== taskId) return { status: 'loading', task: null, retry }
-  return { status: result.status, task: result.task, retry }
+  return { status: result.status, task: result.task && !completionExpired(result.task, nowMs) ? result.task : null, retry }
 }
 
 /**
@@ -192,13 +224,13 @@ export function useTaskQuery(taskId: string | null): {
  * abgehakten Aufgaben für ein unsichtbares Fenster.
  */
 export function useRestorableTasks(aktiv = true): LocalTask[] {
-  const { repositories, dataVersion } = useWorkspace()
+  const { repositories, dataVersion, nowMs } = useWorkspace()
   const [tasks, setTasks] = useState<LocalTask[]>([])
   useEffect(() => {
     if (!aktiv) return
     return subscribe(() => repositories.listRestorableTasks(), setTasks)
   }, [repositories, dataVersion, aktiv])
-  return tasks
+  return tasks.filter(task => !completionExpired(task, nowMs))
 }
 
 /**

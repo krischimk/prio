@@ -47,6 +47,8 @@ describe('Leserand', () => {
 
     expect(aufgabe.description).toBe('')
     expect(aufgabe.reminders).toEqual([])
+    expect(aufgabe.checklist).toEqual([])
+    expect(aufgabe.tags).toEqual([])
     expect(aufgabe.section_id).toBeNull()
     expect(aufgabe.completed_at).toBeNull()
     expect(aufgabe.recurrence).toBeNull()

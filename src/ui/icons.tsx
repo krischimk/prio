@@ -20,6 +20,24 @@ const base = {
 /** 24er Raster, 1,8er Strich; regulär 20 px, Fakten verwenden size-icon-meta. */
 const iconClass = 'size-icon shrink-0'
 
+export function ChecklistIcon({ className = iconClass }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
+    <path d="m3 6 2 2 3-4M11 6h10M3 13h5M11 13h10M3 20h5M11 20h10" />
+  </svg>
+}
+
+export function TagIcon({ className = iconClass }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
+    <path d="M3 3h8l10 10-8 8L3 11z" /><circle cx="7.5" cy="7.5" r="1" />
+  </svg>
+}
+
+export function GripIcon({ className = iconClass }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
+    <path d="M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01" strokeWidth="3" />
+  </svg>
+}
+
 export function SunIcon({ className = iconClass }: { className?: string }) {
   return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
     <circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5" />

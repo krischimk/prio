@@ -25,6 +25,7 @@ export function ViewProvider({ children, userId }: { children: ReactNode; userId
   const [overviewCreating, setOverviewCreating] = useState(false)
   const [taskDetail, setTaskDetail] = useState<ViewValue['taskDetail']>(null)
   const [listSettingsId, setListSettingsId] = useState<string | null>(null)
+  const [tagFilters, setTagFilters] = useState<Record<string, string[]>>({})
 
   const selectList = navigation.selectList
   const [drawerMode, setDrawerMode] = useState<ViewValue['drawerMode']>('closed')
@@ -39,6 +40,8 @@ export function ViewProvider({ children, userId }: { children: ReactNode; userId
       selected: lists.find((list) => list.id === selectedListId) ?? null,
       selectedListId,
       selectList,
+      tagFilter: tagFilters[selectedListId ?? 'overview'] ?? [],
+      setTagFilter: tags => setTagFilters(previous => ({ ...previous, [selectedListId ?? 'overview']: tags })),
       restoreOpen,
       accountOpen, setAccountOpen,
       setRestoreOpen,
@@ -47,7 +50,7 @@ export function ViewProvider({ children, userId }: { children: ReactNode; userId
       overviewCreating, setOverviewCreating, taskDetail, setTaskDetail,
       listSettingsId, setListSettingsId,
     }
-  }, [lists, preferred, selectList, restoreOpen, accountOpen, cloudConflicts, conflictsOpen, overview, overviewSettingsOpen, overviewCreating, taskDetail, listSettingsId, drawerMode])
+  }, [lists, preferred, selectList, restoreOpen, accountOpen, cloudConflicts, conflictsOpen, overview, overviewSettingsOpen, overviewCreating, taskDetail, listSettingsId, drawerMode, tagFilters])
 
   return <ViewContext.Provider value={value}>{children}</ViewContext.Provider>
 }

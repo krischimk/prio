@@ -1,3 +1,4 @@
+import { normalisiereAufgabe } from '../../src/domain/normalize'
 import Dexie from 'dexie'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createFakeServer } from '../support/fakeGateway'
@@ -56,7 +57,7 @@ describe('Persönliche Listenauswahl', () => {
     try {
       await upgraded.open()
       expect(await upgraded.list_preferences.count()).toBe(0)
-      expect(await upgraded.tasks.get('task-1')).toEqual(localTask())
+      expect(normalisiereAufgabe((await upgraded.tasks.get('task-1'))!)).toEqual(normalisiereAufgabe(localTask()))
       expect(await upgraded.lists.get('list-1')).toEqual(localList())
     } finally { await upgraded.delete() }
   })

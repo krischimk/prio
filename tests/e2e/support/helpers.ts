@@ -1,5 +1,6 @@
 import { expect, type APIRequestContext, type Locator, type Page } from '@playwright/test'
 import type { TaskReminder } from '../../../src/domain/reminder'
+import type { ChecklistItem } from '../../../src/domain/checklist'
 
 /**
  * Gemeinsame Hilfsfunktionen der E2E-Tests.
@@ -28,7 +29,7 @@ export interface ServerState {
   users: number
   lists: Array<{ id: string; name: string; owner_id: string; is_shared: boolean; icon: string | null; keep_completed: boolean }>
   members: Array<{ list_id: string; user_id: string; deleted_at: string | null }>
-  tasks: Array<{ id: string; list_id: string; section_id: string | null; position: number; title: string; description: string | null; due_at: string | null; available_from: string | null; reminders: TaskReminder[]; completed: boolean; completed_at: string | null; completed_expires_at: string | null; expired_at: string | null; deleted_at: string | null }>
+  tasks: Array<{ id: string; list_id: string; section_id: string | null; position: number; title: string; description: string | null; checklist: ChecklistItem[]; tags: string[]; due_at: string | null; available_from: string | null; reminders: TaskReminder[]; completed: boolean; completed_at: string | null; completed_expires_at: string | null; expired_at: string | null; deleted_at: string | null }>
   preferences: Array<{ list_id: string; user_id: string; include_in_overview: boolean }>
   userPreferences: Array<{ id: string; default_list_id: string | null; overview_mode: string }>
 }

@@ -47,6 +47,8 @@ export const AUFGABEN_FELDER = [
   'list_id',
   'title',
   'description',
+  'checklist',
+  'tags',
   'due_at',
   'available_from',
   'completed',

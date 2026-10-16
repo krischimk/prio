@@ -10,6 +10,7 @@ import { createFixedClock } from '../../src/domain/clock'
 import { createFakeServer, type FakeServer } from '../support/fakeGateway'
 import { createDevice, createTestUserId, type DeviceHarness } from '../support/harness'
 import { T2 } from '../support/factories'
+import { createChecklistItem } from '../../src/domain/checklist'
 
 /**
  * Offline-/Sync-Szenarien aus der Aufgabenstellung (Integration).
@@ -35,6 +36,28 @@ describe('Sync-Szenarien', () => {
 
   afterEach(async () => {
     await device.dispose()
+  })
+
+  it('führt offline geänderte Checklistenpunkte und Tags zweier Geräte verlustfrei zusammen', async () => {
+    const list = await device.repositories.createList('Gemeinsam', userId)
+    const a = createChecklistItem('A'), b = createChecklistItem('B')
+    const task = await device.repositories.createTask({ listId: list.id, title: 'Schritte', checklist: [a, b], tags: ['Basis'] })
+    await device.engine.sync()
+    const other = await createDevice({ userId, gateway: server.gatewayFor(userId) })
+    try {
+      await other.engine.sync()
+      await device.repositories.setChecklistItemCompleted(task.id, a.id, true)
+      await device.repositories.updateTask(task.id, { tags: ['Basis', 'Uni'] })
+      await other.repositories.setChecklistItemCompleted(task.id, b.id, true)
+      await other.repositories.updateTask(task.id, { tags: ['Basis', 'Privat'] })
+      await device.engine.sync()
+      await other.engine.sync()
+      await device.engine.sync()
+      expect(server.taskById(task.id)).toMatchObject({ checklist: [{ ...a, completed: true }, { ...b, completed: true }] })
+      expect(new Set(server.taskById(task.id)?.tags)).toEqual(new Set(['Basis', 'Uni', 'Privat']))
+      expect(await device.repositories.listCloudConflicts()).toEqual([])
+      expect(await other.repositories.listCloudConflicts()).toEqual([])
+    } finally { await other.dispose() }
   })
 
   it('überträgt persönliche Listenreihenfolge und Verstecken, ohne die Gesamtansicht-Auswahl zu ändern', async () => {

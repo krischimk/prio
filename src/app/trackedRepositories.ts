@@ -46,6 +46,7 @@ export const SCHREIBEND = [
   'createTask',
   'updateTask',
   'setTaskCompleted',
+  'setChecklistItemCompleted',
   'moveTask',
   'placeTask',
   'reorderTasks',
@@ -73,7 +74,9 @@ export const LESEND = [
   'listLists',
   'getTask',
   'listTasks',
+  'listTaskTags',
   'listCompletedTasks',
+  'countCompletedTasks',
   'listRestorableTasks',
   'listMembers',
   'listReminderPresets',
@@ -95,7 +98,7 @@ export function withChangeTracking(
     const original = repositories[name] as unknown as BeliebigeMethode
     const ersatz = (async (...args: unknown[]) => {
       const ergebnis = await original(...(args as never[]))
-      meldung()
+      if (name !== 'mergeShareContacts' || ergebnis !== false) meldung()
       return ergebnis
     }) as unknown as Repositories[typeof name]
     // Die Zuweisung über einen Index lässt TypeScript nicht auf die

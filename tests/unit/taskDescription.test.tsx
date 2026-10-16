@@ -19,6 +19,7 @@ describe('Beschreibung in der Übersicht', () => {
     const mehr = screen.getByRole('button', { name: 'Mehr' })
     expect(mehr).toHaveAttribute('aria-expanded', 'false')
     expect(screen.getByTestId('task-description')).toHaveTextContent('Erster Absatz.')
+    expect(screen.getByTestId('task-description')).not.toHaveTextContent('Zweiter Absatz.')
 
     await userEvent.click(mehr)
 
@@ -34,5 +35,11 @@ describe('Beschreibung in der Übersicht', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Weniger' }))
 
     expect(screen.getByRole('button', { name: 'Mehr' })).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByTestId('task-description')).not.toHaveTextContent('Zweiter Absatz.')
+  })
+
+  it('beendet auch bei Windows-Zeilenumbrüchen die Vorschau am ersten Absatz', () => {
+    render(<TaskDescription text={'Erste Zeile.\r\nZweite Zeile.'} />)
+    expect(screen.getByTestId('task-description').textContent).toBe('Erste Zeile.…')
   })
 })

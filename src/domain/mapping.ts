@@ -1,6 +1,8 @@
 import { normalizeIso } from './clock'
 import { normalisiereAufgabe, normalisiereListe, normalisiereMitglied, normalisiereListenauswahl, normalisiereStartansicht } from './normalize'
 import { parseSections } from './sections'
+import { parseChecklist } from './checklist'
+import { parseTags } from './tags'
 import type {
   LocalList,
   LocalListMember,
@@ -52,6 +54,8 @@ export function toRemoteTask(local: LocalTask): RemoteTask {
     list_id: local.list_id,
     title: local.title,
     description: local.description,
+    checklist: parseChecklist(local.checklist),
+    tags: parseTags(local.tags),
     due_at: normalizeIso(local.due_at),
     available_from: normalizeIso(local.available_from ?? null),
     completed: local.completed,

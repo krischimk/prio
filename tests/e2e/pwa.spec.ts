@@ -1,5 +1,6 @@
+import { addChecklistPoint, addTags, outerTask } from './support/checklists'
 import { expect, test } from '@playwright/test'
-import { register, resetServer, uniqueEmail, createList, createTask, taskItem } from './support/helpers'
+import { register, resetServer, uniqueEmail, createList, createTask, taskItem, openTaskEditor, selectList, serverState } from './support/helpers'
 
 /**
  * Der PWA-Weg: Service Worker, Cache, Offline-Start.
@@ -89,4 +90,35 @@ test('startet mit gespeichertem Benutzernamen, Aufgaben und hellem Thema auch of
   await expect(page.getByRole('heading', { name: 'Gesamtansicht', exact: true })).toBeVisible()
   await page.getByRole('complementary', { name: 'Listen' }).getByRole('button', { name: 'Offline-Bestand', exact: true }).click()
   await expect(taskItem(page, 'Gespeicherte Aufgabe')).toBeVisible()
+})
+
+
+test('bewahrt Checklisten und Tags beim Offline-Neustart und überträgt spätere Häkchen', async ({page,context,request})=>{
+  await resetServer(request)
+  await register(page,uniqueEmail('pwa-checklist'))
+  await createList(page,'Reise')
+  await createTask(page,'Koffer')
+  const editor=await openTaskEditor(page,'Koffer')
+  await addChecklistPoint(editor,'Kleidung')
+  await addChecklistPoint(editor,'Ladekabel')
+  await addTags(editor,['Unterwegs'])
+  await editor.getByRole('button',{name:'Speichern',exact:true}).click()
+  await expect.poll(async()=>(await serverState(request)).tasks.find(task=>task.title==='Koffer')?.tags).toEqual(['Unterwegs'])
+  await page.evaluate(()=>navigator.serviceWorker.ready)
+  await context.setOffline(true)
+  let row=outerTask(page,'Koffer')
+  await row.getByRole('button',{name:'Checkliste: Koffer',exact:true}).click()
+  await row.getByLabel('Checklistenpunkt: Kleidung',{exact:true}).check()
+  await expect(row.getByRole('button',{name:'Checkliste: Koffer',exact:true})).toHaveText('1/2')
+  await page.reload()
+  await selectList(page,'Reise')
+  row=outerTask(page,'Koffer')
+  await expect(row).toContainText('Unterwegs')
+  await expect(row.getByRole('button',{name:'Checkliste: Koffer',exact:true})).toHaveText('1/2')
+  await row.getByRole('button',{name:'Checkliste: Koffer',exact:true}).click()
+  await expect(row.getByLabel('Checklistenpunkt: Kleidung',{exact:true})).toBeChecked()
+  await expect(row.getByRole('button',{name:/^Checklistenpunkt (verschieben|löschen):/})).toHaveCount(0)
+  await context.setOffline(false)
+  await page.getByRole('button',{name:'Jetzt synchronisieren',exact:true}).click()
+  await expect.poll(async()=>(await serverState(request)).tasks.find(task=>task.title==='Koffer')?.checklist.filter(item=>item.completed).map(item=>item.text)).toEqual(['Kleidung'])
 })

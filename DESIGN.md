@@ -42,7 +42,10 @@ Gerät erhalten. Beide Paletten setzen dieselben semantischen Farbrollen.
 Sync-Punkt, Warnungen und Fehler erhalten je Thema eigene Kontrastwerte;
 Statusmarkierungen bleiben auch während der Synchronisation kräftig erkennbar.
 Das App-Symbol verwendet dieselbe Form mit einer zum Thema passenden hellen
-beziehungsweise dunklen Fläche und Balkenfarben, auch beim Start und offline.
+beziehungsweise dunklen Fläche und Balkenfarben, in der Oberfläche auch offline.
+Eine zusätzliche Logoseite beim Start entfällt; die vorhandene native
+Startanzeige bleibt bestehen. Gelbe Markierungen und Warntexte haben getrennte
+Farbrollen, damit das Gelb heller werden kann und der Text lesbar bleibt.
 Formularflächen und angehobene Zustände sind neutral und klar
 getrennt; Violett bezeichnet Auswahl und
 Hauptaktion. Rote Flächen gehören zu Fehlern bzw. destruktiven Aktionen.
@@ -103,7 +106,7 @@ Zurück-Geste gehört nicht zum Capacitor-Back-Callback und wird hier nicht beha
 - Vor Android-Auslieferung: tatsächlicher App-Code im Emulator; reale Tastatur,
   Systemleisten und Gerätebesonderheiten bei Bedarf am Telefon.
 
-Neue Prioritätsregeln, Checklisten und optionale Hierarchie werden im jeweiligen
+Neue Prioritätsregeln und optionale Hierarchie werden im jeweiligen
 Lieferumfang fachlich geklärt. Der aktuelle Umbau legt diese Entscheidungen
 nicht durch einen Platzhalter oder einen Default fest. Der zusätzliche Hellmodus
 gehört zur Bedienungssammlung vom 15. Oktober 2026.
@@ -203,3 +206,28 @@ ihre Aussage jetzt auch in Form und Zahl statt nur in Farbe (P14).
 | D6 | Die vier Zustände sind nur halb entworfen | `src/ui/WorkspaceError.tsx` | erledigt/entschieden: Der **Fehlerzustand** fehlte ganz – schlug das Öffnen der lokalen Datenbank fehl, blieb die Ladeanzeige für immer stehen. Jetzt `WorkspaceError` mit „Erneut versuchen“. **Bewusst keine Skelette:** Die Daten liegen lokal, ein Skelett wäre ein Aufblitzen (P35 entfällt) | S | entschieden |
 | D7 | Bewegungsreduktion und Haptik fehlen | `src/index.css` | erledigt/entschieden: **Bewegungsreduktion** steht jetzt als `@media (prefers-reduced-motion: reduce)` (`tests/unit/motion.test.ts` hält sie fest). **Haptik bewusst nicht:** Sie wäre die einzige Änderung, die eine native Abhängigkeit braucht (`@capacitor/haptics`), und die sichtbare Rückmeldung ist vollständig (P47); die Entscheidung steht hier, damit sie nicht als Versehen gilt | S | entschieden |
 | D8 | Kein Inhaltsdeckel, gekürzter Text ohne Zugang | `src/ui/TaskPanel.tsx`, `src/ui/components/Sheet.tsx` | **erledigt:** der Aufgabenbereich ist auf `max-w-2xl` gedeckelt und zentriert; Blatt-Untertitel und Listentitel tragen den vollen Text als `title` | S | erledigt |
+
+
+## 16. Ergänzungen vom 16. Oktober 2026
+
+- Checklisten zeigen Fortschritt und einzelne Häkchen direkt in der Aufgabe.
+  Strukturänderungen gehören in die gemeinsamen Aufgabenfelder. Griff und Löschen
+  erscheinen dort im Web bei Hover/Fokus. Eine vollständig abgehakte Checkliste
+  ändert den Hauptaufgabenstatus nicht; die umgekehrten Aktionen ebenso wenig.
+- Tagfilter bleiben neben den Aufgaben, aktive Tags sind sichtbar entfernbar.
+  Mehrere Tags bedeuten UND. Vorschläge sind leise, aber direkt bedienbar.
+- Eine geschlossene Sammlung lädt zunächst ihre Anzahl. Inhalte folgen beim
+  Öffnen. Ein unveränderter Sync löst weder einen Leseumlauf der Oberfläche noch
+  eine neue Erinnerungsplanung aus. Zeitablauf ist ein eigener Anzeigeimpuls.
+- Rein erklärende Tooltips nehmen keine Zeigerereignisse an, damit sie keine
+  darunterliegenden Aktionen blockieren. Ein- und Ausklappen, Checklistenpflege
+  und Filter sind in beiden Ansichten dieselben fachlichen Aktionen.
+
+Prüfungen: `completedTasks.test.tsx`, `taskReadPerformance.test.ts`,
+`syncPerformance.test.ts`, `checklists-tags.spec.ts` und die Paritätstabelle.
+Die [dnd-kit-Empfehlungen](https://dndkit.com/react/hooks/use-sortable/)
+werden für die kleine einzelne Checkliste mit eigenem Kontext, dediziertem Griff,
+`touch-action: none` am Griff, Standardsensoren und Bibliotheksanimationen umgesetzt.
+Die lokale Indexpflege folgt den dokumentierten
+[Creating-/Updating-Hooks](https://dexie.org/docs/Table/Table.hook('updating')):
+Updates liefern zusätzliche Änderungen zurück und verändern das alte Objekt nicht.

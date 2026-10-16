@@ -125,11 +125,12 @@ export function einstellungen(ctx: Kontext): Pick<Repositories, 'listReminderPre
     },
 
     async mergeShareContacts(contacts, at) {
-      if (contacts.length === 0) return
+      if (contacts.length === 0) return false
       const bisher = parseShareContacts(await readMeta(ctx.db, META_SHARE_CONTACTS))
       const neu = withCoMemberContacts(bisher, contacts, at)
-      if (JSON.stringify(neu) === JSON.stringify(bisher)) return
+      if (JSON.stringify(neu) === JSON.stringify(bisher)) return false
       await writeMeta(ctx.db, META_SHARE_CONTACTS, JSON.stringify(neu))
+      return true
     },
   }
 }

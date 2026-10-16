@@ -51,7 +51,7 @@ const migrations = readFileSync(new URL('../supabase/all-migrations.sql', import
 sql(migrations)
 sql(`insert into auth.users(id,email) values ('${owner}','owner@prio.test'),('${member}','member@prio.test'),('${stranger}','stranger@prio.test')`)
 const list = { id: listId, owner_id: owner, name: 'Liste', is_shared: false, icon: null, sections: [], keep_completed: false, completion_retention_started_at: at, created_at: at, updated_at: at, deleted_at: null }
-const task = { id: taskId, list_id: listId, title: 'Anfang', description: null, due_at: null, available_from: null, completed: false, completed_at: null, completed_expires_at: null, expired_at: null, reopen_context: null, recurrence: null, successor_id: null, reminders: [], section_id: null, position: 0, created_at: at, updated_at: at, deleted_at: null }
+const task = { id: taskId, list_id: listId, title: 'Anfang', description: null, checklist: [], tags: [], due_at: null, available_from: null, completed: false, completed_at: null, completed_expires_at: null, expired_at: null, reopen_context: null, recurrence: null, successor_id: null, reminders: [], section_id: null, position: 0, created_at: at, updated_at: at, deleted_at: null }
 
 check('Bestehende Konten wählen einen eindeutigen Namen; Auth und Profil bleiben atomar', () => {
   assert.equal(sql(`select username is null from public.profiles where id='${owner}'`),'t')
@@ -363,4 +363,124 @@ try {
 } finally {
   sql("select cron.unschedule('prio-test-expire'); select cron.alter_job(jobid,active=>true) from cron.job where jobname='prio-expire-completed'")
 }
+check('Checkliste und Tags passieren denselben geschützten Schreibweg; ungültiger Inhalt und Fremdzugriff scheitern', () => {
+  const id='20000000-0000-0000-0000-000000000071'
+  const privateList={...list,id:'10000000-0000-0000-0000-000000000071'}
+  assert.equal(push(owner,'lists',privateList).kind,'written')
+  const details={...task,id,list_id:privateList.id,checklist:[{id:'punkt-a',text:'Erster Punkt',completed:false,deleted_at:null}],tags:['Uni','Dringend']}
+  const first=push(owner,'tasks',details)
+  assert.equal(first.kind,'written')
+  assert.deepEqual(first.current.checklist,details.checklist)
+  assert.deepEqual(first.current.tags,details.tags)
+  assert.equal(push(stranger,'tasks',{...details,tags:['Fremd']},first.current).kind,'rejected')
+  for(const invalid of [
+    {...details,tags:[1]}, {...details,tags:['']}, {...details,checklist:{}},
+    {...details,checklist:[{id:'x',text:'',completed:false,deleted_at:null}]},
+    {...details,checklist:[...details.checklist,...details.checklist]},
+  ]) assert.equal(push(owner,'tasks',invalid,first.current).kind,'rejected')
+  const checked={...details,checklist:[{...details.checklist[0],completed:true}]}
+  assert.equal(push(owner,'tasks',checked,first.current).kind,'written')
+  assert.equal(push(owner,'tasks',{...details,tags:['Veraltet']},first.current).kind,'conflict')
+  assert.equal(sql(`select completed from public.tasks where id='${id}'`),'f')
+})
+check('Endgültiger Ablauf entfernt Checklisten und Tags samt dem übrigen fachlichen Inhalt', () => {
+  const id='20000000-0000-0000-0000-000000000071'
+  sql(`update public.tasks set completed=true,completed_at=now()-interval '8 days',completed_expires_at=now()-interval '1 second' where id='${id}';select private.expire_completed_in_list((select list_id from public.tasks where id='${id}'))`)
+  const expired=JSON.parse(sql(`select to_jsonb(t) from public.tasks t where id='${id}'`))
+  assert.ok(expired.expired_at)
+  assert.deepEqual(expired.checklist,[])
+  assert.deepEqual(expired.tags,[])
+})
+function pull(actor, checkpoint = null, after = null, limit = 500) {
+  const literal = value => value == null ? 'null' : "'" + value.replaceAll("'", "''") + "'"
+  const ids = checkpoint?.listIds ?? []
+  return JSON.parse(sql(actorSql(actor,`select public.sync_pull(${literal(checkpoint?.snapshot)},array[${ids.map(literal).join(',')}]::uuid[],${literal(after)},${limit})`)))
+}
+check('Delta-Pull liefert nach bestätigtem Bestand keine unveränderten Zeilen', () => {
+  const first = pull(owner)
+  assert.ok(first.changes.some(change=>change.table==='tasks'))
+  assert.deepEqual(pull(owner,first.checkpoint).changes,[])
+  sql(`update public.tasks set title='Delta trotz alter Uhr',updated_at='1900-01-01' where id='${taskId}'`)
+  const delta = pull(owner,first.checkpoint)
+  assert.deepEqual(delta.changes.map(change=>change.row.id),[taskId])
+  assert.equal(delta.changes[0].row.title,'Delta trotz alter Uhr')
+  assert.deepEqual(pull(owner,delta.checkpoint).changes,[])
+  sql(`update public.tasks set title=title where id='${taskId}'`)
+  assert.deepEqual(pull(owner,delta.checkpoint).changes,[])
+})
+check('Delta-Pull sperrt anonyme Zugriffe und fremde Daten, Metadaten bleiben privat', () => {
+  assert.throws(()=>sql('begin;set local role anon;select public.sync_pull();commit'),/permission denied/)
+  assert.throws(()=>sql(actorSql(owner,'select count(*) from private.sync_row_versions')),/permission denied/)
+  const result=pull(stranger)
+  const allowed=JSON.parse(sql(actorSql(stranger,`select coalesce(jsonb_agg(key order by key),'[]') from (
+    select 'lists:'||id::text key from public.lists union all
+    select 'members:'||list_id::text||':'||user_id::text from public.list_members union all
+    select 'tasks:'||id::text from public.tasks union all
+    select 'preferences:'||list_id::text||':'||user_id::text from public.list_preferences union all
+    select 'userPreferences:'||id::text from public.user_preferences) visible`)))
+  assert.deepEqual(result.changes.map(change=>change.table+':'+(change.row.id ?? change.row.list_id+':'+change.row.user_id)).sort(),allowed.sort())
+  assert.ok(!result.changes.some(change=>change.row.id==='10000000-0000-0000-0000-000000000071'))
+  assert.equal(sql("select prosecdef from pg_proc where oid='public.sync_pull(text,uuid[],text,integer)'::regprocedure"),'f')
+})
+check('Neue Freigabe liefert alte Aufgaben; Entzug und Listenlöschung liefern keine fremden Inhalte', () => {
+  const invited='00000000-0000-0000-0000-000000000008', shared='10000000-0000-0000-0000-000000000008'
+  sql(`insert into auth.users(id,email) values('${invited}','delta@prio.test');insert into public.lists(id,owner_id,name,updated_at) values('${shared}','${owner}','Alte Freigabe','1900-01-01');
+    insert into public.tasks(id,list_id,title,updated_at) values('20000000-0000-0000-0000-000000000008','${shared}','Sehr alte Aufgabe','1900-01-01')`)
+  const before=pull(invited)
+  assert.deepEqual(before.changes,[])
+  sql(`insert into public.list_members(list_id,user_id) values('${shared}','${invited}')`)
+  const granted=pull(invited,before.checkpoint)
+  assert.ok(granted.changes.some(change=>change.row.title==='Sehr alte Aufgabe'))
+  assert.deepEqual(pull(invited,granted.checkpoint).changes,[])
+  sql(`update public.list_members set deleted_at=now() where list_id='${shared}' and user_id='${invited}'`)
+  const removed=pull(invited,granted.checkpoint)
+  assert.deepEqual(removed.removedListIds,[shared])
+  assert.ok(removed.changes.every(change=>change.table==='members' && change.row.deleted_at))
+  sql(`update public.list_members set deleted_at=null where list_id='${shared}' and user_id='${invited}'`)
+  const again=pull(invited,removed.checkpoint)
+  assert.ok(again.changes.some(change=>change.row.title==='Sehr alte Aufgabe'))
+  sql(`update public.lists set deleted_at=now() where id='${shared}'`)
+  const deleted=pull(invited,again.checkpoint)
+  assert.deepEqual(deleted.removedListIds,[shared])
+  assert.deepEqual(deleted.changes,[])
+})
+check('Mehrere Delta-Seiten verlieren keine Änderung hinter der bereits gelesenen Seite', () => {
+  const id='10000000-0000-0000-0000-000000000007'
+  sql(`insert into public.lists(id,owner_id,name) values('${id}','${owner}','Viele Aufgaben')`)
+  const before=pull(owner)
+  sql(`insert into public.tasks(id,list_id,title) select md5('delta-page-'||n)::uuid,'${id}','Aufgabe '||n from generate_series(1,1201)n`)
+  let page=pull(owner,before.checkpoint,null,111), first=page.checkpoint, rows=[...page.changes]
+  const changed=page.changes.find(change=>change.table==='tasks').row.id
+  sql(`update public.tasks set description='Während des Lesens' where id='${changed}'`)
+  while(page.hasMore) { page=pull(owner,before.checkpoint,page.nextAfter,111); rows.push(...page.changes) }
+  assert.equal(rows.filter(change=>change.table==='tasks').length,1201)
+  const next=pull(owner,first)
+  assert.ok(next.changes.some(change=>change.row.id===changed && change.row.description==='Während des Lesens'))
+  assert.deepEqual(pull(owner,next.checkpoint).changes,[])
+})
+// Haupttransaktion mit bereits zugewiesener Kennung läuft beim ersten Pull noch.
+// xmax allein (oder eine Sequenz) würde ihren späteren Commit übersehen.
+const lateId='20000000-0000-0000-0000-000000000006'
+sql(`insert into public.tasks(id,list_id,title) values('${lateId}','${listId}','Vor spätem Commit')`)
+const lateWriter=spawn('psql',args)
+let writerOutput='', writerError=''
+lateWriter.stdout.on('data',data=>{writerOutput+=data})
+lateWriter.stderr.on('data',data=>{writerError+=data})
+const writerDone=new Promise((resolve,reject)=>{lateWriter.on('error',reject);lateWriter.on('close',code=>code===0?resolve():reject(new Error(writerError)))})
+lateWriter.stdin.write(`begin;update public.tasks set title='Später Commit',updated_at='1900-01-01' where id='${lateId}';select 'writer-ready';`+'\n')
+for(let attempt=0;attempt<100 && !writerOutput.includes('writer-ready');attempt++) await new Promise(resolve=>setTimeout(resolve,10))
+assert.ok(writerOutput.includes('writer-ready'))
+const during=pull(owner)
+lateWriter.stdin.end('commit;\n')
+await writerDone
+check('Später Commit einer schon laufenden Transaktion wird im nächsten Delta geliefert', () => {
+  const next=pull(owner,during.checkpoint)
+  assert.ok(next.changes.some(change=>change.row.id===lateId && change.row.title==='Später Commit'))
+  assert.deepEqual(pull(owner,next.checkpoint).changes,[])
+})
+check('Erneute Migration ändert die bestätigten Delta-Versionen nicht', () => {
+  const before=pull(owner)
+  sql(readFileSync(new URL('../supabase/migrations/0022_incremental_sync.sql',import.meta.url),'utf8'))
+  assert.deepEqual(pull(owner,before.checkpoint).changes,[])
+})
 console.log(`${checks} PostgreSQL-Prüfungen bestanden.`)

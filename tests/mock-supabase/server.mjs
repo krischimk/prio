@@ -25,6 +25,8 @@ let state = emptyState()
 
 function emptyState() {
   return {
+    revision: 0,
+    versions: new Map(),
     users: new Map(),
     sessions: new Map(), // access_token -> user_id
     refreshTokens: new Map(), // refresh_token -> user_id
@@ -57,7 +59,7 @@ function expireCompleted() {
   const now = new Date().toISOString()
   for (const [id, task] of state.tasks) {
     if (task.completed && !task.expired_at && task.completed_expires_at && Date.parse(task.completed_expires_at) <= Date.now()) {
-      state.tasks.set(id, { ...task, expired_at: now, deleted_at: now, updated_at: now, title: 'Abgelaufene Aufgabe', description: null, due_at: null, reminders: [], recurrence: null, successor_id: null, section_id: null, reopen_context: null })
+      state.tasks.set(id, { ...task, expired_at: now, deleted_at: now, updated_at: now, title: 'Abgelaufene Aufgabe', description: null, due_at: null, available_from: null, checklist: [], tags: [], reminders: [], recurrence: null, successor_id: null, section_id: null, reopen_context: null })
     }
   }
 }
@@ -345,6 +347,32 @@ async function handleRpc(name, request, response) {
   const user = authenticatedUser(request)
   if (!user) {
     sendPostgrestError(response, 401, 'JWT expired', 'PGRST301')
+    return
+  }
+
+  if (name === 'sync_pull') {
+    const body = await readBody(request)
+    expireCompleted()
+    const tables = ['lists','members','tasks','preferences','userPreferences']
+    // Der Mock ist synchron; echte Commit-Reihenfolgen prüft db:test in PostgreSQL.
+    for (const table of tables) for (const [id,row] of state[table]) {
+      const key = `${table}:${id}`, content = JSON.stringify(canonical(row))
+      if (state.versions.get(key)?.content !== content) state.versions.set(key,{content,revision:++state.revision})
+    }
+    const scope = [...state.lists.values()].filter(list=>canAccessList(user.id,list)).map(list=>list.id).sort()
+    const oldScope = Array.isArray(body?.p_lists) ? body.p_lists : []
+    const since = Number(body?.p_since)
+    const full = body?.p_since == null || !Number.isFinite(since) || scope.some(id=>!oldScope.includes(id))
+    const visible = (table,row) => table === 'lists' ? scope.includes(row.id)
+      : table === 'members' ? row.user_id === user.id || state.lists.get(row.list_id)?.owner_id === user.id
+      : table === 'tasks' ? scope.includes(row.list_id)
+      : table === 'preferences' ? row.user_id === user.id : row.id === user.id
+    const changes = tables.flatMap(table=>[...state[table]].flatMap(([id,row])=>{
+      const key = `${table}:${id}`
+      return visible(table,row) && (full || state.versions.get(key).revision > since) && (!body?.p_after || key > body.p_after) ? [{key,table,row}] : []
+    })).sort((a,b)=>a.key < b.key ? -1 : a.key > b.key ? 1 : 0)
+    const limit = Math.max(1,Math.min(Number(body?.p_limit) || 500,500)), page = changes.slice(0,limit), more = changes.length > limit
+    send(response,200,{changes:page.map(({table,row})=>({table,row})),checkpoint:{snapshot:String(state.revision),listIds:scope},removedListIds:oldScope.filter(id=>!scope.includes(id)),hasMore:more,nextAfter:more ? page.at(-1).key : null})
     return
   }
 

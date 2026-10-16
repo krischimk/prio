@@ -33,6 +33,8 @@ import type { SyncTone } from './status/syncStatus'
 export const focusRing =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-soft'
 
+export const checklistInput = `min-h-11 w-full min-w-0 rounded-control bg-transparent px-2 py-2 text-body text-ink placeholder:text-ink-faint hover:bg-surface focus:bg-surface ${focusRing}`
+
 /*
  * Warum eine Funktion und keine angehängte Zeichenkette
  *
@@ -85,7 +87,7 @@ const buttonVariants = {
   iconActive: 'text-brand-soft hover:bg-raised hover:text-brand-ink active:bg-raised',
   danger: 'border border-danger-line/60 bg-danger-tint/40 text-danger-ink hover:bg-danger-tint/70',
   /** Zurückgenommen, aber mit Aufmerksamkeit – etwa „neue Fassung da“. */
-  attention: 'text-warn hover:bg-raised hover:text-warn-ink',
+  attention: 'text-warn-ink hover:bg-raised',
 } as const
 
 export type ButtonSize = keyof typeof buttonSizes
@@ -184,7 +186,7 @@ export interface SyncToneStyle {
  */
 export const statusTone: Record<SyncTone, SyncToneStyle> = {
   ok: { dot: 'bg-ok', text: 'text-ok', label: 'Alles synchronisiert' },
-  pending: { dot: 'bg-warn', text: 'text-warn', label: 'Synchronisation ausstehend' },
+  pending: { dot: 'bg-warn', text: 'text-warn-ink', label: 'Synchronisation ausstehend' },
   error: { dot: 'bg-danger', text: 'text-danger', label: 'Synchronisation fehlgeschlagen' },
 }
 
@@ -197,7 +199,7 @@ export const dangerText = 'text-danger'
  * Bewusst getrennt von den Sync-Zuständen: „ausstehend“ und „hier gibt es
  * etwas zu tun“ sind verschiedene Aussagen.
  */
-export const attentionText = 'text-warn'
+export const attentionText = 'text-warn-ink'
 export const attentionDot = 'bg-warn'
 
 /** Inline-Meldung unter einem Formular – Fehler und Erfolg. */

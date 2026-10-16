@@ -83,6 +83,7 @@ function Bereit({ runtime, children }: { runtime: WorkspaceRuntime; children: Re
     () => ({
       repositories: runtime.repositories,
       dataVersion: zustand.datenVersion,
+      nowMs: zustand.jetztMs,
       syncStatus: zustand.syncStatus,
       pendingCount: zustand.pendingCount,
       rejectedCount: zustand.rejectedCount,

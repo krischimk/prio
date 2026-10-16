@@ -47,6 +47,8 @@ async function feldEntfernen(page: import('@playwright/test').Page) {
             delete zeile.expired_at
             delete zeile.reopen_context
             delete zeile.available_from
+            delete zeile.checklist
+            delete zeile.tags
             aufgaben.put(zeile)
           }
         }

@@ -26,6 +26,8 @@ const REGELMAESSIGER_ABGLEICH_MS = 30_000
 export interface WorkspaceZustand {
   /** Zähler für die Lese-Hooks: erhöht sich bei jeder Änderung der lokalen DB. */
   datenVersion: number
+  /** Zeitabhängige Texte auffrischen, ohne Daten erneut zu lesen. */
+  jetztMs: number
   syncStatus: SyncResult | null
   syncing: boolean
   /** Offene Änderungen, die noch übertragen werden können. */
@@ -75,12 +77,14 @@ export async function createWorkspaceRuntime({
   gateway: RemoteGateway
   network: NetworkMonitor
 }): Promise<WorkspaceRuntime> {
+  let geschlossen = false
   const database = await openLocalDatabase(userId)
   const engine = createSyncEngine({
     db: database,
     gateway,
     currentUserId: userId,
     isOnline: () => network.isOnline(),
+    isActive: () => !geschlossen,
   })
   const reminders = createReminderService({
     db: database,
@@ -90,6 +94,7 @@ export async function createWorkspaceRuntime({
 
   let zustand: WorkspaceZustand = {
     datenVersion: 0,
+    jetztMs: Date.now(),
     syncStatus: null,
     syncing: false,
     pendingCount: 0,
@@ -97,8 +102,9 @@ export async function createWorkspaceRuntime({
     reminderStatus: null,
   }
   const hoerer = new Set<() => void>()
-  let geschlossen = false
   let entprellung: ReturnType<typeof setTimeout> | null = null
+  let syncLauf: Promise<void> | null = null
+  let syncVorgemerkt = false
 
   /** Setzt einen Teil der Momentaufnahme und benachrichtigt die Oberfläche. */
   const melde = (teil: Partial<WorkspaceZustand>) => {
@@ -116,7 +122,7 @@ export async function createWorkspaceRuntime({
    */
   function lokaleAenderung() {
     if (geschlossen) return
-    melde({ datenVersion: zustand.datenVersion + 1 })
+    melde({ datenVersion: zustand.datenVersion + 1, jetztMs: Date.now() })
     if (entprellung) clearTimeout(entprellung)
     entprellung = setTimeout(() => {
       entprellung = null
@@ -159,13 +165,11 @@ export async function createWorkspaceRuntime({
     if (!geschlossen) melde({ reminderStatus: status })
   }
 
-  async function synchronisieren() {
-    if (geschlossen) return
-    melde({ syncing: true })
-    let pulled = 0
+  async function syncEinmal() {
+    let changed = false
     try {
       const result = await engine.sync()
-      pulled = result.pulled
+      changed = result.changed
       if (geschlossen) return
       melde({ syncStatus: result })
 
@@ -185,13 +189,28 @@ export async function createWorkspaceRuntime({
 
       // Nach einem Pull kann sich lokal etwas geändert haben – die Anzeige muss
       // neu lesen, aber ohne einen weiteren Abgleich auszulösen.
-      if (result.pulled > 0) melde({ datenVersion: zustand.datenVersion + 1 })
+      if (changed) melde({ datenVersion: zustand.datenVersion + 1 })
     } finally {
-      if (!geschlossen) melde({ syncing: false })
       await offeneAenderungenZaehlen()
       // Nur wenn wirklich neue Daten angekommen sind: Erinnerungen nachziehen.
-      if (pulled > 0) await erinnerungenAuffrischen()
+      if (changed) await erinnerungenAuffrischen()
     }
+  }
+
+  function synchronisieren(): Promise<void> {
+    if (geschlossen) return Promise.resolve()
+    if (syncLauf) { syncVorgemerkt = true; return syncLauf }
+    melde({ syncing: true })
+    syncLauf = (async () => {
+      do {
+        syncVorgemerkt = false
+        await syncEinmal()
+      } while (syncVorgemerkt && !geschlossen)
+    })().finally(() => {
+      syncLauf = null
+      if (!geschlossen) melde({ syncing: false })
+    })
+    return syncLauf
   }
 
   const repositories = withChangeTracking(
@@ -213,7 +232,7 @@ export async function createWorkspaceRuntime({
   void erinnerungenAuffrischen()
   const interval = setInterval(() => {
     // Fristen laufen auch ohne neue Daten und im Offlinezustand weiter.
-    nurLokaleAenderung()
+    melde({ jetztMs: Date.now() })
     if (network.isOnline()) void synchronisieren()
   }, REGELMAESSIGER_ABGLEICH_MS)
   const netzAbmelden = network.subscribe((online) => {

@@ -1,6 +1,7 @@
 import Dexie, { type Table } from 'dexie'
 import type { TaskReminder } from '../domain/reminder'
 import type { LocalList, LocalListMember, LocalListPreference, LocalMeta, LocalReminder, LocalTask, LocalUserPreference } from '../domain/types'
+import { installTaskReadIndex, taskReadIndex } from './taskReadIndex'
 
 /**
  * Lokale Datenbank (IndexedDB via Dexie).
@@ -186,6 +187,15 @@ export class LocalDatabase extends Dexie {
       list_preferences: '[list_id+user_id], list_id, user_id, dirty, updated_at',
       user_preferences: 'id, dirty, updated_at',
     })
+
+    // Boolean und null sind keine IndexedDB-Schlüssel. Der abgeleitete Zustand
+    // erlaubt gezielte Abfragen; Frist und Tagindex ermöglichen reine Zählungen.
+    this.version(9).stores({
+      tasks: 'id, list_id, updated_at, dirty, completed_at, deleted_at, [list_id+read_state], [list_id+read_state+read_until], *read_tag_keys',
+    }).upgrade(tx => tx.table('tasks').toCollection().modify((task: LocalTask) => {
+      Object.assign(task, taskReadIndex(task))
+    }))
+    installTaskReadIndex(this)
   }
 }
 

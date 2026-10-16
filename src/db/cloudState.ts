@@ -22,7 +22,12 @@ export async function readCloudState(db: LocalDatabase, table: CloudTable, id: s
   return parseState(value)
 }
 export async function writeCloudState(db: LocalDatabase, table: CloudTable, id: string, state: CloudState) {
-  await writeMeta(db, key(table, id), JSON.stringify(state))
+  const value = JSON.stringify(state)
+  // JSON lässt optionale undefined-Felder aus. Verglichen wird die tatsächlich
+  // speicherbare Form, auch bei alten Konflikten ohne bekannte Basis.
+  if (sameData(await readCloudState(db, table, id), parseState(value))) return false
+  await writeMeta(db, key(table, id), value)
+  return true
 }
 
 export async function readCloudConflicts(db: LocalDatabase): Promise<CloudConflict[]> {
@@ -78,16 +83,17 @@ export async function acceptCloudRow(db: LocalDatabase, table: CloudTable, remot
     const changed = !local || !sameData(canonicalCloudRow(table, local.row), canonicalCloudRow(table, remote))
     if (changed) await putLocalCloudRow(db, table, remote, false)
     await writeCloudState(db, table, id, { base: remote })
-    return !local ? 'inserted' : changed ? 'remote-wins' : 'unchanged'
+    return !local ? 'inserted' : changed || state.conflict ? 'remote-wins' : 'unchanged'
   }
   const merged = mergeCloudRow(table, state.base, local.row, remote)
   if (merged.fields.length) {
-    await writeCloudState(db, table, id, { ...state, conflict: { table, id, base: state.base, local: local.row, remote, fields: merged.fields } })
-    return 'local-wins'
+    const changed = await writeCloudState(db, table, id, { ...state, conflict: { table, id, base: state.base, local: local.row, remote, fields: merged.fields } })
+    return changed ? 'local-wins' : 'unchanged'
   }
-  await putLocalCloudRow(db, table, merged.row, merged.dirty)
+  const changed = local.dirty !== Number(merged.dirty) || !sameData(canonicalCloudRow(table, local.row), canonicalCloudRow(table, merged.row))
+  if (changed) await putLocalCloudRow(db, table, merged.row, merged.dirty)
   await writeCloudState(db, table, id, { base: remote })
-  return merged.dirty ? 'local-wins' : 'remote-wins'
+  return changed || state.conflict ? merged.dirty ? 'local-wins' : 'remote-wins' : 'unchanged'
 }
 
 export async function resolveCloudConflict(db: LocalDatabase, conflict: CloudConflict, choice: 'local' | 'remote', at: string): Promise<void> {

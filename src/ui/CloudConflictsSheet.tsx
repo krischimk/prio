@@ -37,6 +37,8 @@ function ConflictVersion({ conflict, row, viewerId }: { conflict: CloudConflict;
       {show('completed_at') && task.completed_at ? <p>{formatCompletedLabel(task.completed_at)}</p> : null}
       {show('due_at') || task.due_at ? <p>{task.due_at ? formatDueLabel(task.due_at, task.completed).absoluteText : 'Keine Fälligkeit.'}</p> : null}
       {show('recurrence') ? <p>Wiederholung: {describeRecurrence(task.recurrence) ?? 'Keine'}</p> : null}
+      {show('tags') ? <p>Tags: {task.tags.length ? task.tags.join(', ') : 'Keine'}</p> : null}
+      {show('checklist') ? <div><p>Checkliste:</p>{task.checklist.filter(item => item.deleted_at === null).map(item => <p key={item.id} className="break-words">{item.completed ? '✓' : '○'} {item.text}</p>)}</div> : null}
       {show('reminders') ? <div>
         <p>Erinnerungen: {task.reminders.length === 0 ? 'Keine' : null}</p>
         {task.reminders.map((reminder, index) => <p key={index} className="break-words">
@@ -84,6 +86,7 @@ function ConflictVersion({ conflict, row, viewerId }: { conflict: CloudConflict;
 
 const fields: Record<string, string> = {
   title: 'Titel', description: 'Beschreibung', name: 'Listenname', due_at: 'Fälligkeit', recurrence: 'Wiederholung', reminders: 'Erinnerungen',
+  checklist: 'Checkliste', tags: 'Tags',
   completed: 'Erledigt-Status', completed_at: 'Abschlusszeitpunkt', successor_id: 'Seriennachfolger', list_id: 'Liste', section_id: 'Bereich',
   position: 'Reihenfolge', sections: 'Bereiche', icon: 'Listensymbol', is_shared: 'Freigabe', deleted_at: 'Löschstatus', keep_completed: 'Aufbewahrung erledigter Aufgaben', reopen_context: 'Rückkehr und Seriennachfolger',
   include_in_overview: 'Aufnahme in die Gesamtansicht', default_list_id: 'Letzte Gesamt-Zielliste', overview_mode: 'Bevorzugte Ansicht',

@@ -155,8 +155,8 @@
   --color-ok-ink: #066447;
   --color-ok-tint: #e8f7ef;
   --color-ok-line: #8dbba7;
-  --color-warn: #8b6000;
-  --color-warn-ink: #795200;
+  --color-warn: #a87700;
+  --color-warn-ink: #8b6000;
 }
 
 /* Beim Moduswechsel wechseln Schrift und Hintergrund gemeinsam, ohne kurz
@@ -175,20 +175,9 @@
   animation: loading-appear 160ms ease-out both;
 }
 
-/* Heute und Auswahl sind unabhängig: der kleine Punkt bleibt auch bei einem
- * anderswo gewählten Datum sichtbar und funktioniert in beiden Farbmodi. */
+/* Heute behält seine Umrahmung auch bei einem anderswo ausgewählten Datum. */
 .calendar-day[data-today] {
-  position: relative;
   box-shadow: inset 0 0 0 1px var(--color-brand-line);
-}
-.calendar-day[data-today]::after {
-  content: '';
-  position: absolute;
-  bottom: 0.25rem;
-  width: 0.25rem;
-  height: 0.25rem;
-  border-radius: 50%;
-  background: currentColor;
 }
 
 html,
@@ -414,6 +403,15 @@ body {
 
 .mobile-workspace {
   touch-action: pan-y;
+}
+
+/* dnd-kit: Der dedizierte Checklisten-Griff gehört vollständig der Ziehgeste.
+ * Die übrige Zeile scrollt normal und ihre Textfelder bleiben auswählbar. */
+.checklist-drag-handle {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .mobile-drawer {

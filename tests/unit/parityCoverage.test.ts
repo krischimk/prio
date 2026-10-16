@@ -40,6 +40,7 @@ const ABDECKUNG: Record<(typeof SCHREIBEND)[number], string | null> = {
   createTask: 'Aufgabe anlegen',
   updateTask: 'Aufgabe bearbeiten: Titel und Beschreibung',
   setTaskCompleted: 'Aufgabe abhaken und rückgängig machen',
+  setChecklistItemCompleted: 'Checkliste unabhängig von der Hauptaufgabe bedienen',
   moveTask: 'Aufgabe in eine andere Liste verschieben',
   placeTask: 'Aufgabenreihenfolge ändern',
   // Umsortieren läuft über Ziehen bzw. Tippen in der Zeile; beide Ansichten

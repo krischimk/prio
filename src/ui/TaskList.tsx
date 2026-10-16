@@ -20,6 +20,7 @@ import { emptyState, errorBox, focusRing, numeric } from './styles'
 import { leerAufgaben } from './emptyTexts'
 import { useTaskDragHandlers } from './useTaskDragHandlers'
 import { isKeyboardEvent } from '@dnd-kit/dom/utilities'
+import { matchesTags } from '../domain/tags'
 
 interface DragPreview {
   lists: LocalList[]
@@ -32,11 +33,12 @@ interface DragPreview {
 }
 
 /** Ein Listenbaustein für Einzel- und Gesamtansicht, auf Telefon und Desktop. */
-export function TaskList({ lists, tasks, currentUserId, overview = false, mode = 'by_list' }: {
+export function TaskList({ lists, tasks: allTasks, currentUserId, overview = false, mode = 'by_list' }: {
   lists: LocalList[]; tasks: LocalTask[]; currentUserId: string; overview?: boolean; mode?: OverviewMode
 }) {
   const { repositories } = useWorkspace()
-  const { setTaskDetail, selectList } = useView()
+  const { setTaskDetail, selectList, tagFilter } = useView()
+  const tasks = useMemo(() => tagFilter.length ? allTasks.filter(task => matchesTags(task.tags, tagFilter)) : allTasks, [allTasks, tagFilter])
   const base = useMemo(() => dragGroups(lists, tasks), [lists, tasks])
   const [preview, setPreview] = useState<DragPreview | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -144,7 +146,7 @@ export function TaskList({ lists, tasks, currentUserId, overview = false, mode =
           return <NewestTaskRow key={task.id} task={task} currentUserId={currentUserId} overview={overview}
             origin={`${list.name}${section ? ` · ${section.name}` : ''}`} onOpen={open} />
         })}
-        {tasks.length === 0 ? <li className={emptyState}>Keine offenen Aufgaben.</li> : null}
+        {tasks.length === 0 ? <li className={emptyState}>{tagFilter.length ? 'Keine passenden Aufgaben.' : 'Keine offenen Aufgaben.'}</li> : null}
       </ul> : visibleLists.map(list => <ListBlock key={list.id} list={list} groups={groups} byId={byId} currentUserId={currentUserId}
         overview={overview} activeId={shown?.activeId ?? null} onOpen={open} onSelectList={selectList} />)}
     </div>
