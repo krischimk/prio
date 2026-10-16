@@ -31,7 +31,7 @@ export interface ServerState {
   members: Array<{ list_id: string; user_id: string; deleted_at: string | null }>
   tasks: Array<{ id: string; list_id: string; section_id: string | null; position: number; title: string; description: string | null; checklist: ChecklistItem[]; tags: string[]; due_at: string | null; available_from: string | null; reminders: TaskReminder[]; completed: boolean; completed_at: string | null; completed_expires_at: string | null; expired_at: string | null; deleted_at: string | null }>
   preferences: Array<{ list_id: string; user_id: string; include_in_overview: boolean }>
-  userPreferences: Array<{ id: string; default_list_id: string | null; overview_mode: string }>
+  userPreferences: Array<{ id: string; default_list_id: string | null; overview_mode: string; task_expansions?: Record<string, number> }>
 }
 
 export async function serverState(request: APIRequestContext): Promise<ServerState> {

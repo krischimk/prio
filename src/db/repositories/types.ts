@@ -46,6 +46,7 @@ export interface Repositories {
   setListSortMode(listId: string, userId: string, mode: ListSortMode): Promise<void>
   placeList(listId: string, userId: string, destination: { hidden: boolean; beforeListId: string | null }): Promise<void>
   getUserPreferences(userId: string): Promise<LocalUserPreference | undefined>
+  setTaskExpanded(userId: string, taskId: string, part: 'note' | 'checklist', open: boolean): Promise<void>
   updateUserPreferences(userId: string, patch: { defaultListId?: string | null; overviewMode?: OverviewMode; detailedRatings?: boolean }): Promise<void>
   listCloudConflicts(): Promise<CloudConflict[]>
   resolveCloudConflict(conflict: CloudConflict, choice: 'local' | 'remote'): Promise<void>

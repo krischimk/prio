@@ -10,7 +10,7 @@ import { Button } from './components/Button'
 import { FilterIcon, SortIcon, TagIcon } from './icons'
 import { overviewModeLabel } from './overviewMode'
 import { listSortModeLabel } from './listSortMode'
-import { focusRing, input, layer } from './styles'
+import { focusRing, layer } from './styles'
 
 /** Gleicher Tagfilter in Einzel- und Gesamtansicht; deren Listenwahl bleibt unverändert. */
 export function TaskViewOptions({ tags, mode, busy = false, onModeChange, listMode, hasSections = false, onListModeChange }: {
@@ -34,17 +34,20 @@ export function TaskViewOptions({ tags, mode, busy = false, onModeChange, listMo
       {sorting ? <SortIcon /> : <FilterIcon />}
     </IconButton></Popover.Trigger>
     <Popover.Positioner className={layer.raised}><Popover.Content className="w-72 max-w-[calc(100vw-2rem)] space-y-3 rounded-card border border-line-strong bg-raised p-3 shadow-lg shadow-page/50">
-      {mode && onModeChange ? <label className="block text-meta text-ink-muted"><span className="sr-only">Ansicht der Gesamtansicht</span>
-        <select aria-label="Ansicht der Gesamtansicht" className={input} value={mode} disabled={busy} onChange={event => { onModeChange(event.target.value as OverviewMode); setOpen(false) }}>
-          {Object.entries(overviewModeLabel).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-        </select>
-      </label> : null}
-      {listMode && onListModeChange ? <label className="block text-meta text-ink-muted"><span className="sr-only">Sortierung der Liste</span>
-        <select aria-label="Sortierung der Liste" className={input} value={selectedListMode} disabled={busy}
-          onChange={event => { onListModeChange(event.target.value as ListSortMode); setOpen(false) }}>
-          {Object.entries(listModes).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-        </select>
-      </label> : null}
+      {mode && onModeChange ? <fieldset aria-label="Ansicht der Gesamtansicht" className="space-y-1">
+        <legend className="sr-only">Ansicht der Gesamtansicht</legend>
+        {Object.entries(overviewModeLabel).map(([value, label]) => <label key={value} className={`${focusRing} flex min-h-11 cursor-pointer items-center gap-3 rounded-control px-2 text-body hover:bg-surface`}>
+          <input type="radio" name="overview-sort" className="size-4 accent-brand" checked={mode === value} disabled={busy}
+            onChange={() => { onModeChange(value as OverviewMode); setOpen(false) }} />{label}
+        </label>)}
+      </fieldset> : null}
+      {listMode && onListModeChange ? <fieldset aria-label="Sortierung der Liste" className="space-y-1">
+        <legend className="sr-only">Sortierung der Liste</legend>
+        {Object.entries(listModes).map(([value, label]) => <label key={value} className={`${focusRing} flex min-h-11 cursor-pointer items-center gap-3 rounded-control px-2 text-body hover:bg-surface`}>
+          <input type="radio" name="list-sort" className="size-4 accent-brand" checked={selectedListMode === value} disabled={busy}
+            onChange={() => { onListModeChange(value as ListSortMode); setOpen(false) }} />{label}
+        </label>)}
+      </fieldset> : null}
       <fieldset className="space-y-1"><legend className="mb-1 flex items-center gap-2 text-meta text-ink-muted"><TagIcon className="size-icon-meta" />Nach Tags filtern</legend>
         {choices.length ? <div className="max-h-60 overflow-y-auto">{choices.map(tag => <label key={tagKey(tag)} className={`${focusRing} flex min-h-11 cursor-pointer items-center gap-3 rounded-control px-2 text-body text-ink hover:bg-surface`}>
           <input type="checkbox" className="size-5 shrink-0 accent-brand" aria-label={`Tagfilter: ${tag}`} checked={tagFilter.some(value => tagKey(value) === tagKey(tag))}

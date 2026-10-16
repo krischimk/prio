@@ -196,7 +196,7 @@ check('Paralleles Anlegen schützt dieselbe Kennung auch mit anderer Großschrei
 })
 sql('drop trigger prio_test_pause on public.tasks; drop function public.prio_test_pause()')
 const personal = { list_id: listId, user_id: owner, include_in_overview: true, position: null, hidden: false, sort_mode: 'manual', created_at: at, updated_at: at, deleted_at: null }
-const userSettings = { id: owner, default_list_id: listId, overview_mode: 'newest', detailed_ratings: false, created_at: at, updated_at: at, deleted_at: null }
+const userSettings = { id: owner, default_list_id: listId, overview_mode: 'newest', detailed_ratings: false, task_expansions: {}, created_at: at, updated_at: at, deleted_at: null }
 check('Persönliche Aufnahme und bevorzugte Ansicht: Schreiben, Retry und stale Basis', () => {
   assert.equal(push(owner,'preferences',personal).kind,'written')
   assert.equal(push(owner,'userPreferences',userSettings).kind,'written')
@@ -219,12 +219,24 @@ check('Navigation überträgt neue Felder, akzeptiert eine alte Basis und bleibt
 check('Appweite Detailansicht und Prioritätssortierung bleiben persönlich und migrationsfest', () => {
   const legacy = { ...userSettings }
   delete legacy.detailed_ratings
+  delete legacy.task_expansions
   const detailed = { ...userSettings, overview_mode: 'priority', detailed_ratings: true }
   assert.equal(push(owner,'userPreferences',detailed,legacy).kind,'written')
   sql(migrations)
   assert.equal(sql(actorSql(owner,'select overview_mode || \':\' || detailed_ratings from public.user_preferences')),'priority:true')
   assert.equal(push(stranger,'userPreferences',{...detailed,detailed_ratings:false},detailed).kind,'rejected')
   assert.equal(push(owner,'userPreferences',userSettings,detailed).kind,'written')
+})
+check('Aufklappzustände sind persönlich, validiert und nach erneutem Einspielen erhalten', () => {
+  const expanded = { ...userSettings, task_expansions: { [taskId]: 3 } }
+  assert.equal(push(owner,'userPreferences',expanded,userSettings).kind,'written')
+  sql(migrations)
+  assert.deepEqual(JSON.parse(sql(actorSql(owner,'select task_expansions from public.user_preferences'))),{[taskId]:3})
+  assert.equal(push(stranger,'userPreferences',expanded,expanded).kind,'rejected')
+  for (const value of [[], { bad: 4 }, { bad: true }]) {
+    assert.equal(push(owner,'userPreferences',{...expanded,task_expansions:value},expanded).kind,'rejected')
+  }
+  assert.equal(push(owner,'userPreferences',userSettings,expanded).kind,'written')
 })
 check('Listensortierung bleibt persönlich, validiert und über erneute Migration erhalten', () => {
   const current=JSON.parse(sql(`select to_jsonb(p) from public.list_preferences p where user_id='${owner}' and list_id='${listId}'`))

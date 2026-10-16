@@ -2,10 +2,11 @@ import { expect, test, type Page } from '@playwright/test'
 import * as desktop from './helpers'
 import * as phone from './mobile'
 import { moreOptions } from './taskForms'
+import { listSortModeLabel } from '../../../src/ui/listSortMode'
 
 async function sort(page: Page, mode: string) {
   await page.getByRole('button', { name: 'Sortierung ändern', exact: true }).click()
-  await page.getByLabel('Sortierung der Liste', { exact: true }).selectOption(mode)
+  await page.getByRole('radio', { name: listSortModeLabel[mode as keyof typeof listSortModeLabel], exact: true }).click()
   await expect(page.getByLabel('Sortierung der Liste', { exact: true })).toBeHidden()
 }
 

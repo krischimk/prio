@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test'
+import { overviewModeLabel } from '../../../src/ui/overviewMode'
 
 /** Die Fachabläufe bedienen die sichtbaren deutschen Datumsfelder. */
 export async function fillDateTime(scope: Page | Locator, label: string, value: string, index = 0) {
@@ -29,12 +30,14 @@ export async function addReminder(scope: Page | Locator) {
 export async function setOverviewMode(page: Page, mode: 'newest' | 'by_list' | 'priority') {
   await page.getByRole('button', { name: 'Sortierung ändern', exact: true }).click()
   const field = page.getByLabel('Ansicht der Gesamtansicht', { exact: true })
-  await field.selectOption(mode)
+  await field.getByRole('radio', { name: overviewModeLabel[mode], exact: true }).click()
   await expect(field).toBeHidden()
 }
 
 export async function expectOverviewMode(page: Page, mode: 'newest' | 'by_list' | 'priority') {
   await page.getByRole('button', { name: 'Sortierung ändern', exact: true }).click()
-  await expect(page.getByLabel('Ansicht der Gesamtansicht', { exact: true })).toHaveValue(mode)
+  await expect(page.getByRole('radio', { name: overviewModeLabel[mode], exact: true })).toBeChecked()
   await page.keyboard.press('Escape')
+  await expect(page.getByLabel('Ansicht der Gesamtansicht', { exact: true })).toBeHidden()
+  await expect(page.getByRole('button', { name: 'Sortierung ändern', exact: true })).toBeFocused()
 }

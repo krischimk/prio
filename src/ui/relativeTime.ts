@@ -15,15 +15,17 @@ function afterMonths(start: Date, months: number): Date {
 }
 
 /** Unter 24 Stunden echte Dauer, darüber lokale Kalendertage ohne Uhrzeitrest. */
-export function relativeTimeSpan(start: Date, end: Date): { text: string; includesDays: boolean } {
+export function relativeTimeSpan(start: Date, end: Date): { text: string; includesDays: boolean; includesWeeks: boolean } {
   const elapsed = end.getTime() - start.getTime()
-  if (elapsed < minute) return { text: 'weniger als einer Minute', includesDays: false }
+  if (elapsed < minute) return { text: 'weniger als einer Minute', includesDays: false, includesWeeks: false }
   const parts: string[] = []
   let includesDays = false
+  let includesWeeks = false
   const add = (value: number, singular: string, plural: string) => {
     if (value > 0) {
       parts.push(`${value} ${value === 1 ? singular : plural}`)
       if (singular === 'Tag') includesDays = true
+      if (singular === 'Woche') includesWeeks = true
     }
   }
   // UTC ist hier nur die Rechenfläche für lokale Datumsbestandteile: Ein
@@ -48,5 +50,5 @@ export function relativeTimeSpan(start: Date, end: Date): { text: string; includ
     add(Math.floor(elapsed / hour), 'Stunde', 'Stunden')
     add(Math.floor(elapsed % hour / minute), 'Minute', 'Minuten')
   } else add(Math.floor(elapsed / minute), 'Minute', 'Minuten')
-  return { text: parts.join(' und '), includesDays }
+  return { text: parts.join(' und '), includesDays, includesWeeks }
 }

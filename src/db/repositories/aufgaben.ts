@@ -138,7 +138,7 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
           const preference = await ctx.db.user_preferences.get(userId)
           if (preference?.default_list_id !== input.listId || preference.deleted_at !== null) {
             await ctx.db.user_preferences.put({ id: userId, default_list_id: input.listId,
-              overview_mode: preference?.overview_mode ?? 'by_list', detailed_ratings: preference?.detailed_ratings ?? false, created_at: preference?.created_at ?? now,
+              overview_mode: preference?.overview_mode ?? 'by_list', detailed_ratings: preference?.detailed_ratings ?? false, task_expansions: preference?.task_expansions ?? {}, created_at: preference?.created_at ?? now,
               deleted_at: null, ...ctx.stamp() })
           }
         }

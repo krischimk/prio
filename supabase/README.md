@@ -31,6 +31,7 @@ App. Sie sind so geschrieben, dass sie sich gefahrlos erneut ausführen lassen
 | `0023_task_ratings.sql` | Gekoppelte optionale Aufgabenbewertung, Besitzer-Schalter `ratings_enabled` (Bestand aus, neue Listen an), Inhaltsprüfung und Entfernen der Bewertung beim endgültigen Ablauf |
 | `0024_unique_task_titles.sql` | Besitzer-Regel `allow_duplicate_titles` (zunächst an), stabile `recurrence_series_id` und einmaliges Backfill alter Serien. Namensprüfung in `sync_push` unter Listensperre, einschließlich erledigter Aufgaben; vorhandene Duplikate bleiben erhalten |
 | `0025_list_sort_mode.sql` | Persönliche Sortierung je Liste (`manual`, `priority` mit Bereichen, `priority_flat` gemeinsam); bestehende Zeilen starten manuell |
+| `0026_task_expansions.sql` | Persönliche aufgeklappte Notizen und Checklisten (`task_expansions`); pro Aufgabe zwei Schalter, durch RLS privat und über `sync_push` abgeglichen |
 
 ### Bewertungen und Checklistenanteile
 

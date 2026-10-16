@@ -36,14 +36,16 @@ export function ListSettingsSheet({
   list,
   currentUserId,
   onClose,
+  initialMode = 'menue',
 }: {
   list: LocalList
   currentUserId: string
   onClose: () => void
+  initialMode?: Modus
 }) {
   const { repositories } = useWorkspace()
   const { offer } = useUndo()
-  const [modus, setModus] = useState<Modus>('menue')
+  const [modus, setModus] = useState<Modus>(initialMode)
   const { name, setName, discard: discardName } = useListNameDraft(list)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -179,6 +181,7 @@ export function ListSettingsSheet({
               </label>
               <input
                 id="list-rename"
+                autoFocus
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 required

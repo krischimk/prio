@@ -71,6 +71,7 @@ async function feldEntfernen(page: import('@playwright/test').Page) {
         alteStartansicht.onsuccess = () => {
           for (const zeile of alteStartansicht.result as Record<string, unknown>[]) {
             delete zeile.detailed_ratings
+            delete zeile.task_expansions
             startansicht.put(zeile)
           }
         }

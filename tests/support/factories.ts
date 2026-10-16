@@ -91,5 +91,5 @@ export function localListPreference(overrides: Partial<LocalListPreference> = {}
 }
 
 export function localUserPreference(overrides: Partial<LocalUserPreference> = {}): LocalUserPreference {
-  return { id: 'user-1', default_list_id: null, overview_mode: 'by_list', detailed_ratings: false, created_at: T0, updated_at: T0, deleted_at: null, dirty: 0, ...overrides }
+  return { id: 'user-1', default_list_id: null, overview_mode: 'by_list', detailed_ratings: false, task_expansions: {}, created_at: T0, updated_at: T0, deleted_at: null, dirty: 0, ...overrides }
 }

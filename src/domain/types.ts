@@ -207,9 +207,10 @@ export interface LocalUserPreference extends SyncableRow, LocalOnly {
   default_list_id: string | null
   overview_mode: OverviewMode
   detailed_ratings: boolean
+  task_expansions: Record<string, number>
   created_at: IsoDateTime
 }
-export type RemoteUserPreference = Omit<LocalUserPreference, 'dirty' | 'detailed_ratings'> & { detailed_ratings?: boolean }
+export type RemoteUserPreference = Omit<LocalUserPreference, 'dirty' | 'detailed_ratings' | 'task_expansions'> & { detailed_ratings?: boolean; task_expansions?: Record<string, number> }
 
 export interface LocalMeta {
   key: string

@@ -14,9 +14,9 @@ import { useCollapsedSections } from './collapsedSections'
 import { dragGroups, groupOfTask, projectTaskPointer, sidebarDropListId, taskGroupId, taskGroupLocation, taskEndId, isTaskEnd, type DragGroups } from './taskDrag'
 import { SectionHeader } from './SectionHeader'
 import { TaskRow } from './TaskRow'
-import { ListIcon } from './ListIcon'
+import { ListHeading } from './ListHeading'
 import { CompletedTasksSection } from './CompletedTasksSection'
-import { emptyState, errorBox, focusRing, numeric } from './styles'
+import { emptyState, errorBox, numeric } from './styles'
 import { leerAufgaben } from './emptyTexts'
 import { useTaskDragHandlers } from './useTaskDragHandlers'
 import { isKeyboardEvent } from '@dnd-kit/dom/utilities'
@@ -180,10 +180,7 @@ function ListBlock({ list, groups, byId, currentUserId, overview, activeId, onOp
   const count = groupTasks([], list.sections).reduce((sum, group) => sum + (groups[taskGroupId(list.id, group.section?.id ?? null)]?.length ?? 0), 0)
   return <section aria-label={overview ? `Aufgaben aus ${list.name}` : `Aufgaben in ${list.name}`} className="flex min-w-0 shrink-0 flex-col last:flex-1">
     {overview ? <div className="mb-2 flex items-center justify-between gap-3 border-b border-line py-2">
-      <h2 className="min-w-0"><button type="button" aria-label={`Liste ${list.name} öffnen`} onClick={() => onSelectList(list.id)}
-        className={`${focusRing} flex min-h-11 items-center gap-2 rounded-control text-list-heading font-semibold text-ink-strong hover:text-brand-soft`}>
-        <ListIcon icon={list.icon} className="h-4 w-4 shrink-0 text-brand-soft" /><span className="break-words">{list.name}</span>
-      </button></h2><span className={`text-meta text-ink-muted ${numeric}`}>{count}</span>
+      <ListHeading list={list} currentUserId={currentUserId} allowIconEdit={false} onOpen={() => onSelectList(list.id)} /><span className={`text-meta text-ink-muted ${numeric}`}>{count}</span>
     </div> : null}
     {sections.map(group => {
       const id = taskGroupId(list.id, group.section?.id ?? null)

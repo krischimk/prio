@@ -27,7 +27,7 @@ function morgenUm(stunde: number): string {
 
 /** Das Symbol am Listentitel – nicht die Symbole in der Auswahl. */
 function titelIcon(page: Page) {
-  return page.getByTestId('list-title').locator('..').getByTestId('list-icon')
+  return page.getByRole('button', { name: /^Symbol von .+ ändern$/ }).getByTestId('list-icon')
 }
 
 /** Das Symbol der Liste in der Seitenleiste. */

@@ -49,7 +49,7 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Punkte Telefon' : 'P
     await expect.poll(async () => (await desktop.serverState(request)).tasks.find(task => task.title === 'Koffer packen')?.checklist.map(item => item.text)).toEqual(['Ladekabel', 'Kleidung', 'Zahnbürste'])
     const row = outerTask(page, 'Koffer packen')
     await expect(row).toContainText('Reise')
-    await row.getByRole('button', { name: 'Checkliste: Koffer packen', exact: true }).click()
+    if (await row.getByRole('button', { name: 'Checkliste: Koffer packen', exact: true }).getAttribute('aria-expanded') !== 'true') await row.getByRole('button', { name: 'Checkliste: Koffer packen', exact: true }).click()
     await expect(row.getByLabel('Checklistenpunkt: Kleidung', { exact: true })).toBeChecked()
     await page.screenshot({ path: info.outputPath('checklist-expanded-dark.png') })
     // Nur die Cloud abschalten: Der Entwicklungsserver hat keinen Offline-
@@ -67,7 +67,7 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Punkte Telefon' : 'P
       await page.getByRole('button', { name: 'Hellen Modus einschalten', exact: true }).click()
     }
     await expect(row.getByRole('button', { name: 'Checkliste: Koffer packen', exact: true })).toHaveText('2/3')
-    await row.getByRole('button', { name: 'Checkliste: Koffer packen', exact: true }).click()
+    if (await row.getByRole('button', { name: 'Checkliste: Koffer packen', exact: true }).getAttribute('aria-expanded') !== 'true') await row.getByRole('button', { name: 'Checkliste: Koffer packen', exact: true }).click()
     if (mobile) await expect(page.locator('[data-drawer-visible="false"]')).toBeAttached()
     await page.evaluate(() => Promise.all(document.getAnimations().filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity).map(animation => animation.finished.catch(() => undefined))))
     await page.screenshot({ path: info.outputPath('checklist-expanded-light.png') })

@@ -301,7 +301,7 @@ const funktionen: Funktion[] = [
       await listAction(page, 'Symbol ändern')
       await page.getByTestId('icon-picker').getByRole('button', { name: 'Haushalt' }).click()
 
-      const symbol = page.getByTestId('list-title').locator('..').getByTestId('list-icon')
+      const symbol = page.getByRole('button', { name: /^Symbol von .+ ändern$/ }).getByTestId('list-icon')
       await expect(symbol).toHaveAttribute('data-icon', 'std:home')
 
       await listAction(page, 'Symbol ändern')
@@ -644,11 +644,11 @@ const funktionen: Funktion[] = [
       // Zugeklappt endet die Vorschau am ersten Absatz; offen ist alles lesbar.
       await expect(page.getByTestId('task-description')).not.toContainText('Zweiter Absatz.')
       await page.getByTestId('beschreibung-mehr').click()
-      await expect(page.getByTestId('beschreibung-mehr')).toHaveText('Weniger')
+      await expect(page.getByTestId('beschreibung-mehr')).toHaveAttribute('aria-expanded', 'true')
       await expect(page.getByTestId('task-description')).toContainText('Zweiter Absatz.')
 
       await page.getByTestId('beschreibung-mehr').click()
-      await expect(page.getByTestId('beschreibung-mehr')).toHaveText('Mehr')
+      await expect(page.getByTestId('beschreibung-mehr')).toHaveAttribute('aria-expanded', 'false')
       await expect(page.getByTestId('task-description')).not.toContainText('Zweiter Absatz.')
     },
     telefon: async (page) => {
@@ -658,14 +658,14 @@ const funktionen: Funktion[] = [
 
       await expect(page.getByTestId('task-description')).not.toContainText('Zweiter Absatz.')
       await page.getByTestId('beschreibung-mehr').click()
-      await expect(page.getByTestId('beschreibung-mehr')).toHaveText('Weniger')
+      await expect(page.getByTestId('beschreibung-mehr')).toHaveAttribute('aria-expanded', 'true')
       await expect(page.getByTestId('task-description')).toContainText('Zweiter Absatz.')
 
       // Das Aufklappen darf die Detailansicht nicht mit öffnen.
       await expect(page.getByRole('dialog', { name: 'Aufgabe' })).toHaveCount(0)
 
       await page.getByTestId('beschreibung-mehr').click()
-      await expect(page.getByTestId('beschreibung-mehr')).toHaveText('Mehr')
+      await expect(page.getByTestId('beschreibung-mehr')).toHaveAttribute('aria-expanded', 'false')
       await expect(page.getByTestId('task-description')).not.toContainText('Zweiter Absatz.')
     },
   },

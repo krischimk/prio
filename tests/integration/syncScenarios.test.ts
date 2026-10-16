@@ -38,6 +38,33 @@ describe('Sync-Szenarien', () => {
     await device.dispose()
   })
 
+  it('synchronisiert persönliche Aufklappzustände ohne unabhängige Offline-Änderungen zu verlieren', async () => {
+    const list = await device.repositories.createList('Ansicht', userId)
+    const a = await device.repositories.createTask({ listId: list.id, title: 'A' })
+    const b = await device.repositories.createTask({ listId: list.id, title: 'B' })
+    await device.repositories.updateUserPreferences(userId, { detailedRatings: true })
+    await device.engine.sync()
+    const other = await createDevice({ userId, gateway: server.gatewayFor(userId) })
+    try {
+      await other.engine.sync()
+      await device.repositories.setTaskExpanded(userId, a.id, 'note', true)
+      await other.repositories.setTaskExpanded(userId, a.id, 'checklist', true)
+      await other.repositories.setTaskExpanded(userId, b.id, 'note', true)
+      await device.engine.sync(); await other.engine.sync(); await device.engine.sync()
+      for (const current of [device, other]) {
+        expect(await current.repositories.getUserPreferences(userId)).toMatchObject({
+          detailed_ratings: true, task_expansions: { [a.id]: 3, [b.id]: 1 },
+        })
+      }
+      await device.repositories.setTaskExpanded(userId, a.id, 'note', false)
+      await other.repositories.setTaskExpanded(userId, a.id, 'checklist', false)
+      await device.engine.sync(); await other.engine.sync(); await device.engine.sync()
+      expect((await device.repositories.getUserPreferences(userId))?.task_expansions).toEqual({ [b.id]: 1 })
+      expect(await countDirty(device.db)).toBe(0)
+      expect(await countDirty(other.db)).toBe(0)
+    } finally { await other.dispose() }
+  })
+
   it('verhindert neue gleichnamige Cloud-Aufgaben zweier Offline-Geräte und erhält den abgelehnten Entwurf lokal', async () => {
     const list = await device.repositories.createList('Packen', userId, { allowDuplicateTitles: false })
     await device.engine.sync()

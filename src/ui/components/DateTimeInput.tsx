@@ -30,7 +30,7 @@ export function DateTimeInput({ id, label, value, onChange, disabled = false, re
     onChange(date ? `${date}T${time}` : '')
   }
   return <div className="flex min-w-0 flex-wrap items-start gap-2">
-    <DatePicker.Root locale="de-DE" timeZone={localTimeZone()} startOfWeek={1} fixedWeeks disabled={disabled} required={required}
+    <DatePicker.Root locale="de-DE" timeZone={localTimeZone()} startOfWeek={1} fixedWeeks outsideDaySelectable disabled={disabled} required={required}
       ids={{ input: () => id }} value={day ? [parseDate(day)] : []}
       format={date => formatGermanDate(date.toString())}
       parse={text => { const date = parseGermanDate(text); return date ? parseDate(date) : undefined }}
@@ -70,7 +70,9 @@ export function DateTimeInput({ id, label, value, onChange, disabled = false, re
                 </DatePicker.TableRow></DatePicker.TableHead>
                 <DatePicker.TableBody>{calendar.weeks.map((week, index) => <DatePicker.TableRow key={index}>
                   {week.map(date => <DatePicker.TableCell key={date.toString()} value={date}>
-                    <DatePicker.TableCellTrigger onClick={() => { setOpen(false); setTimeOpen(true) }} className={`${focusRing} calendar-day flex min-h-11 w-full items-center justify-center rounded-control text-body text-ink hover:bg-surface data-[outside-range]:text-ink-faint data-[selected]:bg-brand data-[selected]:text-on-brand`}>{date.day}</DatePicker.TableCellTrigger>
+                    <DatePicker.TableCellTrigger onClick={() => {
+                      if (calendar.getDayTableCellState({ value: date }).selectable) { setOpen(false); setTimeOpen(true) }
+                    }} className={`${focusRing} calendar-day flex min-h-11 w-full items-center justify-center rounded-control text-body text-ink hover:bg-surface data-[outside-range]:text-ink-faint data-[selected]:bg-brand data-[selected]:text-on-brand`}>{date.day}</DatePicker.TableCellTrigger>
                   </DatePicker.TableCell>)}
                 </DatePicker.TableRow>)}</DatePicker.TableBody>
               </DatePicker.Table>

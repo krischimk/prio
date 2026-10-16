@@ -9,7 +9,7 @@ describe('Relative Fälligkeit', () => {
     ['2026-10-14T15:20:00Z', 'In 3 Stunden und 20 Minuten'],
     ['2026-10-15T13:20:00Z', 'In 1 Tag (Do)'],
     ['2026-10-17T12:00:00Z', 'In 3 Tagen (Sa)'],
-    ['2026-10-31T12:00:00Z', 'In 2 Wochen und 3 Tagen (Sa)'],
+    ['2026-10-31T12:00:00Z', 'In 2 Wochen und 3 Tagen'],
     ['2026-12-28T12:00:00Z', 'In 2 Monaten und 2 Wochen'],
     ['2029-01-14T12:00:00Z', 'In 2 Jahren und 3 Monaten'],
   ])('zeigt %s als %s', (due, text) => {
@@ -32,6 +32,10 @@ describe('Relative Fälligkeit', () => {
     const start = new Date(2026, 9, 16, 23)
     const due = new Date(2026, 9, 17, 22, 30)
     expect(formatDueLabel(due.toISOString(), false, start.getTime()).text).toBe('In 23 Stunden und 30 Minuten')
+  })
+  it('lässt den Wochentag auch bei überfälligen Wochen mit Resttagen weg', () => {
+    expect(formatDueLabel('2026-10-01T12:00:00Z', false, now).text).toBe('Seit 1 Woche und 6 Tagen überfällig')
+    expect(formatDueLabel('2026-10-01T12:00:00Z', true, now).text).toBe('Vor 1 Woche und 6 Tagen')
   })
   it('unterscheidet laufende und überschrittene Fälligkeit', () => {
     expect(formatDueLabel('2026-10-14T12:00:00Z', false, now)).toMatchObject({ text: 'Jetzt fällig', overdue: false })

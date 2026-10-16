@@ -1,4 +1,4 @@
-import { ListIcon } from './ListIcon'
+import { ListHeading } from './ListHeading'
 import { useTasksQuery } from '../app/hooks'
 import { useIsDesktop } from '../app/useIsDesktop'
 import type { LocalList, ListSortMode } from '../domain/types'
@@ -32,10 +32,7 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
   return <section className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col gap-5 p-rand" aria-label="Aufgaben">
     {desktop ? <header className="flex shrink-0 items-start justify-between gap-4">
       <div className="min-w-0 flex-1">
-        {desktop ? <div className="flex min-w-0 items-center gap-3">
-          <ListIcon icon={list.icon} className="h-7 w-7 shrink-0 text-brand-soft" />
-          <h1 className="break-words text-heading font-semibold tracking-tight text-ink-strong" data-testid="list-title">{list.name}</h1>
-        </div> : null}
+        <ListHeading list={list} currentUserId={currentUserId} main />
       </div>
       {desktop ? <Button variant="secondary" data-focus-key={`settings:list:${list.id}`} onClick={() => setListSettingsId(list.id)}>
         <SettingsIcon />Liste verwalten

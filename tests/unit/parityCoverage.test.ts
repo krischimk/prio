@@ -29,6 +29,7 @@ const ABDECKUNG: Record<(typeof SCHREIBEND)[number], string | null> = {
   setListKeepCompleted: 'Erledigt am Listenende einstellen und wieder öffnen',
   setListRatingsEnabled: 'Aufgaben bewerten und Bewertungen listenweise ausschalten',
   setListAllowDuplicateTitles: 'Gleiche Aufgabennamen listenweise erlauben oder verhindern',
+  setTaskExpanded: 'Notiz in der Übersicht auf- und zuklappen',
   updateUserPreferences: 'Letzte Gesamt-Zielliste und bevorzugte Ansicht merken',
   resolveCloudConflict: 'Cloud-Schreibkonflikt klären',
   createList: 'Liste anlegen',

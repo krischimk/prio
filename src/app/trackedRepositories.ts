@@ -35,6 +35,7 @@ export const SCHREIBEND = [
   'setListSortMode',
   'placeList',
   'updateUserPreferences',
+  'setTaskExpanded',
   'resolveCloudConflict',
   'createList',
   'renameList',

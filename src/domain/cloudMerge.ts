@@ -1,3 +1,4 @@
+import { mergeTaskExpansions } from './taskExpansion'
 import { sameData } from './equality'
 import { fromRemoteList, fromRemoteMember, fromRemoteTask, fromRemotePreference, fromRemoteUserPreference, toRemoteList, toRemoteMember, toRemoteTask, toRemotePreference, toRemoteUserPreference } from './mapping'
 import type { RemoteList, RemoteListMember, RemoteListPreference, RemoteTask, RemoteUserPreference } from './types'
@@ -78,6 +79,10 @@ export function mergeCloudRow(table: CloudTable, base: CloudRow | null | undefin
   const conflicts: string[] = []
   for (const fields of parts) {
     if (sameData(values(l, fields), values(b, fields))) continue
+    if (table === 'userPreferences' && fields.length === 1 && fields[0] === 'task_expansions') {
+      merged.task_expansions = mergeTaskExpansions((b as RemoteUserPreference).task_expansions, (l as RemoteUserPreference).task_expansions, (r as RemoteUserPreference).task_expansions)
+      continue
+    }
     if (table === 'tasks' && fields.length === 1 && fields[0] === 'checklist') {
       const result = mergeChecklist(parseChecklist((b as RemoteTask).checklist), parseChecklist((l as RemoteTask).checklist), parseChecklist((r as RemoteTask).checklist), preferLocal)
       merged.checklist = result.items

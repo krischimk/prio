@@ -411,11 +411,12 @@ body {
   touch-action: pan-y;
 }
 
-/* Die Checkliste hat einen eigenen Knopf: dessen Rückmeldung gehört nur ihm. */
-.task-card:hover:not(:has([data-checklist-toggle]:hover)) {
+/* Eingebettete Bedienelemente geben ihre eigene Rückmeldung. */
+.task-card { -webkit-tap-highlight-color: transparent; }
+.task-card:hover:not(:has(:is(button, input, select, textarea, label, a, [data-no-drag], [data-task-control]):hover)) {
   background-color: var(--color-surface);
 }
-.task-card:active:not(:has([data-checklist-toggle]:active)) {
+.task-card:active:not(:has(:is(button, input, select, textarea, label, a, [data-no-drag], [data-task-control]):active)) {
   background-color: var(--color-raised);
 }
 
@@ -469,6 +470,9 @@ body {
 
 /* Native Regler: ein Klick/Tap setzt den Wert, Pfeiltasten bleiben verfügbar.
  * Zahlen sind intern; Position, Füllung und Endbeschriftungen tragen die Skala. */
+.rating-slider, .priority-fill {
+  --priority-gradient: linear-gradient(90deg, var(--color-priority-start), var(--color-priority-middle) 55%, var(--color-priority-end));
+}
 .rating-slider {
   position: relative;
   margin: 0;
@@ -477,7 +481,9 @@ body {
   display: block;
   height: 2.75rem;
   cursor: pointer;
-  background: linear-gradient(to right, var(--color-brand-soft) var(--rating-fill), var(--color-line-strong) var(--rating-fill)) center / 100% 0.375rem no-repeat;
+  background:
+    linear-gradient(to right, transparent var(--rating-fill), var(--color-line-strong) var(--rating-fill)) center / 100% 0.375rem no-repeat,
+    var(--priority-gradient) center / 100% 0.375rem no-repeat;
   border-radius: var(--radius-control);
 }
 .rating-ruler {
@@ -508,7 +514,7 @@ body {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--color-priority-start), var(--color-priority-middle) 55%, var(--color-priority-end));
+  background: var(--priority-gradient);
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-on-brand) 30%, transparent);
   transition: clip-path 180ms ease-out;
 }

@@ -51,5 +51,9 @@ for (const mobile of [false, true]) {
     await setDueAt(editor, '2026-10-17T19:30')
     await editor.getByRole('button', { name: 'Speichern', exact: true }).click()
     await expect(row.getByText('In 23 Stunden und 30 Minuten', { exact: true })).toBeVisible()
+    await desktop.openTaskEditor(page, 'Termin vorbereiten')
+    await setDueAt(editor, '2026-11-02T09:00')
+    await editor.getByRole('button', { name: 'Speichern', exact: true }).click()
+    await expect(row.getByText('In 2 Wochen und 3 Tagen', { exact: true })).toBeVisible()
   })
 }

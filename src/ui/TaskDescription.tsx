@@ -1,72 +1,47 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react'
 import { focusRing, mutedText } from './styles'
+import { ChevronIcon } from './icons'
 
-/**
- * Die Notiz einer Aufgabe in der Übersicht.
- *
- * Zugeklappt endet die einzeilige Vorschau am ersten Zeilenumbruch. Weitere
- * Absätze werden erst beim Aufklappen gezeigt, statt sie aneinanderzuhängen.
- *
- * Aufgeklappt bleibt die Höhe begrenzt (rund 15 Zeilen), danach wird gescrollt;
- * die Scrollleiste ist dabei sichtbar (siehe `.scroll-flaeche` in `index.css`),
- * sonst sieht man nicht, dass es weitergeht.
- *
- * Der Schalter erscheint **nur**, wenn es etwas aufzuklappen gibt: bei Absätzen
- * immer, bei einer einzeiligen Notiz nur, wenn sie wirklich abgeschnitten
- * wird. Gemessen wird am Element (`scrollWidth` gegen `clientWidth`) und bei
- * jeder Größenänderung erneut.
- */
-export function TaskDescription({ text, className = '' }: { text: string; className?: string }) {
-  const [offen, setOffen] = useState(false)
-  const [abgeschnitten, setAbgeschnitten] = useState(false)
+/** Einzeilige Vorschau bis zum ersten Absatz; aufgeklappt vollständig lesbar. */
+export function TaskDescription({ text, className = '', open, onToggle, busy = false }: {
+  text: string; className?: string; open: boolean; onToggle: () => void; busy?: boolean
+}) {
+  const [clipped, setClipped] = useState(false)
   const textRef = useRef<HTMLSpanElement | null>(null)
-
-  const messen = useCallback(() => {
-    if (offen) return
-    const element = textRef.current
-    if (!element) return
-    setAbgeschnitten(element.scrollWidth > element.clientWidth + 1)
-  }, [offen])
-
-  // Nach dem Zeichnen messen – und erneut, wenn sich die Breite ändert
-  // (Drehen des Geräts, anderes Fenster).
-  useLayoutEffect(messen, [messen, text, offen])
+  const measure = useCallback(() => {
+    if (!open && textRef.current) setClipped(textRef.current.scrollWidth > textRef.current.clientWidth + 1)
+  }, [open])
+  useLayoutEffect(measure, [measure, text])
   useEffect(() => {
-    window.addEventListener('resize', messen)
-    return () => window.removeEventListener('resize', messen)
-  }, [messen])
-
-  const ersteZeile = text.split(/\r\n?|\n/, 1)[0]
-  const mehrzeilig = ersteZeile.length < text.length
-  const brauchtSchalter = mehrzeilig || abgeschnitten
-
-  return (
-    <div className={className}>
-      <span
-        ref={textRef}
-        data-testid="task-description"
-        className={`block break-words text-meta ${
-          offen ? 'scroll-flaeche max-h-60 overflow-y-auto whitespace-pre-wrap' : 'truncate'
-        } ${mutedText}`}
-      >
-        {offen ? text : mehrzeilig ? `${ersteZeile}…` : ersteZeile}
-      </span>
-      {brauchtSchalter ? (
-        <button
-          type="button"
-          aria-expanded={offen}
-          data-testid="beschreibung-mehr"
-          onClick={(event) => {
-            // Die Notiz liegt in der Aufgabenfläche; dieser Knopf
-            // klappt nur den Text auf und öffnet nicht zusätzlich den Editor.
-            event.stopPropagation()
-            setOffen((vorher) => !vorher)
-          }}
-          className={`${focusRing} text-label leading-none underline-offset-2 hover:underline ${mutedText}`}
-        >
-          {offen ? 'Weniger' : 'Mehr'}
-        </button>
-      ) : null}
-    </div>
-  )
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [measure])
+  const firstLine = text.split(/\r\n?|\n/, 1)[0]
+  const multiline = firstLine.length < text.length
+  const expandable = multiline || clipped
+  const expand = !open && expandable
+  const toggle = (event: MouseEvent | KeyboardEvent) => {
+    event.stopPropagation()
+    if (!busy && !event.defaultPrevented) onToggle()
+  }
+  return <div className={`${className} ${open ? 'scroll-flaeche max-h-60 overflow-y-auto' : `flex w-fit min-w-0 max-w-full items-center ${expand ? `${focusRing} cursor-pointer rounded-control hover:bg-raised active:bg-raised` : ''}`}`}
+    role={expand ? 'button' : undefined} tabIndex={expand ? 0 : undefined}
+    aria-label={expand ? 'Notiz aufklappen' : undefined} aria-expanded={expand ? false : undefined}
+    aria-disabled={expand ? busy : undefined} data-task-control={expand ? true : undefined}
+    data-testid={expand ? 'beschreibung-mehr' : undefined}
+    onClick={expand ? toggle : undefined}
+    onKeyDown={expand ? event => {
+      if (event.key === 'Enter' || event.key === ' ') { toggle(event); event.preventDefault() }
+    } : undefined}>
+    <span ref={textRef} data-testid="task-description"
+      className={`break-words text-meta ${open ? 'whitespace-pre-wrap' : 'min-w-0 truncate'} ${mutedText}`}>
+      {open ? text : multiline ? `${firstLine}…` : firstLine}
+    </span>
+    {expand ? <ChevronIcon offen={false} className="ml-1 size-icon-meta shrink-0 rotate-90 text-ink-muted" /> : null}
+    {open ? <button type="button" aria-label="Notiz einklappen" aria-expanded={true} disabled={busy}
+      data-testid="beschreibung-mehr" onClick={toggle}
+      className={`${focusRing} ml-1 inline-flex size-6 shrink-0 items-center justify-center rounded-control align-bottom hover:bg-raised active:bg-raised ${mutedText}`}>
+      <ChevronIcon offen={false} className="size-icon-meta -rotate-90" />
+    </button> : null}
+  </div>
 }

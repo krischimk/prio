@@ -1,3 +1,4 @@
+import { parseTaskExpansions } from './taskExpansion'
 import { normalizeIso } from './clock'
 import { parseReminders } from './reminder'
 import { parseSections } from './sections'
@@ -129,6 +130,7 @@ export function normalisiereStartansicht(row: LocalUserPreference | RemoteUserPr
     id: row.id, default_list_id: row.default_list_id ?? null,
     overview_mode: row.overview_mode === 'newest' || row.overview_mode === 'priority' ? row.overview_mode : 'by_list',
     detailed_ratings: row.detailed_ratings === true,
+    task_expansions: parseTaskExpansions(row.task_expansions),
     created_at: normalizeIso(row.created_at), updated_at: normalizeIso(row.updated_at),
     deleted_at: normalizeIso(row.deleted_at ?? null), dirty: 'dirty' in row ? row.dirty : 0,
   }

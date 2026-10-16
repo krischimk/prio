@@ -26,7 +26,7 @@ const META_REMINDER_PRESETS = 'reminder_presets'
  * suchen, solange sie dort keinen Zweck erfüllen.
  */
 const META_SHARE_CONTACTS = 'share_contacts'
-export function einstellungen(ctx: Kontext): Pick<Repositories, 'listReminderPresets' | 'setReminderPresets' | 'listShareContacts' | 'rememberShareContact' | 'mergeShareContacts' | 'listCloudConflicts' | 'resolveCloudConflict' | 'listListPreferences' | 'setListInOverview' | 'setListSortMode' | 'placeList' | 'getUserPreferences' | 'updateUserPreferences'> {
+export function einstellungen(ctx: Kontext): Pick<Repositories, 'listReminderPresets' | 'setReminderPresets' | 'listShareContacts' | 'rememberShareContact' | 'mergeShareContacts' | 'listCloudConflicts' | 'resolveCloudConflict' | 'listListPreferences' | 'setListInOverview' | 'setListSortMode' | 'placeList' | 'getUserPreferences' | 'updateUserPreferences' | 'setTaskExpanded'> {
   return {
     async setListSortMode(listId, userId, sortMode) {
       requireText(userId, 'Die Benutzerkennung')
@@ -67,6 +67,25 @@ export function einstellungen(ctx: Kontext): Pick<Repositories, 'listReminderPre
       return row && row.deleted_at === null ? normalisiereStartansicht(row) : undefined
     },
 
+    async setTaskExpanded(userId, taskId, part, open) {
+      requireText(userId, 'Die Benutzerkennung')
+      await ctx.db.transaction('rw', ctx.db.tasks, ctx.db.user_preferences, async () => {
+        await ctx.requireTask(taskId)
+        const existing = await ctx.db.user_preferences.get(userId)
+        const expansions = { ...(existing ? normalisiereStartansicht(existing).task_expansions : {}) }
+        const bit = part === 'note' ? 1 : 2
+        const previous = expansions[taskId] ?? 0
+        const next = open ? previous | bit : previous & ~bit
+        if (next === previous) return
+        if (next) expansions[taskId] = next
+        else delete expansions[taskId]
+        await ctx.db.user_preferences.put({
+          id: userId, default_list_id: null, overview_mode: 'by_list', detailed_ratings: false,
+          created_at: ctx.clock.now(), ...existing, task_expansions: expansions, deleted_at: null, ...ctx.stamp(),
+        })
+      })
+    },
+
     async updateUserPreferences(userId, patch) {
       requireText(userId, 'Die Benutzerkennung')
       if (patch.overviewMode !== undefined && !['by_list', 'newest', 'priority'].includes(patch.overviewMode)) throw new ValidationError('invalid', 'Diese Ansicht ist nicht verfügbar.')
@@ -77,7 +96,7 @@ export function einstellungen(ctx: Kontext): Pick<Repositories, 'listReminderPre
         const overview_mode = patch.overviewMode ?? existing?.overview_mode ?? 'by_list'
         const detailed_ratings = patch.detailedRatings ?? existing?.detailed_ratings ?? false
         if ((!existing || existing.deleted_at === null) && default_list_id === (existing?.default_list_id ?? null) && overview_mode === (existing?.overview_mode ?? 'by_list') && detailed_ratings === (existing?.detailed_ratings ?? false)) return
-        await ctx.db.user_preferences.put({ id: userId, default_list_id, overview_mode, detailed_ratings, created_at: existing?.created_at ?? ctx.clock.now(), deleted_at: null, ...ctx.stamp() })
+        await ctx.db.user_preferences.put({ id: userId, default_list_id, overview_mode, detailed_ratings, task_expansions: existing?.task_expansions ?? {}, created_at: existing?.created_at ?? ctx.clock.now(), deleted_at: null, ...ctx.stamp() })
       })
     },
 

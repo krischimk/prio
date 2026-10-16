@@ -1,0 +1,100 @@
+import { test, expect } from '@playwright/test'
+import * as desktop from './support/helpers'
+import * as phone from './support/mobile'
+import { addChecklistPoint, outerTask } from './support/checklists'
+import { openOverview } from './support/overview'
+
+test.beforeEach(async ({ request }) => desktop.resetServer(request))
+for (const mobile of [false, true]) test.describe(mobile ? 'Aufgabenaktionen Telefon' : 'Aufgabenaktionen breit', () => {
+  test.use({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 }, hasTouch: mobile })
+  test('Notiz und Checkliste bleiben je Konto auf einem zweiten Gerät aufgeklappt', async ({ page, browser, request }, info) => {
+    const email = desktop.uniqueEmail('expanded')
+    await (mobile ? phone.register : desktop.register)(page, email)
+    await (mobile ? phone.createList : desktop.createList)(page, 'Schritte')
+    await (mobile ? phone.createTask : desktop.createTask)(page, 'Vorbereiten')
+    const editor = await desktop.openTaskEditor(page, 'Vorbereiten')
+    await editor.getByLabel('Notiz', { exact: true }).fill('Erste Zeile.\n\nLetzte Zeile.')
+    await addChecklistPoint(editor, 'Einpacken')
+    await editor.getByRole('button', { name: 'Speichern', exact: true }).click()
+    const row = outerTask(page, 'Vorbereiten')
+    await row.getByTestId('task-description').click()
+    await expect(page.getByRole('dialog', { name: 'Aufgabe', exact: true })).toBeHidden()
+    await row.getByRole('button', { name: 'Checkliste: Vorbereiten', exact: true }).click()
+    await expect(row.getByRole('button', { name: 'Notiz einklappen', exact: true })).toHaveAttribute('aria-expanded', 'true')
+    await expect(row.getByLabel('Checklistenpunkt: Einpacken', { exact: true })).toBeVisible()
+    await page.screenshot({ path: info.outputPath('aufgeklappt.png') })
+    if (mobile) { await page.setViewportSize({ width: 740, height: 360 }); await page.screenshot({ path: info.outputPath('aufgeklappt-quer.png') }); await page.setViewportSize({ width: 390, height: 844 }) }
+    const other = await browser.newContext({ viewport: { width: 1280, height: 900 } })
+    try {
+      const second = await other.newPage()
+      await desktop.login(second, email)
+      await desktop.selectList(second, 'Schritte')
+      const remote = outerTask(second, 'Vorbereiten')
+      await expect(remote.getByRole('button', { name: 'Notiz einklappen', exact: true })).toBeVisible()
+      await expect(remote.getByLabel('Checklistenpunkt: Einpacken', { exact: true })).toBeVisible()
+      await remote.getByRole('button', { name: 'Notiz einklappen', exact: true }).click()
+      await expect.poll(async () => (await desktop.serverState(request)).userPreferences.some(pref => Object.values(pref.task_expansions ?? {}).includes(2))).toBe(true)
+      // Die Checkliste bleibt offen, auch wenn die Notiz auf dem anderen Gerät schließt.
+      await expect(remote.getByLabel('Checklistenpunkt: Einpacken', { exact: true })).toBeVisible()
+    } finally { await other.close() }
+    await page.reload()
+    if (mobile) { await phone.openMenu(page); await page.getByRole('dialog', { name: 'Menü', exact: true }).getByRole('button', { name: 'Schritte', exact: true }).click() }
+    else await desktop.selectList(page, 'Schritte')
+    await expect(row.getByRole('button', { name: 'Notiz aufklappen', exact: true })).toBeVisible()
+    await expect(row.getByLabel('Checklistenpunkt: Einpacken', { exact: true })).toBeVisible()
+  })
+})
+
+test('Listenkopf: Symbol direkt ändern, Doppelklick benennt um, einfacher Klick öffnet weiterhin', async ({ page }) => {
+  await desktop.register(page, desktop.uniqueEmail('heading'))
+  await desktop.createList(page, 'Arbeit')
+  const settings = await desktop.openListSettings(page)
+  await settings.getByLabel('In Gesamtansicht aufnehmen', { exact: true }).check()
+  await expect(settings.getByLabel('In Gesamtansicht aufnehmen', { exact: true })).toBeEnabled()
+  await desktop.closeListSettings(page)
+  await page.getByRole('button', { name: /^Symbol von Arbeit ändern$/, exact: true }).click()
+  await page.getByTestId('icon-picker').getByRole('button').first().click()
+  await expect(page.getByRole('dialog', { name: 'Liste verwalten', exact: true })).toBeHidden()
+  await expect(page.getByRole('button', { name: /^Symbol von Arbeit ändern$/, exact: true }).getByTestId('list-icon')).toBeVisible()
+  await openOverview(page, false)
+  await expect(page.getByRole('button', { name: /^Symbol von Arbeit ändern$/, exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: /^Liste Arbeit öffnen$/, exact: true }).dblclick()
+  const rename = page.getByRole('textbox', { name: 'Neuer Listenname', exact: true })
+  await expect(page.getByRole('dialog', { name: 'Liste verwalten', exact: true })).toBeHidden()
+  await rename.fill('Studium')
+  await rename.press('Enter')
+  await expect(rename).toBeHidden()
+  await page.getByRole('button', { name: /^Liste Studium öffnen$/, exact: true }).click()
+  await expect(page.getByTestId('list-title')).toHaveText('Studium')
+  await page.getByRole('button', { name: /^Liste Studium umbenennen$/, exact: true }).dblclick()
+  await expect(rename).toBeFocused()
+  await rename.fill('Verwerfen')
+  await rename.press('Escape')
+  await expect(page.getByTestId('list-title')).toHaveText('Studium')
+  await page.getByRole('button', { name: /^Liste Studium umbenennen$/, exact: true }).dblclick()
+  await rename.fill('Forschung')
+  await page.getByLabel('Neue Aufgabe', { exact: true }).click()
+  await expect(page.getByTestId('list-title')).toHaveText('Forschung')
+})
+
+test('Eingebettete Knöpfe und Kästchen betonen nicht die gesamte Aufgabenfläche', async ({ page }) => {
+  await desktop.register(page, desktop.uniqueEmail('feedback'))
+  await desktop.createList(page, 'Flächen')
+  await desktop.createTask(page, 'Anklicken')
+  const editor = await desktop.openTaskEditor(page, 'Anklicken')
+  await editor.getByLabel('Notiz', { exact: true }).fill('Erster Absatz.\nZweiter Absatz.')
+  await addChecklistPoint(editor, 'Punkt')
+  await editor.getByRole('button', { name: 'Speichern', exact: true }).click()
+  const row = outerTask(page, 'Anklicken')
+  await page.mouse.move(0, 0)
+  const background = await row.evaluate(element => getComputedStyle(element).backgroundColor)
+  for (const control of [row.getByRole('button', { name: 'Notiz aufklappen', exact: true }), row.getByRole('button', { name: 'Checkliste: Anklicken', exact: true }), row.getByLabel('Aufgabe erledigen: Anklicken', { exact: true }), row.getByRole('button', { name: 'Aufgabe löschen: Anklicken', exact: true })]) {
+    await row.hover()
+    await control.hover()
+    await expect.poll(() => row.evaluate(element => getComputedStyle(element).backgroundColor)).toBe(background)
+    await page.mouse.down()
+    await expect.poll(() => row.evaluate(element => getComputedStyle(element).backgroundColor)).toBe(background)
+    await page.mouse.move(0, 0)
+    await page.mouse.up()
+  }
+})

@@ -115,7 +115,7 @@ test('bewahrt Checklisten und Tags beim Offline-Neustart und überträgt später
   row=outerTask(page,'Koffer')
   await expect(row).toContainText('Unterwegs')
   await expect(row.getByRole('button',{name:'Checkliste: Koffer',exact:true})).toHaveText('1/2')
-  await row.getByRole('button',{name:'Checkliste: Koffer',exact:true}).click()
+  await expect(row.getByRole('button',{name:'Checkliste: Koffer',exact:true})).toHaveAttribute('aria-expanded','true')
   await expect(row.getByLabel('Checklistenpunkt: Kleidung',{exact:true})).toBeChecked()
   await expect(row.getByRole('button',{name:/^Checklistenpunkt (verschieben|löschen):/})).toHaveCount(0)
   await context.setOffline(false)
