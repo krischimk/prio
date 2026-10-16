@@ -32,6 +32,7 @@ function schreiben(listId: string, zugeklappt: ReadonlySet<string>): void {
 export function useCollapsedSections(listId: string): {
   zugeklappt: ReadonlySet<string>
   umschalten: (gruppeId: string) => void
+  aufklappen: (gruppeId: string) => void
 } {
   const [zugeklappt, setZugeklappt] = useState<ReadonlySet<string>>(() => new Set(lesen(listId)))
 
@@ -51,5 +52,14 @@ export function useCollapsedSections(listId: string): {
     [listId],
   )
 
-  return { zugeklappt, umschalten }
+  const aufklappen = useCallback((gruppeId: string) => {
+    setZugeklappt(vorher => {
+      if (!vorher.has(gruppeId)) return vorher
+      const nachher = new Set(vorher)
+      nachher.delete(gruppeId)
+      schreiben(listId, nachher)
+      return nachher
+    })
+  }, [listId])
+  return { zugeklappt, umschalten, aufklappen }
 }

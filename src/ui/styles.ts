@@ -66,12 +66,13 @@ const buttonSizes = {
   block: 'px-3 py-3 text-body',
   /** Nur ein Symbol (rundum gleiche Polsterung). */
   icon: 'h-11 w-11',
+  iconSm: 'h-8 w-8',
   /** Ein Feld als kompakte, aufklappbare Zeile mit führendem Symbol. */
   field: 'min-h-11 px-2 py-2 text-body',
 } as const
 
 const buttonVariants = {
-  primary: 'bg-brand text-on-brand hover:bg-brand-hover active:bg-brand-hover',
+  primary: 'button-primary bg-brand text-on-brand hover:bg-brand-hover active:bg-brand-hover',
   secondary: 'border border-line bg-surface text-ink hover:border-line-strong hover:bg-raised active:bg-raised',
   ghost: 'text-ink-muted hover:bg-raised hover:text-ink',
   /**

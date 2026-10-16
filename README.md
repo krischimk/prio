@@ -1179,8 +1179,9 @@ Erstellzeit), damit eine bestehende Liste nach dem Update stabil bleibt.
 
 Eine Einkaufsliste bekommt Bereiche wie „Obst" und „Getränke". Aufgaben ohne
 Bereich stehen **oben – ohne eigene Überschrift**; darunter folgen die Bereiche
-in ihrer Reihenfolge, jeder mit einem Kopf. Der Kopf lässt sich zuklappen; die
-Zahl daneben bleibt sichtbar, damit man sieht, ob sich das Aufklappen lohnt.
+in ihrer Reihenfolge, jeder mit einem Kopf. Gefüllte Bereiche lassen sich ein-
+und ausklappen; die Zahl daneben bleibt sichtbar. Leere benannte Bereiche
+bleiben ausgeklappt. Ein Klick auf ihren Kopf öffnet die Bereichsverwaltung.
 
 **Wie es gespeichert wird.** Der Abschnittsplan steht als Array an der Liste
 (`lists.sections`), die Zugehörigkeit einer Aufgabe als Feld an der Aufgabe

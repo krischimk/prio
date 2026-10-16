@@ -39,6 +39,7 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
       </Button> : null}
     </header> : null}
     {desktop ? <TaskComposer listId={list.id} /> : null}
+    <div className="flex min-h-0 flex-1 flex-col gap-1">
     <div>
       <div className="flex items-center justify-between gap-2">
         <p className={`text-meta text-ink-muted ${numeric}`}>{formatOpenTasks(query.tasks.filter(task => matchesTags(task.tags, tagFilter)).length, tagFilter.length ? query.tasks.length : undefined)}{list.is_shared ? ' · Geteilte Liste' : ''}</p>
@@ -52,5 +53,6 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
       : query.status === 'error' ? <div className="space-y-3"><p role="alert" className={errorBox}>Die Aufgaben konnten nicht geladen werden.</p>
         <Button variant="secondary" onClick={query.retry}>Erneut versuchen</Button></div>
       : <TaskList key={`${list.id}:${mode}`} lists={[list]} tasks={query.tasks} currentUserId={currentUserId} listMode={mode} mode={mode === 'priority_flat' ? 'priority' : 'by_list'} />}
+    </div>
   </section>
 }

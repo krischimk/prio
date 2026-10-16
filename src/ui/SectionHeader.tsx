@@ -19,6 +19,7 @@ export function SectionHeader({
   gruppe,
   handlers,
   muted = false,
+  opensSettings = false,
 }: {
   name: string
   anzahl: number
@@ -35,11 +36,14 @@ export function SectionHeader({
   handlers?: Record<string, unknown>
   /** Abgehakt gehört zum Listenende und steht leiser als offene Bereiche. */
   muted?: boolean
+  opensSettings?: boolean
 }) {
   return (
     <button
       type="button"
       aria-expanded={offen}
+      aria-haspopup={opensSettings ? 'dialog' : undefined}
+      title={opensSettings ? 'Leerer Bereich: Bereiche dieser Liste verwalten.' : undefined}
       onClick={onToggle}
       className={`${focusRing} flex w-full items-center gap-1.5 rounded-control py-1 text-left ${
         hervorgehoben ? 'bg-brand-tint/40 text-brand-faint' : ''

@@ -15,6 +15,7 @@ import { dragGroups, groupOfTask, projectTaskPointer, sidebarDropListId, taskGro
 import { SectionHeader } from './SectionHeader'
 import { TaskRow } from './TaskRow'
 import { ListHeading } from './ListHeading'
+import { ListSettingsSheet } from './ListSettingsSheet'
 import { CompletedTasksSection } from './CompletedTasksSection'
 import { emptyState, errorBox, numeric } from './styles'
 import { leerAufgaben } from './emptyTexts'
@@ -155,7 +156,7 @@ export function TaskList({ lists, tasks: allTasks, currentUserId, overview = fal
             origin={overview ? `${list.name}${section ? ` · ${section.name}` : ''}` : section?.name} onOpen={open} />
         })}
         {tasks.length === 0 ? <li className={emptyState}>{tagFilter.length ? 'Keine passenden Aufgaben.' : 'Keine offenen Aufgaben.'}</li> : null}
-      </ul> : visibleLists.map(list => <ListBlock key={list.id} list={list} groups={groups} byId={byId} currentUserId={currentUserId}
+      </ul> : visibleLists.map(list => <ListBlock key={list.id} list={list} groups={groups} byId={byId} allTasks={allTasks} currentUserId={currentUserId}
         overview={overview} priority={listMode === 'priority'} activeId={shown?.activeId ?? null} onOpen={open} onSelectList={selectList} />)}
     </div>
     {mode !== 'by_list' && lists.some(list => list.keep_completed) ? <CompletedTasksSection lists={lists.filter(list => list.keep_completed)} currentUserId={currentUserId} showOrigin={overview} overview={overview} /> : null}
@@ -168,12 +169,20 @@ function NewestTaskRow(props: { task: LocalTask; currentUserId: string; overview
   return <TaskRow {...props} elementRef={ref} activatorRef={handleRef} dragging={isDragging} />
 }
 
-function ListBlock({ list, groups, byId, currentUserId, overview, activeId, onOpen, onSelectList, priority = false }: {
-  list: LocalList; groups: DragGroups; byId: Map<string, LocalTask>; currentUserId: string; overview: boolean
+function ListBlock({ list, groups, byId, allTasks, currentUserId, overview, activeId, onOpen, onSelectList, priority = false }: {
+  list: LocalList; groups: DragGroups; byId: Map<string, LocalTask>; allTasks: LocalTask[]; currentUserId: string; overview: boolean
   activeId: string | null; onOpen: (task: LocalTask) => void; onSelectList: (id: string) => void
   priority?: boolean
 }) {
-  const { zugeklappt, umschalten } = useCollapsedSections(list.id)
+  const { zugeklappt, umschalten, aufklappen } = useCollapsedSections(list.id)
+  const { setListSettingsId } = useView()
+  const [sectionsOpen, setSectionsOpen] = useState(false)
+  const emptySectionIds = list.sections.filter(section => !allTasks.some(task => task.list_id === list.id && task.section_id === section.id)).map(section => section.id)
+  const emptyKey = JSON.stringify(emptySectionIds)
+  useEffect(() => {
+    if (activeId !== null) return
+    for (const id of JSON.parse(emptyKey) as string[]) aufklappen(id)
+  }, [activeId, emptyKey, aufklappen])
   const { nowMs } = useWorkspace()
   const desktop = useIsDesktop()
   const sections = priority ? orderListTaskGroups([...byId.values()].filter(task => task.list_id === list.id), list, nowMs) : groupTasks([], list.sections)
@@ -186,29 +195,37 @@ function ListBlock({ list, groups, byId, currentUserId, overview, activeId, onOp
       const id = taskGroupId(list.id, group.section?.id ?? null)
       const ids = priority ? group.tasks.map(task => task.id) : groups[id] ?? []
       return <TaskGroup key={id} id={id} ids={ids} name={group.section?.name} sectionId={group.section?.id}
-        open={group.section === null || !zugeklappt.has(group.id) || (activeId !== null && ids.includes(activeId))}
-        onToggle={() => umschalten(group.id)} byId={byId} currentUserId={currentUserId} overview={overview}
+        empty={group.section !== null && emptySectionIds.includes(group.id)}
+        open={group.section === null || emptySectionIds.includes(group.id) || !zugeklappt.has(group.id) || (activeId !== null && ids.includes(activeId))}
+        onToggle={() => {
+          if (group.section && emptySectionIds.includes(group.id)) {
+            if (list.owner_id === currentUserId) setSectionsOpen(true)
+            else setListSettingsId(list.id)
+          } else umschalten(group.id)
+        }} byId={byId} currentUserId={currentUserId} overview={overview}
         ratingsEnabled={list.ratings_enabled}
         computed={priority}
         activeId={activeId} onOpen={onOpen} />
     })}
+    {sectionsOpen ? <ListSettingsSheet list={list} currentUserId={currentUserId} initialMode="bereiche" onClose={() => setSectionsOpen(false)} /> : null}
     <ListEndDrop listId={list.id} active={activeId !== null && !priority} />
     {count === 0 && activeId === null ? <p className={emptyState}>{overview ? 'Keine offenen Aufgaben in dieser Liste.' : leerAufgaben(desktop ? 'breit' : 'mobil')}</p> : null}
     {list.keep_completed ? <CompletedTasksSection lists={[list]} currentUserId={currentUserId} overview={overview} /> : null}
   </section>
 }
 
-function TaskGroup({ id, ids, name, sectionId, open, onToggle, byId, currentUserId, overview, activeId, onOpen, ratingsEnabled, computed = false }: {
+function TaskGroup({ id, ids, name, sectionId, open, onToggle, byId, currentUserId, overview, activeId, onOpen, ratingsEnabled, computed = false, empty = false }: {
   id: string; ids: string[]; name?: string; sectionId?: string; open: boolean; onToggle: () => void
   byId: Map<string, LocalTask>; currentUserId: string; overview: boolean; activeId: string | null; onOpen: (task: LocalTask) => void
   ratingsEnabled: boolean
   computed?: boolean
+  empty?: boolean
 }) {
   // Container haben geringere Priorität als Aufgaben. So trifft man konkrete
   // Nachbarn und erreicht auch leere, kopflose Gruppen.
   const { ref, isDropTarget } = useDroppable({ id, type: 'group', accept: 'task', disabled: computed, collisionPriority: CollisionPriority.Low, collisionDetector: pointerIntersection })
   return <div ref={ref} data-task-group={id} className={`min-w-0 ${activeId && isDropTarget ? 'rounded-control bg-brand-tint/40' : ''}`}>
-    {name ? <SectionHeader name={name} anzahl={ids.length} offen={open} onToggle={onToggle} abschnittId={sectionId}
+    {name ? <SectionHeader name={name} anzahl={ids.length} offen={open} opensSettings={empty} onToggle={onToggle} abschnittId={sectionId}
       gruppe={id} hervorgehoben={activeId !== null && isDropTarget} /> : null}
     {open ? <ul>{ids.map((taskId, index) => {
       const task = byId.get(taskId)

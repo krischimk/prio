@@ -79,7 +79,7 @@ export function TaskUrgencyEditor({ form }: { form: TaskForm }) {
 function RatingMeter({ label, value, hint, prominent = false, icon, inset = false, barOnly = false }: { label: string; value: number; hint: string; prominent?: boolean; icon?: ReactNode; inset?: boolean; barOnly?: boolean }) {
   return <Hint text={`${label}: ${level(value)}. ${hint}`}><span role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={10} aria-valuenow={value} aria-valuetext={level(value)}
     className={prominent && !inset ? 'flex min-w-0 items-center gap-2' : 'block min-w-0 space-y-1'}>
-    {!barOnly ? <span className={`flex shrink-0 items-center gap-1 text-meta ${prominent ? 'font-medium text-ink-soft' : 'text-ink-muted'}`}>{icon}{label}</span> : null}
+    {barOnly ? icon : <span className={`flex shrink-0 items-center gap-1 text-meta ${prominent ? 'font-medium text-ink-soft' : 'text-ink-muted'}`}>{icon}{label}</span>}
     <span aria-hidden="true" className={`block min-w-0 ${inset ? 'ml-8' : prominent ? 'flex-1' : ''} ${prominent ? 'priority-track' : 'h-1.5 overflow-hidden rounded-full bg-line'}`}><span style={prominent ? { width: '100%', clipPath: `inset(0 ${100 - value * 10}% 0 0 round 999px)` } : { width: `${value * 10}%` }}
       className={prominent ? 'priority-fill' : 'block h-full rounded-full bg-ink-faint'} /></span>
   </span></Hint>
@@ -88,7 +88,7 @@ function RatingMeter({ label, value, hint, prominent = false, icon, inset = fals
 export function TaskPriorityBar({ rating, dueAt, checklist }: { rating: TaskRating; dueAt: string | null; checklist: ChecklistItem[] }) {
   const { nowMs } = useWorkspace()
   return <span className="mt-2 mb-2 block w-80 max-w-full"><RatingMeter label="Priorität" value={ratingValues(rating, dueAt, nowMs, checklist).priority}
-    hint="Gleichgewichtet aus Wichtigkeit und Dringlichkeit." prominent barOnly /></span>
+    hint="Gleichgewichtet aus Wichtigkeit und Dringlichkeit." icon={<PriorityIcon className="size-icon-meta shrink-0 text-ink-muted" />} prominent barOnly /></span>
 }
 
 export function TaskRatingSummary({ rating, dueAt, checklist, detailed: forceDetailed, includePriority = true }: { rating: TaskRating; dueAt: string | null; checklist: ChecklistItem[]; detailed?: boolean; includePriority?: boolean }) {

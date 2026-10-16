@@ -135,6 +135,7 @@ const funktionen: Funktion[] = [
       await expect(header).toHaveAttribute('aria-expanded', 'false')
       await header.click()
       await section.getByRole('checkbox', { name: /^Aufgabe wieder öffnen:/ }).click()
+      await expect(section.getByRole('checkbox', { name: /^Aufgabe wieder öffnen:/ })).toHaveCount(0)
       await expect(breit.taskItem(page, 'Wohnung saugen')).toBeVisible()
     },
     telefon: async page => {
@@ -152,6 +153,7 @@ const funktionen: Funktion[] = [
       await expect(header).toHaveAttribute('aria-expanded', 'false')
       await header.click()
       await section.getByRole('checkbox', { name: /^Aufgabe wieder öffnen:/ }).click()
+      await expect(section.getByRole('checkbox', { name: /^Aufgabe wieder öffnen:/ })).toHaveCount(0)
       await expect(telefon.taskRow(page, 'Wohnung saugen')).toBeVisible()
     },
   },
