@@ -39,7 +39,10 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Kompakte Aufgaben Te
     await page.getByRole('dialog', { name: 'Konto', exact: true }).getByRole('button', { name: 'Schließen', exact: true }).click()
     await page.screenshot({ path: info.outputPath('kompakte-liste-hell.png'), animations: 'disabled' })
     await setDetailedRatings(page, mobile, true)
-    editor = await desktop.openTaskEditor(page, 'Auffrischungsaufgaben')
+    // Die Zeilenmitte kann nach dem Einschalten der Detailansicht auf der
+    // aufklappbaren Notiz liegen. Zum Bearbeiten gezielt den Titel anklicken.
+    await outerTask(page, 'Auffrischungsaufgaben').getByText('Auffrischungsaufgaben', { exact: true }).click()
+    editor = page.getByRole('dialog', { name: 'Aufgabe', exact: true })
     await expect(editor.getByRole('slider', { name: 'Aufwand', exact: true })).toBeVisible()
     await editor.getByRole('slider', { name: 'Wichtigkeit', exact: true }).scrollIntoViewIfNeeded()
     await page.screenshot({ path: info.outputPath('bewertung-entfernen.png'), animations: 'disabled' })
