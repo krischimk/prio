@@ -113,7 +113,7 @@
   --spacing-rand: calc(var(--spacing) * 6); /* Rand des Inhaltsbereichs */
   --spacing-app-bar: 3.5rem; /* Höhe der App-Leiste */
   --spacing-fab: 3.5rem; /* Durchmesser des runden Plus-Knopfes */
-  --spacing-fab-gap: 1.25rem; /* sein Abstand zum unteren Rand */
+  --spacing-fab-gap: 0.75rem; /* zusätzlicher Abstand über der sicheren Systemfläche */
 
   /* Rundungen: drei Stufen mit Bedeutung */
   --radius-control: 0.625rem;
@@ -188,6 +188,25 @@
     color-mix(in srgb, var(--color-on-brand) 16%, transparent),
     transparent 55%,
     rgb(0 0 0 / 7%));
+}
+
+.note-editor { white-space: pre-wrap; overflow-wrap: anywhere; }
+.note-editor p + p { margin-top: 0.5rem; }
+.note-editor :is(ul, ol) { padding-inline-start: 1.25rem; }
+.note-editor ul { list-style-type: disc; }
+.note-editor ol { list-style-type: decimal; }
+.note-editor :is(h1, h2, h3, h4, h5, h6) { font-weight: 600; color: var(--color-ink-soft); }
+.note-editor h1 { font-size: var(--text-heading); }
+.note-editor h2 { font-size: var(--text-title); }
+.note-editor :is(h3, h4, h5, h6) { font-size: var(--text-body); }
+.note-editor a { color: var(--color-brand-soft); text-decoration: underline; }
+.note-editor code { background: var(--color-raised); border-radius: var(--radius-control); padding-inline: 0.25rem; }
+.note-editor:has(> p:only-child > br:only-child)::before {
+  content: attr(data-placeholder);
+  color: var(--color-ink-faint);
+  pointer-events: none;
+  float: left;
+  height: 0;
 }
 :root[data-theme='light'] .button-primary {
   --button-gradient-angle: 115deg;
@@ -508,7 +527,7 @@ body {
   top: 50%;
   width: 1px;
   transform: translate(-50%, -50%);
-  background: var(--color-ink-faint);
+  background: var(--color-line-soft);
 }
 .rating-tick-half { height: 1.125rem; }
 .rating-tick-quarter { height: 0.875rem; }

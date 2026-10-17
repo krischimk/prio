@@ -133,3 +133,38 @@ Auth-Mock geprüft. Reale Mailzustellung sowie die Freigabe der Rückkehradresse
 bleiben getrennte Einrichtungsschritte. Registrierung versendet derzeit keine
 Bestätigungsmail (`mailer_autoconfirm=true`, öffentlich am 16. Oktober geprüft).
 Keine dieser Angaben bedeutet, dass bereits ein MCP-Endpunkt veröffentlicht ist.
+
+## Kurze Aufträge, die ohne Rückfragen funktionieren sollen
+
+Vorschlag vom 17. Oktober. Die Beispiele beschreiben das Ziel, nicht schon
+verfügbare Werkzeuge. Lesen und Schreiben verwenden dieselben Fachregeln wie
+die App; Priorität und Restaufwand werden für den aktuellen Zeitpunkt berechnet.
+
+| Kurzer Auftrag | Sinnvolle Ausführung |
+| --- | --- |
+| „Was sollte ich als Nächstes tun?“ | Eine offene Aufgabe aus den Listen der Gesamtansicht empfehlen, mit kurzer Begründung aus Fälligkeit, Priorität und Restaufwand; zwei Alternativen anbieten. |
+| „Was steht heute an?“ | Heute fällige und überfällige Aufgaben nennen; bevorstehende Wiederholungen als solche kennzeichnen. |
+| „Was kann noch warten?“ | Wenig dringliche offene Aufgaben samt Begründung zeigen, ohne Termine zu ändern. |
+| „Gib mir etwas Kleines für zwischendurch.“ | Niedrigen Restaufwand bevorzugen; aus der relativen Skala keine erfundenen Minutenangaben machen. |
+| „Was habe ich beim Projekt Umzug noch offen?“ | In Titeln, Notizen, Tags und Checklisten suchen, gruppiert nach Liste antworten. |
+| „Was fehlt in meiner Packliste?“ | Offene Aufgaben und offene Checklistenpunkte zeigen, ohne deren unabhängige Zustände gleichzusetzen. |
+| „Setz Milch auf die Einkaufsliste.“ | Passende Liste finden, ihre Namensregel beachten und einen eindeutigen bestehenden Eintrag bei Bedarf wieder öffnen statt eine Dublette zu erzeugen. |
+| „Hake Milch ab.“ | Die im Gespräch eindeutig gemeinte Aufgabe abschließen; Wiederholungen nach den Regeln der App erzeugen. |
+| „Mach das rückgängig.“ | Die letzte durch diese Verbindung ausgeführte Änderung anhand ihrer Auftragskennung zurücknehmen, soweit der aktuelle Stand das erlaubt. |
+| „Verschiebe das nach Arbeit.“ | Die im Gespräch referenzierte Aufgabe verschieben; Notiz, Termine, Erinnerungen, Bewertung und Checkliste erhalten. |
+| „Erinnere mich morgen um neun daran.“ | Für die referenzierte Aufgabe eine Erinnerung in der Kontozone anlegen; tatsächliche Geräte-Zustellung nicht behaupten. |
+| „Öffne alle erledigten Aufgaben in der Packliste wieder.“ | Genau die Hauptaufgaben dieser Liste wieder öffnen; Checklistenpunkte gemäß der bestehenden Unabhängigkeit unverändert lassen. |
+| „Markiere die drei mit Uni.“ | Die zuvor genannten Kennungen gemeinsam mit dem vorhandenen beziehungsweise normalisierten Tag versehen. |
+| „Zerlege das in eine Checkliste.“ | Für die referenzierte Aufgabe sinnvolle kurze Schritte ergänzen; vorhandene Punkte erhalten und keine Hauptaufgabe automatisch abhaken. |
+| „Wo gibt es doppelte Aufgabennamen?“ | Offene und erledigte Aufgaben je Liste vergleichen, die Treffer berichten und nichts ungefragt löschen. |
+
+Damit die Kürze zuverlässig bleibt, liefert der Server dem Agenten die
+Kontozone, aktuelle Uhrzeit, sichtbare Listenregeln und verständliche Feldregeln.
+„Das“ und „die drei“ beziehen sich auf stabile Kennungen aus dem Gespräch, nicht
+auf eine möglicherweise anders geöffnete App. Standardvorschläge verwenden die
+Gesamtansicht, eine Suche dagegen alle zugänglichen Listen. Fehlende Bewertungen
+bleiben als fehlend erkennbar; eine unbewertete überfällige Aufgabe wird nicht
+stillschweigend als unwichtig behandelt. Leere Treffer und ausführbare Teile
+werden direkt berichtet. Eine echte Mehrdeutigkeit bei schreibenden Aktionen
+wird benannt, statt die falsche Aufgabe zu verändern. Teilen bleibt an die
+bereits vereinbarte zusätzliche Freigabe je Verbindung gebunden.

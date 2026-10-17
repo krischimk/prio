@@ -6,7 +6,7 @@ import { useWorkspace } from '../app/useWorkspace'
 import type { TaskForm } from './useTaskForm'
 import { Hint } from './components/Hint'
 import { Button } from './components/Button'
-import { ImportanceIcon, EffortIcon, UrgencyIcon, PriorityIcon } from './icons'
+import { ImportanceIcon, EffortIcon, UrgencyIcon, PriorityIcon, EraserIcon } from './icons'
 import { useView } from './useView'
 
 const level = (value: number) => value < 2 ? 'sehr niedrig' : value < 4 ? 'niedrig' : value < 6 ? 'mittel' : value < 8 ? 'hoch' : 'sehr hoch'
@@ -51,11 +51,12 @@ export function TaskRatingEditor({ form }: { form: TaskForm }) {
         hint={rating ? 'Wie wichtig ist dir das Ergebnis? Links geringer, rechts höher.' : 'Der erste Klick startet die Bewertung. Aufwand und manuelle Dringlichkeit beginnen sichtbar in der Mitte.'}
         onChange={importance => form.setzen('rating', rating ? { ...rating, importance } : startRating(importance))} />
     {rating && values ? <>
-      <RatingSlider label={linked ? 'Gesamtaufwand' : 'Aufwand'} icon={<EffortIcon />} value={rating.effort} hint={linked ? 'Geschätzter Aufwand für die gesamte Checkliste. Der offene Anteil bestimmt den verbleibenden Aufwand.' : 'Wie viel Arbeit liegt ungefähr noch vor dir? Größerer Aufwand macht die Aufgabe automatisch früher dringlich.'}
-        onChange={effort => form.setzen('rating', { ...rating, effort })} />
+      {detailed || values.automatic || linked ? <RatingSlider label={linked ? 'Gesamtaufwand' : 'Aufwand'} icon={<EffortIcon />} value={rating.effort} hint={linked ? 'Geschätzter Aufwand für die gesamte Checkliste. Der offene Anteil bestimmt den verbleibenden Aufwand.' : 'Wie viel Arbeit liegt ungefähr noch vor dir? Größerer Aufwand macht die Aufgabe automatisch früher dringlich.'}
+        onChange={effort => form.setzen('rating', { ...rating, effort })} /> : null}
       {linked && detailed ? <RatingMeter label="Restaufwand" icon={<EffortIcon className="size-icon-meta" />} value={values.effort} hint="Aus Gesamtaufwand und offenen Checklistenpunkten berechnet." inset /> : null}
       {detailed || !form.dueIso ? <TaskUrgencyEditor form={form} /> : null}
       {detailed ? <RatingMeter label="Priorität" icon={<PriorityIcon className="size-icon-meta" />} value={values.priority} hint="Gleichgewichtet aus Wichtigkeit und Dringlichkeit berechnet." prominent inset /> : null}
+      <Button variant="ghost" size="sm" onClick={() => form.setzen('rating', null)}><EraserIcon />Bewertung entfernen</Button>
     </> : null}
   </section>
 }

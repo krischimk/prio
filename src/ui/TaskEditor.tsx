@@ -139,7 +139,7 @@ export function TaskEditor({
         </div>
 
         <div className="scroll-area safe-bottom min-h-0 flex-1 overflow-y-auto">
-          <div className="space-y-5 px-5 py-5">
+          <div className="space-y-5 px-4 py-4">
             <p className="break-words text-meta text-ink-muted">Liste: {lists.find(list => list.id === listId)?.name ?? 'Nicht mehr verfügbar'}</p>
             {targetHint ? <p role="status" className="text-body text-ink-muted">{targetHint}</p> : null}
             {isNew && onChangeTarget ? <Button variant="secondary" disabled={form.busy || busy} onClick={onChangeTarget}>Zielliste ändern</Button> : null}

@@ -113,7 +113,7 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Kompakter Editor Tel
     await expect(editor.getByRole('button', { name: 'Als erledigt markieren' })).toBeHidden()
     await expect(editor.getByRole('button', { name: 'Reihenfolge ändern' })).toBeHidden()
     const description = editor.getByLabel('Notiz', { exact: true })
-    await expect(description).toHaveAttribute('placeholder', 'Notiz hinzufügen')
+    await expect(description).toHaveAttribute('data-placeholder', 'Notiz hinzufügen')
     const initial = (await description.boundingBox())!.height
     await description.fill('Ein langer Text.\n'.repeat(12))
     expect((await description.boundingBox())!.height).toBeGreaterThan(initial)

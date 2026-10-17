@@ -3,7 +3,7 @@ import { useBackLayer } from '../../app/useBackLayer'
 
 /** Alles, was den Fokus bekommen kann – für die Fokusfalle. */
 const FOKUSSIERBAR =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])'
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [contenteditable="true"], summary, [tabindex]:not([tabindex="-1"])'
 
 /** Native Sichtbarkeit ohne Layoutmessung, auch in der Testumgebung. */
 function erreichbar(element: HTMLElement): boolean {

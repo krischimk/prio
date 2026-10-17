@@ -26,7 +26,7 @@ export type IconButtonVariant = Extract<
 export interface IconButtonProps
   extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className' | 'aria-label'> {
   variant?: IconButtonVariant
-  size?: 'icon' | 'iconSm'
+  size?: 'icon' | 'iconSm' | 'toolbarIcon'
   /** Nur Layout – etwa `shrink-0` oder `relative`. */
   layout?: string
   /** Der Name für Vorleseprogramme. Pflicht. */

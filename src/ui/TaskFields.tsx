@@ -4,7 +4,7 @@ import { ReminderList } from './reminderList/ReminderList'
 import { SectionSelect } from './SectionSelect'
 import { input } from './styles'
 import type { TaskForm } from './useTaskForm'
-import { AutoTextarea } from './components/AutoTextarea'
+import { NoteEditor } from './NoteEditor'
 import { DescriptionIcon } from './icons'
 import { TaskScheduleFields } from './TaskScheduleFields'
 import { ChecklistEditor } from './ChecklistEditor'
@@ -93,14 +93,14 @@ export function TaskFields({
       ) : null}
 
       {zeigt('beschreibung') ? (
-        <div className="flex items-start gap-3 px-2">
+        <div className="flex items-start gap-3">
           <DescriptionIcon className="mt-3 h-5 w-5 shrink-0 text-ink-muted" />
           <label htmlFor={`${idPrefix}-description`} className="sr-only">Notiz</label>
-          <AutoTextarea
+          <NoteEditor
             id={`${idPrefix}-description`}
-            placeholder="Notiz hinzufügen"
             value={form.werte.description}
-            onChange={(event) => form.setzen('description', event.target.value)}
+            onChange={value => form.setzen('description', value)}
+            disabled={form.busy}
           />
         </div>
       ) : null}

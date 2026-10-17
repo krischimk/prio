@@ -67,6 +67,8 @@ const buttonSizes = {
   /** Nur ein Symbol (rundum gleiche Polsterung). */
   icon: 'h-11 w-11',
   iconSm: 'h-8 w-8',
+  /** Dichte Telefonleiste, mit 44 px hoher Trefferfläche über den sichtbaren Rand hinaus. */
+  toolbarIcon: 'relative h-8 w-11 before:absolute before:inset-x-0 before:-inset-y-1.5',
   /** Ein Feld als kompakte, aufklappbare Zeile mit führendem Symbol. */
   field: 'min-h-11 px-2 py-2 text-body',
 } as const
@@ -109,6 +111,7 @@ export function buttonClass(
 
 
 export const input = `min-h-11 min-w-0 w-full rounded-control border border-line-strong bg-surface px-3 py-2.5 text-body text-ink placeholder:text-ink-faint ${focusRing}`
+export const noteInput = `min-h-11 min-w-0 w-full rounded-control bg-transparent px-3 py-2.5 text-body text-ink placeholder:text-ink-faint ${focusRing}`
 
 /**
  * Schmales Feld für die Zahlen einer eigenen Vorlaufzeit.

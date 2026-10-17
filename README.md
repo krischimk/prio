@@ -215,11 +215,13 @@ versehentlich Zugriff. Die Cloud braucht die Sammelmigration einschließlich
   manuell angelegte zweite Serie mit gleichem Namen ist kein Ausnahmefall.
 * Bewertungen sind optional. Zunächst ist nur „Wichtigkeit einschätzen“ sichtbar;
   der erste Reglerklick aktiviert Wichtigkeit, Aufwand und Dringlichkeit gemeinsam.
-  Die übrigen manuellen Startwerte liegen sichtbar in der Mitte. Eine Fälligkeit
+  Die übrigen manuellen Startwerte liegen in der Mitte. Eine Fälligkeit
   allein bewertet nichts. Standardmäßig zeigt die Aufgabenliste nur die daraus
   berechnete Priorität als Balken direkt unter dem Titel. Der Farbverlauf liegt
-  fest über der Gesamtbreite; kleine Werte zeigen nur seinen Anfang. Im Formular stehen Wichtigkeit und Aufwand sowie ohne
-  Fälligkeit die Dringlichkeit; mit Fälligkeit bleibt der manuelle Modus unter
+  fest über der Gesamtbreite; kleine Werte zeigen nur seinen Anfang. Im kompakten Formular steht Aufwand
+  bei automatischer Dringlichkeit oder aktiver Checklisten-Kopplung; ohne diese
+  Verwendung bleibt der gespeicherte Wert erhalten und ist in der Detailansicht erreichbar.
+  Ohne Fälligkeit erscheint die Dringlichkeit; mit Fälligkeit bleibt der manuelle Modus unter
   „Mehr Optionen“ erreichbar. Unter **Konto → Darstellung → Detaillierte
   Bewertungen anzeigen** schaltet jeder persönlich für die ganze App alle vier
   Anzeigen und die ausführlichen Regler ein. Diese Wahl wird synchronisiert.
@@ -262,7 +264,7 @@ versehentlich Zugriff. Die Cloud braucht die Sammelmigration einschließlich
   Anlegen am PC liegt der Fokus wieder im Titelfeld. Die Hauptaufgabe lässt sich
   auch am Checklistenbereich ziehen; das Ablegen unter der Liste fügt hinten an.
 * Tags sind das letzte reguläre Formularfeld vor der Trennlinie und „Mehr Optionen“.
-  „Bewertung entfernen“ steht unter „Mehr Optionen“ und verkürzt keinen Regler.
+  „Bewertung entfernen“ steht direkt unter den Reglern und verkürzt keine Skala.
 * Tagfilter und Aufgabenzähler stehen in der breiten Ansicht unter der Erfassung.
   Tags stehen rechts in der letzten vorhandenen Informationszeile; lange
   Tagzeilen werden gekürzt und zeigen beim Hover alle Namen.
@@ -1253,14 +1255,36 @@ Zugeklappt oder offen ist **Ansichtssache je Gerät**: Das steht in
 
 Eine Notiz steht in der Liste **einzeilig**. Die Vorschau endet am
 ersten Zeilenumbruch; ein Auslassungszeichen weist auf weiteren Text hin.
-Folgende Absätze werden erst beim Aufklappen sichtbar. Ein Klick auf *Mehr* klappt sie auf,
-*Weniger* wieder zu; aufgeklappt ist die Höhe auf rund 15 Zeilen begrenzt,
-danach wird gescrollt. Eine sehr lange Notiz soll die Liste nicht in
-eine Textseite verwandeln.
+Folgende Absätze werden erst beim Aufklappen sichtbar. Die ganze Vorschau samt
+kleinem Pfeil klappt sie auf; der Pfeil hinter der letzten Zeile klappt sie
+wieder ein. Aufgeklappte Notizen haben keine eigene Scrollfläche: Auch beim
+Ziehen einer Aufgabe wird ausschließlich die Liste gescrollt.
 
 Der Schalter erscheint bei weiteren Zeilen oder einer abgeschnittenen ersten
 Zeile. Die verfügbare Breite wird erneut gemessen, wenn sich das Fenster ändert.
 Das Aufklappen betrifft ausschließlich die Notiz und öffnet keinen Editor.
+
+Die Notiz wird bereits im Editor formatiert dargestellt. Fett, Kursiv,
+Unterstreichung, Aufzählungen, Nummerierungen und Links stehen als Werkzeuge
+bereit; Überschriften entstehen per Markdown-Eingabe wie `## Überschrift`.
+Die Speicherung bleibt Markdown im bisherigen Textfeld, ohne neue Datenbankspalte.
+Enter erzeugt einen Absatz, Umschalt+Enter einen einfachen Zeilenumbruch.
+Strg+Enter speichert weiterhin die Aufgabe, auch aus der formatierten Notiz.
+
+**Tiptap-Empfehlungen, umgesetzt:**
+
+| Empfehlung | Umsetzung |
+| --- | --- |
+| React-Bindings, ProseMirror-Paket und StarterKit gemeinsam installieren | `@tiptap/react`, `@tiptap/pm`, `@tiptap/starter-kit`; gemeinsame Versionen im Lockfile |
+| Markdown ausdrücklich als Inhaltstyp angeben | `NoteEditor`: Initialinhalt und externe Entwurfswechsel mit `contentType: 'markdown'`; Speichern über `getMarkdown()` |
+| Editor von anderen Formularteilen isolieren und unnötige Transaktions-Render vermeiden | Eigene `NoteEditor`-Komponente mit stabiler Editorinstanz und `shouldRerenderOnTransaction: false` |
+| Werkzeugzustände gezielt abonnieren | `NoteToolbar` verwendet `useEditorState` ausschließlich für die aktiven Formatierungen |
+| Eigene Darstellung für die ungestylten Inhalte definieren | `.note-editor` in `src/index.css`, gleiche Farb- und Schriftrollen wie die restliche Oberfläche |
+| SSR erst auf dem Client rendern | Hier nicht erforderlich: Vite-SPA ohne Server-Rendering |
+
+[React-Integration](https://tiptap.dev/docs/editor/getting-started/install/react),
+[Performance](https://tiptap.dev/docs/guides/performance),
+[Markdown-Setup](https://tiptap.dev/docs/editor/markdown/getting-started/installation).
 
 **Systemleisten (Edge-to-Edge).** Android 15+ erzwingt Edge-to-Edge für Apps ab
 `targetSdk 35`. Die App aktiviert deshalb in `MainActivity.onCreate`

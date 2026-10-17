@@ -27,9 +27,9 @@ export function MobileWorkspace() {
     <main className="app-bar-offset fab-offset flex min-h-screen flex-col">
       {selected === null ? <OverviewPanel currentUserId={userId} /> : <TaskPanel list={selected} currentUserId={userId} />}
     </main>
-    {selected !== null || (overview.status === 'ready' && overview.lists.length > 0) ? <div className={`safe-bottom pointer-events-none fixed bottom-0 right-5 ${layer.fab}`}>
+    {selected !== null || (overview.status === 'ready' && overview.lists.length > 0) ? <div className={`safe-bottom pointer-events-none fixed bottom-0 right-3 ${layer.fab}`}>
       <button type="button" data-focus-key={selected ? `new:${selected.id}` : 'overview-create'} onClick={create} aria-label="Neue Aufgabe"
-        className={`${focusRing} pointer-events-auto mb-fab-gap flex h-fab items-center gap-2 rounded-full bg-brand px-5 text-body font-medium text-on-brand shadow-lg shadow-page/40 active:bg-brand-hover`}>
+        className={`${focusRing} button-primary pointer-events-auto mb-fab-gap flex h-fab items-center gap-2 rounded-full bg-brand px-5 text-body font-medium text-on-brand shadow-lg shadow-page/40 hover:bg-brand-hover active:bg-brand-hover`}>
         <PlusIcon className="h-5 w-5" />Neue Aufgabe
       </button>
     </div> : null}

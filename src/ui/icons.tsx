@@ -20,6 +20,25 @@ const base = {
 /** 24er Raster, 1,8er Strich; regulär 20 px, Fakten verwenden size-icon-meta. */
 const iconClass = 'size-icon shrink-0'
 
+export function BoldIcon({ className = iconClass }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}><path d="M7 4h6a4 4 0 0 1 0 8H7m0-8v16h7a4 4 0 0 0 0-8H7" strokeWidth="2.5" /></svg>
+}
+export function ItalicIcon({ className = iconClass }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}><path d="M10 4h9M5 20h9M15 4 9 20" /></svg>
+}
+export function UnderlineIcon({ className = iconClass }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}><path d="M6 3v7a6 6 0 0 0 12 0V3M5 21h14" /></svg>
+}
+export function BulletListIcon({ className = iconClass }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}><path d="M9 5h12M9 12h12M9 19h12" /><circle cx="3" cy="5" r="1" /><circle cx="3" cy="12" r="1" /><circle cx="3" cy="19" r="1" /></svg>
+}
+export function NumberedListIcon({ className = iconClass }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}><path d="M10 5h11M10 12h11M10 19h11M3 3h1v5M2 8h4M2 12a2 2 0 0 1 4 0c0 2-4 3-4 6h4" /></svg>
+}
+export function LinkIcon({ className = iconClass }: { className?: string }) {
+  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}><path d="m10 8 3-3a5 5 0 0 1 7 7l-3 3M14 16l-3 3a5 5 0 0 1-7-7l3-3M8 16l8-8" /></svg>
+}
+
 export function ChecklistIcon({ className = iconClass }: { className?: string }) {
   return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
     <path d="m3 6 2 2 3-4M11 6h10M3 13h5M11 13h10M3 20h5M11 20h10" />

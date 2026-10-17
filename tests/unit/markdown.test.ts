@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseInline, parseMarkdown } from '../../src/ui/markdown'
+import { markdownHref, parseInline, parseMarkdown, plainInline } from '../../src/ui/markdown'
 
 /**
  * Die Anmerkungen einer Veröffentlichung sind Markdown und wurden als reiner
@@ -55,6 +55,31 @@ describe('Anmerkungen zerlegen', () => {
 })
 
 describe('Auszeichnungen in einer Zeile', () => {
+  it('erkennt Kursivschrift, Unterstreichung und Links ohne beliebiges HTML freizugeben', () => {
+    expect(parseInline('*kursiv* <u>Linie</u> [Seite](https://example.org)')).toEqual([
+      { art: 'kursiv', text: 'kursiv' }, { art: 'text', text: ' ' },
+      { art: 'unterstrichen', text: 'Linie' }, { art: 'text', text: ' ' },
+      { art: 'link', text: 'Seite', href: 'https://example.org/' },
+    ])
+    expect(parseInline('<img src=x onerror=alert(1)>')).toEqual([{ art: 'text', text: '<img src=x onerror=alert(1)>' }])
+    expect(markdownHref('javascript:alert(1)')).toBeNull()
+    expect(markdownHref('data:text/html,test')).toBeNull()
+    expect(markdownHref('mailto:test@example.org')).toBe('mailto:test@example.org')
+    expect(parseInline('[Seite](javascript:alert(1))').some(part => part.art === 'link')).toBe(false)
+  })
+  it('erhält Code und Escape-Zeichen und verschachtelt einfache Formatierungen', () => {
+    expect(plainInline('***beides*** und **fett *kursiv***')).toBe('beides und fett kursiv')
+    expect(plainInline('*kursiv **fett** weiter*')).toBe('kursiv fett weiter')
+    expect(plainInline('`**Code**` und \\*Text\\*')).toBe('**Code** und *Text*')
+    expect(plainInline('datei_name_test')).toBe('datei_name_test')
+  })
+  it('erkennt nummerierte Listen und erhält in Notizen einzelne Zeilenumbrüche', () => {
+    expect(parseMarkdown('3. Erstens\n4. Zweitens\n- Punkt')).toEqual([
+      { art: 'liste', ordered: true, start: 3, punkte: ['Erstens', 'Zweitens'] },
+      { art: 'liste', punkte: ['Punkt'] },
+    ])
+    expect(parseMarkdown('Zeile\nUmbruch', true)).toEqual([{ art: 'absatz', text: 'Zeile\nUmbruch' }])
+  })
   it('trennt fett und Code vom Text', () => {
     expect(parseInline('Ein **fettes** Wort und `Code`.')).toEqual([
       { art: 'text', text: 'Ein ' },

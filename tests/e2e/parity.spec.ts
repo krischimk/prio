@@ -13,6 +13,7 @@ import { checklistParity, tagFilterParity } from './support/checklists'
 import { ratingParity, weightedChecklistParity, compactRatingParity } from './support/ratings'
 import { duplicateTitlesParity } from './support/duplicateTitles'
 import { listSortingParity } from './support/listSorting'
+import { noteFormattingParity } from './support/notes'
 
 /**
  * Oberflächenparität: Jede Funktion muss in beiden Ansichten erreichbar sein.
@@ -58,6 +59,11 @@ async function changeOrder(page: Page) {
 }
 
 const funktionen: Funktion[] = [
+  {
+    name: 'Notiz mit Markdown-Werkzeugen formatieren und als formatierten Text lesen',
+    breit: page => noteFormattingParity(page, false),
+    telefon: page => noteFormattingParity(page, true),
+  },
   {
     name: 'Listen manuell oder nach Priorität mit und ohne Bereiche sortieren',
     breit: page => listSortingParity(page, false),
@@ -347,7 +353,7 @@ const funktionen: Funktion[] = [
       await breit.createList(page, 'Einkauf')
       await breit.createTask(page, 'Äpfel')
 
-      await listAction(page, 'Bereiche')
+      await page.getByRole('button', { name: 'Bereiche verwalten', exact: true }).click()
       await page.getByLabel('Neuer Bereich').fill('Obst')
       await page.getByRole('button', { name: 'Bereich anlegen' }).click()
 
@@ -357,7 +363,7 @@ const funktionen: Funktion[] = [
       await openTaskEditor(page, 'Äpfel')
       const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
       await moreOptions(formular)
-      await formular.getByLabel('Bereich').selectOption({ label: 'Obst' })
+      await formular.getByLabel('Bereich', { exact: true }).selectOption({ label: 'Obst' })
       await formular.getByRole('button', { name: 'Speichern' }).click()
 
       await expect(bereichsKopf(page, 'Obst')).toBeVisible()
@@ -368,10 +374,8 @@ const funktionen: Funktion[] = [
       await telefon.createList(page, 'Einkauf')
       await telefon.createTask(page, 'Äpfel')
 
-      // Bereiche stehen in den Listeneinstellungen – ein Tippen auf den
-      // Listennamen öffnet sie.
-      await page.getByTestId('app-bar-title').click()
-      await listAction(page, 'Bereiche')
+      // Direkter Verwaltungsweg neben der Sortierung, auch auf dem Telefon.
+      await page.getByRole('button', { name: 'Bereiche verwalten', exact: true }).click()
       await page.getByLabel('Neuer Bereich').fill('Obst')
       await page.getByRole('button', { name: 'Bereich anlegen' }).click()
       await page.getByRole('button', { name: 'Zurück' }).click()
@@ -381,7 +385,7 @@ const funktionen: Funktion[] = [
 
       await openTaskEditor(page, 'Äpfel')
       await moreOptions(page)
-      await page.getByLabel('Bereich').selectOption({ label: 'Obst' })
+      await page.getByLabel('Bereich', { exact: true }).selectOption({ label: 'Obst' })
       await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
       await expect(bereichsKopf(page, 'Obst')).toBeVisible()

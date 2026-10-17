@@ -31,7 +31,7 @@ export function TaskViewOptions({ tags, mode, busy = false, onModeChange, listMo
   const selectedListMode = !hasSections && listMode === 'priority_flat' ? 'priority' : listMode
   return <Popover.Root open={open} onOpenChange={details => setOpen(details.open)}
     onEscapeKeyDown={event => { event.preventDefault(); setOpen(false) }} positioning={{ strategy: 'fixed', placement: 'bottom-end' }} lazyMount unmountOnExit>
-    <Popover.Trigger asChild><IconButton size={desktop ? 'iconSm' : 'icon'} aria-label={sorting ? 'Sortierung ändern' : 'Nach Tags filtern'} variant={tagFilter.length ? 'iconActive' : 'icon'}
+    <Popover.Trigger asChild><IconButton size={desktop ? 'iconSm' : 'toolbarIcon'} aria-label={sorting ? 'Sortierung ändern' : 'Nach Tags filtern'} variant={tagFilter.length ? 'iconActive' : 'icon'}
       title={sorting ? `Sortierung ändern und nach Tags filtern. Aktuell: ${mode ? overviewModeLabel[mode] : listModes[selectedListMode!]}.` : 'Aufgaben nach Tags filtern.'}>
       {sorting ? <SortIcon /> : <FilterIcon />}
     </IconButton></Popover.Trigger>

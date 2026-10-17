@@ -1,5 +1,6 @@
 import { ChevronIcon } from './icons'
 import { focusRing, mutedText } from './styles'
+import { useIsDesktop } from '../app/useIsDesktop'
 
 /**
  * Der Kopf eines Abschnitts in der Aufgabenliste.
@@ -38,6 +39,7 @@ export function SectionHeader({
   muted?: boolean
   opensSettings?: boolean
 }) {
+  const desktop = useIsDesktop()
   return (
     <button
       type="button"
@@ -45,7 +47,7 @@ export function SectionHeader({
       aria-haspopup={opensSettings ? 'dialog' : undefined}
       title={opensSettings ? 'Leerer Bereich: Bereiche dieser Liste verwalten.' : undefined}
       onClick={onToggle}
-      className={`${focusRing} flex w-full items-center gap-1.5 rounded-control py-1 text-left ${
+      className={`${focusRing} flex w-full items-center gap-1.5 rounded-control py-1 text-left ${desktop ? '' : 'px-rand'} ${
         hervorgehoben ? 'bg-brand-tint/40 text-brand-faint' : ''
       } ${className}`}
       data-testid="section-header"

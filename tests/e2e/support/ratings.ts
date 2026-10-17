@@ -117,7 +117,6 @@ export async function ratingParity(page: Page, mobile: boolean) {
   await desktop.closeListSettings(page)
   await expect(row.getByRole('meter', { name: 'Aufwand', exact: true })).toHaveAttribute('aria-valuenow', '10')
   await desktop.openTaskEditor(page, 'Einschätzung')
-  await moreOptions(editor)
   await editor.getByRole('button', { name: 'Bewertung entfernen', exact: true }).click()
   await expect(editor.getByRole('slider', { name: 'Wichtigkeit einschätzen', exact: true })).toBeVisible()
   await expect(editor.getByRole('slider', { name: 'Aufwand', exact: true })).toHaveCount(0)

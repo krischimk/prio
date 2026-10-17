@@ -188,7 +188,7 @@ function ListBlock({ list, groups, byId, allTasks, currentUserId, overview, acti
   const sections = priority ? orderListTaskGroups([...byId.values()].filter(task => task.list_id === list.id), list, nowMs) : groupTasks([], list.sections)
   const count = groupTasks([], list.sections).reduce((sum, group) => sum + (groups[taskGroupId(list.id, group.section?.id ?? null)]?.length ?? 0), 0)
   return <section aria-label={overview ? `Aufgaben aus ${list.name}` : `Aufgaben in ${list.name}`} className="flex min-w-0 shrink-0 flex-col last:flex-1">
-    {overview ? <div className="mb-2 flex items-center justify-between gap-3 border-b border-line py-2">
+    {overview ? <div className={`mb-2 flex items-center justify-between gap-3 border-b border-line py-2 ${desktop ? '' : 'px-rand'}`}>
       <ListHeading list={list} currentUserId={currentUserId} allowIconEdit={false} onOpen={() => onSelectList(list.id)} /><span className={`text-meta text-ink-muted ${numeric}`}>{count}</span>
     </div> : null}
     {sections.map(group => {

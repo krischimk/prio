@@ -589,7 +589,7 @@ test('E2E 6: Bereiche ordnen Aufgaben, nehmen sie beim Ziehen auf und klappen zu
   // Die erste Aufgabe kommt über das Formular in ihren Bereich.
   await openTaskEditor(page, 'Äpfel')
   await moreOptions(page)
-  await page.getByLabel('Bereich').selectOption({ label: 'Obst' })
+  await page.getByLabel('Bereich', { exact: true }).selectOption({ label: 'Obst' })
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
   const kopf = (name: string) => page.getByTestId('section-header').filter({ hasText: name })
@@ -611,7 +611,7 @@ test('E2E 6: Bereiche ordnen Aufgaben, nehmen sie beim Ziehen auf und klappen zu
   // Hier die Zuordnung über das Formular; der Ziehweg steht in drag.spec.ts.
   await openTaskEditor(page, 'Saft')
   await moreOptions(page)
-  await page.getByLabel('Bereich').selectOption({ label: 'Obst' })
+  await page.getByLabel('Bereich', { exact: true }).selectOption({ label: 'Obst' })
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
   await expect(kopf('Obst')).toContainText('2')

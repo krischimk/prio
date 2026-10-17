@@ -41,7 +41,7 @@ export function TaskRow({ task, currentUserId, onOpen, origin, overview = false,
   return <li ref={elementRef} data-task-row="true" data-id={task.id}
     data-completed={task.completed ? 'true' : undefined} data-dragging={dragging ? 'true' : undefined}
     data-testid={overview ? 'overview-task' : undefined}
-    className={`task-card group/row min-w-0 rounded-control border-b border-line-soft ${appBackground} transition-colors last:border-b-0 ${dragging ? 'ring-1 ring-brand-soft shadow-lg shadow-page/50' : ''}`}>
+    className={`task-card group/row min-w-0 border-b border-line-soft ${appBackground} transition-colors last:border-b-0 ${dragging ? 'ring-1 ring-brand-soft shadow-lg shadow-page/50' : ''}`}>
     <div ref={activatorRef} role="button" tabIndex={0} data-focus-key={`task:${task.id}`}
       aria-label={task.completed ? `Aufgabe bearbeiten: ${task.title}` : desktop ? 'Bearbeiten' : undefined}
       className={`${focusRing} grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] rounded-control`}

@@ -46,7 +46,7 @@ test('Gesamtentwurf bleibt beim Zielwechsel unabhängig vom Listenentwurf', asyn
   await expect(page.getByRole('group', { name: 'Entwurf auswählen', exact: true })).toHaveCount(0)
   await desktop.selectList(page, 'Einkaufen')
   await expect(title).toHaveValue('Listenentwurf')
-  await expect(page.getByLabel('Notiz', { exact: true })).toHaveValue('Notiz nur für die Liste')
+  await expect(page.getByLabel('Notiz', { exact: true })).toHaveText('Notiz nur für die Liste')
   await openOverview(page, false)
   await expect(title).toHaveValue('Gesamtentwurf')
   await expect(page.getByLabel('Zielliste', { exact: true })).toHaveValue(await page.getByLabel('Zielliste').locator('option').filter({ hasText: 'Einkaufen' }).getAttribute('value') ?? '')
