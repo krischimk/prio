@@ -32,6 +32,13 @@ App. Sie sind so geschrieben, dass sie sich gefahrlos erneut ausführen lassen
 | `0024_unique_task_titles.sql` | Besitzer-Regel `allow_duplicate_titles` (zunächst an), stabile `recurrence_series_id` und einmaliges Backfill alter Serien. Namensprüfung in `sync_push` unter Listensperre, einschließlich erledigter Aufgaben; vorhandene Duplikate bleiben erhalten |
 | `0025_list_sort_mode.sql` | Persönliche Sortierung je Liste (`manual`, `priority` mit Bereichen, `priority_flat` gemeinsam); bestehende Zeilen starten manuell |
 | `0026_task_expansions.sql` | Persönliche aufgeklappte Notizen und Checklisten (`task_expansions`); pro Aufgabe zwei Schalter, durch RLS privat und über `sync_push` abgeglichen |
+| `0027_mcp.sql` | Persönliche OAuth-Freigaben, atomare MCP-Fachbefehle, privater Änderungsverlauf und Eingangsschutz gegen native REST-Umwege |
+| `0028_mcp_vault.sql` | Privater verschlüsselter Token-Tresor mit serverseitiger Attestation, atomarer Refresh-Rotation, kurzem Retry-Fenster und automatischer Bereinigung |
+
+Der MCP-Server verwendet eigene, widerrufbare Freigaben und undurchsichtige
+Prio-Tokens. Der private Befehlsschlüssel bleibt außerhalb des Repositories;
+`npm run db:check` prüft seine Einrichtung und die Zugriffssperren. Verbindung,
+Betrieb und Prüfungen stehen in [../docs/mcp.md](../docs/mcp.md).
 
 ### Bewertungen und Checklistenanteile
 
@@ -236,7 +243,7 @@ Fehlt sie, scheitert die Migration sichtbar. `db:check` prüft Spalten,
 gesperrte direkte Schreibwege, private Ablauffunktionen und genau einen aktiven
 Job. Die Frist gilt auch zwischen zwei Jobläufen: App-Abfragen filtern sie und
 der geschützte Schreibweg prüft den Ablauf vor jeder betroffenen Änderung.
-Ein späterer MCP-Adapter muss denselben Leserand verwenden.
+Der MCP-Adapter verwendet denselben Leserand und dieselben reinen Fachfunktionen.
 
 ## Security Advisor
 

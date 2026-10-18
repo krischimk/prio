@@ -14,6 +14,8 @@ import { ratingParity, weightedChecklistParity, compactRatingParity } from './su
 import { duplicateTitlesParity } from './support/duplicateTitles'
 import { listSortingParity } from './support/listSorting'
 import { noteFormattingParity } from './support/notes'
+import { agentConnectionsParity } from './support/agents'
+import { discardedNotesParity } from './support/discardedNotes'
 
 /**
  * Oberflächenparität: Jede Funktion muss in beiden Ansichten erreichbar sein.
@@ -59,6 +61,8 @@ async function changeOrder(page: Page) {
 }
 
 const funktionen: Funktion[] = [
+  { name: 'Verworfene Notizänderungen nach Neustart als Entwurf wiederherstellen', breit: page => discardedNotesParity(page, false), telefon: page => discardedNotesParity(page, true) },
+  { name: 'KI-Verbindungen persönlich freigeben und widerrufen', breit: page => agentConnectionsParity(page, false), telefon: page => agentConnectionsParity(page, true) },
   {
     name: 'Notiz mit Markdown-Werkzeugen formatieren und als formatierten Text lesen',
     breit: page => noteFormattingParity(page, false),
@@ -378,7 +382,6 @@ const funktionen: Funktion[] = [
       await page.getByRole('button', { name: 'Bereiche verwalten', exact: true }).click()
       await page.getByLabel('Neuer Bereich').fill('Obst')
       await page.getByRole('button', { name: 'Bereich anlegen' }).click()
-      await page.getByRole('button', { name: 'Zurück' }).click()
       await page.getByRole('button', { name: 'Schließen' }).click()
 
       await expect(bereichsKopf(page, 'Obst')).toBeVisible()

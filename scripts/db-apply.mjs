@@ -230,7 +230,23 @@ if (checkOnly) {
   const cron = spawnSync('psql', [...base, '-tAc', "select count(*)=1 from cron.job where jobname='prio-expire-completed' and active and schedule='* * * * *' and command like '%private.expire_completed_tasks()%'"] , { encoding: 'utf8' })
   const scheduled = cron.status === 0 && cron.stdout.trim() === 't'
   console.log(scheduled ? 'Automatischer Abschlussablauf ist als Datenbankjob aktiv.' : 'Automatischer Abschlussablauf fehlt (Migration 0018).')
-  process.exit(result.status !== 0 || fehlend.status !== 0 || anzahl > 0 || !protectedWrites || !scheduled ? 1 : 0)
+  const mcp = spawnSync('psql', [...base, '-tAc', `select
+    to_regprocedure('public.mcp_context()') is not null
+    and to_regprocedure('public.mcp_snapshot(jsonb)') is not null
+    and to_regprocedure('public.mcp_commit(text,text)') is not null
+    and to_regprocedure('public.mcp_manage(text,jsonb)') is not null
+    and to_regprocedure('public.mcp_vault(text,text)') is not null
+    and not has_table_privilege('authenticated','private.mcp_settings','SELECT,INSERT,UPDATE,DELETE')
+    and not has_table_privilege('authenticated','private.mcp_connections','SELECT,INSERT,UPDATE,DELETE')
+    and not has_table_privilege('authenticated','private.mcp_commands','SELECT,INSERT,UPDATE,DELETE')
+    and not has_table_privilege('anon','private.mcp_oauth_tokens','SELECT,INSERT,UPDATE,DELETE')
+    and not has_table_privilege('authenticated','private.mcp_oauth_clients','SELECT,INSERT,UPDATE,DELETE')
+    and not has_function_privilege('anon','public.mcp_commit(text,text)','EXECUTE')
+    and exists(select 1 from pg_db_role_setting s,unnest(s.setconfig) v where s.setrole=(select oid from pg_roles where rolname='authenticator') and v='pgrst.db_pre_request=private.mcp_request_guard')
+    and exists(select 1 from private.mcp_settings where singleton and command_key is not null)`], { encoding: 'utf8' })
+  const mcpReady = mcp.status === 0 && mcp.stdout.trim() === 't'
+  console.log(mcpReady ? 'MCP-Freigaben, Eingangsschutz und privater Befehlsschlüssel sind eingerichtet.' : 'MCP-Schutz oder Befehlsschlüssel fehlt (Migration 0027).')
+  process.exit(result.status !== 0 || fehlend.status !== 0 || anzahl > 0 || !protectedWrites || !scheduled || !mcpReady ? 1 : 0)
 }
 
 if (!existsSync(BUNDLE)) {

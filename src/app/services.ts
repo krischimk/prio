@@ -9,6 +9,8 @@ import {
 } from '../auth/supabaseAuth'
 import { isNativeApp } from './platform'
 import { createSupabaseGateway } from '../sync/supabaseGateway'
+import type { OAuthPort } from '../auth/oauthPort'
+import { createSupabaseOAuthPort } from '../auth/supabaseOAuth'
 
 /**
  * Zusammensetzung der Anwendung aus ihren austauschbaren Teilen.
@@ -20,6 +22,7 @@ import { createSupabaseGateway } from '../sync/supabaseGateway'
  */
 export interface AppServices {
   auth: AuthPort
+  oauth?: OAuthPort
   gateway: RemoteGateway
   network: NetworkMonitor
   /**
@@ -35,6 +38,7 @@ export interface AppServices {
 export function createSupabaseServices(config: SupabaseConfig): AppServices {
   const client = createSupabaseClient(config)
   return {
+    oauth: createSupabaseOAuthPort(client),
     auth: createSupabaseAuthPort(client, new URL('/konto/passwort', isNativeApp()
       ? import.meta.env.VITE_PUBLIC_APP_URL?.trim() || 'https://prio-krischi.pages.dev' : window.location.origin).href),
     gateway: createSupabaseGateway(client),

@@ -9,6 +9,7 @@ import { LogoutIcon, SaveIcon } from './icons'
 import { ThemeToggle } from './ThemeToggle'
 import { useView } from './useView'
 import { useWorkspace } from '../app/useWorkspace'
+import { AgentConnections } from './AgentConnections'
 
 export function AccountSheet({ onClose }: { onClose: () => void }) {
   const { state, setUsername, signOut, error } = useAuth()
@@ -54,6 +55,7 @@ export function AccountSheet({ onClose }: { onClose: () => void }) {
         {saved ? <p role="status" className="text-meta text-ok-ink">Benutzername gespeichert.</p> : null}
         {error ? <p role="alert" className={errorBox}>{error}</p> : null}
       </form>
+      <AgentConnections />
       <details className="border-t border-line pt-3">
         <summary className={`${focusRing} cursor-pointer rounded-control py-2 text-meta text-ink-muted`}>Technische Informationen</summary>
         <div className="space-y-2 py-2"><BackendLabel /><p className="text-meta text-ink-muted">Dieser Server speichert den synchronisierten Bestand. Das Konto darüber legt fest, auf welche Listen du zugreifen kannst.</p></div>

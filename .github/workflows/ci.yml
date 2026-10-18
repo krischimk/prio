@@ -61,7 +61,10 @@ jobs:
         run: npm run test:integration
 
       - name: Produktionsbuild
-        run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://example.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: build-test-public-key
+        run: npm run build:web
 
   e2e:
     if: inputs.android_smoke != true
@@ -258,7 +261,7 @@ jobs:
         run: |
           test -n "$VITE_SUPABASE_URL" || { echo "::error::Repository-Variable VITE_SUPABASE_URL fehlt."; exit 1; }
           test -n "$VITE_SUPABASE_PUBLISHABLE_KEY" || { echo "::error::Repository-Variable VITE_SUPABASE_PUBLISHABLE_KEY fehlt."; exit 1; }
-          npm run build
+          npm run build:web
           # Sicherheitsnetz wie im Release: Lieber nichts veröffentlichen als
           # eine Fassung, die nicht synchronisieren kann.
           grep -q "$VITE_SUPABASE_URL" dist/assets/*.js \
@@ -280,6 +283,12 @@ jobs:
           fi
           npx --yes wrangler@4 pages project list 2>/dev/null | grep -qE "(^|[[:space:]])$PROJEKT([[:space:]]|$)" \
             || { echo "::error::Projekt $PROJEKT fehlt und ließ sich nicht anlegen – ist der Name vergeben?"; exit 1; }
+
+      - if: steps.zugang.outputs.bereit == 'true' && github.ref == 'refs/heads/main'
+        name: Privaten MCP-Befehlsschlüssel einrichten
+        env:
+          PRIO_MCP_COMMAND_KEY: ${{ secrets.PRIO_MCP_COMMAND_KEY }}
+        run: node scripts/mcp-host-secret.mjs
 
       - if: steps.zugang.outputs.bereit == 'true'
         name: Hochladen

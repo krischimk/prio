@@ -22,6 +22,12 @@ Synchronisation gebraucht, ist aber zu keinem Zeitpunkt Voraussetzung für die
 Bedienung: Fällt der Dienst aus, bleibt die App vollständig nutzbar und alle
 Änderungen warten in der lokalen Sync-Queue.
 
+Prio hat außerdem einen entfernten **MCP-Server** unter
+**https://prio-krischi.pages.dev/mcp**. Agenten können nach eigener
+Kontofreigabe auf den bestätigten Cloudbestand zugreifen, auch bei geschlossener
+App. Verbindung, Rechte, Fachregeln und technische Prüfung stehen in
+[docs/mcp.md](docs/mcp.md).
+
 ```
 ┌──────────────────────────── Browser / Capacitor-WebView ────────────────────────────┐
 │                                                                                     │
@@ -1331,13 +1337,15 @@ wiederherstellt.
 Diese Punkte sind Absicht, nicht Versehen. Sie sind auch im Code an der
 jeweiligen Stelle kommentiert.
 
-1. **Geschützter Zeilenaustausch, noch keine Cloud-Fachbefehle.** Migration
+1. **Geschützter Zeilenaustausch und getrennte Cloud-Fachbefehle.** Migration
    `0014` schützt atomar einzelne Zeilen gegen veraltete Änderungen. Ein Batch
    isoliert Ablehnungen; zusammengehörige Operationen wie Abschluss plus
    Seriennachfolger sind damit noch kein gemeinsamer Cloud-Befehl mit
-   Alles-oder-nichts-Garantie. Dafür und für MCP fehlen gemeinsame Fachbefehle,
-   Benutzerautorisierung und gespeicherte Mutationsquittungen. Ein exakt
-   gleicher Zeilen-Retry ist bereits idempotent.
+   Alles-oder-nichts-Garantie. Der MCP-Weg ergänzt dafür atomare Fachbefehle
+   mit eigener Autorisierung, Vergleichsständen und gespeicherten Quittungen
+   (Migrationen 0027/0028); der Offline-Abgleich behält seine unabhängigen
+   Zeilenergebnisse. Abschluss und Wiederöffnung verwenden denselben reinen
+   Fachplan in App und Server.
 
 2. **Delta nach Serversicht statt Gerätezeit.** Der PostgreSQL-Snapshot enthält
    auch die beim Lesen noch laufenden Transaktionen. Pro Entität speichert der

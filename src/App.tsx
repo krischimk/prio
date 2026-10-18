@@ -11,6 +11,8 @@ import { WorkspaceScreen } from './ui/WorkspaceScreen'
 import { appBackground } from './ui/styles'
 import { UsernameSetup } from './ui/UsernameSetup'
 import { StartupScreen } from './ui/StartupScreen'
+import { OAuthContext } from './auth/oauthContext'
+import { OAuthConsentScreen } from './ui/OAuthConsentScreen'
 
 /**
  * Wurzelkomponente.
@@ -26,7 +28,7 @@ export function App({ services }: { services: AppServices | null }) {
     // Ansichten und soll nicht selbst in der Umgebung nachsehen.
     <BackendContext.Provider value={{ url: services.backendUrl }}>
       <AuthProvider port={services.auth}>
-        <AuthenticatedArea services={services} />
+        <OAuthContext.Provider value={services.oauth ?? null}><AuthenticatedArea services={services} /></OAuthContext.Provider>
       </AuthProvider>
     </BackendContext.Provider>
   )
@@ -42,6 +44,7 @@ function AuthenticatedArea({ services }: { services: AppServices }) {
     return <AuthScreen />
   }
   if (!state.user.username) return <UsernameSetup />
+  if (window.location.pathname === '/oauth/consent' && services.oauth) return <OAuthConsentScreen port={services.oauth} />
 
   return (
     <WorkspaceProvider userId={state.user.id} gateway={services.gateway} network={services.network}>
