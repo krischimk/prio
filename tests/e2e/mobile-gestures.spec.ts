@@ -64,6 +64,32 @@ test('Wischen vom linken Rand öffnet das Menü ohne Langdruck', async ({ page, 
   await page.screenshot({ path: info.outputPath('drawer-swipe.png') })
 })
 
+test('Schließen des Menüs beendet die Symbolauswahl und bewahrt den neuen Listenentwurf', async ({ page }) => {
+  await phone.register(page, desktop.uniqueEmail('drawer-symbol'))
+  await phone.createList(page, 'Vorhanden')
+  await phone.openMenu(page)
+  await page.getByLabel('Name der neuen Liste', { exact: true }).fill('Listenentwurf')
+  await page.getByLabel('In Gesamtansicht aufnehmen', { exact: true }).check()
+  await page.getByRole('button', { name: 'Symbol der neuen Liste auswählen', exact: true }).click()
+  const picker = page.getByRole('dialog', { name: 'Symbol auswählen', exact: true })
+  await expect(picker).toBeVisible()
+  // Der Schleier außerhalb der Leiste ist auch bei der untergeordneten Auswahl erreichbar.
+  await page.mouse.click(380, 120)
+  await expect(page.getByRole('dialog', { name: 'Menü', exact: true })).toBeHidden()
+  await page.getByRole('button', { name: 'Neue Aufgabe', exact: true }).click({ timeout: 5_000 })
+  const editor = page.getByRole('dialog', { name: 'Neue Aufgabe', exact: true })
+  await expect(editor).toBeVisible()
+  await editor.getByRole('button', { name: 'Schließen', exact: true }).click()
+  await phone.openMenu(page)
+  await expect(picker).toHaveCount(0)
+  await expect(page.getByLabel('Name der neuen Liste', { exact: true })).toHaveValue('Listenentwurf')
+  await expect(page.getByLabel('In Gesamtansicht aufnehmen', { exact: true })).toBeChecked()
+  await page.getByRole('button', { name: 'Symbol der neuen Liste auswählen', exact: true }).click()
+  await picker.getByRole('button', { name: 'Prio', exact: true }).click()
+  await page.getByRole('button', { name: 'Liste anlegen', exact: true }).click()
+  await expect(page.getByTestId('app-bar-title')).toHaveText('Listenentwurf')
+})
+
 test('Aufgabe öffnet das Menü am Rand und landet am Ende der gewählten Liste', async ({ page, context, request }, info) => {
   await setup(page)
   const client = await context.newCDPSession(page)
@@ -245,4 +271,30 @@ test('Listen-Langdruck sortiert im Menü und aktiviert keinen Randwechsel', asyn
   await touch(client, 'touchEnd')
   await expect(menu).toBeVisible()
   await expect(menu.getByTestId('list-of-lists').getByRole('button')).toHaveText(['B', 'A'])
+})
+
+test('auch auf der Checklistenfläche folgt die linke Leiste dem Finger', async ({ page, context }) => {
+  await phone.register(page, desktop.uniqueEmail('checklist-swipe'))
+  await phone.createList(page, 'Schritte')
+  await phone.createTask(page, 'Vorbereiten')
+  const editor = await desktop.openTaskEditor(page, 'Vorbereiten')
+  await editor.getByRole('textbox', { name: 'Neuer Checklistenpunkt', exact: true }).fill('Alles bereitlegen')
+  await editor.getByRole('textbox', { name: 'Neuer Checklistenpunkt', exact: true }).press('Enter')
+  await editor.getByRole('button', { name: 'Speichern', exact: true }).click()
+  const row = page.locator('[data-task-row]').filter({ has: page.getByTestId('task-row').getByText('Vorbereiten', { exact: true }) })
+  await row.getByRole('button', { name: 'Checkliste: Vorbereiten', exact: true }).click()
+  const item = row.getByRole('list', { name: 'Checkliste: Vorbereiten', exact: true })
+  const box = (await item.boundingBox())!
+  const client = await context.newCDPSession(page)
+  await touch(client, 'touchStart', 150, box.y + box.height / 2)
+  await touch(client, 'touchMove', 210, box.y + box.height / 2)
+  await expect.poll(async () => {
+    const rect = (await page.getByTestId('drawer-sheet').boundingBox())!
+    return rect.x + rect.width
+  }).toBeGreaterThan(40)
+  await touch(client, 'touchMove', 360, box.y + box.height / 2)
+  await touch(client, 'touchEnd')
+  await menuSettled(page)
+  await expect(page.getByRole('dialog', { name: 'Aufgabe', exact: true })).toBeHidden()
+  await expect(page.locator('[data-dnd-dragging]')).toHaveCount(0)
 })

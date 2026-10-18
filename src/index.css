@@ -535,7 +535,7 @@ body {
 
 /* Priorität ist eine lesbare Zeile mit ruhigem Verlauf; kein zusätzlicher Regler. */
 .priority-track {
-  height: 0.625rem;
+  height: 0.5rem;
   overflow: hidden;
   border-radius: 999px;
   background: var(--color-line-soft);

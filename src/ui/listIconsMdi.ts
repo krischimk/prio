@@ -18,6 +18,27 @@ import type { ListIconDefinition } from './listIcons'
  */
 export const LIST_ICONS_MDI: ListIconDefinition[] = [
   {
+    id: 'std:trending-up',
+    label: 'Fortschritt',
+    source: 'lucide/trending-up',
+    group: 'Allgemein',
+    paths: [
+      'M16 7h6v6',
+      'm22 7-8.5 8.5-5-5L2 17',
+    ],
+  },
+  {
+    id: 'std:prio',
+    label: 'Prio',
+    source: 'lucide/list-filter',
+    group: 'Allgemein',
+    paths: [
+      'M2 5h20',
+      'M6 12h12',
+      'M9 19h6',
+    ],
+  },
+  {
     id: 'std:check',
     label: 'Erledigt',
     source: 'lucide/check',

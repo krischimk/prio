@@ -3,7 +3,7 @@ import type { LocalTask } from '../domain/types'
 import { checklistProgress } from '../domain/checklist'
 import { useWorkspace } from '../app/useWorkspace'
 import { ChecklistIcon, ChevronIcon } from './icons'
-import { errorBox, focusRing, numeric } from './styles'
+import { checkboxTarget, errorBox, focusRing, numeric } from './styles'
 import { Hint } from './components/Hint'
 import { useTaskExpansion } from './useTaskExpansion'
 
@@ -33,7 +33,7 @@ export function TaskChecklist({ task, currentUserId, trailing }: { task: LocalTa
       setPending(previous => Object.fromEntries(Object.entries(previous).filter(([key]) => key !== id)))
     } finally { writing.current.delete(id); setPending(previous => ({ ...previous })) }
   }
-  return <div data-no-drawer-swipe className="min-w-0">
+  return <div className="min-w-0">
     <div className="flex min-w-0 items-center justify-between gap-3">
     <Hint text={`Checkliste ${open ? 'einklappen' : 'aufklappen'}: ${progress.completed} von ${progress.total} Punkten erledigt. Die Hauptaufgabe bleibt unabhängig.`}>
       <button type="button" data-checklist-toggle aria-label={`Checkliste: ${task.title}`} aria-expanded={open} disabled={expansion.busy} onClick={() => void expansion.toggle()}
@@ -44,8 +44,10 @@ export function TaskChecklist({ task, currentUserId, trailing }: { task: LocalTa
     {trailing}</div>
     {open ? <ul aria-label={`Checkliste: ${task.title}`} className="mt-1">{task.checklist.filter(item => item.deleted_at === null).map(item => <li key={item.id}>
       <div className="flex min-h-11 items-center gap-3 rounded-control px-1 text-body">
-        <input type="checkbox" className="size-5 shrink-0 accent-brand" checked={pending[item.id] ?? item.completed} disabled={Object.hasOwn(pending, item.id)}
-          aria-label={`Checklistenpunkt: ${item.text}`} onChange={event => void change(item.id, event.target.checked)} />
+        <label className={`${checkboxTarget} -mx-3`}>
+          <input type="checkbox" className="size-5 cursor-pointer accent-brand" checked={pending[item.id] ?? item.completed} disabled={Object.hasOwn(pending, item.id)}
+            aria-label={`Checklistenpunkt: ${item.text}`} onChange={event => void change(item.id, event.target.checked)} />
+        </label>
         <span className={`break-words ${item.completed ? 'text-ink-faint line-through' : 'text-ink-soft'}`}>{item.text}</span>
       </div>
     </li>)}</ul> : null}

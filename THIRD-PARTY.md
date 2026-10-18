@@ -1,6 +1,6 @@
 # Fremde Inhalte
 
-Die Listensymbole stammen zum größeren Teil aus fremden Sammlungen. Alle
+Die Listen- und Bediensymbole stammen zum größeren Teil aus fremden Sammlungen. Alle
 verwendeten stehen unter **MIT, ISC oder Apache-2.0** – Lizenzen, die nur den
 Lizenztext verlangen, **keine sichtbare Namensnennung** in der App.
 
@@ -8,6 +8,9 @@ Die Auswahl und die Zuordnung stehen in `scripts/generate-list-icons.mjs`. Die
 Symbole werden einmalig erzeugt (`npm run icons:generate`) und liegen als
 `src/ui/listIconsMdi.ts` im Repository – zur Laufzeit kennt die App also keine
 Fremdquelle.
+
+Die ausgewählten Bediensymbole erzeugt `node scripts/generate-ui-icons.mjs`
+in `src/ui/actionIconPaths.ts` aus denselben Lucide- und MDI-Paketen.
 
 ## Verwendete Sammlungen
 

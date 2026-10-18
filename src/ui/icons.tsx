@@ -1,13 +1,13 @@
-/**
- * Bediensymbole als eingebettete SVGs.
- *
- * Diese Zeichen gehören zur Oberfläche selbst – Menü, Schließen, Plus und so
- * weiter. Bewusst keine Icon-Bibliothek: Es sind wenige, und jede Bibliothek
- * wäre mehr Abhängigkeit als Nutzen.
- *
- * Die **Listen**symbole sind etwas anderes und liegen in `listIcons.ts`; sie
- * kommen aus fremden Sammlungen.
- */
+/** Bediensymbole im 24er Raster; ausgewählte Lucide-/MDI-Pfade liegen lokal. */
+import { actionIconPaths } from './actionIconPaths'
+
+function ActionIcon({ name, className }: { name: keyof typeof actionIconPaths; className: string }) {
+  const icon = actionIconPaths[name]
+  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true"
+    {...base} fill={icon.filled ? 'currentColor' : 'none'} stroke={icon.filled ? 'none' : 'currentColor'}>
+    {icon.paths.map((path, index) => <path key={index} d={path} />)}
+  </svg>
+}
 
 const base = {
   fill: 'none',
@@ -30,25 +30,21 @@ export function UnderlineIcon({ className = iconClass }: { className?: string })
   return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}><path d="M6 3v7a6 6 0 0 0 12 0V3M5 21h14" /></svg>
 }
 export function BulletListIcon({ className = iconClass }: { className?: string }) {
-  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}><path d="M9 5h12M9 12h12M9 19h12" /><circle cx="3" cy="5" r="1" /><circle cx="3" cy="12" r="1" /><circle cx="3" cy="19" r="1" /></svg>
+  return <ActionIcon name="BulletList" className={className} />
 }
 export function NumberedListIcon({ className = iconClass }: { className?: string }) {
-  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}><path d="M10 5h11M10 12h11M10 19h11M3 3h1v5M2 8h4M2 12a2 2 0 0 1 4 0c0 2-4 3-4 6h4" /></svg>
+  return <ActionIcon name="NumberedList" className={className} />
 }
 export function LinkIcon({ className = iconClass }: { className?: string }) {
-  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}><path d="m10 8 3-3a5 5 0 0 1 7 7l-3 3M14 16l-3 3a5 5 0 0 1-7-7l3-3M8 16l8-8" /></svg>
+  return <ActionIcon name="Link" className={className} />
 }
 
 export function ChecklistIcon({ className = iconClass }: { className?: string }) {
-  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
-    <path d="m3 6 2 2 3-4M11 6h10M3 13h5M11 13h10M3 20h5M11 20h10" />
-  </svg>
+  return <ActionIcon name="Checklist" className={className} />
 }
 
 export function TagIcon({ className = iconClass }: { className?: string }) {
-  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
-    <path d="M3 3h8l10 10-8 8L3 11z" /><circle cx="7.5" cy="7.5" r="1" />
-  </svg>
+  return <ActionIcon name="Tag" className={className} />
 }
 
 export function GripIcon({ className = iconClass }: { className?: string }) {
@@ -68,9 +64,7 @@ export function MoonIcon({ className = iconClass }: { className?: string }) {
   </svg>
 }
 export function ShareIcon({ className = iconClass }: { className?: string }) {
-  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
-    <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="m8.5 10.5 7-4M8.5 13.5l7 4" />
-  </svg>
+  return <ActionIcon name="Share" className={className} />
 }
 export function SectionsIcon({ className = iconClass }: { className?: string }) {
   return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
@@ -88,9 +82,7 @@ export function EyeIcon({ className = iconClass }: { className?: string }) {
   </svg>
 }
 export function EyeOffIcon({ className = iconClass }: { className?: string }) {
-  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
-    <path d="m3 3 18 18M10 5.2a11 11 0 0 1 11 6.8 12 12 0 0 1-3 4M6 6.5A12 12 0 0 0 3 12s3 7 9 7a11 11 0 0 0 4-1M10 10a3 3 0 0 0 4 4" />
-  </svg>
+  return <ActionIcon name="EyeOff" className={className} />
 }
 
 export function MenuIcon({ className = iconClass }: { className?: string }) {
@@ -110,22 +102,15 @@ export function PlusIcon({ className = iconClass }: { className?: string }) {
 }
 
 export function EditIcon({ className = iconClass }: { className?: string }) {
-  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
-    <path d="m15 5 4 4M4 20l4-1 12-12a2.8 2.8 0 0 0-4-4L4 15z" />
-  </svg>
+  return <ActionIcon name="Edit" className={className} />
 }
 
 export function SettingsIcon({ className = iconClass }: { className?: string }) {
-  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
-    <path d="M4 6h16M4 12h16M4 18h16" />
-    <path d="M8 3v6M16 9v6M10 15v6" />
-  </svg>
+  return <ActionIcon name="Settings" className={className} />
 }
 
 export function IconChoiceIcon({ className = iconClass }: { className?: string }) {
-  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
-    <circle cx="8" cy="8" r="4" /><path d="m16 4 5 8H11z" /><rect x="4" y="15" width="7" height="6" rx="1" /><path d="M17 16v6M14 19h6" />
-  </svg>
+  return <ActionIcon name="IconChoice" className={className} />
 }
 
 export function OverviewIcon({ className = iconClass }: { className?: string }) {
@@ -160,11 +145,7 @@ export function MoveIcon({ className = iconClass }: { className?: string }) {
 }
 
 export function TrashIcon({ className = iconClass }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
-      <path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13M10 11v6M14 11v6" />
-    </svg>
-  )
+  return <ActionIcon name="Trash" className={className} />
 }
 
 /** Wiederholung – kennzeichnet eine wiederkehrende Aufgabe. */
@@ -244,9 +225,7 @@ export function ChevronIcon({ offen, className = iconClass }: { offen: boolean; 
 }
 
 export function CalendarIcon({ className = iconClass }: { className?: string }) {
-  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
-    <rect x="3" y="5" width="18" height="16" rx="2" /><path d="M7 3v4M17 3v4M3 11h18" />
-  </svg>
+  return <ActionIcon name="Calendar" className={className} />
 }
 
 export function ClockIcon({ className = iconClass }: { className?: string }) {
@@ -268,15 +247,11 @@ export function SaveIcon({ className = iconClass }: { className?: string }) {
 }
 
 export function RestoreIcon({ className = iconClass }: { className?: string }) {
-  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
-    <path d="M3 10a9 9 0 1 1 2 9M3 4v6h6M12 7v5l3 2" />
-  </svg>
+  return <ActionIcon name="Restore" className={className} />
 }
 
 export function SyncIcon({ className = iconClass }: { className?: string }) {
-  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
-    <path d="M20 7a9 9 0 0 0-15 0M4 3v5h5M4 17a9 9 0 0 0 15 0M20 21v-5h-5" />
-  </svg>
+  return <ActionIcon name="Sync" className={className} />
 }
 
 export function LogoutIcon({ className = iconClass }: { className?: string }) {
@@ -304,9 +279,7 @@ export function FilterIcon({ className = iconClass }: { className?: string }) {
 }
 
 export function EraserIcon({ className = iconClass }: { className?: string }) {
-  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
-    <path d="m4 13 9-9a2 2 0 0 1 3 0l4 4a2 2 0 0 1 0 3l-9 9H7l-3-3a3 3 0 0 1 0-4zM9 8l7 7M11 20h10" />
-  </svg>
+  return <ActionIcon name="Eraser" className={className} />
 }
 
 export function ImportanceIcon({ className = iconClass }: { className?: string }) {
@@ -316,9 +289,7 @@ export function ImportanceIcon({ className = iconClass }: { className?: string }
 }
 
 export function EffortIcon({ className = iconClass }: { className?: string }) {
-  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
-    <circle cx="12" cy="5" r="2" /><path d="M7 9h10l4 12H3z" />
-  </svg>
+  return <ActionIcon name="Effort" className={className} />
 }
 
 export function UrgencyIcon({ className = iconClass }: { className?: string }) {
@@ -340,7 +311,9 @@ export function AlertIcon({ className = iconClass }: { className?: string }) {
 }
 
 export function UserIcon({ className = iconClass }: { className?: string }) {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
-    <circle cx="12" cy="8" r="4" /><path d="M4 21v-2a8 8 0 0 1 16 0v2" />
-  </svg>
+  return <ActionIcon name="User" className={className} />
+}
+
+export function RemoveFormattingIcon({ className = iconClass }: { className?: string }) {
+  return <ActionIcon name="RemoveFormatting" className={className} />
 }

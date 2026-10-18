@@ -6,7 +6,7 @@ import { RestrictToWindow } from '@dnd-kit/dom/modifiers'
 import { appendChecklistItem, checklistProgress, checklistWeights, createChecklistItem, deleteChecklistItem, setChecklistWeight, withChecklistWeights, withoutChecklistWeights, type ChecklistItem } from '../domain/checklist'
 import type { TaskForm } from './useTaskForm'
 import { ChecklistIcon, ChevronIcon, GripIcon, PlusIcon, TrashIcon } from './icons'
-import { checklistInput, focusRing, numeric } from './styles'
+import { checkboxTarget, checklistInput, focusRing, numeric } from './styles'
 import { IconButton } from './components/IconButton'
 import { useIsDesktop } from '../app/useIsDesktop'
 import { Hint } from './components/Hint'
@@ -84,12 +84,12 @@ function ChecklistEditRow({ item, index, group, busy, onChange, onDelete, weight
 }) {
   const desktop = useIsDesktop()
   const { ref, handleRef, isDragging } = useSortable({ id: item.id, index, group, type: group, accept: group, disabled: busy })
-  return <li ref={ref} data-checklist-item={item.id} className={`group/check flex min-w-0 items-center gap-1 rounded-control border-b border-line-soft ${isDragging ? 'bg-raised shadow-lg shadow-page/30' : 'hover:bg-surface'}`}>
+  return <li ref={ref} data-checklist-item={item.id} className={`group/check flex min-w-0 items-center gap-1 border-b border-line-soft ${isDragging ? 'bg-raised shadow-lg shadow-page/30' : 'hover:bg-surface'}`}>
     <Hint text="Checklistenpunkt ziehen. Mit Leertaste aufnehmen, Pfeiltasten verschieben und Leertaste ablegen.">
       <button ref={handleRef} type="button" aria-label={`Checklistenpunkt verschieben: ${item.text}`} disabled={busy}
         className={`${focusRing} checklist-drag-handle flex min-h-11 shrink-0 cursor-grab items-center rounded-control px-1 text-ink-faint active:cursor-grabbing ${desktop ? 'opacity-0 group-hover/check:opacity-100 group-focus-within/check:opacity-100' : ''}`}><GripIcon className="size-icon-meta" /></button>
     </Hint>
-    <label className="flex min-h-11 shrink-0 items-center px-1"><input type="checkbox" className="size-5 accent-brand" aria-label={`Checklistenpunkt erledigt: ${item.text}`}
+    <label className={checkboxTarget}><input type="checkbox" className="size-5 cursor-pointer accent-brand" aria-label={`Checklistenpunkt erledigt: ${item.text}`}
       checked={item.completed} onChange={event => onChange({ completed: event.target.checked })} /></label>
     <div className="min-w-0 flex-1">
     <input aria-label={`Checklistenpunkt ${index + 1}`} className={`${checklistInput} ${item.completed ? 'line-through' : ''}`} value={item.text}

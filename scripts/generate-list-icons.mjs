@@ -48,6 +48,8 @@ const SAMMLUNGEN = {
  */
 const GRUPPEN = [
   ['Allgemein', [
+    ['std:trending-up', 'Fortschritt', 'lucide', 'trending-up'],
+    ['std:prio', 'Prio', 'lucide', 'list-filter'],
     ['std:check', 'Erledigt', 'lucide', 'check'],
     ['std:star', 'Wichtig', 'mdi', 'star-outline'],
     ['std:heart', 'Favoriten', 'mdi', 'heart-outline'],

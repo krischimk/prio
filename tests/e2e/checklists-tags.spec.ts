@@ -6,6 +6,36 @@ import { addChecklistPoint, outerTask } from './support/checklists'
 test.beforeEach(async ({ request }) => desktop.resetServer(request))
 for (const mobile of [false, true]) test.describe(mobile ? 'Punkte Telefon' : 'Punkte breit', () => {
   test.use({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 }, hasTouch: mobile })
+  test('Checklisten-Kästchen reagieren auch neben ihrem sichtbaren Rand', async ({ page }, info) => {
+    await (mobile ? phone.register : desktop.register)(page, desktop.uniqueEmail('checklist-target'))
+    await (mobile ? phone.createList : desktop.createList)(page, 'Trefferflächen')
+    await (mobile ? phone.createTask : desktop.createTask)(page, 'Packen')
+    const editor = await desktop.openTaskEditor(page, 'Packen')
+    await addChecklistPoint(editor, 'Zelt')
+    const editing = editor.getByLabel('Checklistenpunkt erledigt: Zelt', { exact: true })
+    await editing.scrollIntoViewIfNeeded()
+    const editBox = (await editing.boundingBox())!
+    if (mobile) await page.touchscreen.tap(editBox.x - 6, editBox.y + editBox.height / 2)
+    else await page.mouse.click(editBox.x - 6, editBox.y + editBox.height / 2)
+    await expect(editing).toBeChecked()
+    await editor.getByRole('button', { name: 'Speichern', exact: true }).click()
+    const row = outerTask(page, 'Packen')
+    const toggle = row.getByRole('button', { name: 'Checkliste: Packen', exact: true })
+    if (await toggle.getAttribute('aria-expanded') !== 'true') await toggle.click()
+    const viewing = row.getByLabel('Checklistenpunkt: Zelt', { exact: true })
+    await expect(viewing).toBeEnabled()
+    const viewBox = (await viewing.boundingBox())!
+    if (mobile) await page.touchscreen.tap(viewBox.x - 6, viewBox.y + viewBox.height / 2)
+    else await page.mouse.click(viewBox.x - 6, viewBox.y + viewBox.height / 2)
+    await expect(viewing).not.toBeChecked()
+    await expect(row.getByLabel('Aufgabe erledigen: Packen', { exact: true })).not.toBeChecked()
+    await expect(editor).toBeHidden()
+    if (mobile) {
+      await page.screenshot({ path: info.outputPath('checklist-target-portrait.png') })
+      await page.setViewportSize({ width: 740, height: 360 })
+      await page.screenshot({ path: info.outputPath('checklist-target-landscape.png') })
+    }
+  })
   test('Punkte per Griff umsortieren, abbrechen und in beiden Themen anzeigen', async ({ page, request, context }, info) => {
     await (mobile ? phone.register : desktop.register)(page, desktop.uniqueEmail('checklist-sort'))
     await (mobile ? phone.createList : desktop.createList)(page, 'Vorbereitung')

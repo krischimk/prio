@@ -10,8 +10,8 @@ import { focusRing, errorMessage } from './styles'
 import { Hint } from './components/Hint'
 
 /** Direkte Bearbeitung im Kopf; die Seitenleiste bleibt reine Navigation. */
-export function ListHeading({ list, currentUserId, onOpen, main = false, allowIconEdit = true }: {
-  list: LocalList; currentUserId: string; onOpen?: () => void; main?: boolean; allowIconEdit?: boolean
+export function ListHeading({ list, currentUserId, main = false }: {
+  list: LocalList; currentUserId: string; main?: boolean
 }) {
   const desktop = useIsDesktop()
   const { repositories } = useWorkspace()
@@ -23,13 +23,10 @@ export function ListHeading({ list, currentUserId, onOpen, main = false, allowIc
   const writing = useRef(false)
   const cancelled = useRef(false)
   const renameInput = useRef<HTMLInputElement>(null)
-  const singleClick = useRef<ReturnType<typeof setTimeout> | null>(null)
-  useEffect(() => () => { if (singleClick.current) clearTimeout(singleClick.current) }, [])
   useEffect(() => {
     if (editing === 'umbenennen') { renameInput.current?.focus(); renameInput.current?.select() }
   }, [editing])
   const beginRename = () => {
-    if (singleClick.current) clearTimeout(singleClick.current)
     cancelled.current = false; setError(null); setEditing('umbenennen')
   }
   const saveName = async () => {
@@ -44,7 +41,7 @@ export function ListHeading({ list, currentUserId, onOpen, main = false, allowIc
     } finally { writing.current = false; setBusy(false) }
   }
   const iconClass = `${main ? 'size-7' : 'size-icon'} shrink-0 text-brand-soft`
-  const editableIcon = editable && allowIconEdit
+  const editableIcon = editable
   const icon = list.icon ? <ListIcon icon={list.icon} className={iconClass} /> : editableIcon ? <span className="relative inline-flex text-ink-faint">
     <IconChoiceIcon className={main ? 'size-7' : 'size-icon'} /><PlusIcon className="absolute -bottom-1 -right-1 size-icon-meta rounded-full bg-page" />
   </span> : null
@@ -53,7 +50,7 @@ export function ListHeading({ list, currentUserId, onOpen, main = false, allowIc
   return <>
     <div className="flex min-w-0 items-center gap-2">
       {editableIcon ? <Hint text={`Symbol von „${list.name}“ ändern`}><button type="button" aria-label={`Symbol von ${list.name} ändern`}
-        onClick={() => { if (singleClick.current) clearTimeout(singleClick.current); setEditing('symbol') }} className={`${focusRing} inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-control hover:bg-surface active:bg-raised`}>{icon}</button></Hint> : icon}
+        onClick={() => setEditing('symbol')} className={`${focusRing} inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-control hover:bg-surface active:bg-raised`}>{icon}</button></Hint> : icon}
       <Title className={`min-w-0 font-semibold text-ink-strong ${main ? 'text-heading tracking-tight' : 'text-list-heading'}`}>
         {editing === 'umbenennen' ? <input ref={renameInput} aria-label="Neuer Listenname" aria-invalid={Boolean(error)}
           title="Enter oder Klick daneben speichert. Escape verwirft die Änderung."
@@ -63,15 +60,10 @@ export function ListHeading({ list, currentUserId, onOpen, main = false, allowIc
           onKeyDown={event => {
             if (event.key === 'Enter') { event.preventDefault(); event.stopPropagation(); void saveName() }
             if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancelled.current = true; discard(); setEditing(null); setError(null) }
-          }} /> : onOpen || editable ? <button type="button" aria-label={onOpen ? `Liste ${list.name} öffnen` : `Liste ${list.name} umbenennen`}
+          }} /> : editable ? <button type="button" aria-label={`Liste ${list.name} umbenennen`}
           title={editable ? 'Doppelklick zum Umbenennen' : undefined}
           className={`${focusRing} min-h-11 rounded-control text-left hover:text-brand-soft`}
-          onClick={event => {
-            if (!onOpen) { if (event.detail === 0) beginRename(); return }
-            if (!editable || event.detail === 0) { onOpen(); return }
-            if (singleClick.current) clearTimeout(singleClick.current)
-            if (event.detail === 1) singleClick.current = setTimeout(onOpen, 400)
-          }} onDoubleClick={editable ? beginRename : undefined}>{title}</button> : title}
+          onClick={event => { if (event.detail === 0) beginRename() }} onDoubleClick={beginRename}>{title}</button> : title}
       </Title>
     </div>
     {error ? <p role="alert" className={errorMessage}>{error}</p> : null}

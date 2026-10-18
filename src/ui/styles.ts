@@ -33,6 +33,9 @@ import type { SyncTone } from './status/syncStatus'
 export const focusRing =
   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-soft'
 
+/** Gleiche Trefferfläche für Aufgaben- und Checklisten-Kästchen. */
+export const checkboxTarget = `${focusRing} pointer-events-auto flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-control hover:bg-raised active:bg-raised`
+
 export const checklistInput = `min-h-11 w-full min-w-0 rounded-control bg-transparent px-2 py-2 text-body text-ink placeholder:text-ink-faint hover:bg-surface focus:bg-surface ${focusRing}`
 
 /*
@@ -68,7 +71,7 @@ const buttonSizes = {
   icon: 'h-11 w-11',
   iconSm: 'h-8 w-8',
   /** Dichte Telefonleiste, mit 44 px hoher Trefferfläche über den sichtbaren Rand hinaus. */
-  toolbarIcon: 'relative h-8 w-11 before:absolute before:inset-x-0 before:-inset-y-1.5',
+  toolbarIcon: 'relative h-6 w-11 before:absolute before:inset-x-0 before:-inset-y-2.5',
   /** Ein Feld als kompakte, aufklappbare Zeile mit führendem Symbol. */
   field: 'min-h-11 px-2 py-2 text-body',
 } as const

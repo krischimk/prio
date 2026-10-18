@@ -5,7 +5,7 @@ import { Markdown as MarkdownExtension } from '@tiptap/markdown'
 import { IconButton } from './components/IconButton'
 import { Button } from './components/Button'
 import { Sheet } from './components/Sheet'
-import { BoldIcon, ItalicIcon, UnderlineIcon, BulletListIcon, NumberedListIcon, LinkIcon, EraserIcon } from './icons'
+import { BoldIcon, ItalicIcon, UnderlineIcon, BulletListIcon, NumberedListIcon, LinkIcon, RemoveFormattingIcon } from './icons'
 import { errorMessage, input, noteInput } from './styles'
 import { markdownHref } from './markdown'
 
@@ -81,7 +81,7 @@ function NoteToolbar({ editor, disabled }: { editor: Editor; disabled: boolean }
       setLink({ from, to, text: editor.state.doc.textBetween(from, to, ' '), href: editor.getAttributes('link').href ?? 'https://' })
       setLinkError(null)
     } },
-    { label: 'Formatierung entfernen', hint: 'Formatierung und Listenstruktur der ausgewählten Absätze entfernen.', Icon: EraserIcon, active: false, run: () => editor.chain().focus(undefined, { scrollIntoView: false }).unsetAllMarks().clearNodes().run() },
+    { label: 'Formatierung entfernen', hint: 'Formatierung und Listenstruktur der ausgewählten Absätze entfernen.', Icon: RemoveFormattingIcon, active: false, run: () => editor.chain().focus(undefined, { scrollIntoView: false }).unsetAllMarks().clearNodes().run() },
   ]
   const saveLink = () => {
     if (!link) return

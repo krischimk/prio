@@ -117,7 +117,8 @@ export function MobileDrawer({
           <ListNavigation lists={lists} selectedListId={selectedListId} currentUserId={currentUserId}
             onSelect={id => { onSelectList(id); onClose() }} />
 
-          <div className="mt-3"><NewListComposer currentUserId={currentUserId} onCreated={id => { onSelectList(id); onClose() }} /></div>
+          {/* Der Entwurf liegt im Provider; modale Unteransichten enden mit dem Menü. */}
+          <div className="mt-3"><NewListComposer key={open ? 'open' : 'closed'} currentUserId={currentUserId} onCreated={id => { onSelectList(id); onClose() }} /></div>
         </section>
 
         <section className="border-t border-line px-4 py-2" aria-label="Synchronisation">

@@ -45,7 +45,7 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Aufgabenaktionen Tel
   })
 })
 
-test('Listenkopf: Symbol direkt ändern, Doppelklick benennt um, einfacher Klick öffnet weiterhin', async ({ page }) => {
+test('Listenkopf: Gesamtansicht navigiert, nur die einzelne Liste erlaubt direktes Umbenennen', async ({ page }) => {
   await desktop.register(page, desktop.uniqueEmail('heading'))
   await desktop.createList(page, 'Arbeit')
   const settings = await desktop.openListSettings(page)
@@ -60,11 +60,13 @@ test('Listenkopf: Symbol direkt ändern, Doppelklick benennt um, einfacher Klick
   await expect(page.getByRole('button', { name: /^Symbol von Arbeit ändern$/, exact: true })).toHaveCount(0)
   await page.getByRole('button', { name: /^Liste Arbeit öffnen$/, exact: true }).dblclick()
   const rename = page.getByRole('textbox', { name: 'Neuer Listenname', exact: true })
+  await expect(page.getByTestId('list-title')).toHaveText('Arbeit')
+  await expect(rename).toBeHidden()
+  await page.getByRole('button', { name: /^Liste Arbeit umbenennen$/, exact: true }).dblclick()
   await expect(page.getByRole('dialog', { name: 'Liste verwalten', exact: true })).toBeHidden()
   await rename.fill('Studium')
   await rename.press('Enter')
   await expect(rename).toBeHidden()
-  await page.getByRole('button', { name: /^Liste Studium öffnen$/, exact: true }).click()
   await expect(page.getByTestId('list-title')).toHaveText('Studium')
   await page.getByRole('button', { name: /^Liste Studium umbenennen$/, exact: true }).dblclick()
   await expect(rename).toBeFocused()

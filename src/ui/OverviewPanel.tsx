@@ -32,7 +32,7 @@ export function OverviewPanel({ currentUserId }: { currentUserId: string }) {
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Die Änderung konnte nicht gespeichert werden.') }
     finally { writing.current = false; setBusy(false) }
   }
-  return <section aria-label="Gesamtansicht" className={`mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col ${desktop ? 'gap-3 p-rand' : 'pt-1.5 pb-3'}`}>
+  return <section aria-label="Gesamtansicht" className={`mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col ${desktop ? 'gap-3 p-rand' : 'pb-3'}`}>
     {desktop ? <header><h1 aria-label="Gesamtansicht" className="text-heading font-semibold tracking-tight"><OverviewTitle /></h1></header> : null}
     {desktop && overview.status === 'ready' && overview.lists.length > 0 ? <TaskComposer /> : null}
     <div className="flex min-h-0 flex-1 flex-col">

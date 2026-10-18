@@ -14,10 +14,10 @@ import { useCollapsedSections } from './collapsedSections'
 import { dragGroups, groupOfTask, projectTaskPointer, sidebarDropListId, taskGroupId, taskGroupLocation, taskEndId, isTaskEnd, type DragGroups } from './taskDrag'
 import { SectionHeader } from './SectionHeader'
 import { TaskRow } from './TaskRow'
-import { ListHeading } from './ListHeading'
+import { OverviewListHeading } from './OverviewListHeading'
 import { ListSettingsSheet } from './ListSettingsSheet'
 import { CompletedTasksSection } from './CompletedTasksSection'
-import { emptyState, errorBox, numeric } from './styles'
+import { emptyState, errorBox } from './styles'
 import { leerAufgaben } from './emptyTexts'
 import { useTaskDragHandlers } from './useTaskDragHandlers'
 import { isKeyboardEvent } from '@dnd-kit/dom/utilities'
@@ -188,9 +188,7 @@ function ListBlock({ list, groups, byId, allTasks, currentUserId, overview, acti
   const sections = priority ? orderListTaskGroups([...byId.values()].filter(task => task.list_id === list.id), list, nowMs) : groupTasks([], list.sections)
   const count = groupTasks([], list.sections).reduce((sum, group) => sum + (groups[taskGroupId(list.id, group.section?.id ?? null)]?.length ?? 0), 0)
   return <section aria-label={overview ? `Aufgaben aus ${list.name}` : `Aufgaben in ${list.name}`} className="flex min-w-0 shrink-0 flex-col last:flex-1">
-    {overview ? <div className={`mb-2 flex items-center justify-between gap-3 border-b border-line py-2 ${desktop ? '' : 'px-rand'}`}>
-      <ListHeading list={list} currentUserId={currentUserId} allowIconEdit={false} onOpen={() => onSelectList(list.id)} /><span className={`text-meta text-ink-muted ${numeric}`}>{count}</span>
-    </div> : null}
+    {overview ? <OverviewListHeading list={list} count={count} onOpen={() => onSelectList(list.id)} /> : null}
     {sections.map(group => {
       const id = taskGroupId(list.id, group.section?.id ?? null)
       const ids = priority ? group.tasks.map(task => task.id) : groups[id] ?? []

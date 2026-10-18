@@ -20,6 +20,9 @@ const APP_URL = `http://127.0.0.1:${APP_PORT}`
 // der Rest den Entwicklungsserver.
 const PWA_PORT = Number(process.env.E2E_PWA_PORT ?? 4174)
 const PWA_URL = `http://127.0.0.1:${PWA_PORT}`
+// Ein paralleler Produktionsbuild darf dem laufenden Offline-Test weder
+// Dateien noch dessen Mock-Konfiguration austauschen.
+const PWA_OUT = `node_modules/.cache/prio-e2e-pwa-${PWA_PORT}`
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -81,7 +84,7 @@ export default defineConfig({
       // hier ein echter Build vor dem Ausliefern. Gebaut wird gegen den Mock –
       // die App soll beim Offline-Start ihre Anmeldemaske zeigen und nicht den
       // Hinweis auf eine fehlende Konfiguration.
-      command: `npm run build && npx vite preview --host 127.0.0.1 --port ${PWA_PORT} --strictPort`,
+      command: `npm run build -- --outDir ${PWA_OUT} && npx vite preview --outDir ${PWA_OUT} --host 127.0.0.1 --port ${PWA_PORT} --strictPort`,
       url: PWA_URL,
       reuseExistingServer: !process.env.CI,
       timeout: 180_000,

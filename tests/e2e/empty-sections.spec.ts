@@ -15,6 +15,8 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Leere Bereiche Telef
     await expect(settings.getByLabel('In Gesamtansicht aufnehmen', { exact: true })).toBeEnabled()
     await desktop.closeListSettings(page)
     const areas = await desktop.listAction(page, 'Bereiche')
+    await expect(areas.getByRole('button', { name: 'Zurück', exact: true })).toHaveCount(0)
+    await expect(areas.getByRole('button', { name: 'Zur Übersicht', exact: true })).toBeVisible()
     await areas.getByLabel('Neuer Bereich', { exact: true }).fill('Leer')
     await areas.getByRole('button', { name: 'Bereich anlegen', exact: true }).click()
     await expect(areas.getByLabel('Neuer Bereich', { exact: true })).toHaveValue('')
@@ -23,6 +25,7 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Leere Bereiche Telef
     await expect(header).toHaveAttribute('aria-expanded', 'true')
     await header.click()
     await expect(page.getByRole('dialog', { name: 'Liste verwalten', exact: true }).getByLabel('Neuer Bereich', { exact: true })).toBeVisible()
+    await expect(page.getByRole('dialog', { name: 'Liste verwalten', exact: true }).getByRole('button', { name: 'Zur Übersicht', exact: true })).toHaveCount(0)
     await desktop.closeListSettings(page)
     const createInSection = async (title: string) => {
       await (mobile ? phone.createTask : desktop.createTask)(page, title)

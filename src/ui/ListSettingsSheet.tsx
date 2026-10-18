@@ -55,7 +55,7 @@ export function ListSettingsSheet({
   // Zurück-Taste und Escape schließen zuerst das Unterformular, dann die
   // Ansicht – dieselbe Regel wie im Menü.
   const schliessen = () => {
-    if (modus === 'menue') onClose()
+    if (modus === 'menue' || modus === initialMode) onClose()
     else setModus('menue')
   }
 
@@ -111,7 +111,7 @@ export function ListSettingsSheet({
       leading={<ListIcon icon={list.icon} className="h-5 w-5 shrink-0 text-ink-soft" />}
       onClose={onClose}
       onBack={schliessen}
-      footer={modus !== 'menue' ? <Button variant="secondary" layout="w-full" onClick={() => setModus('menue')}><ArrowLeftIcon />Zur Übersicht</Button> : undefined}
+      footer={modus !== 'menue' && initialMode === 'menue' ? <Button variant="secondary" layout="w-full" onClick={() => setModus('menue')}><ArrowLeftIcon />Zur Übersicht</Button> : undefined}
     >
       <div className="px-5 py-5">
           {modus === 'menue' ? (
@@ -207,17 +207,7 @@ export function ListSettingsSheet({
 
 
 
-          {modus === 'bereiche' ? (
-            <div className="space-y-3">
-              <SectionsPanel list={list} />
-              <Button
-                variant="secondary" layout="w-full"
-                onClick={() => setModus('menue')}
-              >
-                <ArrowLeftIcon />Zurück
-              </Button>
-            </div>
-          ) : null}
+          {modus === 'bereiche' ? <SectionsPanel list={list} /> : null}
 
           {modus === 'verlassen' ? (
             <div className="space-y-3">

@@ -583,7 +583,7 @@ test('E2E 6: Bereiche ordnen Aufgaben, nehmen sie beim Ziehen auf und klappen zu
     await page.getByRole('button', { name: 'Bereich anlegen' }).click()
     await expect(page.getByTestId('section-header').filter({ hasText: name })).toBeVisible()
   }
-  await page.getByRole('button', { name: 'Zurück' }).click()
+  await page.getByRole('button', { name: 'Zur Übersicht', exact: true }).click()
   await page.getByRole('button', { name: 'Schließen' }).click()
 
   // Die erste Aufgabe kommt über das Formular in ihren Bereich.

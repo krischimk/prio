@@ -32,7 +32,7 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
     catch (cause) { setError(cause instanceof Error ? cause.message : 'Die Sortierung konnte nicht gespeichert werden.') }
     finally { setBusy(false) }
   }
-  return <section className={`mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col ${desktop ? 'gap-5 p-rand' : 'pt-1.5 pb-3'}`} aria-label="Aufgaben">
+  return <section className={`mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col ${desktop ? 'gap-5 p-rand' : 'pb-3'}`} aria-label="Aufgaben">
     {desktop ? <header className="flex shrink-0 items-start justify-between gap-4">
       <div className="min-w-0 flex-1">
         <ListHeading list={list} currentUserId={currentUserId} main />

@@ -2,6 +2,8 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { AuthError, type AuthPort, type AuthUser, type SignUpResult } from './authPort'
 import { normalizeUsername, validUsername } from '../domain/username'
 
+const AUTH_STORAGE_KEY = 'prio.auth'
+
 /**
  * Supabase Auth als `AuthPort`.
  *
@@ -47,7 +49,7 @@ export function createSupabaseClient(config: SupabaseConfig): SupabaseClient {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: false,
-      storageKey: 'prio.auth',
+      storageKey: AUTH_STORAGE_KEY,
     },
   })
 }
@@ -62,6 +64,21 @@ function toAuthUser(user: SupabaseUserLike | null | undefined): AuthUser | null 
   if (!user) return null
   const name = typeof user.user_metadata?.username === 'string' ? normalizeUsername(user.user_metadata.username) : ''
   return { id: user.id, email: user.email ?? '', username: validUsername(name) ? name : null }
+}
+
+/** Nur die lokale Kontoauswahl. Cloud-Zugriffe prüft weiterhin Supabase/RLS. */
+function storedUser(): AuthUser | null {
+  try {
+    const raw = globalThis.localStorage?.getItem(AUTH_STORAGE_KEY)
+    if (!raw) return null
+    const session: unknown = JSON.parse(raw)
+    if (!session || typeof session !== 'object' || !('user' in session)
+      || !('access_token' in session) || typeof session.access_token !== 'string' || !session.access_token
+      || !('refresh_token' in session) || typeof session.refresh_token !== 'string' || !session.refresh_token) return null
+    const user = session.user
+    if (!user || typeof user !== 'object' || !('id' in user) || typeof user.id !== 'string' || !user.id) return null
+    return toAuthUser(user as SupabaseUserLike)
+  } catch { return null }
 }
 
 function classifyAuthError(error: unknown): AuthError {
@@ -101,6 +118,20 @@ export function createSupabaseAuthPort(client: SupabaseClient, resetRedirectUrl?
   // React kann die Initialisierung im Entwicklungslauf zweimal anfordern.
   // Ein Einmalcode wird dabei genau einmal beim Auth-Server eingelöst.
   let recoveryAttempt: Promise<AuthUser> | null = null
+  async function currentSessionUser(): Promise<AuthUser | null> {
+    const { data, error } = await client.auth.getSession()
+    if (error) throw classifyAuthError(error)
+    const user = toAuthUser(data.session?.user)
+    if (user && !user.username && data.session && (typeof navigator === 'undefined' || navigator.onLine)) {
+      // Profiländerungen eines anderen Geräts übernehmen, ohne den lokalen
+      // Start an diesen Netzaufruf zu binden. setSession sendet das Auth-Event.
+      const refreshed = await client.auth.setSession({
+        access_token: data.session.access_token, refresh_token: data.session.refresh_token,
+      })
+      if (!refreshed.error) return toAuthUser(refreshed.data.user)
+    }
+    return user
+  }
   async function checkUsername(value: string) {
     const username = normalizeUsername(value)
     if (!validUsername(username)) throw new AuthError('username-invalid', 'username-invalid')
@@ -142,22 +173,15 @@ export function createSupabaseAuthPort(client: SupabaseClient, resetRedirectUrl?
       if (error) throw classifyAuthError(error)
     },
     async getCurrentUser() {
-      // `getSession` liest die gespeicherte Sitzung und funktioniert damit auch
-      // ohne Netzwerk. Ein abgelaufenes Token wird nur bei bestehender
-      // Verbindung erneuert; schlägt das fehl, bleibt die Sitzung erhalten.
-      const { data, error } = await client.auth.getSession()
-      if (error) throw classifyAuthError(error)
-      const cached = toAuthUser(data.session?.user)
-      if (cached && !cached.username && data.session && (typeof navigator === 'undefined' || navigator.onLine)) {
-        // Ein anderes Gerät kann den Pflichtnamen bereits gewählt haben. Die
-        // öffentliche Auth-API liest dann das Profil neu und speichert es in
-        // der Sitzung; spätere Offline-Starts kennen denselben Namen.
-        const refreshed = await client.auth.setSession({
-          access_token: data.session.access_token, refresh_token: data.session.refresh_token,
-        })
-        if (!refreshed.error) return toAuthUser(refreshed.data.user)
+      // getSession wartet auf die SDK-Initialisierung und damit bei abgelaufenem
+      // Token auf das Netz. Den vorhandenen Supabase-Speicher direkt lesen;
+      // kein zweiter Cache und kein Timeout, der später eine Anmeldung zeigt.
+      const cached = storedUser()
+      if (cached) {
+        if (!cached.username) void currentSessionUser().catch(() => {})
+        return cached
       }
-      return cached
+      return currentSessionUser()
     },
 
     async signUp(email: string, password: string, requested?: string): Promise<SignUpResult> {
