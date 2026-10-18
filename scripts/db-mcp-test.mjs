@@ -19,8 +19,11 @@ export function testMcp(sql) {
     insert into auth.oauth_consents(user_id,client_id) values('${actor}','${client}');
     update private.mcp_settings set command_key='${secret}' where singleton;`)
   const native = query => sql(`begin;set local role authenticated;set local request.jwt.claim.sub='${actor}';set local request.jwt.claims='{"sub":"${actor}"}';${query};commit;`)
-  const claims = { sub: actor, client_id: client, session_id: session, iat: Math.floor(Date.now() / 1000) + 1 }
+  const claims = { sub: actor, client_id: client, session_id: session, iat: Math.floor(Date.now() / 1000) }
   const oauth = (query, path = '/rpc/mcp_context') => sql(`begin;set local role authenticated;set local request.jwt.claim.sub='${actor}';set local request.jwt.claims='${JSON.stringify(claims)}';set local request.method='POST';set local request.path='${path}';select private.mcp_request_guard();${query};commit;`).trim()
+  // Eine neue Freigabe liefert im echten OAuth-Ablauf ein neues Token. Der
+  // Test bildet dessen Ausstellungszeit ab, unabhängig vom Tempo des Rechners.
+  const renewedToken = () => { claims.iat = Number(sql(`select floor(extract(epoch from approved_at)) from private.mcp_connections where user_id='${actor}' and client_id='${client}'`)) }
   const json = value => `'${JSON.stringify(value).replaceAll("'", "''")}'::jsonb`
   const last = value => value.split('\n').at(-1)
   let checks = 0
@@ -41,6 +44,7 @@ export function testMcp(sql) {
     assert.throws(() => native(`select public.mcp_manage('authorize',${json({ authorization_id: authorization })})`), /ungültig/)
     sql(`update auth.oauth_authorizations set resource='${resource}' where authorization_id='${authorization}'`)
     native(`select public.mcp_manage('authorize',${json({ authorization_id: authorization, can_write: true, can_share: false, time_zone: 'Europe/Berlin' })})`)
+    renewedToken()
     assert.equal(JSON.parse(last(oauth('select public.mcp_context()'))).can_share, false)
     assert.throws(() => oauth("select public.mcp_manage('list')", '/rpc/mcp_manage'), /ausschließlich/)
     assert.throws(() => oauth("select public.sync_push('[]')", '/rpc/sync_push'), /ausschließlich/)
@@ -112,6 +116,10 @@ export function testMcp(sql) {
     native(`select public.mcp_manage('revoke',${json({ client_id: client })})`)
     assert.throws(() => oauth('select public.mcp_context()'), /widerrufen/)
     native(`select public.mcp_manage('authorize',${json({ authorization_id: authorization })})`)
+    renewedToken()
+    claims.iat -= 1
+    assert.throws(() => oauth('select public.mcp_context()'), /nicht freigegeben/)
+    renewedToken()
     sql(`update auth.oauth_consents set revoked_at=clock_timestamp() where user_id='${actor}'`)
     assert.throws(() => oauth('select public.mcp_context()'), /nicht mehr aktiv/)
   })
