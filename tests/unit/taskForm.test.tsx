@@ -112,8 +112,9 @@ describe('Aufgabenentwürfe und Speichern', () => {
     expect(result.current.werte.description).toBe('')
     rerender({ task: a, listId })
     expect(result.current.werte.description).toBe('Nur A')
-    act(() => result.current.zuruecksetzen())
+    await act(async () => { await result.current.zuruecksetzen() })
     expect(result.current.werte.description).toBe('')
+    expect(await repositories.listDiscardedNotes()).toEqual([expect.objectContaining({ taskId: a.id, description: 'Nur A' })])
   })
 
   it('schickt nur geänderte Felder und erhält externe Änderungen samt Terminsekunden', async () => {
@@ -128,6 +129,18 @@ describe('Aufgabenentwürfe und Speichern', () => {
     expect(await repositories.getTask(task.id)).toMatchObject({ title: 'Mein Titel', description: 'Andere Notiz', due_at: task.due_at })
   })
 
+  it('behält die neue Notiz, wenn ihre Sicherung vor dem Verwerfen fehlschlägt', async () => {
+    const { result } = open()
+    act(() => result.current.setzen('description', 'Noch nicht verlieren'))
+    vi.spyOn(repositories, 'rememberDiscardedNote').mockRejectedValueOnce(new Error('Speicher belegt'))
+    await act(async () => { expect(await result.current.zuruecksetzen()).toBe(false) })
+    expect(result.current.werte.description).toBe('Noch nicht verlieren')
+    expect(result.current.busy).toBe(false)
+    expect(result.current.error).toContain('Eingaben bleiben erhalten')
+    await act(async () => { expect(await result.current.zuruecksetzen()).toBe(true) })
+    expect(await repositories.listDiscardedNotes()).toEqual([expect.objectContaining({ taskId: null, description: 'Noch nicht verlieren' })])
+  })
+
   it('zeigt einen Feldkonflikt, erhält die Eingabe und lädt nur bewusst neu', async () => {
     const task = await repositories.createTask({ listId, title: 'Alt' })
     const { result, rerender, onSaved } = open(task)
@@ -139,7 +152,7 @@ describe('Aufgabenentwürfe und Speichern', () => {
     expect(result.current.werte.title).toBe('Mein Entwurf')
     expect(onSaved).not.toHaveBeenCalled()
     expect((await repositories.getTask(task.id))?.title).toBe('Andere Änderung')
-    act(() => result.current.neuLaden?.())
+    await act(async () => { await result.current.neuLaden?.() })
     expect(result.current.werte.title).toBe('Andere Änderung')
     expect(result.current.error).toBeNull()
     act(() => result.current.setzen('title', 'Neue Bearbeitung'))

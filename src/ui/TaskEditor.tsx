@@ -55,7 +55,7 @@ export function TaskEditor({
   // Zustand und Umwandlungen des Formulars kommen aus `useTaskForm` – dieselben
   // wie in der Eingabezeile und der Aufgabenzeile der breiten Ansicht.
   const form = useTaskForm({ task, listId, onSaved: () => { if (isNew) onCreated?.(); onClose() } })
-  const deletion = useTaskDelete(task, () => { form.zuruecksetzen(); onClose() })
+  const deletion = useTaskDelete(task, () => { void form.zuruecksetzen().then(discarded => { if (discarded) onClose() }) })
   /** Rückfrage, wenn über das Kreuz geschlossen wird und etwas geändert ist. */
   const [verwerfen, setVerwerfen] = useState(false)
   const schliessen = () => {
@@ -191,7 +191,7 @@ export function TaskEditor({
         <p className="text-body text-ink-soft">Deine Eingaben sind noch nicht gespeichert.</p>
         <div className="flex flex-wrap gap-2">
           <Button variant="primary" layout="flex-1" onClick={onClose}>Entwurf behalten</Button>
-          <Button variant="danger" layout="flex-1" onClick={() => { form.zuruecksetzen(); onClose() }}>Verwerfen</Button>
+          <Button variant="danger" layout="flex-1" disabled={form.busy} onClick={() => { void form.zuruecksetzen().then(discarded => { if (discarded) onClose() }) }}>Verwerfen</Button>
           <Button variant="secondary" layout="w-full" onClick={() => setVerwerfen(false)}>Weiter bearbeiten</Button>
         </div>
       </div>

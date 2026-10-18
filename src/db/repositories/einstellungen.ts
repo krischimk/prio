@@ -7,6 +7,7 @@ import { readCloudConflicts, resolveCloudConflict } from '../cloudState'
 import { normalisiereListenauswahl, normalisiereStartansicht } from '../../domain/normalize'
 import { requireText, ValidationError } from '../validation'
 import { placeNavigationList } from '../../domain/listNavigation'
+import { parseDiscardedNotes } from '../../domain/discardedNotes'
 
 /**
  * Die selbst gemerkten Vorlaufzeiten für die Schnellauswahl.
@@ -26,8 +27,32 @@ const META_REMINDER_PRESETS = 'reminder_presets'
  * suchen, solange sie dort keinen Zweck erfüllen.
  */
 const META_SHARE_CONTACTS = 'share_contacts'
-export function einstellungen(ctx: Kontext): Pick<Repositories, 'listReminderPresets' | 'setReminderPresets' | 'listShareContacts' | 'rememberShareContact' | 'mergeShareContacts' | 'listCloudConflicts' | 'resolveCloudConflict' | 'listListPreferences' | 'setListInOverview' | 'setListSortMode' | 'placeList' | 'getUserPreferences' | 'updateUserPreferences' | 'setTaskExpanded'> {
+const META_DISCARDED_NOTES = 'discarded_notes'
+export function einstellungen(ctx: Kontext): Pick<Repositories, 'rememberDiscardedNote' | 'listDiscardedNotes' | 'pruneDiscardedNotes' | 'listReminderPresets' | 'setReminderPresets' | 'listShareContacts' | 'rememberShareContact' | 'mergeShareContacts' | 'listCloudConflicts' | 'resolveCloudConflict' | 'listListPreferences' | 'setListInOverview' | 'setListSortMode' | 'placeList' | 'getUserPreferences' | 'updateUserPreferences' | 'setTaskExpanded'> {
   return {
+    async rememberDiscardedNote(note) {
+      await ctx.db.transaction('rw', ctx.db.meta, async () => {
+        const notes = parseDiscardedNotes(await readMeta(ctx.db, META_DISCARDED_NOTES), ctx.clock.nowMs())
+        const latest = notes.find(row => row.taskId === note.taskId && row.listId === note.listId)
+        if (latest?.description === note.description) return
+        notes.unshift({ ...note, id: crypto.randomUUID(), discardedAt: ctx.clock.now() })
+        await writeMeta(ctx.db, META_DISCARDED_NOTES, JSON.stringify(notes))
+      })
+    },
+    async listDiscardedNotes() {
+      return parseDiscardedNotes(await readMeta(ctx.db, META_DISCARDED_NOTES), ctx.clock.nowMs())
+    },
+    async pruneDiscardedNotes() {
+      return ctx.db.transaction('rw', ctx.db.meta, async () => {
+        const raw = await readMeta(ctx.db, META_DISCARDED_NOTES)
+        if (raw === null) return false
+        const remaining = parseDiscardedNotes(raw, ctx.clock.nowMs())
+        if (JSON.stringify(remaining) === raw) return false
+        if (remaining.length === 0) await ctx.db.meta.delete(META_DISCARDED_NOTES)
+        else await writeMeta(ctx.db, META_DISCARDED_NOTES, JSON.stringify(remaining))
+        return true
+      })
+    },
     async setListSortMode(listId, userId, sortMode) {
       requireText(userId, 'Die Benutzerkennung')
       if (!['manual', 'priority', 'priority_flat'].includes(sortMode)) throw new ValidationError('invalid', 'Diese Sortierung ist nicht verfügbar.')

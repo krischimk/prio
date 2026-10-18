@@ -11,6 +11,7 @@ import type { CloudConflict } from '../../domain/cloudMerge'
 import type { TaskPlacement } from '../../domain/taskPlacement'
 import type { ChecklistItem } from '../../domain/checklist'
 import type { TaskRating } from '../../domain/rating'
+import type { DiscardedNote } from '../../domain/discardedNotes'
 
 export interface CreateTaskInput {
   listId: string
@@ -40,6 +41,9 @@ export interface CreateListOptions {
 }
 
 export interface Repositories {
+  rememberDiscardedNote(note: Omit<DiscardedNote, 'id' | 'discardedAt'>): Promise<void>
+  listDiscardedNotes(): Promise<DiscardedNote[]>
+  pruneDiscardedNotes(): Promise<boolean>
   setListAllowDuplicateTitles(listId: string, userId: string, allowed: boolean): Promise<void>
   listListPreferences(userId: string): Promise<LocalListPreference[]>
   setListInOverview(listId: string, userId: string, included: boolean): Promise<void>

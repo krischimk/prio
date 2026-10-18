@@ -104,6 +104,10 @@ export function formatCompletedLabel(completedAt: string): string {
   return `abgehakt am ${formatDateTime(completedAt)}`
 }
 
+export function formatDiscardedNoteLabel(discardedAt: string): string {
+  return `Verworfen: ${formatDateTime(discardedAt)}`
+}
+
 /** Erstellzeitpunkt, mit derselben Schreibweise in beiden Ansichten. */
 export function formatCreatedLabel(createdAt: string): string {
   return `Erstellt: ${formatDateTime(createdAt)}`

@@ -226,6 +226,7 @@ export async function createWorkspaceRuntime({
   })
 
   // Erster Abgleich nach dem Anmelden, danach regelmäßig und bei „wieder online“.
+  void repositories.pruneDiscardedNotes().catch(() => {})
   void synchronisieren()
   // Erinnerungen einmalig aufbauen – unabhängig davon, ob der Abgleich etwas
   // bewegt hat (etwa beim Start mit bereits vorhandenen Aufgaben).
@@ -233,6 +234,7 @@ export async function createWorkspaceRuntime({
   const interval = setInterval(() => {
     // Fristen laufen auch ohne neue Daten und im Offlinezustand weiter.
     melde({ jetztMs: Date.now() })
+    void repositories.pruneDiscardedNotes().catch(() => {})
     if (network.isOnline()) void synchronisieren()
   }, REGELMAESSIGER_ABGLEICH_MS)
   const netzAbmelden = network.subscribe((online) => {

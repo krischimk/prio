@@ -64,6 +64,8 @@ export const SCHREIBEND = [
 
 /** Lokale Eingabehilfen: nur neu laden, nie abgleichen. */
 export const NUR_LOKAL = [
+  'rememberDiscardedNote',
+  'pruneDiscardedNotes',
   'setReminderPresets',
   'rememberShareContact',
   'mergeShareContacts',
@@ -71,6 +73,7 @@ export const NUR_LOKAL = [
 
 /** Reine Lesezugriffe – hier darf nichts gezählt werden. */
 export const LESEND = [
+  'listDiscardedNotes',
   'listListPreferences',
   'getUserPreferences',
   'listCloudConflicts',
@@ -102,7 +105,7 @@ export function withChangeTracking(
     const original = repositories[name] as unknown as BeliebigeMethode
     const ersatz = (async (...args: unknown[]) => {
       const ergebnis = await original(...(args as never[]))
-      if (name !== 'mergeShareContacts' || ergebnis !== false) meldung()
+      if (!['mergeShareContacts', 'pruneDiscardedNotes'].includes(name) || ergebnis !== false) meldung()
       return ergebnis
     }) as unknown as Repositories[typeof name]
     // Die Zuweisung über einen Index lässt TypeScript nicht auf die

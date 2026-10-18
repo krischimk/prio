@@ -5,6 +5,7 @@ import type { CloudConflict } from '../domain/cloudMerge'
 import { orderedLists } from '../domain/listNavigation'
 import { completionExpired } from '../domain/taskLifecycle'
 import { restoreCutoff } from '../domain/ordering'
+import type { DiscardedNote } from '../domain/discardedNotes'
 
 /**
  * Lese-Hooks auf die lokale Datenbank.
@@ -29,6 +30,14 @@ function subscribe<T>(load: () => Promise<T>, onValue: (value: T) => void): () =
   return () => {
     active = false
   }
+}
+
+export function useDiscardedNotes(active: boolean): DiscardedNote[] {
+  const { repositories, dataVersion, nowMs } = useWorkspace()
+  const [notes, setNotes] = useState<DiscardedNote[]>([])
+  useEffect(() => active ? subscribe(() => repositories.listDiscardedNotes(), setNotes) : undefined,
+    [repositories, dataVersion, nowMs, active])
+  return notes
 }
 
 /**
