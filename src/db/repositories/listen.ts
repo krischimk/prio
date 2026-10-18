@@ -8,6 +8,7 @@ import type { LocalList, LocalTask } from '../../domain/types'
 import { requireText, ValidationError } from '../validation'
 import type { Kontext } from './context'
 import type { Repositories } from './types'
+import { listDeletionTime } from '../../domain/listDeletion'
 
 export function listen(ctx: Kontext): Pick<Repositories, 'createList' | 'renameList' | 'setListIcon' | 'setListKeepCompleted' | 'setListRatingsEnabled' | 'setListAllowDuplicateTitles' | 'deleteList' | 'getList' | 'listLists' | 'listDeletedLists' | 'restoreList' | 'addListSection' | 'renameListSection' | 'deleteListSection'> {
   return {
@@ -132,13 +133,14 @@ export function listen(ctx: Kontext): Pick<Repositories, 'createList' | 'renameL
     async deleteList(listId) {
       const list = await ctx.requireList(listId)
       await ctx.db.transaction('rw', ctx.db.lists, ctx.db.tasks, async () => {
-        const { updated_at } = ctx.stamp()
-        await ctx.db.lists.put({ ...list, deleted_at: updated_at, updated_at, dirty: 1 })
         const tasks = await ctx.db.tasks.where('list_id').equals(listId).toArray()
+        const { updated_at } = ctx.stamp()
+        const deletedAt = listDeletionTime(updated_at, tasks)
+        await ctx.db.lists.put({ ...list, deleted_at: deletedAt, updated_at, dirty: 1 })
         const open = tasks.filter((task) => task.deleted_at === null)
         if (open.length > 0) {
           await ctx.db.tasks.bulkPut(
-            open.map((task) => ({ ...task, deleted_at: updated_at, updated_at, dirty: 1 })),
+            open.map((task) => ({ ...task, deleted_at: deletedAt, updated_at, dirty: 1 })),
           )
         }
       })

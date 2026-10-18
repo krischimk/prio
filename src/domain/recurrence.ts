@@ -67,15 +67,15 @@ const MAX_SCHRITTE = 5000
  * Liegt der Ausgangstermin bereits in der Zukunft, wird trotzdem ein Schritt
  * gegangen – sonst bliebe die Aufgabe beim nächsten Abhaken stehen.
  */
-export function nextOccurrence(dueAt: string, recurrence: Recurrence, now: string): string {
+export function nextOccurrence(dueAt: string, recurrence: Recurrence, now: string, step = naechsterSchritt): string {
   const start = new Date(dueAt)
   const grenze = new Date(now).getTime()
   if (Number.isNaN(start.getTime())) return dueAt
 
-  let kandidat = naechsterSchritt(start, recurrence)
+  let kandidat = step(start, recurrence)
   let schritte = 0
   while (kandidat.getTime() <= grenze && schritte < MAX_SCHRITTE) {
-    kandidat = naechsterSchritt(kandidat, recurrence)
+    kandidat = step(kandidat, recurrence)
     schritte += 1
   }
   return kandidat.toISOString()

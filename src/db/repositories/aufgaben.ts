@@ -2,16 +2,16 @@ import Dexie from 'dexie'
 import { timeOf } from '../../domain/clock'
 import { applyTaskEdit, taskEditValues } from '../../domain/taskEdit'
 import { sameData } from '../../domain/equality'
-import { isRecurrence, nextOccurrence, successorId } from '../../domain/recurrence'
+import { planTaskCompletion } from '../../domain/taskCompletion'
 import { alignReminders } from '../../domain/reminder'
 import { newId } from '../../domain/ids'
 import { normalisiereAufgabe } from '../../domain/normalize'
 import { groupTasks, parseSections } from '../../domain/sections'
 import { compareRestorable, compareTasks, restoreCutoff } from '../../domain/ordering'
-import { captureReopenContext, completionDeadline, completionExpired, reopenPlacement, successorSnapshot } from '../../domain/taskLifecycle'
+import { completionDeadline, completionExpired } from '../../domain/taskLifecycle'
 import type { LocalTask } from '../../domain/types'
 import { insertionPosition, taskLocation } from '../../domain/taskPlacement'
-import { repeatChecklist, validateChecklist } from '../../domain/checklist'
+import { validateChecklist } from '../../domain/checklist'
 import { taskSeriesId, taskTitleKey } from '../../domain/taskTitles'
 import { parseTags } from '../../domain/tags'
 import { optionalText, requireText, ValidationError } from '../validation'
@@ -19,56 +19,6 @@ import type { Kontext } from './context'
 import type { Repositories } from './types'
 import { validateRating } from '../../domain/rating'
 import { completedTaskIdsWithTags } from '../taskReadIndex'
-
-/**
- * Öffnet eine abgehakte Aufgabe wieder.
- *
- * Ein nachweislich unveränderter, noch offener Nachfolger wird weich
- * zurückgenommen. Bearbeitete, verschobene und bereits erledigte Nachfolger
- * bleiben erhalten. Ohne gesicherten Ausgangsstand ist unverändert nicht
- * nachweisbar; alte Abschlüsse nehmen deshalb keinen Nachfolger blind zurück.
- */
-async function wiederOeffnen(ctx: Kontext, task: LocalTask, now: string): Promise<LocalTask> {
-  const nachfolgerId = task.successor_id
-  const geoeffnet: LocalTask = {
-    ...task,
-    completed: false,
-    completed_at: null,
-    completed_expires_at: null,
-    reopen_context: null,
-    successor_id: null,
-    ...ctx.stamp(),
-  }
-
-  // Der Aufrufer hat Lesen und Wiederöffnen bereits in einer Transaktion.
-  if (nachfolgerId) {
-    const row = await ctx.db.tasks.get(nachfolgerId)
-    const nachfolger = row ? normalisiereAufgabe(row) : undefined
-    const original = task.reopen_context?.successor
-    if (nachfolger && original && !nachfolger.completed && nachfolger.deleted_at === null && sameData(successorSnapshot(nachfolger), original)) {
-      await ctx.db.tasks.put({ ...nachfolger, deleted_at: now, ...ctx.stamp() })
-    }
-  }
-  const list = await ctx.requireList(task.list_id)
-  const placement = reopenPlacement(task, list, (await ctx.db.tasks.where('list_id').equals(list.id).toArray()).map(normalisiereAufgabe))
-  geoeffnet.section_id = placement.sectionId
-  const previous = placement.peers[placement.index - 1]?.position
-  const next = placement.peers[placement.index]?.position
-  const position = previous !== undefined && next !== undefined ? previous + (next - previous) / 2 : previous !== undefined ? previous + 1 : next !== undefined ? next - 1 : 0
-  if (Number.isFinite(position) && (previous === undefined || position > previous) && (next === undefined || position < next)) {
-    geoeffnet.position = position
-  } else {
-    // Nur wenn kein darstellbarer Zwischenwert bleibt: in dieser Gruppe
-    // neu nummerieren. Keine pauschale Neuordnung der gesamten Liste.
-    const ordered = [...placement.peers]
-    ordered.splice(placement.index, 0, geoeffnet)
-    geoeffnet.position = placement.index + 1
-    await ctx.db.tasks.bulkPut(ordered.filter(row => row.id !== task.id).map((row, index) => ({ ...row, position: index < placement.index ? index + 1 : index + 2, ...ctx.stamp() })))
-  }
-  await ctx.db.tasks.put(geoeffnet)
-
-  return geoeffnet
-}
 
 export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updateTask' | 'setTaskCompleted' | 'setChecklistItemCompleted' | 'listTaskTags' | 'moveTask' | 'placeTask' | 'reorderTasks' | 'deleteTask' | 'getTask' | 'listTasks' | 'listCompletedTasks' | 'countCompletedTasks' | 'listRestorableTasks' | 'listDeletedTasks' | 'restoreTask'> {
   return {
@@ -197,74 +147,20 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
         const task = await ctx.requireTask(taskId)
         const list = await ctx.requireList(task.list_id)
         const now = ctx.clock.now()
-        if (task.completed === completed) return task
-
-        if (!completed) {
-          return wiederOeffnen(ctx, task, now)
+        const tasks = (await ctx.db.tasks.where('list_id').equals(list.id).toArray()).map(normalisiereAufgabe)
+        if (task.successor_id && !tasks.some(row => row.id === task.successor_id)) {
+          const successor = await ctx.db.tasks.get(task.successor_id)
+          if (successor) tasks.push(normalisiereAufgabe(successor))
         }
-
-        const erledigt: LocalTask = {
-          ...task,
-          completed: true,
-          completed_at: now,
-          completed_expires_at: completionDeadline(now, list.keep_completed),
-          reopen_context: captureReopenContext(task, list, (await ctx.db.tasks.where('list_id').equals(list.id).toArray()).map(normalisiereAufgabe)),
-          ...ctx.stamp(),
+        // WebCrypto gehört zum reinen Plan; waitFor hält die Dexie-Transaktion.
+        const plan = await Dexie.waitFor(planTaskCompletion(task, list, tasks, completed, now))
+        for (const changed of plan.changes) {
+          if (!tasks.some(row => row.id === changed.id) || tasks.some(row => row.id === changed.id && row.deleted_at !== null && changed.deleted_at === null)) {
+            await ctx.requireUniqueTaskTitle(changed)
+          }
         }
-
-        // Ohne Fälligkeit gibt es nichts fortzuschreiben.
-        if (!isRecurrence(task.recurrence) || task.due_at === null) {
-          await ctx.db.tasks.put(erledigt)
-          return erledigt
-        }
-
-        const naechsterTermin = nextOccurrence(task.due_at, task.recurrence, now)
-        // Berechnete Kennung: Auf zwei Geräten entsteht dieselbe, und der Abgleich
-        // verschmilzt sie, statt zwei Nachfolger entstehen zu lassen.
-        // WebCrypto ist kurz, aber kein IndexedDB-Aufruf. waitFor hält die
-        // Transaktion während des Hashs offen; Netzwerk gehört nicht hier hinein.
-        const nachfolgerId = await Dexie.waitFor(successorId(task.id, naechsterTermin))
-        const seriesId = taskSeriesId(task, (await ctx.db.tasks.where('list_id').equals(task.list_id).toArray()).map(normalisiereAufgabe))
-        erledigt.recurrence_series_id = seriesId
-
-        const nachfolger: LocalTask = {
-          ...task,
-          id: nachfolgerId,
-          recurrence_series_id: seriesId,
-          checklist: repeatChecklist(task.checklist),
-          due_at: naechsterTermin,
-          available_from: Date.parse(task.due_at) > Date.parse(now) ? task.due_at : null,
-          completed: false,
-          completed_at: null,
-          completed_expires_at: null,
-          expired_at: null,
-          reopen_context: null,
-          successor_id: null,
-          created_at: now,
-          updated_at: now,
-          deleted_at: null,
-          dirty: 1,
-        }
-
-        erledigt.successor_id = nachfolgerId
-
-        const vorhanden = await ctx.db.tasks.get(nachfolgerId)
-        if (!vorhanden) {
-          await ctx.requireUniqueTaskTitle(nachfolger)
-          await ctx.db.tasks.put(nachfolger)
-        } else if (vorhanden.deleted_at !== null && !vorhanden.expired_at) {
-          await ctx.requireUniqueTaskTitle(nachfolger)
-          // Nach einem Rückgängig war er weich gelöscht – jetzt wieder beleben,
-          // aber den ursprünglichen Anlegezeitpunkt behalten.
-          await ctx.db.tasks.put({ ...nachfolger, created_at: vorhanden.created_at })
-        }
-        // Der tatsächlich angelegte Stand enthält ggf. die ältere Erstellzeit.
-        erledigt.reopen_context!.successor = !vorhanden || (vorhanden.deleted_at !== null && !vorhanden.expired_at)
-          ? successorSnapshot(normalisiereAufgabe((await ctx.db.tasks.get(nachfolgerId))!)) : null
-        // Ist er offen und vorhanden, bleibt er unangetastet: Vielleicht wurde
-        // er inzwischen bearbeitet.
-        await ctx.db.tasks.put(erledigt)
-        return erledigt
+        if (plan.changes.length) await ctx.db.tasks.bulkPut(plan.changes)
+        return plan.task
       })
     },
 
