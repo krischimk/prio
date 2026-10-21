@@ -38,4 +38,10 @@ describe('Prioritätssortierung der Gesamtansicht', () => {
     expect(ids([middle, progressed])).toEqual(['middle', 'coupled'])
     expect([middle.position, coupled.position]).toEqual([3, 4])
   })
+  it('sortiert alte manuelle Terminbewertungen und Medaillen in der einfachen Ansicht nach Automatik', () => {
+    const tasks = [localTask({ id: 'future', rating: rating(8) }), localTask({ id: 'due', due_at: T0, rating: { ...rating(10), urgency: 0 } })]
+    expect(orderOverviewTasks(tasks, lists, 'priority', Date.parse(T0), true).map(task => task.id)).toEqual(['future', 'due'])
+    expect(orderOverviewTasks(tasks, lists, 'priority', Date.parse(T0), false).map(task => task.id)).toEqual(['due', 'future'])
+    expect([...priorityRanks(tasks, lists, Date.parse(T0), false)]).toEqual([['due', 1], ['future', 2]])
+  })
 })

@@ -15,6 +15,7 @@ import { TaskTagsEditor } from './TaskTagsEditor'
 import { useTaskDelete } from './useTaskDelete'
 import { formatCompletedLabel } from './datetime'
 import { submitTaskShortcut } from './taskFormKeyboard'
+import { useView } from './useView'
 
 /**
  * Detail- und Bearbeitungsansicht einer Aufgabe.
@@ -50,11 +51,13 @@ export function TaskEditor({
   onCreated?: () => void
 }) {
   const { repositories } = useWorkspace()
+  const { overview } = useView()
   const isNew = task === null
 
   // Zustand und Umwandlungen des Formulars kommen aus `useTaskForm` – dieselben
   // wie in der Eingabezeile und der Aufgabenzeile der breiten Ansicht.
-  const form = useTaskForm({ task, listId, onSaved: () => { if (isNew) onCreated?.(); onClose() } })
+  const form = useTaskForm({ task, listId, detailedRatings: overview.userPreference?.detailed_ratings === true,
+    onSaved: () => { if (isNew) onCreated?.(); onClose() } })
   const deletion = useTaskDelete(task, () => { void form.zuruecksetzen().then(discarded => { if (discarded) onClose() }) })
   /** Rückfrage, wenn über das Kreuz geschlossen wird und etwas geändert ist. */
   const [verwerfen, setVerwerfen] = useState(false)
@@ -158,7 +161,7 @@ export function TaskEditor({
             {error ? <p role="alert" className={errorBox}>{error}</p> : null}
             {deletion.error ? <p role="alert" className={errorBox}>{deletion.error}</p> : null}
 
-            <TaskMoreOptions form={form} sections={sections} idPrefix="detail" ratingsEnabled={lists.find(list => list.id === listId)?.ratings_enabled}>
+            <TaskMoreOptions form={form} sections={sections} idPrefix="detail">
               {task !== null ? <>
                 {task?.completed_at ? <p className="text-meta text-ink-muted">{formatCompletedLabel(task.completed_at)}</p> : null}
                 {task !== null ? (

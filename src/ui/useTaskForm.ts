@@ -24,12 +24,13 @@ export interface TaskForm {
 }
 
 /** Formularverhalten und Umwandlungen; Fachprüfung kommt aus taskEdit. */
-export function useTaskForm({ task, listId, onSaved, overviewUserId }: {
+export function useTaskForm({ task, listId, onSaved, overviewUserId, detailedRatings = false }: {
   task: LocalTask | null
   listId: string
   onSaved: () => void
   /** Eigener Gesamtentwurf; seine Zielliste wird erst beim Speichern gebunden. */
   overviewUserId?: string
+  detailedRatings?: boolean
 }): TaskForm {
   const { repositories } = useWorkspace()
   const drafts = useContext(TaskDraftContext)
@@ -45,7 +46,13 @@ export function useTaskForm({ task, listId, onSaved, overviewUserId }: {
   const { werte, start, busy, error } = draft
 
   const setzen = <F extends keyof TaskFormWerte>(feld: F, wert: TaskFormWerte[F]) => {
-    drafts.change(key, draft, previous => ({ ...previous, werte: { ...previous.werte, [feld]: wert } }))
+    drafts.change(key, draft, previous => {
+      const werte = { ...previous.werte, [feld]: wert }
+      if (!detailedRatings && werte.dueAt && werte.rating?.urgencyMode === 'manual') {
+        werte.rating = { ...werte.rating, urgencyMode: 'auto' }
+      }
+      return { ...previous, werte }
+    })
   }
   const verworfeneNotizSichern = async () => {
     if (werte.description !== start.description) await repositories.rememberDiscardedNote({
@@ -74,7 +81,7 @@ export function useTaskForm({ task, listId, onSaved, overviewUserId }: {
         description: werte.description,
         checklist: werte.checklistText.trim() ? appendChecklistItem(werte.checklist, createChecklistItem(werte.checklistText)) : werte.checklist,
         tags: parseTags([...werte.tags, werte.tagText]),
-        rating: werte.rating,
+        rating: !detailedRatings && werte.dueAt && werte.rating ? { ...werte.rating, urgencyMode: 'auto' as const } : werte.rating,
         dueAt: fromDateTimeLocalValue(werte.dueAt),
         recurrence: werte.recurrence === '' ? null : werte.recurrence,
         reminders: werte.reminders,
@@ -88,7 +95,7 @@ export function useTaskForm({ task, listId, onSaved, overviewUserId }: {
         if (werte.description !== start.description) patch.description = eingabe.description
         if (!sameData(werte.checklist, start.checklist) || werte.checklistText.trim()) patch.checklist = eingabe.checklist
         if (!sameData(werte.tags, start.tags) || werte.tagText.trim()) patch.tags = eingabe.tags
-        if (!sameData(werte.rating, start.rating)) patch.rating = eingabe.rating
+        if (!sameData(eingabe.rating, start.rating)) patch.rating = eingabe.rating
         if (werte.dueAt !== start.dueAt) patch.dueAt = eingabe.dueAt
         if (werte.recurrence !== start.recurrence) patch.recurrence = eingabe.recurrence
         if (!sameData(werte.reminders, start.reminders)) patch.reminders = eingabe.reminders

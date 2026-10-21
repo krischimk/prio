@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import * as desktop from './helpers'
 import * as phone from './mobile'
 
@@ -29,6 +29,7 @@ export async function checkListSorting(page: Page, mobile: boolean) {
   await page.reload()
   if (mobile) await phone.openMenu(page)
   await expect(visible.getByRole('button')).toHaveText(['A'])
+  await page.screenshot({ path: test.info().outputPath('versteckt-mit-liste.png') })
   await nav.getByRole('button', { name: /^Versteckt/ }).click()
   await expect(nav.getByRole('list', { name: 'Versteckte Listen' }).getByRole('button', { name: 'B', exact: true })).toBeVisible()
   await drag(page, nav.getByRole('button', { name: 'B', exact: true }), nav.getByRole('button', { name: 'A', exact: true }))

@@ -10,6 +10,7 @@ const sources = {
   Tag: ['@mdi/svg/svg', 'tag-outline'], Checklist: ['@mdi/svg/svg', 'format-list-checks'],
   BulletList: ['@mdi/svg/svg', 'format-list-bulleted'], NumberedList: ['@mdi/svg/svg', 'format-list-numbered'],
   Markdown: ['@mdi/svg/svg', 'language-markdown-outline'],
+  Theme: ['lucide-static/icons', 'sun-moon'],
   Link: ['@mdi/svg/svg', 'link-variant'], Restore: ['@mdi/svg/svg', 'history'], Sync: ['@mdi/svg/svg', 'sync'],
   EyeOff: ['@mdi/svg/svg', 'eye-off-outline'], IconChoice: ['@mdi/svg/svg', 'shape-plus-outline'],
 }

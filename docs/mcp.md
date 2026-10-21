@@ -13,6 +13,13 @@ sofort widerrufen. E-Mail und Passwort werden nur auf Prio eingegeben, nie als
 MCP-Konfiguration. Der Zugang für ChatGPT Web hängt zusätzlich davon ab, ob das
 jeweilige ChatGPT-Konto eigene MCP-Verbindungen anbietet.
 
+Bestätigungen einzelner Werkzeugaufrufe steuert das verbundene Programm.
+In ChatGPT lässt sich für Prio die Berechtigung **Alle Aktionen erlauben**
+setzen. Diese persönliche Einstellung gehört nicht zum MCP-Server und wird
+durch ein Prio-Update nicht geändert. Die Serverwerkzeuge kennzeichnen
+Lese-, Schreib- und Löschaktionen weiterhin korrekt; Anmeldung und die
+erteilten Verbindungsrechte gelten auch ohne erneute Einzelbestätigungen.
+
 ## Kurze Aufträge
 
 * „Was sollte ich als Nächstes tun?“ – verfügbare Aufgaben aus der persönlichen
@@ -60,6 +67,10 @@ einen Neustart der Suche. Notizen sind in Suchergebnissen gekürzt; `get_tasks`
 liefert den vollständigen Inhalt. Tags verwenden UND. Priorität und
 Wiederholungen stammen aus denselben Fachfunktionen wie in der App; die
 serverseitigen Kalenderschritte verwenden die freigegebene IANA-Zeitzone.
+In der einfachen Bewertungsansicht bestimmt eine Fälligkeit die Dringlichkeit
+immer automatisch, auch bei älteren manuell bewerteten Aufgaben. Der MCP-Server
+berücksichtigt dieselbe persönliche Einstellung bei Werten und Sortierung.
+Manuelle Dringlichkeit trotz Fälligkeit steht in der Detailansicht zur Verfügung.
 
 ## Sicherheitsgrenzen
 

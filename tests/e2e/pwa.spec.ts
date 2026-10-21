@@ -1,6 +1,7 @@
 import { addChecklistPoint, addTags, outerTask } from './support/checklists'
 import { expect, test } from '@playwright/test'
 import { register, resetServer, uniqueEmail, createList, createTask, taskItem, openTaskEditor, selectList, serverState } from './support/helpers'
+import { setTheme } from './support/theme'
 
 /**
  * Der PWA-Weg: Service Worker, Cache, Offline-Start.
@@ -79,11 +80,11 @@ test('startet mit gespeichertem Benutzernamen, Aufgaben und hellem Thema auch of
   await register(page, uniqueEmail('pwa-username'))
   await createList(page, 'Offline-Bestand')
   await createTask(page, 'Gespeicherte Aufgabe')
-  await page.getByRole('button', { name: 'Hellen Modus einschalten', exact: true }).click()
+  await setTheme(page, false, 'light')
   await page.evaluate(() => navigator.serviceWorker.ready)
   await context.setOffline(true)
   await page.reload()
-  await expect(page.getByRole('button', { name: 'Dunklen Modus einschalten', exact: true })).toBeVisible()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
   const icon = page.locator('img[src="/icons/icon-light-192.png"]')
   await expect(icon).toBeVisible()
   await expect.poll(() => icon.evaluate(image => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)

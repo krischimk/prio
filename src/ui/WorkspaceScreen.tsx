@@ -21,7 +21,6 @@ import { TaskDialogs } from './TaskDialogs'
 import { TaskDragProvider } from './TaskDragProvider'
 import { DownloadIcon, RestoreIcon, UserIcon } from './icons'
 import { isNativeApp } from '../app/platform'
-import { ThemeToggle } from './ThemeToggle'
 
 /**
  * Wählt zwischen den beiden Oberflächen.
@@ -77,7 +76,6 @@ function DesktopWorkspace() {
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 border-b border-line px-4 py-3">
           <div className="flex flex-wrap items-center gap-3">
-            <ThemeToggle />
             <ReminderIndicator />
             <SyncIndicator />
             <IconButton

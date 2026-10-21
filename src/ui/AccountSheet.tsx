@@ -6,7 +6,7 @@ import { BackendLabel } from './BackendLabel'
 import { UsernameField } from './UsernameField'
 import { errorBox, focusRing } from './styles'
 import { LogoutIcon, SaveIcon } from './icons'
-import { ThemeToggle } from './ThemeToggle'
+import { ThemeSelect } from './ThemeSelect'
 import { useView } from './useView'
 import { useWorkspace } from '../app/useWorkspace'
 import { AgentConnections } from './AgentConnections'
@@ -34,13 +34,14 @@ export function AccountSheet({ onClose }: { onClose: () => void }) {
   return <Sheet title="Konto" name="account" onClose={() => { if (!busy) onClose() }}>
     <div className="space-y-5 p-5">
       <section aria-label="Darstellung" className="space-y-2">
-        <div className="flex items-center justify-between"><h2 className="text-body text-ink">Darstellung</h2><ThemeToggle /></div>
+        <h2 className="text-body text-ink">Darstellung</h2>
+        <ThemeSelect />
         <label className="flex min-h-11 items-center gap-3 text-body text-ink">
           <input type="checkbox" className="size-5 shrink-0 accent-brand" checked={ratingPending ?? detailed} disabled={ratingBusy}
             onChange={event => void changeDetail(event.target.checked)} />
           <span>Detaillierte Bewertungen anzeigen</span>
         </label>
-        <p className="text-meta text-ink-muted">Für alle Listen auf deinen Geräten. Zeigt Wichtigkeit, Dringlichkeit und Aufwand zusätzlich zur Priorität.</p>
+        <p className="text-meta text-ink-muted">Für alle Listen auf deinen Geräten. Zeigt alle Bewertungen und erlaubt manuelle Dringlichkeit trotz Fälligkeit. In der einfachen Ansicht bestimmt eine Fälligkeit die Dringlichkeit immer automatisch.</p>
         {ratingError ? <p role="alert" className={errorBox}>{ratingError}</p> : null}
       </section>
       <p className="break-words text-body text-ink-muted">{user?.email}</p>

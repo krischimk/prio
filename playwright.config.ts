@@ -46,6 +46,7 @@ export default defineConfig({
   use: {
     baseURL: APP_URL,
     viewport: { width: 1280, height: 800 },
+    colorScheme: 'dark',
     trace: 'retain-on-failure',
     video: 'off',
   },

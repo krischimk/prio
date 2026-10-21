@@ -11,6 +11,7 @@ import { createCloudConflict } from './support/cloudConflict'
 import { openOverview, rememberOverviewTarget } from './support/overview'
 import { checklistParity, tagFilterParity } from './support/checklists'
 import { ratingParity, weightedChecklistParity, compactRatingParity, priorityMedalsParity } from './support/ratings'
+import { systemThemeParity } from './support/theme'
 import { duplicateTitlesParity } from './support/duplicateTitles'
 import { listSortingParity } from './support/listSorting'
 import { customIntervalsParity } from './support/customIntervals'
@@ -62,6 +63,7 @@ async function changeOrder(page: Page) {
 }
 
 const funktionen: Funktion[] = [
+  { name: 'Gerätethema als Standard und Theme-Schalter nur im Konto', breit: page => systemThemeParity(page, false), telefon: page => systemThemeParity(page, true) },
   { name: 'Gold Silber Bronze unabhängig von der manuellen Sortierung', breit: page => priorityMedalsParity(page, false), telefon: page => priorityMedalsParity(page, true) },
   { name: 'Eigene Wiederholungsintervalle und Erinnerungsvorläufe', breit: page => customIntervalsParity(page, false), telefon: page => customIntervalsParity(page, true) },
   { name: 'Markdown-Code, Tabellen und Quelltext verlustfrei bearbeiten', breit: page => markdownSourceParity(page, false), telefon: page => markdownSourceParity(page, true) },

@@ -31,6 +31,7 @@ export function TaskComposer({ listId, autoFocus = false, onCreated }: { listId?
   const target = available.find(list => list.id === targetId)
   const excluded = listId === undefined && target && !overview.preferences.some(row => row.list_id === target.id && row.include_in_overview)
   const form = useTaskForm({ task: null, listId: targetId, overviewUserId: listId === undefined ? currentUserId : undefined,
+    detailedRatings: overview.userPreference?.detailed_ratings === true,
     onSaved: () => {
       if (listId === undefined) drafts.selectOverviewTarget(targetId)
       setChooseRequested(false)
@@ -82,7 +83,7 @@ export function TaskComposer({ listId, autoFocus = false, onCreated }: { listId?
       <TaskFields form={form} felder={['beschreibung', 'checkliste', 'faellig', 'wiederholung', 'erinnerungen']} sections={target?.sections ?? []}
         currentUserId={currentUserId} listIsShared={target?.is_shared ?? false} ratingsEnabled={target?.ratings_enabled} idPrefix={idPrefix} />
       <TaskTagsEditor form={form} />
-      <TaskMoreOptions form={form} sections={target?.sections ?? []} idPrefix={idPrefix} ratingsEnabled={target?.ratings_enabled} />
+      <TaskMoreOptions form={form} sections={target?.sections ?? []} idPrefix={idPrefix} />
     </div> : null}
     <TaskFormStatus form={form} />
   </form>

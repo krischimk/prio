@@ -27,10 +27,10 @@ describe('Aufgabenentwürfe und Speichern', () => {
     await device.dispose()
   })
 
-  function open(task: LocalTask | null = null) {
+  function open(task: LocalTask | null = null, detailedRatings = false) {
     const onSaved = vi.fn()
     const hook = renderHook((props: { task: LocalTask | null; listId: string }) =>
-      useTaskForm({ ...props, onSaved }), { wrapper, initialProps: { task, listId } })
+      useTaskForm({ ...props, onSaved, detailedRatings }), { wrapper, initialProps: { task, listId } })
     return { ...hook, onSaved }
   }
 
@@ -59,6 +59,25 @@ describe('Aufgabenentwürfe und Speichern', () => {
     expect(task.rating?.effortFromChecklist).toBe(true)
     expect(task.checklist).toHaveLength(1)
     expect(task.checklist[0]).not.toHaveProperty('weight')
+  })
+
+  it.each([false, true])('setzt beim nachträglichen Termin im einfachen Modus die Automatik (Detailansicht: %s)', async detailed => {
+    const { result } = open(null, detailed)
+    act(() => result.current.setzen('title', 'Erst Dringlichkeit, dann Termin'))
+    act(() => result.current.setzen('rating', { ...startRating(8), urgency: 1.2, urgencyMode: 'manual' }))
+    expect(result.current.werte.rating?.urgencyMode).toBe('manual')
+    act(() => result.current.setzen('dueAt', '2026-10-21T14:00'))
+    expect(result.current.werte.rating?.urgencyMode).toBe(detailed ? 'manual' : 'auto')
+    await act(async () => { await result.current.speichern(event) })
+    expect((await repositories.listTasks(listId))[0].rating).toMatchObject({ urgency: 1.2, urgencyMode: detailed ? 'manual' : 'auto' })
+  })
+
+  it('übernimmt alte manuelle Terminbewertungen beim Speichern aus der einfachen Ansicht automatisch', async () => {
+    const task = await repositories.createTask({ listId, title: 'Alter manueller Termin', dueAt: '2026-10-21T14:00:00Z', rating: { ...startRating(10), urgency: 0, urgencyMode: 'manual' } })
+    const { result } = open(task)
+    expect(result.current.geaendert).toBe(false)
+    await act(async () => { await result.current.speichern(event) })
+    expect((await repositories.getTask(task.id))?.rating).toMatchObject({ urgency: 0, urgencyMode: 'auto' })
   })
 
   it('behält eine neue Eingabe in ihrer Liste und speichert erst beim Hinzufügen', async () => {

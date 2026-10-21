@@ -4,10 +4,11 @@ import { App } from './App'
 import { createSupabaseServices, readSupabaseConfig } from './app/services'
 import { registerServiceWorker } from './pwa/registerServiceWorker'
 import './index.css'
-import { applyTheme, currentTheme } from './app/theme'
+import { startThemeTracking } from './app/theme'
 import { PasswordRecoveryScreen } from './ui/PasswordRecoveryScreen'
 
-applyTheme(currentTheme())
+const stopThemeTracking = startThemeTracking()
+if (import.meta.hot) import.meta.hot.dispose(stopThemeTracking)
 
 /**
  * Einstiegspunkt.

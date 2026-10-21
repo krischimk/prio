@@ -46,8 +46,10 @@ export function automaticUrgency(dueAt: string, effort: number, nowMs: number): 
   return 10 * Math.exp(-Math.LN2 * Math.max(0, remaining - maximum) / (half - maximum))
 }
 
-export function ratingValues(rating: TaskRating, dueAt: string | null, nowMs: number, checklist: readonly ChecklistItem[] = []) {
-  const automatic = rating.urgencyMode === 'auto' && dueAt !== null
+/** In der einfachen Ansicht bestimmt eine Fälligkeit immer die Dringlichkeit.
+ * Der gespeicherte manuelle Wert bleibt für die Detailansicht erhalten. */
+export function ratingValues(rating: TaskRating, dueAt: string | null, nowMs: number, checklist: readonly ChecklistItem[] = [], detailedRatings = true) {
+  const automatic = dueAt !== null && (!detailedRatings || rating.urgencyMode === 'auto')
   const effort = rating.effort * (rating.effortFromChecklist ? checklistRemaining(checklist) : 1)
   const urgency = automatic ? automaticUrgency(dueAt, effort, nowMs) ?? rating.urgency : rating.urgency
   return { importance: rating.importance, urgency, effort, priority: (rating.importance + urgency) / 2, automatic }

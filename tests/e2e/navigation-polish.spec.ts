@@ -4,6 +4,7 @@ import * as phone from './support/mobile'
 import { formatCalendarDay } from '../../src/ui/datetime'
 import { checkListSorting } from './support/listNavigation'
 import { setDueAt } from './support/taskForms'
+import { openAccount, setTheme } from './support/theme'
 
 test.beforeEach(async ({ request }) => desktop.resetServer(request))
 
@@ -69,20 +70,13 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Bedienung Telefon' :
     await (mobile ? phone.register : desktop.register)(page, desktop.uniqueEmail('light-mode'))
     await (mobile ? phone.createList : desktop.createList)(page, 'Darstellung')
     await (mobile ? phone.createTask : desktop.createTask)(page, 'Eine Aufgabe')
-    if (mobile) await phone.openMenu(page)
-    await page.getByRole('button', { name: 'Hellen Modus einschalten', exact: true }).click()
-    if (mobile) {
-      await page.getByRole('button', { name: 'Menü schließen', exact: true }).click()
-      await expect(page.getByRole('dialog', { name: 'Menü', exact: true })).toBeHidden()
-      // Die Bedienung endet sofort; das Bild wartet auf die Schließanimation.
-      await expect(page.locator('[data-drawer-visible="false"]')).toBeAttached()
-    }
+    await setTheme(page, mobile, 'light')
     await page.screenshot({ path: info.outputPath('light-mode.png') })
     await page.reload()
-    if (mobile) await phone.openMenu(page)
-    await expect(page.getByRole('button', { name: 'Dunklen Modus einschalten', exact: true })).toBeVisible()
-    await page.getByRole('button', { name: 'Dunklen Modus einschalten', exact: true }).click()
-    await expect(page.getByRole('button', { name: 'Hellen Modus einschalten', exact: true })).toBeVisible()
+    const account = await openAccount(page, mobile)
+    await expect(account.getByRole('combobox', { name: 'Farbschema', exact: true })).toHaveValue('light')
+    await account.getByRole('combobox', { name: 'Farbschema', exact: true }).selectOption('dark')
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
   })
   test('Listen umsortieren, verstecken und zurückziehen', async ({ page }) => {
     await checkListSorting(page, mobile)

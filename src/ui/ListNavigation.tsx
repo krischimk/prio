@@ -99,7 +99,7 @@ export function ListNavigation({ lists, selectedListId, onSelect, currentUserId 
     </NavigationGroup>
     <NavigationGroup id={hiddenGroup} active={shown?.activeId !== null && shown !== null}>
       <button type="button" onClick={() => setExpanded(value => !value)} aria-expanded={expanded}
-        className={`${focusRing} mt-2 flex min-h-11 w-full items-center gap-2 rounded-control px-3 text-meta ${groups[hiddenGroup].length ? 'text-ink-muted' : 'text-ink-faint/40 hover:text-ink-muted focus-visible:text-ink-muted'} hover:bg-surface active:bg-raised`}>
+        className={`${focusRing} mt-2 flex min-h-11 w-full items-center gap-2 rounded-control px-3 text-meta ${groups[hiddenGroup].length ? 'text-ink-faint' : 'text-ink-faint/40 hover:text-ink-muted focus-visible:text-ink-muted'} hover:bg-surface active:bg-raised`}>
         <ChevronIcon offen={expanded} className="size-icon-meta shrink-0" /><EyeOffIcon className="size-icon-meta shrink-0" />
         Versteckt<span className="ml-auto">{groups[hiddenGroup].length}</span>
       </button>

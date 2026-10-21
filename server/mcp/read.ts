@@ -7,13 +7,15 @@ import type { SearchInput } from './schemas'
 import type { CloudPort, Snapshot, Versioned } from './types'
 import { CommandError } from './types'
 
+const detailedRatings = (snapshot: Snapshot) => snapshot.userPreferences.some(({ row }) => row.deleted_at === null && row.detailed_ratings === true)
+
 export function presentTask(item: Versioned<RemoteTask>, snapshot: Snapshot, now: number, full = false) {
   const task = fromRemoteTask(item.row)
   const list = snapshot.lists.find(list => list.row.id === task.list_id)?.row
   const { description: note, dirty: _dirty, reopen_context: _context, ...rest } = task
   return { ...rest, revision: item.revision, list_name: list?.name ?? null, note: full ? note : note?.slice(0, 300) ?? null,
     note_truncated: !full && (note?.length ?? 0) > 300, checklist_progress: checklistProgress(task.checklist),
-    rating_values: list?.ratings_enabled && task.rating ? ratingValues(task.rating, task.due_at, now, task.checklist) : null,
+    rating_values: list?.ratings_enabled && task.rating ? ratingValues(task.rating, task.due_at, now, task.checklist, detailedRatings(snapshot)) : null,
     available: !task.available_from || Date.parse(task.available_from) <= now }
 }
 export async function workspace(port: CloudPort) {
@@ -44,11 +46,11 @@ export async function searchTasks(port: CloudPort, input: SearchInput) {
   const snapshot = await port.snapshot({ include_tasks: true, list_ids: listIds, text: input.text, tags: input.tags, state: input.state,
     due_before: input.due_before, due_after: input.due_after, available_now: input.available_now, limit: 10001 })
   if (snapshot.tasks.length > 10000) throw new CommandError('selection_too_large', 'More than 10,000 tasks match. Narrow by list, text, tags or deadline before sorting; nothing was silently omitted.')
-  const stamp = await digest([snapshot.lists.map(item => item.revision), snapshot.tasks.map(item => item.revision), snapshot.preferences.map(item => item.revision)])
+  const stamp = await digest([snapshot.lists.map(item => item.revision), snapshot.tasks.map(item => item.revision), snapshot.preferences.map(item => item.revision), snapshot.userPreferences.map(item => item.revision)])
   if (previous && previous.snapshot !== stamp) throw new CommandError('cursor_stale', 'Tasks or list preferences changed. Restart the search without cursor.')
   const at = previous?.at ?? Date.now()
   const rows = snapshot.tasks.filter(item => snapshot.lists.some(list => list.row.id === item.row.list_id && list.row.deleted_at === null))
-  const priority = (item: Versioned<RemoteTask>) => { const task = fromRemoteTask(item.row); return snapshot.lists.find(list => list.row.id === task.list_id)?.row.ratings_enabled && task.rating ? ratingValues(task.rating, task.due_at, at, task.checklist).priority : -1 }
+  const priority = (item: Versioned<RemoteTask>) => { const task = fromRemoteTask(item.row); return snapshot.lists.find(list => list.row.id === task.list_id)?.row.ratings_enabled && task.rating ? ratingValues(task.rating, task.due_at, at, task.checklist, detailedRatings(snapshot)).priority : -1 }
   rows.sort((a, b) => {
     const order = input.sort === 'priority' ? priority(b) - priority(a) : input.sort === 'due' ? (a.row.due_at ?? 'z').localeCompare(b.row.due_at ?? 'z')
       : input.sort === 'newest' ? b.row.created_at.localeCompare(a.row.created_at) : a.row.list_id.localeCompare(b.row.list_id) || compareTasks(fromRemoteTask(a.row), fromRemoteTask(b.row))

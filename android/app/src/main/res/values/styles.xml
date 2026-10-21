@@ -15,8 +15,12 @@
       müssen die beiden Werte dort genauso stehen wie im laufenden Theme.
     -->
 
-    <!-- Startfarbe; die laufende Oberfläche und Systemschrift folgen ihrer Farbwahl. -->
-    <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
+    <!--
+      DayNight folgt dem Gerätethema. WebView leitet prefers-color-scheme aus
+      isLightTheme ab; ein festes AppCompat-Theme würde den Gerätestandard der
+      Web-Oberfläche auf einen Modus festlegen. Die eigene Farbwahl setzt CSS.
+    -->
+    <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
@@ -36,7 +40,7 @@
       Fensterhintergrund – ohne diese Zeile wäre er hell und läge als heller
       Balken über der App-Leiste.
     -->
-    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.NoActionBar">
+    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:windowActionBar">false</item>

@@ -227,10 +227,14 @@ versehentlich Zugriff. Die Cloud braucht die Sammelmigration einschließlich
   fest über der Gesamtbreite; kleine Werte zeigen nur seinen Anfang. Im kompakten Formular steht Aufwand
   bei automatischer Dringlichkeit oder aktiver Checklisten-Kopplung; ohne diese
   Verwendung bleibt der gespeicherte Wert erhalten und ist in der Detailansicht erreichbar.
-  Ohne Fälligkeit erscheint die Dringlichkeit; mit Fälligkeit bleibt der manuelle Modus unter
-  „Mehr Optionen“ erreichbar. Unter **Konto → Darstellung → Detaillierte
+  Ohne Fälligkeit erscheint die Dringlichkeit; mit Fälligkeit gilt in der einfachen
+  Ansicht immer die Automatik, auch bei älteren gespeicherten manuellen Werten.
+  Wird erst die Dringlichkeit und danach ein Termin gesetzt, schaltet das einfache
+  Formular sofort auf Automatik. Unter **Konto → Darstellung → Detaillierte
   Bewertungen anzeigen** schaltet jeder persönlich für die ganze App alle vier
-  Anzeigen und die ausführlichen Regler ein. Diese Wahl wird synchronisiert.
+  Anzeigen und die ausführlichen Regler ein. Dort lässt sich trotz Fälligkeit
+  eine manuelle Dringlichkeit wählen. Diese Wahl wird synchronisiert; die
+  MCP-Prioritäten und Sortierungen berücksichtigen dieselbe Kontoeinstellung.
   Die Gesamtansicht kann nach höchster Priorität sortieren: bewertete Aufgaben
   zuerst, unbewertete und Listen ohne Bewertungen darunter. Gleichstände bleiben
   über Erstellzeit und Kennung stabil; die Reihenfolge in den Ursprungslisten
@@ -962,10 +966,17 @@ Aufwärts-/Abwärtspfeile und ein Sichtbarkeitssymbol, auch ohne Ziehen.
 
 Das Menü zeigt gesunde Erinnerungen nicht als dauernden Status. Aktivieren,
 Fehler und fehlende Verfügbarkeit bleiben auffindbar. Die Synchronisation
-belegt eine kompakte Zeile. Heller/dunkler Modus ist in beiden Ansichten und
-im Konto schaltbar und wird auf dem Gerät gemerkt. Der dunkle Modus startet
-weiter mit vollständig schwarzem Hintergrund. Beide Paletten verwenden
+belegt eine kompakte Zeile. Heller/dunkler Modus lässt sich in beiden Ansichten
+unter **Konto → Darstellung** umschalten, mit dem Sun-Moon-Symbol von Lucide.
+Das Dropdown bietet „Gerätestandard“, „Hell“ und „Dunkel“. Standardmäßig folgt
+Prio dem Gerätethema, einschließlich späterer Änderungen. Eine eigene Wahl
+bleibt auf diesem Gerät erhalten; „Gerätestandard“ setzt sie wieder zurück.
+Der dunkle Modus verwendet weiterhin einen vollständig
+schwarzen Hintergrund. Beide Paletten verwenden
 dieselben Informationsrollen und werden auf Kontrast geprüft.
+Android verwendet dafür ein DayNight-Theme: WebView bestimmt
+`prefers-color-scheme` anhand von `isLightTheme`, nicht direkt anhand der
+Geräteeinstellung ([Android-Vorgabe](https://developer.android.com/develop/ui/views/layout/webapps/dark-theme)).
 Sync-Punkt, Warnungen und Fehler wechseln dabei ihre Helligkeit passend zum
 Thema. Das App-Symbol hat ebenfalls eine helle und eine dunkle Variante;
 beide stehen der Oberfläche auch offline bereit. Gelbe Statuspunkte sind im

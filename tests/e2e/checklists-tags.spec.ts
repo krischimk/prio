@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import * as desktop from './support/helpers'
 import * as phone from './support/mobile'
 import { addChecklistPoint, outerTask } from './support/checklists'
+import { setTheme } from './support/theme'
 
 test.beforeEach(async ({ request }) => desktop.resetServer(request))
 for (const mobile of [false, true]) test.describe(mobile ? 'Punkte Telefon' : 'Punkte breit', () => {
@@ -88,13 +89,12 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Punkte Telefon' : 'P
     await row.getByLabel('Checklistenpunkt: Zahnbürste', { exact: true }).check()
     await expect(row.getByRole('button', { name: 'Checkliste: Koffer packen', exact: true })).toHaveText('2/3')
     await page.reload()
+    await setTheme(page, mobile, 'light')
     if (mobile) {
       await phone.openMenu(page)
-      await page.getByRole('button', { name: 'Hellen Modus einschalten', exact: true }).click()
       await page.getByRole('dialog', { name: 'Menü', exact: true }).getByRole('button', { name: /^Vorbereitung$/ }).click()
     } else {
       await desktop.selectList(page, 'Vorbereitung')
-      await page.getByRole('button', { name: 'Hellen Modus einschalten', exact: true }).click()
     }
     await expect(row.getByRole('button', { name: 'Checkliste: Koffer packen', exact: true })).toHaveText('2/3')
     if (await row.getByRole('button', { name: 'Checkliste: Koffer packen', exact: true }).getAttribute('aria-expanded') !== 'true') await row.getByRole('button', { name: 'Checkliste: Koffer packen', exact: true }).click()

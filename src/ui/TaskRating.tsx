@@ -49,7 +49,7 @@ export function TaskRatingEditor({ form }: { form: TaskForm }) {
   const detailed = overview.userPreference?.detailed_ratings === true
   const rating = form.werte.rating
   const linked = rating?.effortFromChecklist && form.werte.checklist.some(item => item.deleted_at === null)
-  const values = rating && ratingValues(rating, form.dueIso, nowMs, form.werte.checklist)
+  const values = rating && ratingValues(rating, form.dueIso, nowMs, form.werte.checklist, detailed)
   return <section aria-label="Bewertung" data-no-drawer-swipe data-no-drag className="space-y-2 border-t border-line px-2 pt-3">
     <RatingSlider label={rating ? 'Wichtigkeit' : 'Wichtigkeit einschätzen'} icon={<ImportanceIcon />} value={rating?.importance ?? 5} unassigned={!rating}
         hint={rating ? 'Wie wichtig ist dir das Ergebnis? Links geringer, rechts höher.' : 'Der erste Klick startet die Bewertung. Aufwand und manuelle Dringlichkeit beginnen sichtbar in der Mitte.'}
@@ -67,9 +67,10 @@ export function TaskRatingEditor({ form }: { form: TaskForm }) {
 
 export function TaskUrgencyEditor({ form }: { form: TaskForm }) {
   const { nowMs } = useWorkspace()
+  const { overview } = useView()
   const rating = form.werte.rating
   if (!rating) return null
-  const values = ratingValues(rating, form.dueIso, nowMs, form.werte.checklist)
+  const values = ratingValues(rating, form.dueIso, nowMs, form.werte.checklist, overview.userPreference?.detailed_ratings === true)
   return <RatingSlider label="Dringlichkeit" icon={<UrgencyIcon />} value={values.urgency} disabled={values.automatic}
       actions={form.dueIso ? <div role="group" aria-label="Dringlichkeitsmodus" className="flex gap-1">
         <Button size="sm" variant={rating.urgencyMode === 'auto' ? 'secondary' : 'ghost'} aria-pressed={rating.urgencyMode === 'auto'}
@@ -92,8 +93,9 @@ function RatingMeter({ label, value, hint, prominent = false, icon, inset = fals
 
 export function TaskPriorityBar({ rating, dueAt, checklist, rank }: { rating: TaskRating; dueAt: string | null; checklist: ChecklistItem[]; rank?: PriorityRank }) {
   const { nowMs } = useWorkspace()
+  const { overview } = useView()
   return <span className="mt-2 mb-2 block w-80 max-w-full" aria-label={rank ? `Prioritätsplatz ${rank}: ${rankNames[rank]}` : undefined}>
-    <RatingMeter label="Priorität" value={ratingValues(rating, dueAt, nowMs, checklist).priority}
+    <RatingMeter label="Priorität" value={ratingValues(rating, dueAt, nowMs, checklist, overview.userPreference?.detailed_ratings === true).priority}
       hint={`${rank ? `${rank}. Platz in dieser Ansicht (${rankNames[rank]}). ` : ''}Gleichgewichtet aus Wichtigkeit und Dringlichkeit.`}
       icon={<span className={`inline-flex shrink-0 items-center gap-1 ${rank ? rankColors[rank] : 'text-ink-muted'}`}>
         <PriorityIcon className="size-icon-meta" />{rank ? <span aria-hidden="true" className="text-label font-semibold">{rank}</span> : null}
@@ -103,8 +105,9 @@ export function TaskPriorityBar({ rating, dueAt, checklist, rank }: { rating: Ta
 export function TaskRatingSummary({ rating, dueAt, checklist, detailed: forceDetailed, includePriority = true }: { rating: TaskRating; dueAt: string | null; checklist: ChecklistItem[]; detailed?: boolean; includePriority?: boolean }) {
   const { nowMs } = useWorkspace()
   const { overview } = useView()
-  const detailed = forceDetailed ?? overview.userPreference?.detailed_ratings === true
-  const values = ratingValues(rating, dueAt, nowMs, checklist)
+  const detailedRatings = overview.userPreference?.detailed_ratings === true
+  const detailed = forceDetailed ?? detailedRatings
+  const values = ratingValues(rating, dueAt, nowMs, checklist, detailedRatings)
   const linked = rating.effortFromChecklist && checklist.some(item => item.deleted_at === null)
   if (!detailed && !includePriority) return null
   return <span aria-label="Aufgabenbewertung" className={detailed ? 'mt-2 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4' : 'mt-1 block w-80 max-w-full'}>

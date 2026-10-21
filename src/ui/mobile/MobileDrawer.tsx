@@ -14,7 +14,6 @@ import { Button } from '../components/Button'
 import type { DialogVerhalten } from '../components/useDialog'
 import { useView } from '../useView'
 import { NewListComposer } from '../NewListComposer'
-import { ThemeToggle } from '../ThemeToggle'
 import { ListNavigation } from '../ListNavigation'
 import type { RefObject } from 'react'
 
@@ -172,7 +171,6 @@ export function MobileDrawer({
 
         <div className="mt-auto flex items-center justify-between gap-2 border-t border-line px-4 py-2">
           <Button variant="ghost" layout="flex-1 justify-start" onClick={() => { onClose(); setAccountOpen(true) }}><UserIcon />Konto</Button>
-          <ThemeToggle />
         </div>
       </aside>
     </div>

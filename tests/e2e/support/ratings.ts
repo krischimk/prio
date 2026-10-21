@@ -4,6 +4,7 @@ import * as phone from './mobile'
 import { addChecklistPoint, addTags, outerTask } from './checklists'
 import { moreOptions, setDueAt, setOverviewMode, expectOverviewMode } from './taskForms'
 import { openOverview } from './overview'
+import { setTheme } from './theme'
 
 export async function setDetailedRatings(page: Page, mobile: boolean, enabled: boolean) {
   if (mobile) await phone.openMenu(page)
@@ -25,12 +26,12 @@ export async function compactRatingParity(page: Page, mobile: boolean) {
   const editor = await desktop.openTaskEditor(page, 'Projekt')
   await editor.getByRole('slider', { name: 'Wichtigkeit einschätzen', exact: true }).press('End')
   await expect(editor.getByRole('slider', { name: 'Dringlichkeit', exact: true })).toBeVisible()
+  await editor.getByRole('slider', { name: 'Dringlichkeit', exact: true }).press('Home')
   await setDueAt(editor, '2030-12-18T18:00')
   await expect(editor.getByRole('slider', { name: 'Dringlichkeit', exact: true })).toBeHidden()
   await expect(editor.getByRole('slider', { name: 'Aufwand', exact: true })).toBeVisible()
   await moreOptions(editor)
-  await editor.getByRole('button', { name: 'Manuell', exact: true }).click()
-  await editor.getByRole('slider', { name: 'Dringlichkeit', exact: true }).press('Home')
+  await expect(editor.getByRole('button', { name: 'Manuell', exact: true })).toHaveCount(0)
   await addChecklistPoint(editor, 'Erster Schritt')
   await addChecklistPoint(editor, 'Zweiter Schritt')
   const weights = editor.getByLabel('Checklistenpunkte unterschiedlich gewichten', { exact: true })
@@ -193,9 +194,7 @@ export async function weightedChecklistParity(page: Page, mobile: boolean) {
   await expect.poll(async () => Number(await editor.getByRole('meter', { name: 'Restaufwand', exact: true }).getAttribute('aria-valuenow'))).toBeCloseTo(7.5)
   await editor.getByRole('button', { name: 'Speichern', exact: true }).click()
   await expect(editor).toBeHidden()
-  if (mobile) await phone.openMenu(page)
-  await page.getByRole('button', { name: 'Hellen Modus einschalten', exact: true }).click()
-  if (mobile) await page.getByRole('dialog', { name: 'Menü', exact: true }).getByRole('button', { name: /^Gewichtete Schritte$/ }).click()
+  await setTheme(page, mobile, 'light')
   await desktop.openTaskEditor(page, 'Projekt vorbereiten')
   await editor.getByRole('meter', { name: 'Priorität', exact: true }).scrollIntoViewIfNeeded()
   await page.screenshot({ path: test.info().outputPath('bewertung-hell.png') })
@@ -222,10 +221,7 @@ export async function priorityMedalsParity(page: Page, mobile: boolean) {
   expect(await page.locator('[data-task-row]:not([data-completed])').allTextContents()).toEqual(manual)
   await page.screenshot({ path: test.info().outputPath('prioritaetsplaetze.png'), animations: 'disabled' })
   if (mobile) {
-    await phone.openMenu(page)
-    await page.getByRole('button', { name: 'Hellen Modus einschalten', exact: true }).click()
-    await page.getByRole('button', { name: 'Menü schließen', exact: true }).click()
-    await expect(page.getByRole('dialog', { name: 'Menü', exact: true })).toBeHidden()
+    await setTheme(page, mobile, 'light')
     await expect(page.locator('[data-drawer-motion="idle"][data-drawer-visible="false"]')).toHaveCount(1)
     await page.screenshot({ path: test.info().outputPath('prioritaetsplaetze-hell.png'), animations: 'disabled' })
     await page.setViewportSize({ width: 740, height: 360 })

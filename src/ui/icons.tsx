@@ -53,15 +53,8 @@ export function GripIcon({ className = iconClass }: { className?: string }) {
   </svg>
 }
 
-export function SunIcon({ className = iconClass }: { className?: string }) {
-  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
-    <circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5" />
-  </svg>
-}
-export function MoonIcon({ className = iconClass }: { className?: string }) {
-  return <svg viewBox="0 0 24 24" className={className} aria-hidden="true" {...base}>
-    <path d="M20.5 13.5A9 9 0 0 1 10.5 3 9 9 0 1 0 20.5 13.5Z" />
-  </svg>
+export function ThemeIcon({ className = iconClass }: { className?: string }) {
+  return <ActionIcon name="Theme" className={className} />
 }
 export function ShareIcon({ className = iconClass }: { className?: string }) {
   return <ActionIcon name="Share" className={className} />

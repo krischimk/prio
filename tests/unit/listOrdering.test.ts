@@ -15,6 +15,13 @@ it('ordnet Bereiche nach ihrer höchsten Priorität und Aufgaben innerhalb der B
 })
 
 describe('Randfälle der Bereichspriorität', () => {
+  it('berechnet die Bereichsreihenfolge in der einfachen Ansicht aus automatischer Dringlichkeit', () => {
+    const list = localList({ ratings_enabled: true, sections: [{ id: 'due', name: 'Fällig' }, { id: 'later', name: 'Später' }] })
+    const rows = [localTask({ section_id: 'due', due_at: T0, rating: { ...startRating(10), urgency: 0, urgencyMode: 'manual' } }),
+      localTask({ id: 'later', section_id: 'later', rating: { ...startRating(8), urgency: 8, urgencyMode: 'manual' } })]
+    expect(orderListTaskGroups(rows, list, Date.parse(T0), false).filter(group => group.tasks.length).map(group => group.section?.id)).toEqual(['due', 'later'])
+    expect(orderListTaskGroups(rows, list, Date.parse(T0), true).filter(group => group.tasks.length).map(group => group.section?.id)).toEqual(['later', 'due'])
+  })
   it('behandelt echte Null vor unbewerteten und leeren Bereichen; Gleichstände behalten die Bereichsreihenfolge', () => {
     const list = localList({ ratings_enabled: true, sections: [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }] })
     const zero = { ...startRating(0), urgency: 0, urgencyMode: 'manual' as const }

@@ -39,4 +39,11 @@ describe('Optionale gekoppelte Bewertung', () => {
     const manual = { ...startRating(5), urgencyMode: 'manual' as const, urgency: 2.3 }
     expect(changeUrgencyMode(manual, 'auto', due, before(72))).toMatchObject({ urgencyMode: 'auto', urgency: 2.3 })
   })
+  it('verwendet im einfachen Modus jede Fälligkeit automatisch, ohne manuelle Werte für die Detailansicht zu überschreiben', () => {
+    const manual = { ...startRating(10), urgencyMode: 'manual' as const, urgency: 0, effort: 10 }
+    expect(ratingValues(manual, null, before(24), [], false)).toMatchObject({ urgency: 0, priority: 5, automatic: false })
+    expect(ratingValues(manual, due, before(24), [], false)).toMatchObject({ urgency: 10, priority: 10, automatic: true })
+    expect(ratingValues(manual, due, before(24), [], true)).toMatchObject({ urgency: 0, priority: 5, automatic: false })
+    expect(manual.urgencyMode).toBe('manual')
+  })
 })

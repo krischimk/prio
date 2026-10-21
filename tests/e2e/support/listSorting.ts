@@ -4,6 +4,7 @@ import * as phone from './mobile'
 import { moreOptions } from './taskForms'
 import { outerTask } from './checklists'
 import { listSortModeLabel } from '../../../src/ui/listSortMode'
+import { setTheme } from './theme'
 
 async function sort(page: Page, mode: string) {
   await page.getByRole('button', { name: 'Sortierung ändern', exact: true }).click()
@@ -58,10 +59,8 @@ export async function listSortingParity(page: Page, mobile: boolean) {
     await page.setViewportSize({ width: 740, height: 360 })
     await page.screenshot({ path: test.info().outputPath('prioritaetsverlauf-quer.png') })
     await page.setViewportSize({ width: 390, height: 844 })
-    await phone.openMenu(page)
   }
-  await page.getByRole('button', { name: 'Hellen Modus einschalten', exact: true }).click()
-  if (mobile) await page.getByRole('dialog', { name: 'Menü', exact: true }).getByRole('button', { name: 'Arbeit', exact: true }).click()
+  await setTheme(page, mobile, 'light')
   if (mobile) await expect(page.locator('[data-drawer-motion="idle"][data-drawer-visible="false"]')).toBeAttached()
   await page.screenshot({ path: test.info().outputPath('prioritaetsverlauf-hell.png') })
   await sort(page, 'manual')
