@@ -9,6 +9,7 @@ const sources = {
   Eraser: ['lucide-static/icons', 'eraser'], Share: ['lucide-static/icons', 'share-2'], Edit: ['lucide-static/icons', 'pencil'],
   Tag: ['@mdi/svg/svg', 'tag-outline'], Checklist: ['@mdi/svg/svg', 'format-list-checks'],
   BulletList: ['@mdi/svg/svg', 'format-list-bulleted'], NumberedList: ['@mdi/svg/svg', 'format-list-numbered'],
+  Markdown: ['@mdi/svg/svg', 'language-markdown-outline'],
   Link: ['@mdi/svg/svg', 'link-variant'], Restore: ['@mdi/svg/svg', 'history'], Sync: ['@mdi/svg/svg', 'sync'],
   EyeOff: ['@mdi/svg/svg', 'eye-off-outline'], IconChoice: ['@mdi/svg/svg', 'shape-plus-outline'],
 }

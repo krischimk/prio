@@ -317,3 +317,7 @@ export function UserIcon({ className = iconClass }: { className?: string }) {
 export function RemoveFormattingIcon({ className = iconClass }: { className?: string }) {
   return <ActionIcon name="RemoveFormatting" className={className} />
 }
+
+export function MarkdownIcon({ className = iconClass }: { className?: string }) {
+  return <ActionIcon name="Markdown" className={className} />
+}

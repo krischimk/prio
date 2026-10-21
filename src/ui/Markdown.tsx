@@ -1,51 +1,55 @@
 import type { ReactNode } from 'react'
-import { parseInline, parseMarkdown } from './markdown'
-import { link, mutedText } from './styles'
+import ReactMarkdown, { type Components } from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import rehypeRaw from 'rehype-raw'
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
+import type { Element, Root } from 'hast'
+import { markdownHref } from './markdown'
+import { link } from './styles'
+import { remarkUnderline } from './remarkUnderline'
 
-/** Gemeinsame, HTML-freie Darstellung für Patchnotes und Notizen. */
+// react-markdown empfiehlt Sanitizing nach HTML-Plugins. Nur der vertrauenswürdige
+// Platzhalter für unseren Einklappknopf kommt danach; Notiz-HTML setzt ihn nicht.
+const sanitizeSchema = { ...defaultSchema, tagNames: [...defaultSchema.tagNames!, 'u'] }
+const rehypePlugins: NonNullable<React.ComponentProps<typeof ReactMarkdown>['rehypePlugins']> = [rehypeRaw, [rehypeSanitize, sanitizeSchema]]
+const remarkPlugins = [remarkGfm, remarkUnderline]
+function appendTrailing() {
+  return (tree: Root) => {
+    let parent: Root | Element = tree
+    while (true) {
+      const last = parent.children.filter(child => child.type === 'element').at(-1)
+      if (last?.type !== 'element' || !['p', 'li', 'ul', 'ol', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(last.tagName)) break
+      parent = last
+    }
+    parent.children.push({ type: 'element', tagName: 'span', properties: { 'dataPrioTrailing': true }, children: [] })
+  }
+}
+function safeUrl(url: string, key: string) {
+  if (key === 'src') return /^https?:\/\//i.test(url) ? markdownHref(url) ?? '' : ''
+  // Fragmentlinks sind für Fußnoten nötig, alle externen Ziele bleiben begrenzt.
+  return url.startsWith('#') ? url : markdownHref(url) ?? ''
+}
+const components: Components = {
+  a: ({ href, children }) => href ? <a href={href} target={href.startsWith('#') ? undefined : '_blank'} rel="noopener noreferrer" className={link}
+    onClick={event => event.stopPropagation()}>{children}</a> : <span>{children}</span>,
+  img: ({ src, alt, title }) => typeof src === 'string' && src ? <img src={src} alt={alt ?? ''} title={title} loading="lazy" /> : <span>{alt}</span>,
+  pre: ({ children }) => <pre className="note-code-block">{children}</pre>,
+  table: ({ children }) => <div className="overflow-x-auto"><table>{children}</table></div>,
+}
+
+/** CommonMark + GFM: derselbe Renderer für Notizen und Patchnotes. */
 export function Markdown({ text, className = '', preserveLineBreaks = false, trailing }: {
   text: string; className?: string; preserveLineBreaks?: boolean; trailing?: ReactNode
 }) {
-  const blocks = parseMarkdown(text, preserveLineBreaks)
-  return <div className={`space-y-2 text-meta ${className}`}>
-    {blocks.map((block, index) => {
-      const end = index === blocks.length - 1 ? trailing : null
-      switch (block.art) {
-        case 'ueberschrift': {
-          const Heading = `h${block.stufe}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
-          return <Heading key={index} className={`font-semibold text-ink-soft ${block.stufe === 1 ? 'text-title' : block.stufe === 2 ? 'text-body' : 'text-meta'}`}><InlineMarkdown text={block.text} />{end}</Heading>
-        }
-        case 'liste': {
-          const List = block.ordered ? 'ol' : 'ul'
-          return <List key={index} start={block.ordered ? block.start : undefined} className={`${block.ordered ? 'list-decimal' : 'list-disc'} space-y-1 pl-4`}>
-            {block.punkte.map((point, pointIndex) => <li key={pointIndex}><InlineMarkdown text={point} />{pointIndex === block.punkte.length - 1 ? end : null}</li>)}
-          </List>
-        }
-        case 'absatz': return <p key={index} className={preserveLineBreaks ? 'whitespace-pre-wrap' : undefined}><InlineMarkdown text={block.text} />{end}</p>
-      }
-    })}
-    {!blocks.length ? trailing : null}
+  return <div className={`note-markdown text-meta ${preserveLineBreaks ? 'note-line-breaks' : ''} ${className}`}>
+    <ReactMarkdown remarkPlugins={remarkPlugins} rehypePlugins={trailing ? [...rehypePlugins, appendTrailing] : rehypePlugins}
+      urlTransform={safeUrl} components={{ ...components, span: ({ node, children }) => node?.properties.dataPrioTrailing ? trailing : <span>{children}</span> }}>{text}</ReactMarkdown>
   </div>
 }
 
 export function InlineMarkdown({ text, links = true }: { text: string; links?: boolean }) {
-  return <>{renderInline(text, links)}</>
+  return <ReactMarkdown remarkPlugins={remarkPlugins} rehypePlugins={rehypePlugins} urlTransform={safeUrl}
+    allowedElements={['p', 'strong', 'em', 'u', 'del', 'code', 'a', 'span', 'br']} unwrapDisallowed
+    components={{ ...components, p: ({ children }) => <span>{children}</span>,
+      a: links ? components.a : ({ children }) => <span>{children}</span> }}>{text}</ReactMarkdown>
 }
-
-function renderInline(text: string, links: boolean, depth = 0): ReactNode {
-  if (depth > 16) return text
-  return parseInline(text).map((part, index) => {
-    const content = () => renderInline(part.text, links, depth + 1)
-    switch (part.art) {
-      case 'fett': return <strong key={index} className="font-semibold text-ink-soft">{content()}</strong>
-      case 'kursiv': return <em key={index}>{content()}</em>
-      case 'unterstrichen': return <u key={index}>{content()}</u>
-      case 'code': return <code key={index} className="rounded-control bg-raised px-1 py-0.5 font-mono text-label text-ink-soft">{part.text}</code>
-      case 'link': return links ? <a key={index} href={part.href} target="_blank" rel="noopener noreferrer" className={link}
-        onClick={event => event.stopPropagation()}>{renderInline(part.text, false, depth + 1)}</a> : <span key={index}>{content()}</span>
-      case 'text': return <span key={index}>{part.text}</span>
-    }
-  })
-}
-
-export const markdownText = mutedText

@@ -33,3 +33,9 @@ und sind abrufbar unter:
   sichtbare Namensnennung in der App.
 * **guidance/climbing-wall** (Streamline) – ebenfalls CC BY 4.0. Stattdessen
   wird für „Klettern" der Karabiner aus Material Design Icons verwendet.
+
+## Markdown und Notizbearbeitung
+
+`react-markdown`, `remark-gfm`, `rehype-raw` und `rehype-sanitize` stehen unter MIT.
+Tiptap einschließlich Markdown-, Tabellen-, Bild- und Listen-Extensions steht
+ebenfalls unter MIT. Die Lizenztexte liegen in den jeweiligen npm-Paketen.

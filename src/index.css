@@ -46,6 +46,9 @@
   --color-priority-start: #6450bc;
   --color-priority-middle: #9d87ef;
   --color-priority-end: #ffffff;
+  --color-priority-gold: #e9c46a;
+  --color-priority-silver: #c7d0e2;
+  --color-priority-bronze: #c99467;
 
   /* Zustände */
   --color-danger: #f87171;
@@ -153,6 +156,9 @@
   --color-priority-start: #e8e1ff;
   --color-priority-middle: #735bc4;
   --color-priority-end: #4a359b;
+  --color-priority-gold: #936c10;
+  --color-priority-silver: #667287;
+  --color-priority-bronze: #a46232;
   --color-danger: #b42332;
   --color-danger-ink: #a21c2c;
   --color-danger-tint: #fff0f1;
@@ -201,6 +207,19 @@
 .note-editor :is(h3, h4, h5, h6) { font-size: var(--text-body); }
 .note-editor a { color: var(--color-brand-soft); text-decoration: underline; }
 .note-editor code { background: var(--color-raised); border-radius: var(--radius-control); padding-inline: 0.25rem; }
+.note-code-block, .note-editor pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: monospace;
+  font-size: var(--text-label);
+  line-height: var(--text-meta--line-height);
+  background: var(--color-raised);
+  color: var(--color-ink-soft);
+  border-radius: var(--radius-control);
+  padding: 0.75rem;
+  margin-block: 0.5rem;
+}
+.note-code-block code, .note-editor pre code { background: transparent; padding: 0; border-radius: 0; }
 .note-editor:has(> p:only-child > br:only-child)::before {
   content: attr(data-placeholder);
   color: var(--color-ink-faint);
@@ -573,3 +592,29 @@ body {
 .rating-unassigned { opacity: 0.65; }
 .rating-unassigned::-webkit-slider-thumb { opacity: 0; }
 .rating-unassigned::-moz-range-thumb { opacity: 0; }
+
+/* CommonMark/GFM brauchen eigene Typografie (remark-gfm und Tiptap sind headless).
+   Tabellen bleiben horizontal im Notizblock scrollbar, Bilder passen in die Zeile. */
+.note-markdown { overflow-wrap: anywhere; }
+.note-markdown > * + *, .note-editor > * + * { margin-top: 0.5rem; }
+.note-markdown :is(ul, ol) { padding-inline-start: 1.25rem; }
+.note-markdown ul { list-style-type: disc; }
+.note-markdown ol { list-style-type: decimal; }
+.note-markdown :is(h1, h2, h3, h4, h5, h6) { font-weight: 600; color: var(--color-ink-soft); }
+.note-markdown h1 { font-size: var(--text-title); }
+.note-markdown h2 { font-size: var(--text-body); }
+.note-markdown code { background: var(--color-raised); padding-inline: 0.25rem; border-radius: var(--radius-control); font-size: var(--text-label); }
+.note-markdown pre code { background: transparent; padding: 0; }
+.note-line-breaks :is(p, li) { white-space: pre-wrap; }
+:is(.note-markdown, .note-editor) blockquote { border-inline-start: 2px solid var(--color-line-strong); padding-inline-start: 0.75rem; color: var(--color-ink-muted); }
+:is(.note-markdown, .note-editor) table { border-collapse: collapse; max-width: 100%; }
+:is(.note-markdown, .note-editor) :is(th, td) { border: 1px solid var(--color-line-strong); padding: 0.25rem 0.5rem; text-align: start; }
+:is(.note-markdown, .note-editor) th { background: var(--color-raised); font-weight: 600; }
+:is(.note-markdown, .note-editor) hr { border-color: var(--color-line-strong); margin-block: 0.75rem; }
+:is(.note-markdown, .note-editor) img { max-width: 100%; height: auto; }
+.note-editor .tableWrapper { overflow-x: auto; }
+.note-markdown .contains-task-list, .note-editor ul[data-type='taskList'] { list-style: none; padding-inline-start: 0; }
+.note-markdown .task-list-item input { margin-inline-end: 0.4rem; accent-color: var(--color-brand); }
+.note-editor li[data-type='taskItem'] { display: flex; gap: 0.5rem; align-items: baseline; }
+.note-editor li[data-type='taskItem'] > label { flex-shrink: 0; user-select: none; }
+.note-editor li[data-type='taskItem'] > div { flex: 1; min-width: 0; }
