@@ -33,7 +33,7 @@ export function TaskViewOptions({ tags, mode, busy = false, onModeChange, listMo
     onEscapeKeyDown={event => { event.preventDefault(); setOpen(false) }} positioning={{ strategy: 'fixed', placement: 'bottom-end' }} lazyMount unmountOnExit>
     <Popover.Trigger asChild><IconButton size={desktop ? 'iconSm' : 'toolbarIcon'} aria-label={sorting ? 'Sortierung ändern' : 'Nach Tags filtern'} variant={tagFilter.length ? 'iconActive' : 'icon'}
       title={sorting ? `Sortierung ändern und nach Tags filtern. Aktuell: ${mode ? overviewModeLabel[mode] : listModes[selectedListMode!]}.` : 'Aufgaben nach Tags filtern.'}>
-      {sorting ? <SortIcon /> : <FilterIcon />}
+      {sorting ? <SortIcon className="size-icon-meta" /> : <FilterIcon className="size-icon-meta" />}
     </IconButton></Popover.Trigger>
     <Popover.Positioner className={layer.raised}><Popover.Content className="w-72 max-w-[calc(100vw-2rem)] space-y-3 rounded-card border border-line-strong bg-raised p-3 shadow-lg shadow-page/50">
       {mode && onModeChange ? <fieldset aria-label="Ansicht der Gesamtansicht" className="space-y-1">

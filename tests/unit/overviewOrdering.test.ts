@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { orderOverviewTasks } from '../../src/domain/overviewOrdering'
+import { orderOverviewTasks, priorityRanks } from '../../src/domain/overviewOrdering'
 import { startRating } from '../../src/domain/rating'
 import { localList, localTask, T0, T1 } from '../support/factories'
 
@@ -7,6 +7,15 @@ describe('Prioritätssortierung der Gesamtansicht', () => {
   const lists = [localList({ ratings_enabled: true }), localList({ id: 'off', ratings_enabled: false })]
   const rating = (value: number) => ({ ...startRating(value), urgency: value, urgencyMode: 'manual' as const })
   const ids = (tasks: ReturnType<typeof localTask>[], now = Date.parse(T0)) => orderOverviewTasks(tasks, lists, 'priority', now).map(task => task.id)
+  it('vergibt drei Plätze nur an bewertete offene Aufgaben und berücksichtigt den übergebenen Filterbestand', () => {
+    const tasks = [localTask({ id: 'low', rating: rating(1), position: 1 }), localTask({ id: 'gold', rating: rating(10), position: 3 }),
+      localTask({ id: 'silver', rating: rating(8) }), localTask({ id: 'bronze', rating: rating(7) }),
+      localTask({ id: 'done', rating: rating(10), completed: true }), localTask({ id: 'unrated' }),
+      localTask({ id: 'off', list_id: 'off', rating: rating(10) })]
+    expect([...priorityRanks(tasks, lists, Date.parse(T0))]).toEqual([['gold', 1], ['silver', 2], ['bronze', 3]])
+    expect([...priorityRanks(tasks.filter(task => task.id === 'low'), lists, Date.parse(T0))]).toEqual([['low', 1]])
+    expect(tasks.map(task => task.id)).toEqual(['low', 'gold', 'silver', 'bronze', 'done', 'unrated', 'off'])
+  })
   it('sortiert auch Bewertung null und echte Null verschieden und ignoriert ausgeschaltete Listenbewertungen', () => {
     const tasks = [localTask({ id: 'unrated', created_at: T1 }), localTask({ id: 'zero', rating: rating(0) }),
       localTask({ id: 'off', list_id: 'off', rating: rating(10) }), localTask({ id: 'high', rating: rating(10) })]

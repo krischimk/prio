@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import * as desktop from './helpers'
 import * as phone from './mobile'
 import { moreOptions } from './taskForms'
+import { outerTask } from './checklists'
 import { listSortModeLabel } from '../../../src/ui/listSortMode'
 
 async function sort(page: Page, mode: string) {
@@ -36,19 +37,21 @@ export async function listSortingParity(page: Page, mobile: boolean) {
   }
   await (mobile ? phone.createTask : desktop.createTask)(page, 'Unbewertet')
   const rows = page.getByTestId('task-row')
-  const titles = () => rows.allTextContents()
+  // Titel vergleichen, unabhängig von zusätzlichen Rang- oder Bereichsangaben.
+  const titles = () => rows.getByText(/^(A-hoch|A-niedrig|B-mittel|Unbewertet)$/).allTextContents()
   const manual = await titles()
   await sort(page, 'priority')
   await expect.poll(titles).toEqual(['A-hoch', 'A-niedrig', 'B-mittel', 'Unbewertet'])
   await page.screenshot({ path: test.info().outputPath('listensortierung-bereiche.png') })
   await sort(page, 'priority_flat')
-  await expect.poll(titles).toEqual(['A-hochA', 'B-mittelB', 'A-niedrigA', 'Unbewertet'])
+  await expect.poll(titles).toEqual(['A-hoch', 'B-mittel', 'A-niedrig', 'Unbewertet'])
+  for (const [title, section] of [['A-hoch', 'A'], ['A-niedrig', 'A'], ['B-mittel', 'B']]) await expect(outerTask(page, title).getByText(section, { exact: true })).toBeVisible()
   await page.reload()
   if (mobile) {
     await phone.openMenu(page)
     await page.getByRole('dialog', { name: 'Menü', exact: true }).getByRole('button', { name: 'Arbeit', exact: true }).click()
   } else await desktop.selectList(page, 'Arbeit')
-  await expect.poll(titles).toEqual(['A-hochA', 'B-mittelB', 'A-niedrigA', 'Unbewertet'])
+  await expect.poll(titles).toEqual(['A-hoch', 'B-mittel', 'A-niedrig', 'Unbewertet'])
   if (mobile) await expect(page.locator('[data-drawer-motion="idle"][data-drawer-visible="false"]')).toBeAttached()
   await page.screenshot({ path: test.info().outputPath('prioritaetsverlauf-dunkel.png') })
   if (mobile) {

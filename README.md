@@ -1273,11 +1273,20 @@ Das Aufklappen betrifft ausschließlich die Notiz und öffnet keinen Editor.
 Die Notiz wird bereits im Editor formatiert dargestellt. Fett, Kursiv,
 Unterstreichung, Aufzählungen, Nummerierungen und Links stehen als Werkzeuge
 bereit; Überschriften entstehen per Markdown-Eingabe wie `## Überschrift`.
+Notizen und Patchnotes verwenden CommonMark mit GitHub-Erweiterungen: Codeblöcke
+(mit optionaler Sprache), Inline-Code, verschachtelte Listen, Zitate, Tabellen,
+Durchstreichungen, Aufgabenlisten, Links, Bilder und Fußnoten. HTML wird bereinigt;
+Unterstreichung bleibt erlaubt. Markdown-Aufgabenlisten innerhalb einer Notiz sind
+unabhängig von der eigentlichen Aufgaben-Checkliste.
+
+Der Knopf **M↓** wechselt im Editor zum Quelltext und zurück. Reines
+Umschalten verändert den gespeicherten Text nicht. Codeblöcke, Tabellen, Zitate
+und Aufgabenlisten bleiben auch nach formatierter Bearbeitung erhalten.
 Die Speicherung bleibt Markdown im bisherigen Textfeld, ohne neue Datenbankspalte.
 Enter erzeugt einen Absatz, Umschalt+Enter einen einfachen Zeilenumbruch.
 Strg+Enter speichert weiterhin die Aufgabe, auch aus der formatierten Notiz.
 
-**Tiptap-Empfehlungen, umgesetzt:**
+**Tiptap- und Markdown-Empfehlungen, umgesetzt:**
 
 | Empfehlung | Umsetzung |
 | --- | --- |
@@ -1286,6 +1295,11 @@ Strg+Enter speichert weiterhin die Aufgabe, auch aus der formatierten Notiz.
 | Editor von anderen Formularteilen isolieren und unnötige Transaktions-Render vermeiden | Eigene `NoteEditor`-Komponente mit stabiler Editorinstanz und `shouldRerenderOnTransaction: false` |
 | Werkzeugzustände gezielt abonnieren | `NoteToolbar` verwendet `useEditorState` ausschließlich für die aktiven Formatierungen |
 | Eigene Darstellung für die ungestylten Inhalte definieren | `.note-editor` in `src/index.css`, gleiche Farb- und Schriftrollen wie die restliche Oberfläche |
+| Codeblöcke benötigen eigene Darstellung, ohne zusätzlichen Highlighter | StarterKit-CodeBlock bleibt aktiv; `.note-code-block`/`.note-editor pre` umbrechen lange Zeilen und bewahren Einrückungen |
+| Tabellen brauchen Table, Row, Cell und Header | `TableKit`, ohne Resize-Griffe; horizontales Scrollen im Notizblock |
+| Verschachtelte Aufgabenlisten brauchen TaskList und TaskItem | Beide Extensions aktiv, `nested: true`; Readonly-Darstellung mit deaktivierten Kästchen |
+| Bilder unterstützen kein Base64 ohne ausdrückliche Freigabe | `allowBase64: false`; Anzeige ausschließlich über HTTP(S) |
+| Markdown-Plugins benötigen Sicherheitsprüfung und eigene Typografie | `remark-gfm` → `rehype-raw` → `rehype-sanitize`; Standardschema mit zusätzlichem `u`, URL-Prüfung, CSS in `.note-markdown` |
 | SSR erst auf dem Client rendern | Hier nicht erforderlich: Vite-SPA ohne Server-Rendering |
 
 [React-Integration](https://tiptap.dev/docs/editor/getting-started/install/react),
@@ -2017,3 +2031,24 @@ Besitzer/Mitglied.
 > sind inzwischen gebaut. Checklisten, Tags, deren Filter und Hellmodus sind
 > ebenfalls hinzugekommen. Siehe [Wiederkehrende
 > Aufgaben](#wiederkehrende-aufgaben) und [Erinnerungen](#erinnerungen).
+
+
+### Eigene Intervalle und Prioritätsplätze
+
+Wiederholungen bieten neben den bisherigen Vorgaben ein eigenes Intervall aus
+Zahl (1–999) und Minuten, Stunden, Tagen, Wochen, Monaten oder Jahren. Die
+bestehende Textspalte `recurrence` speichert etwa `every:2:weeks`; die bekannten
+Werte `daily`, `weekly`, `monthly`, `yearly` bleiben gültig. Minuten und Stunden
+sind Zeitabstände, längere Einheiten Kalenderschritte in der lokalen Zeitzone.
+MCP verwendet dieselbe Schreibweise und dieselben Fachregeln.
+
+Eigene Erinnerungsvorläufe verwenden Zahl plus Minuten/Stunden/Tage/Wochen,
+auch bei einmaligen Aufgaben. Dezimalwerte sind möglich (1,5 Stunden = 90 Minuten).
+Der Abstand bleibt minutengenau an die Fälligkeit gebunden. Die Uhrzeitauswahl
+bietet Minuten in Fünferschritten; getippte oder bestehende genaue Uhrzeiten
+werden nicht gerundet.
+
+Die drei höchstbewerteten offenen Aufgaben der gefilterten Ansicht tragen Gold,
+Silber und Bronze am Prioritätssymbol. Das verändert keine manuelle Reihenfolge;
+in der Gesamtansicht wird über die sichtbaren Listen gemeinsam gerankt. Aufgaben
+in Listen ohne Bewertungen und unbewertete Aufgaben erhalten keinen Platz.

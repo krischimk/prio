@@ -36,9 +36,9 @@ export function OverviewPanel({ currentUserId }: { currentUserId: string }) {
     {desktop ? <header><h1 aria-label="Gesamtansicht" className="text-heading font-semibold tracking-tight"><OverviewTitle /></h1></header> : null}
     {desktop && overview.status === 'ready' && overview.lists.length > 0 ? <TaskComposer /> : null}
     <div className="flex min-h-0 flex-1 flex-col">
-    <div className={desktop ? undefined : 'px-rand'}>
+    <div className={desktop ? undefined : 'px-rand pt-2'}>
       <div className="flex items-center justify-between gap-2">
-        <p className={`text-meta text-ink-muted ${numeric}`}>{formatOpenTasks(query.tasks.filter(task => matchesTags(task.tags, tagFilter)).length, tagFilter.length ? query.tasks.length : undefined)} · {lists.length} {lists.length === 1 ? 'Liste' : 'Listen'}</p>
+        <p className={`text-label text-ink-muted ${numeric}`}>{formatOpenTasks(query.tasks.filter(task => matchesTags(task.tags, tagFilter)).length, tagFilter.length ? query.tasks.length : undefined)} · {lists.length} {lists.length === 1 ? 'Liste' : 'Listen'}</p>
         {overview.status === 'ready' ? <TaskViewOptions tags={query.tasks.flatMap(task => task.tags)} mode={mode} busy={busy} onModeChange={mode => void write(mode)} /> : null}
       </div>
       <ActiveTagFilters />

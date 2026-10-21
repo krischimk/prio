@@ -92,6 +92,7 @@ export function TaskFields({
         </Field>
       ) : null}
 
+      {zeigt('beschreibung') || zeigt('checkliste') ? <div className="space-y-1">
       {zeigt('beschreibung') ? (
         <div className="flex items-start gap-3">
           <DescriptionIcon className="mt-3 h-5 w-5 shrink-0 text-ink-muted" />
@@ -106,11 +107,13 @@ export function TaskFields({
       ) : null}
 
       {zeigt('checkliste') ? <ChecklistEditor form={form} ratingsEnabled={ratingsEnabled} /> : null}
-      {ratingsEnabled ? <TaskRatingEditor form={form} /> : null}
+      </div> : null}
 
       {zeigt('faellig') ? (
         <TaskScheduleFields form={form} idPrefix={idPrefix} recurrence={zeigt('wiederholung')} />
       ) : null}
+
+      {ratingsEnabled ? <TaskRatingEditor form={form} /> : null}
 
       {zeigt('bereich') && sections.length > 0 ? (
         <Field id={`${idPrefix}-section`} label="Bereich">

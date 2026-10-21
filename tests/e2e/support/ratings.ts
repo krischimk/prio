@@ -200,3 +200,40 @@ export async function weightedChecklistParity(page: Page, mobile: boolean) {
   await editor.getByRole('meter', { name: 'Priorität', exact: true }).scrollIntoViewIfNeeded()
   await page.screenshot({ path: test.info().outputPath('bewertung-hell.png') })
 }
+
+export async function priorityMedalsParity(page: Page, mobile: boolean) {
+  await (mobile ? phone.register : desktop.register)(page, desktop.uniqueEmail('medals'))
+  await (mobile ? phone.createList : desktop.createList)(page, 'Rangfolge')
+  const settings = await desktop.openListSettings(page)
+  await settings.getByLabel('In Gesamtansicht aufnehmen', { exact: true }).check()
+  await expect(settings.getByLabel('In Gesamtansicht aufnehmen', { exact: true })).toBeEnabled()
+  await desktop.closeListSettings(page)
+  for (const [title, position] of [['Mittel', 'Home'], ['Hoch', 'End'], ['Neutral', 'ArrowRight']] as const) {
+    await (mobile ? phone.createTask : desktop.createTask)(page, title)
+    const editor = await desktop.openTaskEditor(page, title)
+    await editor.getByRole('slider', { name: 'Wichtigkeit einschätzen', exact: true }).press(position)
+    await editor.getByRole('button', { name: 'Speichern', exact: true }).click()
+    await expect(editor).toBeHidden()
+  }
+  const manual = await page.locator('[data-task-row]:not([data-completed])').allTextContents()
+  await expect(outerTask(page, 'Hoch').getByLabel('Prioritätsplatz 1: Gold', { exact: true })).toBeVisible()
+  await expect(outerTask(page, 'Neutral').getByLabel('Prioritätsplatz 2: Silber', { exact: true })).toBeVisible()
+  await expect(outerTask(page, 'Mittel').getByLabel('Prioritätsplatz 3: Bronze', { exact: true })).toBeVisible()
+  expect(await page.locator('[data-task-row]:not([data-completed])').allTextContents()).toEqual(manual)
+  await page.screenshot({ path: test.info().outputPath('prioritaetsplaetze.png'), animations: 'disabled' })
+  if (mobile) {
+    await phone.openMenu(page)
+    await page.getByRole('button', { name: 'Hellen Modus einschalten', exact: true }).click()
+    await page.getByRole('button', { name: 'Menü schließen', exact: true }).click()
+    await expect(page.getByRole('dialog', { name: 'Menü', exact: true })).toBeHidden()
+    await expect(page.locator('[data-drawer-motion="idle"][data-drawer-visible="false"]')).toHaveCount(1)
+    await page.screenshot({ path: test.info().outputPath('prioritaetsplaetze-hell.png'), animations: 'disabled' })
+    await page.setViewportSize({ width: 740, height: 360 })
+    await page.screenshot({ path: test.info().outputPath('prioritaetsplaetze-quer.png'), animations: 'disabled' })
+    await page.setViewportSize({ width: 390, height: 844 })
+  }
+  await openOverview(page, mobile)
+  await expect(outerTask(page, 'Hoch').getByLabel('Prioritätsplatz 1: Gold', { exact: true })).toBeVisible()
+  await outerTask(page, 'Hoch').getByRole('checkbox', { name: 'Aufgabe erledigen: Hoch', exact: true }).click()
+  await expect(outerTask(page, 'Neutral').getByLabel('Prioritätsplatz 1: Gold', { exact: true })).toBeVisible()
+}

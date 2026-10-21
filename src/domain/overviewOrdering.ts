@@ -1,6 +1,15 @@
 import type { LocalList, LocalTask, OverviewMode } from './types'
 import { ratingValues } from './rating'
 
+export type PriorityRank = 1 | 2 | 3
+
+/** Drei bewertete offene Aufgaben der gefilterten Ansicht, unabhängig von ihrer Reihenfolge. */
+export function priorityRanks(tasks: LocalTask[], lists: LocalList[], nowMs: number): ReadonlyMap<string, PriorityRank> {
+  const enabled = new Set(lists.filter(list => list.ratings_enabled).map(list => list.id))
+  const rated = tasks.filter(task => !task.completed && !task.deleted_at && !task.expired_at && task.rating && enabled.has(task.list_id))
+  return new Map(orderOverviewTasks(rated, lists, 'priority', nowMs).slice(0, 3).map((task, index) => [task.id, index + 1 as PriorityRank]))
+}
+
 /** Berechnete Sortierung verändert keine Positionen in den Ursprungslisten. */
 export function orderOverviewTasks(tasks: LocalTask[], lists: LocalList[], mode: Exclude<OverviewMode, 'by_list'>, nowMs: number): LocalTask[] {
   const ratedLists = new Set(lists.filter(list => list.ratings_enabled).map(list => list.id))

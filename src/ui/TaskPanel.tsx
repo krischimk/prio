@@ -43,12 +43,12 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
     </header> : null}
     {desktop ? <TaskComposer listId={list.id} /> : null}
     <div className="flex min-h-0 flex-1 flex-col">
-    <div className={desktop ? undefined : 'px-rand'}>
+    <div className={desktop ? undefined : 'px-rand pt-2'}>
       <div className="flex items-center justify-between gap-2">
-        <p className={`text-meta text-ink-muted ${numeric}`}>{formatOpenTasks(query.tasks.filter(task => matchesTags(task.tags, tagFilter)).length, tagFilter.length ? query.tasks.length : undefined)}{list.is_shared ? ' · Geteilte Liste' : ''}</p>
+        <p className={`text-label text-ink-muted ${numeric}`}>{formatOpenTasks(query.tasks.filter(task => matchesTags(task.tags, tagFilter)).length, tagFilter.length ? query.tasks.length : undefined)}{list.is_shared ? ' · Geteilte Liste' : ''}</p>
         <div className="flex items-center">
           {list.owner_id === currentUserId ? <IconButton size={desktop ? 'iconSm' : 'toolbarIcon'} aria-label="Bereiche verwalten"
-            title="Bereiche dieser Liste anlegen, umbenennen und umsortieren." onClick={() => setSectionsOpen(true)}><SectionsIcon /></IconButton> : null}
+            title="Bereiche dieser Liste anlegen, umbenennen und umsortieren." onClick={() => setSectionsOpen(true)}><SectionsIcon className="size-icon-meta" /></IconButton> : null}
           <TaskViewOptions tags={query.tasks.flatMap(task => task.tags)} listMode={list.ratings_enabled ? mode : undefined}
             hasSections={list.sections.length > 0} busy={busy} onListModeChange={value => void changeSort(value)} />
         </div>

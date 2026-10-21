@@ -22,7 +22,8 @@ import { leerAufgaben } from './emptyTexts'
 import { useTaskDragHandlers } from './useTaskDragHandlers'
 import { isKeyboardEvent } from '@dnd-kit/dom/utilities'
 import { matchesTags } from '../domain/tags'
-import { orderOverviewTasks } from '../domain/overviewOrdering'
+import { orderOverviewTasks, priorityRanks } from '../domain/overviewOrdering'
+import { PriorityRanksContext } from './priorityRanksContext'
 import { orderListTaskGroups } from '../domain/listOrdering'
 
 interface DragPreview {
@@ -42,6 +43,7 @@ export function TaskList({ lists, tasks: allTasks, currentUserId, overview = fal
   const { repositories, nowMs } = useWorkspace()
   const { setTaskDetail, selectList, tagFilter } = useView()
   const tasks = useMemo(() => tagFilter.length ? allTasks.filter(task => matchesTags(task.tags, tagFilter)) : allTasks, [allTasks, tagFilter])
+  const ranks = useMemo(() => priorityRanks(tasks, lists, nowMs), [tasks, lists, nowMs])
   const base = useMemo(() => dragGroups(lists, tasks), [lists, tasks])
   const [preview, setPreview] = useState<DragPreview | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -143,7 +145,7 @@ export function TaskList({ lists, tasks: allTasks, currentUserId, overview = fal
         .catch(cause => { updatePreview(null); setError(cause instanceof Error ? cause.message : 'Die Aufgabe konnte nicht verschoben werden.') })
     },
   })
-  return <>
+  return <PriorityRanksContext value={ranks}>
     {error ? <p role="alert" className={errorBox}>{error}</p> : null}
     {shown?.saving ? <p role="status" className="sr-only">Position wird gespeichert …</p> : null}
     <div data-testid="task-list" className="flex flex-1 flex-col space-y-abschnitt">
@@ -160,7 +162,7 @@ export function TaskList({ lists, tasks: allTasks, currentUserId, overview = fal
         overview={overview} priority={listMode === 'priority'} activeId={shown?.activeId ?? null} onOpen={open} onSelectList={selectList} />)}
     </div>
     {mode !== 'by_list' && lists.some(list => list.keep_completed) ? <CompletedTasksSection lists={lists.filter(list => list.keep_completed)} currentUserId={currentUserId} showOrigin={overview} overview={overview} /> : null}
-  </>
+  </PriorityRanksContext>
 }
 
 /** Berechnete Ansicht: Ziehen wechselt nur die Liste, nicht die Sortierung. */

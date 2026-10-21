@@ -1,4 +1,4 @@
-import type { Ref } from 'react'
+import { useContext, type Ref } from 'react'
 import { useIsDesktop } from '../app/useIsDesktop'
 import type { LocalTask } from '../domain/types'
 import { TaskCheckbox } from './TaskCheckbox'
@@ -12,6 +12,7 @@ import { TaskChecklist } from './TaskChecklist'
 import { useTaskExpansion } from './useTaskExpansion'
 import { TagIcon } from './icons'
 import { TaskPriorityBar, TaskRatingSummary } from './TaskRating'
+import { PriorityRanksContext } from './priorityRanksContext'
 
 /** Die Aufgabenzeile ist in Einzel- und Gesamtansicht dieselbe. */
 export function TaskRow({ task, currentUserId, onOpen, origin, overview = false, elementRef, activatorRef, dragging = false, ratingsEnabled = false }: {
@@ -22,6 +23,7 @@ export function TaskRow({ task, currentUserId, onOpen, origin, overview = false,
   ratingsEnabled?: boolean
 }) {
   const desktop = useIsDesktop()
+  const rank = useContext(PriorityRanksContext).get(task.id)
   const note = useTaskExpansion(currentUserId, task.id, 'note')
   const checklist = task.checklist.some(item => item.deleted_at === null)
   const tags = task.tags.length ? <Hint text={`Tags: ${task.tags.join(', ')}`}>
@@ -30,9 +32,9 @@ export function TaskRow({ task, currentUserId, onOpen, origin, overview = false,
     </span>
   </Hint> : null
   const content = <div data-testid="task-row"
-        className={`col-span-3 col-start-1 row-start-1 min-h-14 w-full min-w-0 rounded-control pl-14 ${desktop ? 'pr-14' : 'pr-3'} pt-4 ${checklist ? 'pb-2' : 'pb-3'} text-left`}>
+        className={`col-span-3 col-start-1 row-start-1 w-full min-w-0 rounded-control pl-14 ${desktop ? 'pr-14' : 'pr-3'} ${checklist ? 'min-h-12 pt-3 pb-0' : 'min-h-14 pt-4 pb-3'} text-left`}>
         <div className="flex min-w-0 items-end gap-3"><div className="min-w-0 flex-1">
-        <TaskFacts task={task} currentUserId={currentUserId} afterTitle={ratingsEnabled && task.rating ? <TaskPriorityBar rating={task.rating} dueAt={task.due_at} checklist={task.checklist} /> : null} />
+        <TaskFacts task={task} currentUserId={currentUserId} afterTitle={ratingsEnabled && task.rating ? <TaskPriorityBar rating={task.rating} dueAt={task.due_at} checklist={task.checklist} rank={rank} /> : null} />
           {origin ? <span className="mt-1 block break-words text-meta text-ink-muted">{origin}</span> : null}
         {task.description ? <TaskDescription text={task.description} className="mt-1" open={note.open} busy={note.busy} onToggle={() => void note.toggle()} /> : null}
         {ratingsEnabled && task.rating ? <TaskRatingSummary rating={task.rating} dueAt={task.due_at} checklist={task.checklist} includePriority={false} /> : null}

@@ -8,6 +8,10 @@ import { Hint } from './components/Hint'
 import { Button } from './components/Button'
 import { ImportanceIcon, EffortIcon, UrgencyIcon, PriorityIcon, EraserIcon } from './icons'
 import { useView } from './useView'
+import type { PriorityRank } from '../domain/overviewOrdering'
+
+const rankNames = { 1: 'Gold', 2: 'Silber', 3: 'Bronze' } as const
+const rankColors = { 1: 'text-priority-gold', 2: 'text-priority-silver', 3: 'text-priority-bronze' } as const
 
 const level = (value: number) => value < 2 ? 'sehr niedrig' : value < 4 ? 'niedrig' : value < 6 ? 'mittel' : value < 8 ? 'hoch' : 'sehr hoch'
 const fillStyle = (value: number): CSSProperties => ({ '--rating-fill': `${value * 10}%` } as CSSProperties)
@@ -86,10 +90,14 @@ function RatingMeter({ label, value, hint, prominent = false, icon, inset = fals
   </span></Hint>
 }
 
-export function TaskPriorityBar({ rating, dueAt, checklist }: { rating: TaskRating; dueAt: string | null; checklist: ChecklistItem[] }) {
+export function TaskPriorityBar({ rating, dueAt, checklist, rank }: { rating: TaskRating; dueAt: string | null; checklist: ChecklistItem[]; rank?: PriorityRank }) {
   const { nowMs } = useWorkspace()
-  return <span className="mt-2 mb-2 block w-80 max-w-full"><RatingMeter label="Priorität" value={ratingValues(rating, dueAt, nowMs, checklist).priority}
-    hint="Gleichgewichtet aus Wichtigkeit und Dringlichkeit." icon={<PriorityIcon className="size-icon-meta shrink-0 text-ink-muted" />} prominent barOnly /></span>
+  return <span className="mt-2 mb-2 block w-80 max-w-full" aria-label={rank ? `Prioritätsplatz ${rank}: ${rankNames[rank]}` : undefined}>
+    <RatingMeter label="Priorität" value={ratingValues(rating, dueAt, nowMs, checklist).priority}
+      hint={`${rank ? `${rank}. Platz in dieser Ansicht (${rankNames[rank]}). ` : ''}Gleichgewichtet aus Wichtigkeit und Dringlichkeit.`}
+      icon={<span className={`inline-flex shrink-0 items-center gap-1 ${rank ? rankColors[rank] : 'text-ink-muted'}`}>
+        <PriorityIcon className="size-icon-meta" />{rank ? <span aria-hidden="true" className="text-label font-semibold">{rank}</span> : null}
+      </span>} prominent barOnly /></span>
 }
 
 export function TaskRatingSummary({ rating, dueAt, checklist, detailed: forceDetailed, includePriority = true }: { rating: TaskRating; dueAt: string | null; checklist: ChecklistItem[]; detailed?: boolean; includePriority?: boolean }) {
