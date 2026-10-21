@@ -13,7 +13,8 @@ export const checklist = z.array(z.strictObject({ id: id.optional(), text, compl
 export const edit = z.strictObject({
   title: text.optional(), note: z.string().max(100000).nullable().optional(), checklist: checklist.optional(),
   tags: z.array(z.string().trim().min(1).max(100)).max(100).optional(), rating: rating.nullable().optional(),
-  due_at: timestamp.nullable().optional(), recurrence: z.enum(['daily', 'weekly', 'monthly', 'yearly']).nullable().optional(),
+  due_at: timestamp.nullable().optional(), recurrence: z.string().regex(/^(daily|weekly|monthly|yearly|every:[1-9]\d{0,2}:(minutes|hours|days|weeks|months|years))$/)
+    .describe('daily, weekly, monthly, yearly or every:N:UNIT; N=1..999, UNIT=minutes/hours/days/weeks/months/years.').nullable().optional(),
   reminders: z.array(reminder).max(10).optional(), section_id: id.nullable().optional(),
 })
 export const expected = z.strictObject({ id, revision: z.string().regex(/^[a-f0-9]{32}$/) })

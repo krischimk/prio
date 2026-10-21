@@ -1,0 +1,50 @@
+import { expect, test, type Page } from '@playwright/test'
+import * as desktop from './helpers'
+import * as phone from './mobile'
+import { addReminder, setDueAt } from './taskForms'
+import { outerTask } from './checklists'
+
+export async function customIntervalsParity(page: Page, mobile: boolean) {
+  await (mobile ? phone.register : desktop.register)(page, desktop.uniqueEmail('interval'))
+  await (mobile ? phone.createList : desktop.createList)(page, 'Intervalle')
+  await (mobile ? phone.createTask : desktop.createTask)(page, 'Eigener Rhythmus')
+  const editor = await desktop.openTaskEditor(page, 'Eigener Rhythmus')
+  await setDueAt(editor, '2030-12-18T14:17')
+  // Bestehende minutengenaue Werte bleiben erhalten, Auswahl bietet nur 5er-Schritte.
+  await editor.getByRole('button', { name: 'Fällig am: Uhrzeit wählen', exact: true }).click()
+  const minutes = editor.getByRole('combobox', { name: 'Fällig am: Uhrzeit: Minute', exact: true })
+  await expect(minutes.locator('option:not([disabled])')).toHaveText(['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'])
+  await expect(minutes).toHaveValue('17')
+  await minutes.selectOption('20')
+  await expect(editor.getByLabel('Fällig am: Uhrzeit', { exact: true })).toHaveValue('14:20')
+  await addReminder(editor)
+  await editor.getByLabel('Erinnerung', { exact: true }).selectOption('custom')
+  await editor.getByLabel('Einheit des Erinnerungsabstands', { exact: true }).selectOption('weeks')
+  await editor.getByLabel('Erinnerungsabstand', { exact: true }).fill('2')
+  await editor.getByRole('button', { name: 'Speichern', exact: true }).click()
+  await expect(editor).toBeHidden()
+  await desktop.openTaskEditor(page, 'Eigener Rhythmus')
+  await setDueAt(editor, '2030-12-20T14:20')
+  await expect(editor.getByLabel('Erinnerung am', { exact: true })).toHaveValue('06.12.2030')
+  await editor.getByLabel('Wiederholung', { exact: true }).selectOption('custom')
+  await editor.getByLabel('Wiederholung: Anzahl', { exact: true }).fill('2')
+  await editor.getByLabel('Wiederholung: Einheit', { exact: true }).selectOption('weeks')
+  await page.screenshot({ path: test.info().outputPath('eigene-intervalle.png') })
+  await editor.getByRole('button', { name: 'Speichern', exact: true }).click()
+  await expect(editor).toBeHidden()
+  await expect(outerTask(page, 'Eigener Rhythmus')).toContainText('Alle 2 Wochen')
+  await desktop.openTaskEditor(page, 'Eigener Rhythmus')
+  await editor.getByRole('button', { name: 'Fälligkeit und Wiederholung bearbeiten', exact: true }).click()
+  await editor.getByLabel('Fällig am', { exact: true }).press('Escape')
+  await expect(editor.getByLabel('Wiederholung: Anzahl', { exact: true })).toHaveValue('2')
+  await expect(editor.getByLabel('Wiederholung: Einheit', { exact: true })).toHaveValue('weeks')
+  await editor.getByRole('button', { name: 'Schließen', exact: true }).click()
+  await outerTask(page, 'Eigener Rhythmus').getByRole('checkbox', { name: 'Aufgabe erledigen: Eigener Rhythmus', exact: true }).click()
+  await expect(editor).toBeHidden()
+  await desktop.openTaskEditor(page, 'Eigener Rhythmus')
+  await editor.getByRole('button', { name: 'Fälligkeit und Wiederholung bearbeiten', exact: true }).click()
+  await editor.getByLabel('Fällig am', { exact: true }).press('Escape')
+  await expect(editor.getByLabel('Fällig am', { exact: true })).toHaveValue('03.01.2031')
+  await expect(editor.getByLabel('Wiederholung: Anzahl', { exact: true })).toHaveValue('2')
+  await editor.getByRole('button', { name: 'Schließen', exact: true }).click()
+}

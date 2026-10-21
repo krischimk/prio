@@ -79,6 +79,15 @@ describe('MCP task semantics and safe writes', () => {
     expect(f.data().tasks.find(item => item.row.id === task.id)!.row.completed).toBe(false)
     expect(f.data().tasks.find(item => item.row.id === successor.id)!.row.deleted_at).not.toBeNull()
   })
+  it('keeps custom intervals and offsets when completing and creating a successor', async () => {
+    const f = fixture()
+    const task = await create(f, 'Alle zwei Wochen', { due_at: '2030-12-20T13:20:00Z', recurrence: 'every:2:weeks', reminders: [{ form: 'offset', minutes: 20160 }] })
+    await executeCommand(f.port, connection, 'complete_tasks', { request_id: request_id(), tasks: [f.ref(task.id)], completed: true })
+    const successor = f.data().tasks.find(item => item.row.id !== task.id)!.row
+    expect(successor.due_at).toBe('2031-01-03T13:20:00.000Z')
+    expect(successor.recurrence).toBe('every:2:weeks')
+    expect(successor.reminders).toEqual([{ form: 'offset', minutes: 20160 }])
+  })
   it('does not permit undo to erase later edits', async () => {
     const f = fixture(); const task = await create(f); const command = request_id()
     await executeCommand(f.port, connection, 'update_tasks', { request_id: command, updates: [{ task: f.ref(task.id), set: { note: 'Agent' } }] })
@@ -155,6 +164,8 @@ describe('MCP task semantics and safe writes', () => {
     expect((await searchTasks(f.port, searchSchema.parse({ overview_only: true }))).total).toBe(0)
   })
   it('keeps recurrence wall time across daylight saving and clamps month ends', () => {
+    expect(calendarStep('Europe/Berlin')(new Date('2026-03-28T13:00:00Z'), 'every:2:days').toISOString()).toBe('2026-03-30T12:00:00.000Z')
+    expect(calendarStep('Europe/Berlin')(new Date('2026-01-31T13:00:00Z'), 'every:3:months').toISOString()).toBe('2026-04-30T12:00:00.000Z')
     expect(calendarStep('Europe/Berlin')(new Date('2026-03-28T13:00:00Z'), 'daily').toISOString()).toBe('2026-03-29T12:00:00.000Z')
     expect(calendarStep('Europe/Berlin')(new Date('2026-01-31T13:00:00Z'), 'monthly').toISOString()).toBe('2026-02-28T13:00:00.000Z')
   })

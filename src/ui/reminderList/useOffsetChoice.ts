@@ -26,12 +26,12 @@ export function useOffsetChoice({
   // Feste Stufen und gemerkte Werte, ohne Doppelte und in steter Reihenfolge.
   const auswahl = useMemo(() => {
     const gesehen = new Set<number>()
-    return [...FIXED_REMINDER_STEPS, ...presets].filter((wert) => {
+    return [...FIXED_REMINDER_STEPS, ...presets, minutes].filter((wert) => {
       if (gesehen.has(wert)) return false
       gesehen.add(wert)
       return true
     })
-  }, [presets])
+  }, [presets, minutes])
 
   const [eigeneOffen, setEigeneOffen] = useState(!FIXED_REMINDER_STEPS.includes(minutes))
   const wert = eigeneOffen ? EIGENE : String(minutes)

@@ -413,11 +413,11 @@ test('setzt auf dem Telefon einen eigenen Vorlauf für eine wiederkehrende Aufga
   await expect(erinnerung).toHaveValue('0')
   await erinnerung.selectOption('custom')
 
-  await page.getByLabel('Stunden vorher oder nachher', { exact: true }).fill('1')
-  await page.getByLabel('Minuten vorher oder nachher', { exact: true }).fill('30')
+  await page.getByLabel('Einheit des Erinnerungsabstands', { exact: true }).selectOption('hours')
+  await page.getByLabel('Erinnerungsabstand', { exact: true }).fill('1.5')
 
   // Die Vorschau rechnet in absolute Zeit um – daran hängt die Verständlichkeit.
-  await expect(page.getByText(/1 Std 30 Min vorher/)).toBeVisible()
+  await expect(page.getByRole('paragraph').filter({ hasText: '1 Std 30 Min vorher' })).toBeVisible()
   await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
   await expectReminders(taskRow(page, 'Zähne putzen'), 1)
@@ -479,7 +479,8 @@ test('nimmt einen Vorlauf auf dem Telefon in die Schnellauswahl auf', async ({ p
   await page.getByLabel('Wiederholung', { exact: true }).selectOption('weekly')
   await addReminder(page)
   await page.getByLabel('Erinnerung', { exact: true }).selectOption('custom')
-  await page.getByLabel('Stunden vorher oder nachher', { exact: true }).fill('4')
+  await page.getByLabel('Einheit des Erinnerungsabstands', { exact: true }).selectOption('hours')
+  await page.getByLabel('Erinnerungsabstand', { exact: true }).fill('4')
 
   const stern = page.getByRole('button', { name: 'In die Schnellauswahl aufnehmen' })
   await stern.click()

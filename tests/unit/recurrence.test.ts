@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isRecurrence, nextOccurrence, successorId } from '../../src/domain/recurrence'
+import { isRecurrence, makeRecurrence, nextOccurrence, successorId } from '../../src/domain/recurrence'
 
 /**
  * Termine fortschreiben.
@@ -27,6 +27,19 @@ describe('Wiederholungsarten erkennen', () => {
 })
 
 describe('Nächster Termin', () => {
+  it('erkennt und berechnet eigene Kalenderintervalle und verwirft ungültige Angaben', () => {
+    expect(makeRecurrence(2, 'weeks')).toBe('every:2:weeks')
+    expect(isRecurrence('every:0:days')).toBe(false)
+    expect(isRecurrence('every:1.5:days')).toBe(false)
+    expect(isRecurrence('every:1000:days')).toBe(false)
+    expect(nextOccurrence(lokal(2026, 1, 1), 'every:2:weeks', lokal(2026, 1, 1))).toBe(lokal(2026, 1, 15))
+    expect(nextOccurrence(lokal(2026, 1, 31), 'every:3:months', lokal(2026, 1, 1))).toBe(lokal(2026, 4, 30))
+    expect(nextOccurrence(lokal(2024, 2, 29), 'every:2:years', lokal(2024, 1, 1))).toBe(lokal(2026, 2, 28))
+  })
+  it('überspringt bei kurzen Intervallen auch jahrelangen Rückstand ohne alte Folgeaufgabe', () => {
+    const now = '2026-01-01T12:03:00.000Z'
+    expect(nextOccurrence('2020-01-01T12:00:00.000Z', 'every:5:minutes', now)).toBe('2026-01-01T12:05:00.000Z')
+  })
   it('zählt Tage und Wochen weiter', () => {
     expect(nextOccurrence(lokal(2026, 1, 15), 'daily', lokal(2026, 1, 1))).toBe(lokal(2026, 1, 16))
     expect(nextOccurrence(lokal(2026, 1, 15), 'weekly', lokal(2026, 1, 1))).toBe(lokal(2026, 1, 22))

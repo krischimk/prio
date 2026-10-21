@@ -183,9 +183,10 @@ test('setzt in der breiten Ansicht einen eigenen Vorlauf für eine wiederkehrend
   const erinnerung = formular.getByLabel('Erinnerung', { exact: true })
   await expect(erinnerung).toHaveValue('0')
   await erinnerung.selectOption('custom')
-  await formular.getByLabel('Stunden vorher oder nachher', { exact: true }).fill('4')
+  await formular.getByLabel('Einheit des Erinnerungsabstands', { exact: true }).selectOption('hours')
+  await formular.getByLabel('Erinnerungsabstand', { exact: true }).fill('4')
 
-  await expect(formular.getByText(/4 Std vorher/)).toBeVisible()
+  await expect(formular.getByRole('paragraph').filter({ hasText: '4 Std vorher' })).toBeVisible()
   await formular.getByRole('button', { name: 'Speichern' }).click()
 
   await expectReminders(zeile, 1)

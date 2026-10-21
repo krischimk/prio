@@ -52,7 +52,7 @@ export interface ReminderTarget {
 const MINUTE_MS = 60_000
 
 /** Obergrenze für Vorläufe: fünf Jahre. Darüber ist es mit Sicherheit ein Irrtum. */
-const MAX_OFFSET_MINUTES = 5 * 365 * 24 * 60
+export const MAX_OFFSET_MINUTES = 5 * 365 * 24 * 60
 
 /**
  * Wie viele Erinnerungen eine Aufgabe tragen kann.

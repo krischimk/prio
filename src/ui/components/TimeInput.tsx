@@ -51,7 +51,8 @@ export function TimeInput({ id, label, value, scopeValue, disabled, onChange, op
         <label className="space-y-1 text-meta text-ink-muted"><span>Minute</span>
           <select aria-label={`${label}: Minute`} className={input} value={minute} onChange={event => {
             setDraft(null); onChange(`${hour}:${event.target.value}`); setOpen(false)
-          }}>{Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0')).map(item => <option key={item} value={item}>{item}</option>)}</select>
+          }}>{Number(minute) % 5 !== 0 ? <option value={minute} disabled hidden>{minute}</option> : null}
+            {Array.from({ length: 12 }, (_, index) => String(index * 5).padStart(2, '0')).map(item => <option key={item} value={item}>{item}</option>)}</select>
         </label>
       </div>
     </Popover.Content></Popover.Positioner>

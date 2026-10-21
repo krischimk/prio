@@ -1,45 +1,31 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { MAX_OFFSET_MINUTES } from '../../domain/reminder'
 
-/**
- * Die Felder für einen eigenen Vorlauf: Tage, Stunden, Minuten und Richtung.
- *
- * Der Wert bleibt eine **einzige** Minutenzahl (negativ heißt „nachher"); die
- * drei Felder sind nur ihre Anzeige. Deshalb rechnet jede Änderung alle drei
- * neu – sonst liefen Anzeige und gespeicherter Wert auseinander.
- *
- * **Warum ein eigener Hook neben `useOffsetChoice`:** Jeder gehört zu genau
- * einer Komponente – die Auswahl zur Zeile, die Felder zum aufgeklappten
- * „Eigene …". Zusammengelegt müsste die Zeile den Zustand ihres Kindes halten
- * und durchreichen. Beim nächsten Anfassen ist das die Frage, die zu stellen
- * ist (F7 der Kritik).
- */
-export function useCustomOffset({
-  value,
-  onChange,
-}: {
-  value: number
-  onChange: (minutes: number) => void
-}) {
-  const nachher = value < 0
-  const betrag = Math.abs(value)
-  const tage = Math.floor(betrag / 1440)
-  const stunden = Math.floor((betrag % 1440) / 60)
-  const minuten = betrag % 60
+export const OFFSET_UNITS = { minutes: { label: 'Minuten', minutes: 1 }, hours: { label: 'Stunden', minutes: 60 }, days: { label: 'Tage', minutes: 1440 }, weeks: { label: 'Wochen', minutes: 10080 } } as const
+type OffsetUnit = keyof typeof OFFSET_UNITS
 
-  const [richtung, setRichtung] = useState<'vorher' | 'nachher'>(nachher ? 'nachher' : 'vorher')
-  const [felder, setFelder] = useState({ tage, stunden, minuten })
+function fields(value: number): { amount: string; unit: OffsetUnit; direction: string } {
+  const absolute = Math.abs(value)
+  const unit = absolute > 0 ? (['weeks', 'days', 'hours'] as const).find(unit => absolute % OFFSET_UNITS[unit].minutes === 0) ?? 'minutes' : 'minutes'
+  return { amount: String(absolute / OFFSET_UNITS[unit].minutes), unit, direction: value < 0 ? 'nachher' : 'vorher' }
+}
 
-  const setzen = (teil: Partial<typeof felder>, neueRichtung = richtung) => {
-    const neu = { ...felder, ...teil }
-    setFelder(neu)
-    const gesamt = neu.tage * 1440 + neu.stunden * 60 + neu.minuten
-    onChange(neueRichtung === 'nachher' ? -gesamt : gesamt)
+/** Der Abstand bleibt minutengenau; Einheit und leere Eingabe sind Eingabehilfen. */
+export function useCustomOffset({ value, onChange }: { value: number; onChange: (minutes: number) => void }) {
+  const [selection, setSelection] = useState(() => fields(value))
+  const emitted = useRef(value)
+  useEffect(() => {
+    if (value !== emitted.current) { emitted.current = value; setSelection(fields(value)) }
+  }, [value])
+  function change(patch: Partial<typeof selection>) {
+    const next = { ...selection, ...patch }
+    setSelection(next)
+    if (next.amount === '') return
+    const amount = Number(next.amount)
+    if (!Number.isFinite(amount) || amount < 0) return
+    const minutes = Math.min(MAX_OFFSET_MINUTES, Math.round(amount * OFFSET_UNITS[next.unit].minutes))
+    emitted.current = next.direction === 'nachher' ? -minutes : minutes
+    onChange(emitted.current)
   }
-
-  const richtungWechseln = (neu: 'vorher' | 'nachher') => {
-    setRichtung(neu)
-    setzen({}, neu)
-  }
-
-  return { richtung, richtungWechseln, felder, setzen }
+  return { ...selection, change, max: MAX_OFFSET_MINUTES / OFFSET_UNITS[selection.unit].minutes }
 }

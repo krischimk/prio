@@ -6,15 +6,36 @@
  * die abgehakte Aufgabe bleibt als Beleg stehen, und sie kann über
  * „Aufgaben wiederherstellen" zurückgeholt werden.
  *
- * Bewusst ohne Datumsbibliothek: Es geht um vier Intervalle, und die einzige
- * Tücke sind Monatsenden und Schaltjahre. Beides lässt sich mit dem
+ * Bewusst ohne Datumsbibliothek: Die Tücken der Kalenderintervalle
+ * sind Monatsenden und Schaltjahre. Beides lässt sich mit dem
  * eingebauten `Date` sauber lösen, wenn man in **lokalen** Datumsteilen rechnet
  * – so bleibt 18:30 Uhr auch nach der Zeitumstellung 18:30 Uhr.
  */
 
 export const RECURRENCES = ['daily', 'weekly', 'monthly', 'yearly'] as const
 
-export type Recurrence = (typeof RECURRENCES)[number]
+export type StandardRecurrence = (typeof RECURRENCES)[number]
+export const RECURRENCE_UNITS = ['minutes', 'hours', 'days', 'weeks', 'months', 'years'] as const
+export type RecurrenceUnit = (typeof RECURRENCE_UNITS)[number]
+export type Recurrence = StandardRecurrence | `every:${number}:${RecurrenceUnit}`
+const standardUnits: Record<StandardRecurrence, RecurrenceUnit> = { daily: 'days', weekly: 'weeks', monthly: 'months', yearly: 'years' }
+
+/** Freier Text bleibt abwärtskompatibel; eigene Intervalle brauchen kein neues Feld. */
+export function recurrenceInterval(value: string | null | undefined): { every: number; unit: RecurrenceUnit } | null {
+  if (!value) return null
+  if (Object.hasOwn(standardUnits, value)) return { every: 1, unit: standardUnits[value as StandardRecurrence] }
+  const match = /^every:([1-9]\d{0,2}):(minutes|hours|days|weeks|months|years)$/.exec(value)
+  return match ? { every: Number(match[1]), unit: match[2] as RecurrenceUnit } : null
+}
+
+export function makeRecurrence(every: number, unit: RecurrenceUnit): Recurrence {
+  if (!Number.isInteger(every) || every < 1 || every > 999 || !RECURRENCE_UNITS.includes(unit)) throw new Error('Das Wiederholungsintervall muss zwischen 1 und 999 liegen.')
+  if (every === 1) {
+    const standard = RECURRENCES.find(value => standardUnits[value] === unit)
+    if (standard) return standard
+  }
+  return `every:${every}:${unit}`
+}
 
 /** Eine frühe Erledigung macht die Folgeaufgabe sichtbar, aber noch leise. */
 export function isUpcomingRepeat(task: { completed: boolean; available_from: string | null }, now = Date.now()): boolean {
@@ -23,7 +44,7 @@ export function isUpcomingRepeat(task: { completed: boolean; available_from: str
 
 /** Ist der Wert eine bekannte Wiederholung? Alles andere gilt als „keine". */
 export function isRecurrence(value: string | null | undefined): value is Recurrence {
-  return value !== null && value !== undefined && (RECURRENCES as readonly string[]).includes(value)
+  return recurrenceInterval(value) !== null
 }
 
 /** Ein Schritt weiter – in lokalen Datumsteilen, nicht in Millisekunden. */
@@ -32,21 +53,24 @@ function naechsterSchritt(datum: Date, wiederholung: Recurrence): Date {
   const monat = datum.getMonth()
   const tag = datum.getDate()
 
-  switch (wiederholung) {
-    case 'daily':
-      return new Date(jahr, monat, tag + 1, datum.getHours(), datum.getMinutes())
-    case 'weekly':
-      return new Date(jahr, monat, tag + 7, datum.getHours(), datum.getMinutes())
-    case 'monthly': {
+  const { every, unit } = recurrenceInterval(wiederholung)!
+  switch (unit) {
+    case 'minutes': return new Date(datum.getTime() + every * 60_000)
+    case 'hours': return new Date(datum.getTime() + every * 3_600_000)
+    case 'days':
+      return new Date(jahr, monat, tag + every, datum.getHours(), datum.getMinutes())
+    case 'weeks':
+      return new Date(jahr, monat, tag + every * 7, datum.getHours(), datum.getMinutes())
+    case 'months': {
       // Monatsende klemmen: Der 31. wird im Februar zum 28. bzw. 29.
-      const zielMonat = monat + 1
+      const zielMonat = monat + every
       const letzterTag = new Date(jahr, zielMonat + 1, 0).getDate()
       return new Date(jahr, zielMonat, Math.min(tag, letzterTag), datum.getHours(), datum.getMinutes())
     }
-    case 'yearly': {
+    case 'years': {
       // Der 29. Februar wird im Folgejahr zum 28.
-      const letzterTag = new Date(jahr + 1, monat + 1, 0).getDate()
-      return new Date(jahr + 1, monat, Math.min(tag, letzterTag), datum.getHours(), datum.getMinutes())
+      const letzterTag = new Date(jahr + every, monat + 1, 0).getDate()
+      return new Date(jahr + every, monat, Math.min(tag, letzterTag), datum.getHours(), datum.getMinutes())
     }
   }
 }
@@ -71,6 +95,13 @@ export function nextOccurrence(dueAt: string, recurrence: Recurrence, now: strin
   const start = new Date(dueAt)
   const grenze = new Date(now).getTime()
   if (Number.isNaN(start.getTime())) return dueAt
+
+  const interval = recurrenceInterval(recurrence)!
+  if (interval.unit === 'minutes' || interval.unit === 'hours') {
+    const duration = interval.every * (interval.unit === 'minutes' ? 60_000 : 3_600_000)
+    // Auch jahrelanger Rückstand wird in einem Schritt übersprungen.
+    return new Date(start.getTime() + Math.max(1, Math.floor((grenze - start.getTime()) / duration) + 1) * duration).toISOString()
+  }
 
   let kandidat = step(start, recurrence)
   let schritte = 0
