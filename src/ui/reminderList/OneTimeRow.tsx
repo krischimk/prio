@@ -1,6 +1,7 @@
 import { reminderTimeOf, type TaskReminder } from '../../domain/reminder'
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../datetime'
-import { input } from '../styles'
+import { Select } from '../components/Select'
+import { BellIcon, CalendarIcon, SettingsIcon } from '../icons'
 import { DateTimeInput, type DateTimePicker } from '../components/DateTimeInput'
 import { useState } from 'react'
 import { formatReminderOffset } from '../reminder'
@@ -16,24 +17,24 @@ export function OneTimeRow({ idPrefix, reminder, dueAt, onChange, autoOpen = fal
   const minutes = reminder.form === 'offset' ? reminder.minutes : 0
   const changeOffset = (minutes: number) => { setPicker(null); onChange({ form: 'offset', minutes }) }
   const { auswahl, wert, waehlen, eigeneOffen, gemerkt, merken } = useOffsetChoice({ minutes, onChange: changeOffset })
+  // Die Vorlage schließt den Kalender schon beim Fokuswechsel. Sein späterer
+  // Abbau würde sonst das gerade geöffnete Auswahlmenü mit schließen.
   return <div><div className="reminder-timing-fields">
     <DateTimeInput id={idPrefix} label="Erinnerung am" required activePicker={picker} onPickerChange={setPicker} value={toDateTimeLocalValue(at)} onChange={value => {
       const next = fromDateTimeLocalValue(value)
       if (next && next !== at) onChange({ form: 'absolute', at: next })
     }} />
-    {dueAt ? <select aria-label="Erinnerung" className={input}
+    {dueAt ? <Select label="Erinnerung" icon={<BellIcon />} onFocus={() => setPicker(null)}
       value={reminder.form === 'offset' ? wert : 'absolute'}
-      onChange={event => {
+      onChange={value => {
         setPicker(null)
-        if (event.target.value === 'absolute') { if (at) onChange({ form: 'absolute', at }) }
+        if (value === 'absolute') { if (at) onChange({ form: 'absolute', at }) }
         else {
-          if (event.target.value === EIGENE && reminder.form === 'absolute') onChange({ form: 'offset', minutes: 0 })
-          waehlen(event.target.value)
+          if (value === EIGENE && reminder.form === 'absolute') onChange({ form: 'offset', minutes: 0 })
+          waehlen(value)
         }
-      }}>
-      {auswahl.map(step => <option key={step} value={step}>{formatReminderOffset(step)}</option>)}
-      <option value={EIGENE}>Eigene …</option>
-      <option value="absolute">Fester Zeitpunkt</option>
-    </select> : null}
+      }} options={[...auswahl.map(step => ({ value: String(step), label: formatReminderOffset(step) })),
+        { value: EIGENE, label: 'Eigene …', icon: <SettingsIcon /> },
+        { value: 'absolute', label: 'Fester Zeitpunkt', icon: <CalendarIcon /> }]} /> : null}
   </div>{dueAt && reminder.form === 'offset' && eigeneOffen ? <CustomOffset idPrefix={idPrefix} value={minutes} onChange={changeOffset} onRemember={merken} remembered={gemerkt} /> : null}</div>
 }

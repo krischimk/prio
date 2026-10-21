@@ -1,3 +1,4 @@
+import { selectOption } from './support/select'
 import { setDueAt } from './support/taskForms'
 import { expect, test, type Page } from '@playwright/test'
 import * as desktop from './support/helpers'
@@ -33,7 +34,7 @@ for (const mobile of [false,true]) test.describe(mobile ? 'Erledigt Telefon' : '
     }
     await edit()
     await setDueAt(page, new Date(Date.now()+86400000).toISOString().slice(0,16))
-    await page.getByLabel('Wiederholung',{exact:true}).selectOption('daily')
+    await selectOption(page.getByLabel('Wiederholung',{exact:true}), 'daily')
     await page.getByRole('button',{name:'Speichern',exact:true}).click()
     await page.getByLabel('Aufgabe erledigen: Serie',{exact:true}).click()
     await expect.poll(async()=> (await desktop.serverState(request)).tasks.length).toBe(2)

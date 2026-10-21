@@ -7,6 +7,7 @@ import { focusRing, input, layer, numeric } from '../styles'
 import { Button } from './Button'
 import { IconButton } from './IconButton'
 import { TimeInput } from './TimeInput'
+import { Select } from './Select'
 
 /** Kalender und 24-Stunden-Uhr; außen bleibt der vorhandene lokale ISO-Wert. */
 export type DateTimePicker = 'calendar' | 'time' | null
@@ -60,8 +61,12 @@ export function DateTimeInput({ id, label, value, onChange, disabled = false, re
             <DatePicker.Context>{calendar => <>
               <DatePicker.ViewControl className="mb-3 grid grid-cols-[2.75rem_minmax(0,1fr)_5rem_2.75rem] items-center gap-1">
                 <DatePicker.PrevTrigger asChild><IconButton aria-label="Voriger Monat" variant="iconMuted"><ChevronIcon offen={false} className="size-icon rotate-180" /></IconButton></DatePicker.PrevTrigger>
-                <DatePicker.MonthSelect className={input} />
-                <DatePicker.YearSelect className={input} />
+                <Select label="Monat" value={String(calendar.visibleRange.start.month)} compact
+                  options={calendar.getMonths().map(month => ({ value: String(month.value), label: month.label }))}
+                  onChange={value => calendar.focusMonth(Number(value))} />
+                <Select label="Jahr" value={String(calendar.visibleRange.start.year)} compact
+                  options={calendar.getYears().map(year => ({ value: String(year.value), label: year.label }))}
+                  onChange={value => calendar.focusYear(Number(value))} />
                 <DatePicker.NextTrigger asChild><IconButton aria-label="Nächster Monat" variant="iconMuted"><ChevronIcon offen={false} /></IconButton></DatePicker.NextTrigger>
               </DatePicker.ViewControl>
               <DatePicker.Table className="w-full table-fixed border-separate">

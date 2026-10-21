@@ -156,7 +156,7 @@ export function TaskList({ lists, tasks: allTasks, currentUserId, overview = fal
           const section = list.sections.find(entry => entry.id === task.section_id)
           return <NewestTaskRow key={task.id} task={task} currentUserId={currentUserId} overview={overview}
             ratingsEnabled={list.ratings_enabled}
-            origin={overview ? `${list.name}${section ? ` · ${section.name}` : ''}` : section?.name} onOpen={open} />
+            origin={section?.name} originList={overview ? list : undefined} onOpen={open} />
         })}
         {tasks.length === 0 ? <li className={emptyState}>{tagFilter.length ? 'Keine passenden Aufgaben.' : 'Keine offenen Aufgaben.'}</li> : null}
       </ul> : visibleLists.map(list => <ListBlock key={list.id} list={list} groups={groups} byId={byId} allTasks={allTasks} currentUserId={currentUserId}
@@ -167,7 +167,7 @@ export function TaskList({ lists, tasks: allTasks, currentUserId, overview = fal
 }
 
 /** Berechnete Ansicht: Ziehen wechselt nur die Liste, nicht die Sortierung. */
-function NewestTaskRow(props: { task: LocalTask; currentUserId: string; overview: boolean; origin?: string; ratingsEnabled: boolean; onOpen: (task: LocalTask) => void }) {
+function NewestTaskRow(props: { task: LocalTask; currentUserId: string; overview: boolean; origin?: string; originList?: LocalList; ratingsEnabled: boolean; onOpen: (task: LocalTask) => void }) {
   const { ref, handleRef, isDragging } = useDraggable({ id: props.task.id, type: 'task', data: { listId: props.task.list_id } })
   return <TaskRow {...props} elementRef={ref} activatorRef={handleRef} dragging={isDragging} />
 }

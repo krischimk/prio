@@ -1,3 +1,4 @@
+import { selectOption } from './select'
 import { expect, type Page } from '@playwright/test'
 import { openMenu } from './mobile'
 
@@ -21,7 +22,7 @@ export async function rememberOverviewTarget(page: Page, mobile: boolean, list: 
   if (mobile) await page.getByRole('button', { name: 'Neue Aufgabe', exact: true }).click()
   const composer = page.getByRole('form', { name: 'Neue Aufgabe anlegen', exact: true })
   await composer.getByLabel('Neue Aufgabe', { exact: true }).fill('Erste Gesamtaufgabe')
-  await composer.getByLabel('Zielliste', { exact: true }).selectOption({ label: list })
+  await selectOption(composer.getByLabel('Zielliste', { exact: true }), { label: list })
   await composer.getByRole('button', { name: 'Hinzufügen', exact: true }).click()
   if (mobile) await expect(page.getByRole('dialog', { name: 'Neue Aufgabe', exact: true })).toBeHidden()
   else await expect(composer.getByLabel('Neue Aufgabe', { exact: true })).toHaveValue('')

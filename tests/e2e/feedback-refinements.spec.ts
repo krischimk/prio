@@ -1,3 +1,4 @@
+import { selectOption } from './support/select'
 import { expect, test } from '@playwright/test'
 import * as desktop from './support/helpers'
 import { openOverview, overviewSettings } from './support/overview'
@@ -39,9 +40,9 @@ test('Gesamtentwurf bleibt beim Zielwechsel unabhängig vom Listenentwurf', asyn
   const title = page.getByLabel('Neue Aufgabe', { exact: true })
   await title.fill('Gesamtentwurf')
   await page.getByLabel('Notiz', { exact: true }).fill('Notiz für die Gesamtansicht')
-  await page.getByLabel('Zielliste', { exact: true }).selectOption({ label: 'Arbeit' })
+  await selectOption(page.getByLabel('Zielliste', { exact: true }), { label: 'Arbeit' })
   await expect(title).toHaveValue('Gesamtentwurf')
-  await page.getByLabel('Zielliste', { exact: true }).selectOption({ label: 'Einkaufen' })
+  await selectOption(page.getByLabel('Zielliste', { exact: true }), { label: 'Einkaufen' })
   await expect(title).toHaveValue('Gesamtentwurf')
   await expect(page.getByRole('group', { name: 'Entwurf auswählen', exact: true })).toHaveCount(0)
   await desktop.selectList(page, 'Einkaufen')
@@ -49,7 +50,7 @@ test('Gesamtentwurf bleibt beim Zielwechsel unabhängig vom Listenentwurf', asyn
   await expect(page.getByLabel('Notiz', { exact: true })).toHaveText('Notiz nur für die Liste')
   await openOverview(page, false)
   await expect(title).toHaveValue('Gesamtentwurf')
-  await expect(page.getByLabel('Zielliste', { exact: true })).toHaveValue(await page.getByLabel('Zielliste').locator('option').filter({ hasText: 'Einkaufen' }).getAttribute('value') ?? '')
+  await expect(page.getByLabel('Zielliste', { exact: true })).toHaveText('Einkaufen')
 })
 
 test('Sortierhinweis bleibt an seinem Knopf verankert', async ({ page }) => {

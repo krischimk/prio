@@ -1,3 +1,4 @@
+import { selectOption } from './support/select'
 import { expect, test } from '@playwright/test'
 import * as desktop from './support/helpers'
 import * as phone from './support/mobile'
@@ -25,14 +26,14 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Kalender Telefon' : 
       await target.click()
       await expect(editor.getByLabel('Fällig am', { exact: true })).toHaveValue(shown)
       await expect(clock).toBeVisible()
-      await clock.getByLabel('Fällig am: Uhrzeit: Minute', { exact: true }).selectOption('15')
+      await selectOption(clock.getByLabel('Fällig am: Uhrzeit: Minute', { exact: true }), '15')
     }
     await editor.getByRole('button', { name: 'Erinnerung hinzufügen', exact: true }).click()
-    await page.getByLabel('Monat', { exact: true }).selectOption('10')
+    await selectOption(page.getByLabel('Monat', { exact: true }), '10')
     await page.getByRole('button', { name: formatCalendarDay('2026-11-01'), exact: true }).click()
     await expect(editor.getByLabel('Erinnerung am', { exact: true })).toHaveValue('01.11.2026')
     await expect(clock).toBeVisible()
-    await clock.getByLabel('Erinnerung am: Uhrzeit: Minute', { exact: true }).selectOption('30')
+    await selectOption(clock.getByLabel('Erinnerung am: Uhrzeit: Minute', { exact: true }), '30')
     await editor.getByRole('button', { name: 'Speichern', exact: true }).click()
     await expect(editor).toBeHidden()
     await desktop.openTaskEditor(page, 'Monatswechsel')

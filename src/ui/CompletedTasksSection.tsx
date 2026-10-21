@@ -26,7 +26,7 @@ export function CompletedTasksSection({ lists, currentUserId, showOrigin = false
     {open && query.status === 'ready' ? tasks.length === 0 ? <p className="py-3 text-body text-ink-muted">{tagFilter.length ? 'Keine passenden erledigten Aufgaben.' : 'Noch nichts erledigt.'}</p> : <ul>
       {[...tasks].sort(compareRestorable).map(task => <TaskRow key={task.id} task={task} currentUserId={currentUserId}
         ratingsEnabled={lists.find(list => list.id === task.list_id)?.ratings_enabled}
-        origin={showOrigin ? lists.find(list => list.id === task.list_id)?.name : undefined}
+        originList={showOrigin ? lists.find(list => list.id === task.list_id) : undefined}
         onOpen={row => setTaskDetail({ taskId: row.id, listId: row.list_id, fromOverview: overview })} />)}
     </ul> : null}
   </section>

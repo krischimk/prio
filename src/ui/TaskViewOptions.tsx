@@ -8,7 +8,7 @@ import { useBackLayer } from '../app/useBackLayer'
 import { useTaskTags } from '../app/hooks'
 import { IconButton } from './components/IconButton'
 import { Button } from './components/Button'
-import { FilterIcon, SortIcon, TagIcon } from './icons'
+import { BulletListIcon, ClockIcon, FilterIcon, GripIcon, PriorityIcon, SectionsIcon, SortIcon, TagIcon } from './icons'
 import { overviewModeLabel } from './overviewMode'
 import { listSortModeLabel } from './listSortMode'
 import { focusRing, layer } from './styles'
@@ -40,14 +40,16 @@ export function TaskViewOptions({ tags, mode, busy = false, onModeChange, listMo
         <legend className="sr-only">Ansicht der Gesamtansicht</legend>
         {Object.entries(overviewModeLabel).map(([value, label]) => <label key={value} className={`${focusRing} flex min-h-11 cursor-pointer items-center gap-3 rounded-control px-2 text-body hover:bg-surface`}>
           <input type="radio" name="overview-sort" className="size-4 accent-brand" checked={mode === value} disabled={busy}
-            onChange={() => { onModeChange(value as OverviewMode); setOpen(false) }} />{label}
+            onChange={() => { onModeChange(value as OverviewMode); setOpen(false) }} />
+          {value === 'by_list' ? <BulletListIcon /> : value === 'newest' ? <ClockIcon /> : <PriorityIcon />}{label}
         </label>)}
       </fieldset> : null}
       {listMode && onListModeChange ? <fieldset aria-label="Sortierung der Liste" className="space-y-1">
         <legend className="sr-only">Sortierung der Liste</legend>
         {Object.entries(listModes).map(([value, label]) => <label key={value} className={`${focusRing} flex min-h-11 cursor-pointer items-center gap-3 rounded-control px-2 text-body hover:bg-surface`}>
           <input type="radio" name="list-sort" className="size-4 accent-brand" checked={selectedListMode === value} disabled={busy}
-            onChange={() => { onListModeChange(value as ListSortMode); setOpen(false) }} />{label}
+            onChange={() => { onListModeChange(value as ListSortMode); setOpen(false) }} />
+          {value === 'manual' ? <GripIcon /> : value === 'priority' && hasSections ? <SectionsIcon /> : <PriorityIcon />}{label}
         </label>)}
       </fieldset> : null}
       <fieldset className="space-y-1"><legend className="mb-1 flex items-center gap-2 text-meta text-ink-muted"><TagIcon className="size-icon-meta" />Nach Tags filtern</legend>

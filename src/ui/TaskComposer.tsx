@@ -6,7 +6,9 @@ import { TaskMoreOptions } from './TaskMoreOptions'
 import { TaskFormStatus } from './TaskFormStatus'
 import { input } from './styles'
 import { Button } from './components/Button'
-import { PlusIcon } from './icons'
+import { BulletListIcon, PlusIcon } from './icons'
+import { ListIcon } from './ListIcon'
+import { Select } from './components/Select'
 import { useView } from './useView'
 import { TaskDraftContext } from './taskDraftContext'
 import { useExpandableForm } from './useExpandableForm'
@@ -23,7 +25,8 @@ export function TaskComposer({ listId, autoFocus = false, onCreated }: { listId?
   const { container, focused, focus, blur } = useExpandableForm(autoFocus)
   const focusAfterSave = useRef(false)
   const [chooseRequested, setChooseRequested] = useState(false)
-  const targetSelect = useRef<HTMLSelectElement>(null)
+  const targetSelect = useRef<HTMLButtonElement>(null)
+  const [targetOpen, setTargetOpen] = useState(false)
   const titleInput = useRef<HTMLInputElement>(null)
   const available = overview.lists
   const candidate = drafts.overviewTarget ?? overview.userPreference?.default_list_id ?? ''
@@ -52,7 +55,7 @@ export function TaskComposer({ listId, autoFocus = false, onCreated }: { listId?
     }} onBlurCapture={blur}
     onKeyDownCapture={submitTaskShortcut}
     onSubmit={event => {
-      if (!targetId) { event.preventDefault(); setChooseRequested(true); return }
+      if (!targetId) { event.preventDefault(); setChooseRequested(true); setTargetOpen(true); return }
       void form.speichern(event)
     }}>
     <div className="flex gap-2">
@@ -65,20 +68,14 @@ export function TaskComposer({ listId, autoFocus = false, onCreated }: { listId?
       </Button>
     </div>
     {expanded ? <div className="space-y-3">
-      {listId === undefined ? <label className="block text-meta text-ink-muted">
-        <span className="sr-only">Zielliste</span>
-        <select ref={targetSelect} aria-label="Zielliste" value={targetId} disabled={form.busy}
-          size={chooseRequested ? Math.min(available.length + 1, 5) : undefined} className={input}
-          onChange={event => {
-            const id = event.target.value
+      {listId === undefined ? <Select triggerRef={targetSelect} label="Zielliste" value={targetId} disabled={form.busy}
+          open={targetOpen} onOpenChange={setTargetOpen}
+          onChange={id => {
             drafts.selectOverviewTarget(id)
             if (!available.find(list => list.id === id)?.sections.some(section => section.id === form.werte.sectionId)) form.setzen('sectionId', null)
             setChooseRequested(false)
-          }}>
-          <option value="">Zielliste auswählen</option>
-          {available.map(list => <option key={list.id} value={list.id}>{list.name}</option>)}
-        </select>
-      </label> : null}
+          }} options={[{ value: '', label: 'Zielliste auswählen', icon: <BulletListIcon /> }, ...available.map(list => ({ value: list.id, label: list.name,
+            icon: list.icon ? <ListIcon icon={list.icon} className="size-icon shrink-0" /> : <BulletListIcon /> }))]} /> : null}
       {excluded ? <p role="status" className="text-meta text-ink-muted">Die Aufgabe wird in „{target.name}“ gespeichert. Diese Liste ist nicht in deiner Gesamtansicht enthalten.</p> : null}
       <TaskFields form={form} felder={['beschreibung', 'checkliste', 'faellig', 'wiederholung', 'erinnerungen']} sections={target?.sections ?? []}
         currentUserId={currentUserId} listIsShared={target?.is_shared ?? false} ratingsEnabled={target?.ratings_enabled} idPrefix={idPrefix} />

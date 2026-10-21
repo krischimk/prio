@@ -7,6 +7,7 @@ import { CheckIcon } from './icons'
 
 import { Button } from './components/Button'
 import { Sheet } from './components/Sheet'
+import { SectionSelect } from './SectionSelect'
 
 /**
  * Auswahl der Ziel-Liste beim Verschieben einer Aufgabe – und, wenn die
@@ -122,20 +123,8 @@ export function MoveTaskSheet({
           <label className="block text-meta text-ink-soft" htmlFor="move-section">
             Bereich
           </label>
-          <select
-            id="move-section"
-            className={`${focusRing} mt-1 w-full rounded-control border border-line bg-raised px-3 py-2 text-body text-ink`}
-            value={zielAbschnitt ?? ''}
-            disabled={busy}
-            onChange={(event) => setZielAbschnitt(event.target.value === '' ? null : event.target.value)}
-          >
-            <option value="">Ohne Bereich</option>
-            {bereiche.map((bereich) => (
-              <option key={bereich.id} value={bereich.id}>
-                {bereich.name}
-              </option>
-            ))}
-          </select>
+          <SectionSelect id="move-section" sections={bereiche}
+            value={zielAbschnitt} disabled={busy} onChange={setZielAbschnitt} />
         </div>
       ) : null}
     </Sheet>

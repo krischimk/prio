@@ -1,3 +1,4 @@
+import { selectOption } from './support/select'
 import { moreOptions } from './support/taskForms'
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import * as desktop from './support/helpers'
@@ -20,7 +21,7 @@ async function setup(page: Page, mobile: boolean) {
   for (const [title, section] of [['Apfel', 'Obst'], ['Saft', 'Getränke'], ['Wasser', 'Getränke']]) {
     const editor = await desktop.openTaskEditor(page, title)
     await moreOptions(editor)
-    await editor.getByLabel('Bereich', { exact: true }).selectOption({ label: section })
+    await selectOption(editor.getByLabel('Bereich', { exact: true }), { label: section })
     await editor.getByRole('button', { name: 'Speichern', exact: true }).click()
     await expect(editor).toBeHidden()
   }

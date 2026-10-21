@@ -1,6 +1,6 @@
 import { useContext, type Ref } from 'react'
 import { useIsDesktop } from '../app/useIsDesktop'
-import type { LocalTask } from '../domain/types'
+import type { LocalList, LocalTask } from '../domain/types'
 import { TaskCheckbox } from './TaskCheckbox'
 import { TaskFacts } from './TaskFacts'
 import { TaskDescription } from './TaskDescription'
@@ -10,14 +10,16 @@ import { Hint } from './components/Hint'
 import { TaskDeleteButton } from './TaskDeleteButton'
 import { TaskChecklist } from './TaskChecklist'
 import { useTaskExpansion } from './useTaskExpansion'
-import { TagIcon } from './icons'
+import { BulletListIcon, TagIcon } from './icons'
+import { ListIcon } from './ListIcon'
 import { TaskPriorityBar, TaskRatingSummary } from './TaskRating'
 import { PriorityRanksContext } from './priorityRanksContext'
 
 /** Die Aufgabenzeile ist in Einzel- und Gesamtansicht dieselbe. */
-export function TaskRow({ task, currentUserId, onOpen, origin, overview = false, elementRef, activatorRef, dragging = false, ratingsEnabled = false }: {
+export function TaskRow({ task, currentUserId, onOpen, origin, originList, overview = false, elementRef, activatorRef, dragging = false, ratingsEnabled = false }: {
   task: LocalTask; currentUserId: string; onOpen: (task: LocalTask) => void
   origin?: string; overview?: boolean
+  originList?: Pick<LocalList, 'name' | 'icon'>
   elementRef?: Ref<HTMLLIElement>; activatorRef?: Ref<HTMLDivElement>
   dragging?: boolean
   ratingsEnabled?: boolean
@@ -34,8 +36,12 @@ export function TaskRow({ task, currentUserId, onOpen, origin, overview = false,
   const content = <div data-testid="task-row"
         className={`col-span-3 col-start-1 row-start-1 w-full min-w-0 rounded-control pl-14 ${desktop ? 'pr-14' : 'pr-3'} ${checklist ? 'min-h-12 pt-3 pb-0' : 'min-h-14 pt-4 pb-3'} text-left`}>
         <div className="flex min-w-0 items-end gap-3"><div className="min-w-0 flex-1">
-        <TaskFacts task={task} currentUserId={currentUserId} afterTitle={ratingsEnabled && task.rating ? <TaskPriorityBar rating={task.rating} dueAt={task.due_at} checklist={task.checklist} rank={rank} /> : null} />
-          {origin ? <span className="mt-1 block break-words text-meta text-ink-muted">{origin}</span> : null}
+        <TaskFacts task={task} currentUserId={currentUserId} titleTrailing={originList ? <Hint text={`${originList.name}${origin ? ` · ${origin}` : ''}`}>
+          <span role="img" aria-label={`Liste: ${originList.name}${origin ? ` · ${origin}` : ''}`} className="mt-1 inline-flex shrink-0 text-ink-muted">
+            {originList.icon ? <ListIcon icon={originList.icon} className="size-icon-meta" /> : <BulletListIcon className="size-icon-meta" />}
+          </span>
+        </Hint> : null} afterTitle={ratingsEnabled && task.rating ? <TaskPriorityBar rating={task.rating} dueAt={task.due_at} checklist={task.checklist} rank={rank} /> : null} />
+          {origin && !originList ? <span className="mt-1 block break-words text-meta text-ink-muted">{origin}</span> : null}
         {task.description ? <TaskDescription text={task.description} className="mt-1" open={note.open} busy={note.busy} onToggle={() => void note.toggle()} /> : null}
         {ratingsEnabled && task.rating ? <TaskRatingSummary rating={task.rating} dueAt={task.due_at} checklist={task.checklist} includePriority={false} /> : null}
         </div>{!checklist ? tags : null}</div>

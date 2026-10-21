@@ -1,8 +1,10 @@
+import { selectOption } from './support/select'
 import { expectOverviewMode, moreOptions, setOverviewMode } from './support/taskForms'
 import { expect, test } from '@playwright/test'
 import * as desktop from './support/helpers'
 import * as phone from './support/mobile'
 import { openOverview, overviewSettings, rememberOverviewTarget } from './support/overview'
+import { setTheme } from './support/theme'
 
 for (const mobile of [false, true]) test.describe(mobile ? 'Gesamtansicht Telefon' : 'Gesamtansicht breit', () => {
   test.use({ viewport: mobile ? { width: 390, height: 844 } : { width: 1280, height: 800 }, hasTouch: mobile })
@@ -14,9 +16,15 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Gesamtansicht Telefo
   test('beide Sortierungen behalten Herkunft und bestehende Listenreihenfolge', async ({ page }) => {
     await register(page, desktop.uniqueEmail('overview-order'))
     await createList(page, 'Arbeit')
+    await desktop.listAction(page, 'Symbol ändern')
+    await page.getByTestId('icon-picker').getByRole('button', { name: 'Prio', exact: true }).click()
+    await expect(page.getByRole('dialog', { name: 'Liste verwalten', exact: true })).toBeHidden()
     await createTask(page, 'Ältere Arbeit')
     await createTask(page, 'Neuere Arbeit')
     await createList(page, 'Einkaufen')
+    await desktop.listAction(page, 'Symbol ändern')
+    await page.getByTestId('icon-picker').getByRole('button', { name: 'Einkauf', exact: true }).click()
+    await expect(page.getByRole('dialog', { name: 'Liste verwalten', exact: true })).toBeHidden()
     await createTask(page, 'Neuester Einkauf')
     await openOverview(page, mobile)
     await expect(page.getByTestId('overview-task')).toHaveCount(0)
@@ -28,7 +36,15 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Gesamtansicht Telefo
     await settings.getByRole('button', { name: 'Schließen', exact: true }).click()
     await expect(page.getByTestId('overview-task')).toHaveText([/Neuere Arbeit/, /Ältere Arbeit/, /Neuester Einkauf/])
     await setOverviewMode(page, 'newest')
-    await expect(page.getByTestId('overview-task')).toHaveText([/Neuester Einkauf.*Einkaufen/s, /Neuere Arbeit.*Arbeit/s, /Ältere Arbeit.*Arbeit/s])
+    const rows = page.getByTestId('overview-task')
+    await expect(rows).toHaveText([/Neuester Einkauf/, /Neuere Arbeit/, /Ältere Arbeit/])
+    await expect(rows.nth(0).getByRole('img', { name: 'Liste: Einkaufen', exact: true })).toBeVisible()
+    await expect(rows.nth(1).getByRole('img', { name: 'Liste: Arbeit', exact: true })).toBeVisible()
+    await expect(rows.nth(0).getByTestId('list-icon')).toHaveAttribute('data-icon', 'std:shopping')
+    await expect(rows.nth(1).getByTestId('list-icon')).toHaveAttribute('data-icon', 'std:prio')
+    await page.screenshot({ path: test.info().outputPath('listenherkunft-dunkel.png'), animations: 'disabled' })
+    await setTheme(page, mobile, 'light')
+    await page.screenshot({ path: test.info().outputPath('listenherkunft-hell.png'), animations: 'disabled' })
     await setOverviewMode(page, 'by_list')
     await expect(page.getByTestId('overview-task')).toHaveText([/Neuere Arbeit/, /Ältere Arbeit/, /Neuester Einkauf/])
   })
@@ -42,10 +58,10 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Gesamtansicht Telefo
     const title = composer.getByLabel('Neue Aufgabe', { exact: true })
     await title.fill('Bewusst ausgeschlossene Aufgabe')
     await title.press('Enter')
-    const target = composer.getByLabel('Zielliste', { exact: true })
-    await expect(target).toBeFocused()
+    const target = composer.getByRole('combobox', { name: 'Zielliste', exact: true })
+    await expect(target).toHaveAttribute('aria-expanded', 'true')
     await expect(title).toHaveValue('Bewusst ausgeschlossene Aufgabe')
-    await target.selectOption({ label: 'Arbeit' })
+    await selectOption(target, { label: 'Arbeit' })
     await expect(composer).toContainText('ist nicht in deiner Gesamtansicht')
     await composer.getByRole('button', { name: 'Hinzufügen', exact: true }).click()
     await expect.poll(async () => (await desktop.serverState(request)).tasks.map(task => task.title)).toEqual(['Bewusst ausgeschlossene Aufgabe'])
@@ -55,7 +71,7 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Gesamtansicht Telefo
     await page.reload()
     if (mobile) await page.getByRole('button', { name: 'Neue Aufgabe', exact: true }).click()
     await title.focus()
-    await expect(target.locator('option:checked')).toHaveText('Arbeit')
+    await expect(target).toHaveText('Arbeit')
     await expect(title).toHaveValue('')
   })
 
@@ -83,7 +99,7 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Gesamtansicht Telefo
       await expect(otherSettings.getByLabel('Arbeit', { exact: true })).toBeChecked()
       await otherSettings.getByRole('button', { name: 'Schließen', exact: true }).click()
       await other.getByLabel('Neue Aufgabe', { exact: true }).focus()
-      await expect(other.getByLabel('Zielliste', { exact: true }).locator('option:checked')).toHaveText('Arbeit')
+      await expect(other.getByLabel('Zielliste', { exact: true })).toHaveText('Arbeit')
     } finally { await otherContext.close() }
   })
 
@@ -105,7 +121,7 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Gesamtansicht Telefo
     for (const title of ['Milch', 'Saft']) {
       const editor = await desktop.openTaskEditor(page, title)
       await moreOptions(editor)
-      await editor.getByLabel('Bereich', { exact: true }).selectOption({ label: 'Getränke' })
+      await selectOption(editor.getByLabel('Bereich', { exact: true }), { label: 'Getränke' })
       await editor.getByRole('button', { name: 'Speichern', exact: true }).click()
       await expect(editor).toBeHidden()
     }
@@ -128,7 +144,7 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Gesamtansicht Telefo
     await setOverviewMode(page, 'newest')
     await expect(done.getByRole('button', { name: 'Erledigt 1', exact: true })).toHaveAttribute('aria-expanded', 'false')
     await done.getByRole('button', { name: 'Erledigt 1', exact: true }).click()
-    await expect(done).toContainText('Einkaufen')
+    await expect(done.getByRole('img', { name: 'Liste: Einkaufen', exact: true })).toBeVisible()
     const reopen = done.getByRole('checkbox', { name: 'Aufgabe wieder öffnen: Milch', exact: true })
     await expect(reopen).toBeChecked()
     await reopen.click()
@@ -146,10 +162,10 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Gesamtansicht Telefo
     const target = page.getByLabel('Zielliste', { exact: true })
     const title = page.getByLabel('Neue Aufgabe', { exact: true })
     await title.focus()
-    await target.selectOption({ label: 'Einkaufen' })
+    await selectOption(target, { label: 'Einkaufen' })
     await expect(title).toHaveValue('')
     await title.fill('Gesamtentwurf')
-    await target.selectOption({ label: 'Arbeit' })
+    await selectOption(target, { label: 'Arbeit' })
     await expect(title).toHaveValue('Gesamtentwurf')
     await desktop.selectList(page, 'Einkaufen')
     await expect(title).toHaveValue('Milch noch nicht gespeichert')

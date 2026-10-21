@@ -98,7 +98,7 @@ export function TaskPriorityBar({ rating, dueAt, checklist, rank }: { rating: Ta
     <RatingMeter label="Priorität" value={ratingValues(rating, dueAt, nowMs, checklist, overview.userPreference?.detailed_ratings === true).priority}
       hint={`${rank ? `${rank}. Platz in dieser Ansicht (${rankNames[rank]}). ` : ''}Gleichgewichtet aus Wichtigkeit und Dringlichkeit.`}
       icon={<span className={`inline-flex shrink-0 items-center gap-1 ${rank ? rankColors[rank] : 'text-ink-muted'}`}>
-        <PriorityIcon className="size-icon-meta" />{rank ? <span aria-hidden="true" className="text-label font-semibold">{rank}</span> : null}
+        <PriorityIcon className="size-icon-meta" metallic={rank !== undefined} />{rank ? <span aria-hidden="true" className="priority-metal-number text-label font-semibold">{rank}</span> : null}
       </span>} prominent barOnly /></span>
 }
 

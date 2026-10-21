@@ -278,6 +278,35 @@ body {
   }
 }
 
+/* Die verfügbare Höhe kommt von Ark/Floating UI, auch oberhalb der Tastatur. */
+.select-menu { max-height: min(18rem, var(--available-height)); }
+.select-trigger-compact {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  padding: 0.5rem;
+  color: var(--color-ink);
+  font-size: var(--text-meta);
+  line-height: var(--text-meta--line-height);
+}
+
+/* Ruhige Lichtkante statt Animation; der Grundton bleibt Gold/Silber/Bronze. */
+.priority-metal-shadow { stop-color: color-mix(in srgb, currentColor 65%, #000); }
+.priority-metal-highlight { stop-color: color-mix(in srgb, currentColor 30%, #fff); }
+.priority-metal-number {
+  background: linear-gradient(135deg, currentColor 10%,
+    color-mix(in srgb, currentColor 65%, #000) 35%,
+    color-mix(in srgb, currentColor 30%, #fff) 48%, currentColor 65%);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+@media (forced-colors: active) {
+  .priority-metal-number { -webkit-text-fill-color: currentColor; }
+}
+
 /*
  * Sichtbare Scrollleiste für aufgeklappte Beschreibungen.
  *

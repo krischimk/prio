@@ -1,3 +1,4 @@
+import { selectOption } from './support/select'
 import { expectReminders } from './support/reminders'
 import { usernameFor } from './support/helpers'
 import { addReminder, expectOverviewMode, moreOptions, setDueAt, setOverviewMode } from './support/taskForms'
@@ -214,7 +215,7 @@ const funktionen: Funktion[] = [
       await expectOverviewMode(page, 'newest')
       const composer = page.getByRole('form', { name: 'Neue Aufgabe anlegen', exact: true })
       await composer.getByLabel('Neue Aufgabe', { exact: true }).focus()
-      await expect(composer.getByLabel('Zielliste', { exact: true }).locator('option:checked')).toHaveText('Arbeit')
+      await expect(composer.getByLabel('Zielliste', { exact: true })).toHaveText('Arbeit')
       await composer.getByLabel('Neue Aufgabe', { exact: true }).fill('Mit Standardliste')
       await composer.getByLabel('Neue Aufgabe', { exact: true }).press('Enter')
       await expect(composer.getByLabel('Neue Aufgabe', { exact: true })).toHaveValue('')
@@ -232,7 +233,7 @@ const funktionen: Funktion[] = [
       await page.reload()
       await expectOverviewMode(page, 'newest')
       await page.getByRole('button', { name: 'Neue Aufgabe', exact: true }).click()
-      await expect(page.getByRole('dialog', { name: 'Neue Aufgabe', exact: true }).getByLabel('Zielliste', { exact: true }).locator('option:checked')).toHaveText('Arbeit')
+      await expect(page.getByRole('dialog', { name: 'Neue Aufgabe', exact: true }).getByLabel('Zielliste', { exact: true })).toHaveText('Arbeit')
     },
   },
   {
@@ -373,7 +374,7 @@ const funktionen: Funktion[] = [
       await openTaskEditor(page, 'Äpfel')
       const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
       await moreOptions(formular)
-      await formular.getByLabel('Bereich', { exact: true }).selectOption({ label: 'Obst' })
+      await selectOption(formular.getByLabel('Bereich', { exact: true }), { label: 'Obst' })
       await formular.getByRole('button', { name: 'Speichern' }).click()
 
       await expect(bereichsKopf(page, 'Obst')).toBeVisible()
@@ -394,7 +395,7 @@ const funktionen: Funktion[] = [
 
       await openTaskEditor(page, 'Äpfel')
       await moreOptions(page)
-      await page.getByLabel('Bereich', { exact: true }).selectOption({ label: 'Obst' })
+      await selectOption(page.getByLabel('Bereich', { exact: true }), { label: 'Obst' })
       await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
       await expect(bereichsKopf(page, 'Obst')).toBeVisible()
@@ -515,7 +516,7 @@ const funktionen: Funktion[] = [
       await openTaskEditor(page, 'Zähne putzen')
       const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
       await setDueAt(formular, inTagen(1))
-      await formular.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
+      await selectOption(formular.getByLabel('Wiederholung', { exact: true }), 'daily')
       await formular.getByRole('button', { name: 'Speichern' }).click()
 
       await expect(breit.taskItem(page, 'Zähne putzen')).toContainText('Täglich')
@@ -527,7 +528,7 @@ const funktionen: Funktion[] = [
 
       await openTaskEditor(page, 'Zähne putzen')
       await setDueAt(page, inTagen(1))
-      await page.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
+      await selectOption(page.getByLabel('Wiederholung', { exact: true }), 'daily')
       await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
       await expect(telefon.taskRow(page, 'Zähne putzen')).toContainText('Täglich')
@@ -543,11 +544,11 @@ const funktionen: Funktion[] = [
       await openTaskEditor(page, 'Medikament')
       const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
       await setDueAt(formular, inTagen(1))
-      await formular.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
+      await selectOption(formular.getByLabel('Wiederholung', { exact: true }), 'daily')
       await addReminder(formular)
-      await formular.getByLabel('Erinnerung', { exact: true }).selectOption('1440')
+      await selectOption(formular.getByLabel('Erinnerung', { exact: true }), '1440')
       await addReminder(formular)
-      await formular.getByLabel('Erinnerung', { exact: true }).nth(1).selectOption('60')
+      await selectOption(formular.getByLabel('Erinnerung', { exact: true }).nth(1), '60')
       await formular.getByRole('button', { name: 'Speichern' }).click()
 
       await expectReminders(breit.taskItem(page, 'Medikament'), 2)
@@ -559,11 +560,11 @@ const funktionen: Funktion[] = [
 
       await openTaskEditor(page, 'Medikament')
       await setDueAt(page, inTagen(1))
-      await page.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
+      await selectOption(page.getByLabel('Wiederholung', { exact: true }), 'daily')
       await addReminder(page)
-      await page.getByLabel('Erinnerung', { exact: true }).selectOption('1440')
+      await selectOption(page.getByLabel('Erinnerung', { exact: true }), '1440')
       await addReminder(page)
-      await page.getByLabel('Erinnerung', { exact: true }).nth(1).selectOption('60')
+      await selectOption(page.getByLabel('Erinnerung', { exact: true }).nth(1), '60')
       await page.getByRole('button', { name: 'Speichern', exact: true }).click()
 
       await expectReminders(telefon.taskRow(page, 'Medikament'), 2)

@@ -5,6 +5,7 @@ import { Field } from '../components/Field'
 import { IconButton } from '../components/IconButton'
 import { Screen } from '../components/Screen'
 import { Sheet } from '../components/Sheet'
+import { Select } from '../components/Select'
 import { CloseIcon, MenuIcon, PlusIcon, RepeatIcon, TrashIcon } from '../icons'
 import { Markdown } from '../Markdown'
 import { SectionHeader } from '../SectionHeader'
@@ -42,6 +43,8 @@ import {
 export function Kitchen() {
   const [blatt, setBlatt] = useState(false)
   const [flaeche, setFlaeche] = useState(false)
+  const [auswahl, setAuswahl] = useState('taeglich')
+  const [langeAuswahl, setLangeAuswahl] = useState('1')
 
   return (
     <BackLayerProvider>
@@ -122,11 +125,11 @@ export function Kitchen() {
               <input id="k-zahl" className={numberInput} defaultValue="1440" />
             </Field>
             <Field id="k-auswahl" label="Auswahl">
-              <select id="k-auswahl" className={input} defaultValue="taeglich">
-                <option value="taeglich">täglich</option>
-                <option value="woechentlich">wöchentlich</option>
-              </select>
+              <Select id="k-auswahl" label="Auswahl" icon={<RepeatIcon />} value={auswahl} onChange={setAuswahl}
+                options={[{ value: 'taeglich', label: 'täglich' }, { value: 'woechentlich', label: 'wöchentlich' }]} />
             </Field>
+            <Select label="Auswahl deaktiviert" disabled value="taeglich" onChange={setAuswahl} icon={<RepeatIcon />}
+              options={[{ value: 'taeglich', label: 'täglich' }]} />
             <Field id="k-notiz" label="Mehrzeilig">
               <textarea id="k-notiz" className={input} rows={2} defaultValue="Zwei Zeilen." />
             </Field>
@@ -234,6 +237,10 @@ export function Kitchen() {
               <p className="px-4 py-4 text-body text-ink">
                 Escape und die Zurück-Taste schließen, der Fokus bleibt im Dialog.
               </p>
+              <div className="px-4 pb-4">
+                <Select label="Lange Auswahl" value={langeAuswahl} onChange={setLangeAuswahl} icon={<RepeatIcon />}
+                  options={Array.from({ length: 80 }, (_, index) => ({ value: String(index + 1), label: `Eintrag ${index + 1}` }))} />
+              </div>
             </Sheet>
           ) : null}
 

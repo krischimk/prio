@@ -1,5 +1,6 @@
 import type { ListSection } from '../domain/types'
-import { input } from './styles'
+import { Select } from './components/Select'
+import { SectionsIcon } from './icons'
 
 /**
  * Auswahl des Bereichs in einer Aufgabe.
@@ -12,25 +13,15 @@ export function SectionSelect({
   sections,
   value,
   onChange,
+  disabled = false,
 }: {
   id: string
   sections: ListSection[]
   value: string | null
   onChange: (wert: string | null) => void
+  disabled?: boolean
 }) {
-  return (
-    <select
-      id={id}
-      value={value ?? ''}
-      onChange={(event) => onChange(event.target.value === '' ? null : event.target.value)}
-      className={input}
-    >
-      <option value="">Ohne Bereich</option>
-      {sections.map((section) => (
-        <option key={section.id} value={section.id}>
-          {section.name}
-        </option>
-      ))}
-    </select>
-  )
+  return <Select id={id} label="Bereich" value={value ?? ''} disabled={disabled} icon={<SectionsIcon />}
+    onChange={value => onChange(value === '' ? null : value)}
+    options={[{ value: '', label: 'Ohne Bereich' }, ...sections.map(section => ({ value: section.id, label: section.name }))]} />
 }

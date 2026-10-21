@@ -1,3 +1,4 @@
+import { selectOption } from './support/select'
 import { expect, test } from '@playwright/test'
 import * as desktop from './support/helpers'
 import * as phone from './support/mobile'
@@ -24,15 +25,15 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Bedienung Telefon' :
     await page.getByRole('button', { name: formatCalendarDay(tomorrow), exact: true }).click()
     const clock = page.getByRole('dialog', { name: 'Uhrzeit wählen', exact: true })
     await expect(clock).toBeVisible()
-    await clock.getByLabel('Fällig am: Uhrzeit: Stunde', { exact: true }).selectOption('14')
-    await clock.getByLabel('Fällig am: Uhrzeit: Minute', { exact: true }).selectOption('30')
+    await selectOption(clock.getByLabel('Fällig am: Uhrzeit: Stunde', { exact: true }), '14')
+    await selectOption(clock.getByLabel('Fällig am: Uhrzeit: Minute', { exact: true }), '30')
     await expect(clock).toBeHidden()
     await expect(editor.getByLabel('Fällig am: Uhrzeit', { exact: true })).toHaveValue('14:30')
     await editor.getByRole('button', { name: 'Erinnerung hinzufügen', exact: true }).click()
     await page.getByRole('button', { name: formatCalendarDay(afterTomorrow), exact: true }).click()
     await expect(clock).toBeVisible()
-    await clock.getByLabel('Erinnerung am: Uhrzeit: Stunde', { exact: true }).selectOption('09')
-    await clock.getByLabel('Erinnerung am: Uhrzeit: Minute', { exact: true }).selectOption('15')
+    await selectOption(clock.getByLabel('Erinnerung am: Uhrzeit: Stunde', { exact: true }), '09')
+    await selectOption(clock.getByLabel('Erinnerung am: Uhrzeit: Minute', { exact: true }), '15')
     await editor.getByRole('button', { name: 'Speichern', exact: true }).click()
     await expect(editor).toBeHidden()
     await desktop.openTaskEditor(page, 'Kalenderfolge')
@@ -74,8 +75,8 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Bedienung Telefon' :
     await page.screenshot({ path: info.outputPath('light-mode.png') })
     await page.reload()
     const account = await openAccount(page, mobile)
-    await expect(account.getByRole('combobox', { name: 'Farbschema', exact: true })).toHaveValue('light')
-    await account.getByRole('combobox', { name: 'Farbschema', exact: true }).selectOption('dark')
+    await expect(account.getByRole('combobox', { name: 'Farbschema', exact: true })).toHaveAttribute('data-value', 'light')
+    await selectOption(account.getByRole('combobox', { name: 'Farbschema', exact: true }), 'dark')
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
   })
   test('Listen umsortieren, verstecken und zurückziehen', async ({ page }) => {
@@ -111,7 +112,7 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Bedienung Telefon' :
     await (mobile ? phone.createTask : desktop.createTask)(page, 'Täglich lesen')
     const editor = await desktop.openTaskEditor(page, 'Täglich lesen')
     await setDueAt(editor, localDue)
-    await editor.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
+    await selectOption(editor.getByLabel('Wiederholung', { exact: true }), 'daily')
     await editor.getByRole('button', { name: 'Speichern', exact: true }).click()
     await expect(editor).toBeHidden()
     await page.getByLabel('Aufgabe erledigen: Täglich lesen', { exact: true }).click()

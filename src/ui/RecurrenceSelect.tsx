@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { RECURRENCES, RECURRENCE_UNITS, makeRecurrence, recurrenceInterval, type RecurrenceUnit } from '../domain/recurrence'
 import { RECURRENCE_LABELS, RECURRENCE_UNIT_LABELS } from './recurrence'
 import { input } from './styles'
+import { Select } from './components/Select'
+import { CalendarIcon, RepeatIcon, SettingsIcon } from './icons'
 
 /**
  * Auswahlfeld für die Wiederholung.
@@ -26,30 +28,19 @@ export function RecurrenceSelect({
   const interval = recurrenceInterval(value) ?? { every: 2, unit: 'days' as const }
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="sr-only">
-        Wiederholung
-      </label>
-      <select
-        id={id}
+      <Select id={id} label="Wiederholung" icon={<RepeatIcon />}
         value={custom ? 'custom' : value}
         disabled={disabled}
         title="Wiederholung: Nach dem Abhaken wird der nächste Termin angelegt."
-        onChange={event => {
+        onChange={next => {
           setCountDraft(null)
-          setCustom(event.target.value === 'custom')
-          onChange(event.target.value === 'custom' ? makeRecurrence(interval.every, interval.unit) : event.target.value)
+          setCustom(next === 'custom')
+          onChange(next === 'custom' ? makeRecurrence(interval.every, interval.unit) : next)
         }}
-        className={`${input} disabled:cursor-not-allowed disabled:opacity-50`}
-      >
-        <option value="">Einmalig</option>
-        {RECURRENCES.map((art) => (
-          <option key={art} value={art}>
-            {RECURRENCE_LABELS[art]}
-          </option>
-        ))}
-        <option value="custom">Eigenes Intervall …</option>
-      </select>
-      {custom ? <div className="flex min-w-0 items-center gap-2">
+        options={[{ value: '', label: 'Einmalig', icon: <CalendarIcon /> },
+          ...RECURRENCES.map(value => ({ value, label: RECURRENCE_LABELS[value], icon: <RepeatIcon /> })),
+          { value: 'custom', label: 'Eigenes Intervall …', icon: <SettingsIcon /> }]} />
+      {custom ? <div className="grid min-w-0 grid-cols-[auto_minmax(0,5rem)_minmax(0,1fr)] items-center gap-2">
         <span className="text-meta text-ink-muted">Alle</span>
         <input type="number" min={1} max={999} step={1} required aria-label="Wiederholung: Anzahl" disabled={disabled}
           className={input} value={countDraft ?? interval.every} onChange={event => {
@@ -57,10 +48,9 @@ export function RecurrenceSelect({
             const count = Number(event.target.value)
             if (Number.isInteger(count) && count >= 1 && count <= 999) onChange(makeRecurrence(count, interval.unit))
           }} />
-        <select aria-label="Wiederholung: Einheit" className={input} disabled={disabled} value={interval.unit}
-          onChange={event => { setCountDraft(null); onChange(makeRecurrence(interval.every, event.target.value as RecurrenceUnit)) }}>
-          {RECURRENCE_UNITS.map(unit => <option key={unit} value={unit}>{RECURRENCE_UNIT_LABELS[unit]}</option>)}
-        </select>
+        <Select label="Wiederholung: Einheit" disabled={disabled} value={interval.unit} icon={<CalendarIcon />}
+          onChange={value => { setCountDraft(null); onChange(makeRecurrence(interval.every, value as RecurrenceUnit)) }}
+          options={RECURRENCE_UNITS.map(value => ({ value, label: RECURRENCE_UNIT_LABELS[value] }))} />
       </div> : null}
     </div>
   )

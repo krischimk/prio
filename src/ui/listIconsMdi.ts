@@ -30,12 +30,12 @@ export const LIST_ICONS_MDI: ListIconDefinition[] = [
   {
     id: 'std:prio',
     label: 'Prio',
-    source: 'lucide/list-filter',
+    source: 'lucide/list-sort-descending',
     group: 'Allgemein',
     paths: [
-      'M2 5h20',
-      'M6 12h12',
-      'M9 19h6',
+      'M15 12H3',
+      'M3 5h18',
+      'M9 19H3',
     ],
   },
   {

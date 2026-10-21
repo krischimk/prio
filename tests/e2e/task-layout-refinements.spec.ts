@@ -1,3 +1,4 @@
+import { selectOption } from './support/select'
 import { expect, test } from '@playwright/test'
 import * as desktop from './support/helpers'
 import * as phone from './support/mobile'
@@ -38,7 +39,7 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Kompakte Aufgaben Te
       await phone.openMenu(page)
     }
     await page.getByRole('button', { name: 'Konto', exact: true }).click()
-    await page.getByRole('dialog', { name: 'Konto', exact: true }).getByRole('combobox', { name: 'Farbschema', exact: true }).selectOption('light')
+    await selectOption(page.getByRole('dialog', { name: 'Konto', exact: true }).getByRole('combobox', { name: 'Farbschema', exact: true }), 'light')
     await page.getByRole('dialog', { name: 'Konto', exact: true }).getByRole('button', { name: 'Schließen', exact: true }).click()
     await page.screenshot({ path: info.outputPath('kompakte-liste-hell.png'), animations: 'disabled' })
     await setDetailedRatings(page, mobile, true)

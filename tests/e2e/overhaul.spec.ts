@@ -1,3 +1,4 @@
+import { selectOption } from './support/select'
 import { moreOptions } from './support/taskForms'
 import { expect, test } from '@playwright/test'
 import * as desktop from './support/helpers'
@@ -46,7 +47,7 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Neue Kernoberfläche
     await moreOptions(editor)
     await editor.getByRole('button', { name: 'Reihenfolge ändern' }).click()
     const order = page.getByRole('dialog', { name: 'Reihenfolge ändern' })
-    await order.getByLabel('Einfügen vor').selectOption({ label: 'Kaffee' })
+    await selectOption(order.getByLabel('Einfügen vor'), { label: 'Kaffee' })
     await order.getByRole('button', { name: 'Position übernehmen' }).click()
     await expect(order).toBeHidden()
     await expect(editor.getByLabel('Notiz', { exact: true })).toHaveText('Ohne Zucker')

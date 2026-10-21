@@ -1,3 +1,4 @@
+import { selectOption } from './support/select'
 import { expect, test } from '@playwright/test'
 import { createList, register, resetServer, serverState, taskItem, uniqueEmail } from './support/helpers'
 import { openOverview } from './support/overview'
@@ -11,7 +12,7 @@ for (const overview of [false, true]) test.describe(overview ? 'Erfassung Gesamt
     if (overview) await openOverview(page, false)
     const composer = page.getByRole('form', { name: 'Neue Aufgabe anlegen', exact: true })
     await composer.getByLabel('Neue Aufgabe', { exact: true }).fill('Erste Aufgabe')
-    if (overview) await composer.getByLabel('Zielliste', { exact: true }).selectOption({ label: 'Arbeit' })
+    if (overview) await selectOption(composer.getByLabel('Zielliste', { exact: true }), { label: 'Arbeit' })
   })
 
   test('Enter erlaubt direktes Weitertippen und erneutes Anlegen', async ({ page, request }) => {

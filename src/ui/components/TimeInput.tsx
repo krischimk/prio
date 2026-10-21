@@ -5,6 +5,7 @@ import { normalizeTime } from '../datetime'
 import { ClockIcon } from '../icons'
 import { input, layer, numeric } from '../styles'
 import { IconButton } from './IconButton'
+import { Select } from './Select'
 
 /** Direkt tippen oder Stunde/Minute wählen; in beiden Fällen 24-Stunden-Uhr. */
 export function TimeInput({ id, label, value, scopeValue, disabled, onChange, open: controlledOpen, onOpenChange, onFocus }: {
@@ -43,17 +44,23 @@ export function TimeInput({ id, label, value, scopeValue, disabled, onChange, op
     </div>
     <Popover.Positioner className={layer.top}><Popover.Content className="w-52 rounded-card border border-line-strong bg-raised p-3 shadow-lg shadow-page/50" aria-label="Uhrzeit wählen">
       <div className="grid grid-cols-2 gap-2">
-        <label className="space-y-1 text-meta text-ink-muted"><span>Stunde</span>
-          <select aria-label={`${label}: Stunde`} className={input} value={hour} onChange={event => {
-            setDraft(null); onChange(`${event.target.value}:${minute}`)
-          }}>{Array.from({ length: 24 }, (_, index) => String(index).padStart(2, '0')).map(item => <option key={item} value={item}>{item}</option>)}</select>
-        </label>
-        <label className="space-y-1 text-meta text-ink-muted"><span>Minute</span>
-          <select aria-label={`${label}: Minute`} className={input} value={minute} onChange={event => {
-            setDraft(null); onChange(`${hour}:${event.target.value}`); setOpen(false)
-          }}>{Number(minute) % 5 !== 0 ? <option value={minute} disabled hidden>{minute}</option> : null}
-            {Array.from({ length: 12 }, (_, index) => String(index * 5).padStart(2, '0')).map(item => <option key={item} value={item}>{item}</option>)}</select>
-        </label>
+        <div className="space-y-1 text-meta text-ink-muted"><span>Stunde</span>
+          <Select label={`${label}: Stunde`} value={hour} onChange={value => {
+            setDraft(null); onChange(`${value}:${minute}`)
+          }} options={Array.from({ length: 24 }, (_, index) => {
+            const value = String(index).padStart(2, '0'); return { value, label: value }
+          })} />
+        </div>
+        <div className="space-y-1 text-meta text-ink-muted"><span>Minute</span>
+          <Select label={`${label}: Minute`} value={minute} onChange={value => {
+            setDraft(null); onChange(`${hour}:${value}`); setOpen(false)
+          }} options={[
+            ...(Number(minute) % 5 !== 0 ? [{ value: minute, label: minute, disabled: true, hidden: true }] : []),
+            ...Array.from({ length: 12 }, (_, index) => {
+              const value = String(index * 5).padStart(2, '0'); return { value, label: value }
+            }),
+          ]} />
+        </div>
       </div>
     </Popover.Content></Popover.Positioner>
   </Popover.Root>

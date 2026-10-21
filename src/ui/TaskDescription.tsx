@@ -28,10 +28,10 @@ export function TaskDescription({ text, className = '', open, onToggle, busy = f
   }
   const collapse = <button type="button" aria-label="Notiz einklappen" aria-expanded={true} disabled={busy}
     data-testid="beschreibung-mehr" onClick={toggle}
-    className={`${focusRing} ml-1 inline-flex size-6 shrink-0 items-center justify-center rounded-control align-bottom hover:bg-raised active:bg-raised ${mutedText}`}>
+    className={`${focusRing} relative ml-1 inline-flex h-6 w-11 shrink-0 items-center justify-center rounded-control align-bottom before:absolute before:inset-x-0 before:-inset-y-2.5 hover:bg-raised active:bg-raised ${mutedText}`}>
     <ChevronIcon offen={false} className="size-icon-meta -rotate-90" />
   </button>
-  return <div className={`${className} ${open ? '' : `flex w-fit min-w-0 max-w-full items-center ${expand ? `${focusRing} cursor-pointer rounded-control hover:bg-raised active:bg-raised` : ''}`}`}
+  return <div className={`${className} ${open ? '' : `flex w-full min-w-0 items-center ${expand ? `${focusRing} relative cursor-pointer rounded-control before:absolute before:inset-x-0 before:-inset-y-3 hover:bg-raised active:bg-raised` : ''}`}`}
     role={expand ? 'button' : undefined} tabIndex={expand ? 0 : undefined}
     aria-label={expand ? 'Notiz aufklappen' : undefined} aria-expanded={expand ? false : undefined}
     aria-disabled={expand ? busy : undefined} data-task-control={expand ? true : undefined}
@@ -41,7 +41,7 @@ export function TaskDescription({ text, className = '', open, onToggle, busy = f
       if (event.key === 'Enter' || event.key === ' ') { toggle(event); event.preventDefault() }
     } : undefined}>
     {open ? <div data-testid="task-description" className={`break-words ${mutedText}`}><Markdown text={text} preserveLineBreaks trailing={collapse} /></div>
-      : <span ref={textRef} data-testid="task-description" className={`min-w-0 truncate text-meta ${mutedText}`}>
+      : <span ref={textRef} data-testid="task-description" className={`min-w-0 max-w-full truncate text-meta ${mutedText}`}>
         <InlineMarkdown text={previewLine} links={false} />{multiline ? '…' : null}
       </span>}
     {expand ? <ChevronIcon offen={false} className="ml-1 size-icon-meta shrink-0 rotate-90 text-ink-muted" /> : null}

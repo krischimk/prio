@@ -12,6 +12,7 @@ export interface TaskFactsProps {
   task: LocalTask
   currentUserId: string
   afterTitle?: ReactNode
+  titleTrailing?: ReactNode
 }
 
 /**
@@ -23,7 +24,7 @@ export interface TaskFactsProps {
  * Zeile war einmal `text-ink-muted` und einmal `text-ink-faint`. Hier entsteht
  * der Inhalt einmal; TaskRow setzt die gemeinsame klickbare Aufgabenfläche.
  */
-export function TaskFacts({ task, currentUserId, afterTitle }: TaskFactsProps) {
+export function TaskFacts({ task, currentUserId, afterTitle, titleTrailing }: TaskFactsProps) {
   const due = task.due_at === null ? null : formatDueLabel(task.due_at, task.completed)
   const wiederholung = describeRecurrence(task.recurrence)
   const upcoming = isUpcomingRepeat(task)
@@ -33,11 +34,11 @@ export function TaskFacts({ task, currentUserId, afterTitle }: TaskFactsProps) {
 
   return (
     <>
-      <span
-        className={`block break-words text-title ${task.completed ? 'text-ink-faint line-through' : upcoming ? 'text-ink-faint' : 'text-ink'}`}
+      <span className="flex items-start gap-2"><span
+        className={`min-w-0 flex-1 break-words text-title ${task.completed ? 'text-ink-faint line-through' : upcoming ? 'text-ink-faint' : 'text-ink'}`}
       >
         {task.title}
-      </span>
+      </span>{titleTrailing}</span>
       {afterTitle}
 
       {due || wiederholung || erinnerungen.length ? <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">

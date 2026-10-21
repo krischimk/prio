@@ -128,7 +128,9 @@ export async function closeListSettings(page: Page): Promise<void> {
 
 export async function openTaskEditor(page: Page, title: string): Promise<Locator> {
   await closeListSettings(page)
-  await page.getByTestId('task-row').filter({ hasText: title }).click()
+  // Die Notiz hat bewusst eine große eigene Trefferfläche. Bearbeiten startet
+  // am Titel, unabhängig von Länge und Klappzustand der übrigen Angaben.
+  await page.getByTestId('task-row').filter({ hasText: title }).getByText(title, { exact: true }).click()
   return page.getByRole('dialog', { name: 'Aufgabe', exact: true })
 }
 

@@ -1,3 +1,4 @@
+import { selectOption } from './support/select'
 import { expect, test } from '@playwright/test'
 import * as desktop from './support/helpers'
 import * as phone from './support/mobile'
@@ -31,7 +32,7 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Leere Bereiche Telef
       await (mobile ? phone.createTask : desktop.createTask)(page, title)
       const editor = await desktop.openTaskEditor(page, title)
       await moreOptions(editor)
-      await editor.getByLabel('Bereich', { exact: true }).selectOption({ label: 'Leer' })
+      await selectOption(editor.getByLabel('Bereich', { exact: true }), { label: 'Leer' })
       await editor.getByRole('button', { name: 'Speichern', exact: true }).click()
       await expect(editor).toBeHidden()
     }

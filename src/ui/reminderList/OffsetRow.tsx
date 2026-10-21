@@ -1,7 +1,8 @@
 import { reminderTimeOf } from '../../domain/reminder'
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from '../datetime'
 import { formatReminderOffset } from '../reminder'
-import { input } from '../styles'
+import { Select } from '../components/Select'
+import { BellIcon, SettingsIcon } from '../icons'
 import { DateTimeInput } from '../components/DateTimeInput'
 import { CustomOffset } from './CustomOffset'
 import { EIGENE, useOffsetChoice } from './useOffsetChoice'
@@ -32,23 +33,11 @@ export function OffsetRow({
           if (next) onChange(Math.round((Date.parse(dueAt) - Date.parse(next)) / 60000))
         }} />
         <div>
-          <label htmlFor={`${idPrefix}-wahl`} className="sr-only">
-            Erinnerung
-          </label>
-          <select
-            id={`${idPrefix}-wahl`}
-            aria-label="Erinnerung"
+          <Select id={`${idPrefix}-wahl`} label="Erinnerung" icon={<BellIcon />}
             value={wert}
-            onChange={(event) => waehlen(event.target.value)}
-            className={input}
-          >
-            {auswahl.map((wahl) => (
-              <option key={wahl} value={String(wahl)}>
-                {formatReminderOffset(wahl)}
-              </option>
-            ))}
-            <option value={EIGENE}>Eigene …</option>
-          </select>
+            onChange={waehlen}
+            options={[...auswahl.map(wahl => ({ value: String(wahl), label: formatReminderOffset(wahl) })),
+              { value: EIGENE, label: 'Eigene …', icon: <SettingsIcon /> }]} />
         </div>
       </div>
 

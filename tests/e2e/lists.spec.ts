@@ -1,3 +1,4 @@
+import { selectOption } from './support/select'
 import { expectReminders } from './support/reminders'
 import { addReminder, fillDateTime, setDueAt } from './support/taskForms'
 import { closeListSettings } from './support/helpers'
@@ -116,7 +117,7 @@ test('macht eine Aufgabe in der breiten Ansicht wiederkehrend', async ({ page })
 
   const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
   await setDueAt(formular, eingabe)
-  await formular.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
+  await selectOption(formular.getByLabel('Wiederholung', { exact: true }), 'daily')
   await formular.getByRole('button', { name: 'Speichern' }).click()
 
   await expect(zeile).toContainText('Täglich')
@@ -176,14 +177,14 @@ test('setzt in der breiten Ansicht einen eigenen Vorlauf für eine wiederkehrend
   await setDueAt(formular, morgenUm(9))
   await expect(formular.getByLabel('Erinnerung', { exact: true })).toHaveCount(0)
 
-  await formular.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
+  await selectOption(formular.getByLabel('Wiederholung', { exact: true }), 'daily')
   await addReminder(formular)
 
   // Die Form folgt der Wiederholung: relativer Vorlauf statt Zeitpunkt.
   const erinnerung = formular.getByLabel('Erinnerung', { exact: true })
-  await expect(erinnerung).toHaveValue('0')
-  await erinnerung.selectOption('custom')
-  await formular.getByLabel('Einheit des Erinnerungsabstands', { exact: true }).selectOption('hours')
+  await expect(erinnerung).toHaveAttribute('data-value', '0')
+  await selectOption(erinnerung, 'custom')
+  await selectOption(formular.getByLabel('Einheit des Erinnerungsabstands', { exact: true }), 'hours')
   await formular.getByLabel('Erinnerungsabstand', { exact: true }).fill('4')
 
   await expect(formular.getByRole('paragraph').filter({ hasText: '4 Std vorher' })).toBeVisible()
@@ -205,12 +206,12 @@ test('legt in der breiten Ansicht mehrere Erinnerungen an', async ({ page }) => 
 
   const formular = page.getByRole('form', { name: /Aufgabe bearbeiten/ })
   await setDueAt(formular, morgenUm(9))
-  await formular.getByLabel('Wiederholung', { exact: true }).selectOption('daily')
+  await selectOption(formular.getByLabel('Wiederholung', { exact: true }), 'daily')
 
   await addReminder(formular)
-  await formular.getByLabel('Erinnerung', { exact: true }).selectOption('1440')
+  await selectOption(formular.getByLabel('Erinnerung', { exact: true }), '1440')
   await addReminder(formular)
-  await formular.getByLabel('Erinnerung', { exact: true }).nth(1).selectOption('60')
+  await selectOption(formular.getByLabel('Erinnerung', { exact: true }).nth(1), '60')
 
   await expect(formular.getByLabel('Erinnerung', { exact: true })).toHaveCount(2)
   await formular.getByRole('button', { name: 'Speichern' }).click()

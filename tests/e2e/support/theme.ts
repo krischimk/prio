@@ -1,3 +1,4 @@
+import { selectMenu, selectOption } from './select'
 import { expect, test, type Page } from '@playwright/test'
 import * as phone from './mobile'
 import * as desktop from './helpers'
@@ -10,7 +11,7 @@ export async function openAccount(page: Page, mobile: boolean) {
 
 export async function setTheme(page: Page, mobile: boolean, theme: 'light' | 'dark') {
   const account = await openAccount(page, mobile)
-  await account.getByRole('combobox', { name: 'Farbschema', exact: true }).selectOption(theme)
+  await selectOption(account.getByRole('combobox', { name: 'Farbschema', exact: true }), theme)
   await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
   await account.getByRole('button', { name: 'Schließen', exact: true }).click()
   await expect(account).toBeHidden()
@@ -32,9 +33,10 @@ export async function systemThemeParity(page: Page, mobile: boolean) {
   } else await openAccount(page, mobile)
   const account = page.getByRole('dialog', { name: 'Konto', exact: true })
   const theme = account.getByRole('combobox', { name: 'Farbschema', exact: true })
-  await expect(theme).toHaveValue('system')
-  await expect(theme.getByRole('option')).toHaveText(['Gerätestandard', 'Hell', 'Dunkel'])
-  await theme.selectOption('light')
+  await expect(theme).toHaveAttribute('data-value', 'system')
+  await theme.click()
+  await expect((await selectMenu(theme)).getByRole('option')).toHaveText(['Gerätestandard', 'Hell', 'Dunkel'])
+  await selectOption(theme, 'light')
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
   await page.emulateMedia({ colorScheme: 'light' })
   await page.emulateMedia({ colorScheme: 'dark' })
@@ -45,10 +47,10 @@ export async function systemThemeParity(page: Page, mobile: boolean) {
     await page.screenshot({ path: test.info().outputPath('konto-thema-quer.png') })
     await page.setViewportSize({ width: 390, height: 844 })
   }
-  await theme.selectOption('dark')
+  await selectOption(theme, 'dark')
   await page.emulateMedia({ colorScheme: 'light' })
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
-  await theme.selectOption('system')
+  await selectOption(theme, 'system')
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
   await page.emulateMedia({ colorScheme: 'dark' })
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')

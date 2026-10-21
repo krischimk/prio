@@ -1,3 +1,4 @@
+import { selectOption } from './select'
 import { expect, test, type Page } from '@playwright/test'
 import * as desktop from './helpers'
 import * as phone from './mobile'
@@ -32,7 +33,7 @@ export async function listSortingParity(page: Page, mobile: boolean) {
     await urgency.press('Home')
     for (let step = 0; step < Number(value) * 10; step++) await urgency.press('ArrowRight')
     await moreOptions(editor)
-    await editor.getByLabel('Bereich', { exact: true }).selectOption({ label: section })
+    await selectOption(editor.getByLabel('Bereich', { exact: true }), { label: section })
     await editor.getByRole('button', { name: 'Speichern', exact: true }).click()
     await expect(editor).toBeHidden()
   }
