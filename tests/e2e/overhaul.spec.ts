@@ -77,7 +77,8 @@ for (const mobile of [false, true]) test.describe(mobile ? 'Neue Kernoberfläche
     await page.getByRole('checkbox', { name: 'Aufgabe erledigen: Beleg aufbewahren' }).click()
     const completed = page.getByRole('region', { name: 'Erledigt', exact: true })
     await completed.getByRole('button', { name: /^Erledigt/i }).click()
-    await completed.getByRole('button', { name: 'Aufgabe bearbeiten: Beleg aufbewahren', exact: true }).click()
+    // Die Notiz in der Zeilenmitte klappt auf; zum Bearbeiten den Titel wählen.
+    await completed.getByRole('button', { name: 'Aufgabe bearbeiten: Beleg aufbewahren', exact: true }).getByText('Beleg aufbewahren', { exact: true }).click()
     editor = page.getByRole('dialog', { name: 'Aufgabe', exact: true })
     await expect(editor.getByLabel('Notiz', { exact: true })).toHaveText('Die gespeicherten Einzelheiten bleiben erreichbar.')
     await moreOptions(editor)
