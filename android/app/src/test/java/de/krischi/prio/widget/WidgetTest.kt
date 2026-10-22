@@ -215,7 +215,7 @@ class WidgetTest {
                 assertTrue("A checklist button must not shrink the priority track: $tracks", tracks.all { it == tracks[0] && it > 0 })
             }
             val bitmap = Bitmap.createBitmap(width, 400, Bitmap.Config.ARGB_8888); parent.draw(Canvas(bitmap))
-            File("../../test-results/widget-native/overview-$width.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            File("../../test-results/widget-native/overview-$width.png").apply { parentFile.mkdirs() }.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
         }
     }
     @OptIn(ExperimentalGlanceRemoteViewsApi::class)
