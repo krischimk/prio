@@ -185,6 +185,10 @@ jobs:
           key: widget-${{ runner.os }}-${{ hashFiles('android/**/*.gradle') }}
       - run: npm ci
       - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      # Die Cordova-/Capacitor-Projektdateien entstehen lokal beim Synchronisieren
+      # und liegen bewusst außerhalb von Git. Auch ein frischer Runner braucht sie.
+      - name: Natives Projekt aus dem Web-Bau vorbereiten
+        run: npm run android:sync
       - name: Originalfarben, Symbole, Offline-Warteschlange und echte RemoteViews prüfen
         working-directory: android
         run: ./gradlew :app:testDebugUnitTest
