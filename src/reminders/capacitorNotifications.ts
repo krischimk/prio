@@ -9,6 +9,7 @@ import { LocalNotifications } from '@capacitor/local-notifications'
  * bleibt bei reinen Funktionen und dem `LocalNotificationsPort`.
  */
 import { isNativeApp } from '../app/platform'
+import { hasNativeWidgets, widgetBridge } from '../widgets/native'
 import type {
   LocalNotificationsPort,
   ReminderPermission,
@@ -33,6 +34,10 @@ import type {
  */
 export function createCapacitorNotificationsPort(): LocalNotificationsPort {
   return {
+    ...(hasNativeWidgets() ? {
+      replacePlan: async (candidates: import('./reminderPlan').ReminderCandidate[]) => (await widgetBridge.reminders({ candidates })).count,
+      scheduledCount: async () => (await widgetBridge.reminderCount()).count,
+    } : {}),
     async checkPermission(): Promise<ReminderPermission> {
       if (!isNativeApp()) return 'unsupported'
       try {

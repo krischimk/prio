@@ -7,4 +7,4 @@ if (!supabaseUrl || !publishableKey) throw new Error('MCP-Webbuild braucht die √
 if (!supabaseUrl.startsWith('https://')) throw new Error('MCP wird nur gegen einen HTTPS-Server ver√∂ffentlicht.')
 await build({ entryPoints: ['server/worker.ts'], outfile: 'dist/_worker.js', bundle: true, format: 'esm', platform: 'browser', target: 'es2023', minify: true,
   define: { __MCP_CONFIG__: JSON.stringify({ supabaseUrl, publishableKey, resourceUrl: 'https://prio-krischi.pages.dev/mcp', version }) } })
-await writeFile('dist/_routes.json', JSON.stringify({ version: 1, include: ['/mcp', '/.well-known/oauth-protected-resource', '/.well-known/oauth-protected-resource/*', '/.well-known/oauth-authorization-server', '/oauth/authorize', '/oauth/register', '/oauth/token'], exclude: [] }))
+await writeFile('dist/_routes.json', JSON.stringify({ version: 1, include: ['/api/widget', '/mcp', '/.well-known/oauth-protected-resource', '/.well-known/oauth-protected-resource/*', '/.well-known/oauth-authorization-server', '/oauth/authorize', '/oauth/register', '/oauth/token'], exclude: [] }))

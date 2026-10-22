@@ -11,7 +11,7 @@ import { compareRestorable, compareTasks, restoreCutoff } from '../../domain/ord
 import { completionDeadline, completionExpired } from '../../domain/taskLifecycle'
 import type { LocalTask } from '../../domain/types'
 import { insertionPosition, taskLocation } from '../../domain/taskPlacement'
-import { validateChecklist } from '../../domain/checklist'
+import { setChecklistCompleted, validateChecklist } from '../../domain/checklist'
 import { taskSeriesId, taskTitleKey } from '../../domain/taskTitles'
 import { parseTags } from '../../domain/tags'
 import { optionalText, requireText, ValidationError } from '../validation'
@@ -110,13 +110,17 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
       })
     },
 
-    async setChecklistItemCompleted(taskId, itemId, completed) {
-      return ctx.db.transaction('rw', ctx.db.tasks, async () => {
+    async setChecklistItemCompleted(taskId, itemId, completed, operation) {
+      return ctx.db.transaction('rw', ctx.db.tasks, ctx.db.meta, async () => {
         const task = await ctx.requireTask(taskId)
+        const receipt = operation ? `widget-checklist:${operation.id}` : null
+        if (receipt && await ctx.db.meta.get(receipt)) return task
         const item = task.checklist.find(item => item.id === itemId && item.deleted_at === null)
         if (!item) throw new ValidationError('not-found', 'Dieser Checklistenpunkt ist nicht mehr verfügbar.')
+        const stamp = operation ? { updated_at: new Date(operation.at).toISOString(), dirty: 1 as const } : ctx.stamp()
+        if (receipt) await ctx.db.meta.put({ key: receipt, value: stamp.updated_at })
         if (item.completed === completed) return task
-        const updated = { ...task, checklist: task.checklist.map(row => row.id === itemId ? { ...row, completed } : row), ...ctx.stamp() }
+        const updated = { ...task, checklist: setChecklistCompleted(task.checklist, itemId, completed), ...stamp }
         await ctx.db.tasks.put(updated)
         return updated
       })
@@ -142,11 +146,14 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
      * abgehakte Aufgabe ohne Nachfolger wäre sonst möglich, und die Aufgabe
      * wäre für immer verschwunden.
      */
-    async setTaskCompleted(taskId, completed) {
-      return ctx.db.transaction('rw', ctx.db.lists, ctx.db.tasks, async () => {
+    async setTaskCompleted(taskId, completed, operation) {
+      return ctx.db.transaction('rw', ctx.db.lists, ctx.db.tasks, ctx.db.meta, async () => {
         const task = await ctx.requireTask(taskId)
+        const receipt = operation ? `widget-completion:${operation.id}` : null
+        if (receipt && await ctx.db.meta.get(receipt)) return task
         const list = await ctx.requireList(task.list_id)
-        const now = ctx.clock.now()
+        const now = operation ? new Date(operation.at).toISOString() : ctx.clock.now()
+        if (!Number.isFinite(Date.parse(now))) throw new ValidationError('invalid', 'Ungültiger Abschlusszeitpunkt.')
         const tasks = (await ctx.db.tasks.where('list_id').equals(list.id).toArray()).map(normalisiereAufgabe)
         if (task.successor_id && !tasks.some(row => row.id === task.successor_id)) {
           const successor = await ctx.db.tasks.get(task.successor_id)
@@ -160,6 +167,7 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
           }
         }
         if (plan.changes.length) await ctx.db.tasks.bulkPut(plan.changes)
+        if (receipt) await ctx.db.meta.put({ key: receipt, value: taskId })
         return plan.task
       })
     },

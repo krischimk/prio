@@ -34,6 +34,7 @@ App. Sie sind so geschrieben, dass sie sich gefahrlos erneut ausführen lassen
 | `0026_task_expansions.sql` | Persönliche aufgeklappte Notizen und Checklisten (`task_expansions`); pro Aufgabe zwei Schalter, durch RLS privat und über `sync_push` abgeglichen |
 | `0027_mcp.sql` | Persönliche OAuth-Freigaben, atomare MCP-Fachbefehle, privater Änderungsverlauf und Eingangsschutz gegen native REST-Umwege |
 | `0028_mcp_vault.sql` | Privater verschlüsselter Token-Tresor mit serverseitiger Attestation, atomarer Refresh-Rotation, kurzem Retry-Fenster und automatischer Bereinigung |
+| `0029_android_widgets.sql` | Atomare native Widget-Aufträge über den geschützten Zeilenschreiber; private dauerhafte Digests verhindern doppelte Ausführung nach einem Abbruch. Kein direkter Tabellenzugriff und keine OAuth-Schreibfreigabe |
 
 Der MCP-Server verwendet eigene, widerrufbare Freigaben und undurchsichtige
 Prio-Tokens. Der private Befehlsschlüssel bleibt außerhalb des Repositories;

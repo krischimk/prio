@@ -130,7 +130,11 @@ export async function openTaskEditor(page: Page, title: string): Promise<Locator
   await closeListSettings(page)
   // Die Notiz hat bewusst eine große eigene Trefferfläche. Bearbeiten startet
   // am Titel, unabhängig von Länge und Klappzustand der übrigen Angaben.
-  await page.getByTestId('task-row').filter({ hasText: title }).getByText(title, { exact: true }).click()
+  const checkbox = page.getByRole('checkbox', { name: `Aufgabe erledigen: ${title}`, exact: true })
+    .or(page.getByRole('checkbox', { name: `Aufgabe wieder öffnen: ${title}`, exact: true }))
+  // Ein Tag darf denselben Namen tragen. Die Checkbox identifiziert die Aufgabe,
+  // und innerhalb ihres Inhalts steht der Titel vor den ergänzenden Tags.
+  await page.locator('[data-task-row]').filter({ has: checkbox }).getByTestId('task-row').getByText(title, { exact: true }).first().click()
   return page.getByRole('dialog', { name: 'Aufgabe', exact: true })
 }
 

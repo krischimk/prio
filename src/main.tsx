@@ -6,6 +6,7 @@ import { registerServiceWorker } from './pwa/registerServiceWorker'
 import './index.css'
 import { startThemeTracking } from './app/theme'
 import { PasswordRecoveryScreen } from './ui/PasswordRecoveryScreen'
+import { prepareNativeWidgets } from './widgets/native'
 
 const stopThemeTracking = startThemeTracking()
 if (import.meta.hot) import.meta.hot.dispose(stopThemeTracking)
@@ -44,6 +45,7 @@ if (kueche) {
   })
 } else {
   const config = readSupabaseConfig()
+  if (config) await prepareNativeWidgets(config)
   const services = config ? createSupabaseServices(config) : null
 
   root.render(

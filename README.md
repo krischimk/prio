@@ -1,5 +1,9 @@
 # Prio
 
+Das native [Android-Widget](WIDGET.md) zeigt eine Liste oder die Gesamtansicht
+auf dem Startbildschirm. Aufgaben und Checklistenpunkte lassen sich dort auch
+offline abhaken; mehrere Widgets können eigene Filter und Sortierungen haben.
+
 **Offline-first To-do-App – technischer Prototyp.**
 
 > Der Name wird als Eigenname geschrieben: **Prio** – großer Anfangsbuchstabe,

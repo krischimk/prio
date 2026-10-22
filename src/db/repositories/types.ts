@@ -91,8 +91,8 @@ export interface Repositories {
   // Aufgaben
   createTask(input: CreateTaskInput): Promise<LocalTask>
   updateTask(taskId: string, patch: UpdateTaskInput, options?: TaskEditOptions): Promise<LocalTask>
-  setTaskCompleted(taskId: string, completed: boolean): Promise<LocalTask>
-  setChecklistItemCompleted(taskId: string, itemId: string, completed: boolean): Promise<LocalTask>
+  setTaskCompleted(taskId: string, completed: boolean, operation?: { id: string; at: string }): Promise<LocalTask>
+  setChecklistItemCompleted(taskId: string, itemId: string, completed: boolean, operation?: { id: string; at: string }): Promise<LocalTask>
   listTaskTags(): Promise<string[]>
   /** Verschiebt eine Aufgabe in eine andere Liste (beide müssen zugänglich sein). */
   moveTask(taskId: string, targetListId: string, zielAbschnitt?: string | null): Promise<LocalTask>

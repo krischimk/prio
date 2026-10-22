@@ -26,6 +26,7 @@ public class MainActivity extends BridgeActivity {
         // Aufbau der Brücke ein.
         registerPlugin(UpdaterPlugin.class);
         registerPlugin(AppearancePlugin.class);
+        registerPlugin(PrioWidgetPlugin.class);
 
         EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);

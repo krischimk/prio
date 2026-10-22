@@ -160,6 +160,43 @@ jobs:
       - name: Migrationen, Rechte, Konflikte und Retry prüfen
         run: npm run db:test
 
+  widget:
+    if: inputs.android_smoke != true
+    name: Android-Widget · Offline-Aktionen und native Darstellung
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.m2/repository/org/robolectric
+          key: widget-${{ runner.os }}-${{ hashFiles('android/**/*.gradle') }}
+      - run: npm ci
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - name: Originalfarben, Symbole, Offline-Warteschlange und echte RemoteViews prüfen
+        working-directory: android
+        run: ./gradlew :app:testDebugUnitTest
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: widget-native
+          path: |
+            test-results/widget-native/
+            android/app/build/test-results/testDebugUnitTest/
+          retention-days: 14
+
   android:
     name: Android-App im Emulator (manuelle Release-Prüfung)
     if: inputs.android_smoke == true
@@ -214,7 +251,7 @@ jobs:
   # wurde.
   deploy:
     name: Web-Fassung zu Cloudflare Pages
-    needs: [quality, e2e, database]
+    needs: [quality, e2e, database, widget]
     # Jeder Zweig wird veröffentlicht: `main` als Produktion, alles andere als
     # Vorschau-Adresse (<hash>.prio-krischi.pages.dev). Damit lässt sich ein Fix
     # vor dem Zusammenführen ansehen, statt ihn allen sofort hinzustellen.

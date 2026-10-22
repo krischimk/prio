@@ -15,7 +15,7 @@ function afterMonths(start: Date, months: number): Date {
 }
 
 /** Unter 24 Stunden echte Dauer, darüber lokale Kalendertage ohne Uhrzeitrest. */
-export function relativeTimeSpan(start: Date, end: Date): { text: string; includesDays: boolean; includesWeeks: boolean } {
+export function relativeTimeSpan(start: Date, end: Date, timeZone?: string): { text: string; includesDays: boolean; includesWeeks: boolean } {
   const elapsed = end.getTime() - start.getTime()
   if (elapsed < minute) return { text: 'weniger als einer Minute', includesDays: false, includesWeeks: false }
   const parts: string[] = []
@@ -30,8 +30,14 @@ export function relativeTimeSpan(start: Date, end: Date): { text: string; includ
   }
   // UTC ist hier nur die Rechenfläche für lokale Datumsbestandteile: Ein
   // Sommerzeitwechsel darf einen Kalendertag nicht auf 23/25 Stunden kürzen.
-  const calendarStart = new Date(Date.UTC(start.getFullYear(), start.getMonth(), start.getDate()))
-  const calendarEnd = new Date(Date.UTC(end.getFullYear(), end.getMonth(), end.getDate()))
+  const calendarDate = (date: Date) => {
+    if (!timeZone) return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+    const parts = new Intl.DateTimeFormat('en', { timeZone, year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(date)
+    const part = (type: string) => Number(parts.find(value => value.type === type)?.value)
+    return new Date(Date.UTC(part('year'), part('month') - 1, part('day')))
+  }
+  const calendarStart = calendarDate(start)
+  const calendarEnd = calendarDate(end)
   const calendarDays = Math.round((calendarEnd.getTime() - calendarStart.getTime()) / day)
   let months = (calendarEnd.getUTCFullYear() - calendarStart.getUTCFullYear()) * 12 + calendarEnd.getUTCMonth() - calendarStart.getUTCMonth()
   if (afterMonths(calendarStart, months).getTime() > calendarEnd.getTime()) months -= 1

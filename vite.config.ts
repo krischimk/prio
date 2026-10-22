@@ -33,6 +33,9 @@ export default defineConfig(({ command }) => {
 
   return {
     plugins: [react(), tailwindcss()],
+    // Native Quellen und HTML-Bauberichte sind keine Web-App-Einstiege:
+    // Android-Arbeit darf offene Browserabläufe nicht neu laden.
+    server: { watch: { ignored: ['**/android/**', '**/test-results/**', '**/playwright-report/**'] } },
     // Die eigene Version wird eingebettet, damit die Oberfläche sie kennt, ohne
     // package.json mitzuschleppen. In der App wird sie zur Laufzeit durch die
     // tatsächlich installierte Version ersetzt (siehe `currentVersion`).

@@ -1,4 +1,5 @@
 import type { IsoDateTime } from '../domain/types'
+import type { ReminderCandidate } from './reminderPlan'
 
 /**
  * Abstraktion für lokale Benachrichtigungen.
@@ -27,6 +28,9 @@ export interface ReminderToSchedule {
 }
 
 export interface LocalNotificationsPort {
+  /** Android: App und Widget teilen eine native, dauerhaft geplante Ablage. */
+  replacePlan?(reminders: ReminderCandidate[]): Promise<number>
+  scheduledCount?(): Promise<number>
   checkPermission(): Promise<ReminderPermission>
   requestPermission(): Promise<ReminderPermission>
   schedule(reminders: ReminderToSchedule[]): Promise<void>

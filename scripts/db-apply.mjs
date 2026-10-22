@@ -246,7 +246,14 @@ if (checkOnly) {
     and exists(select 1 from private.mcp_settings where singleton and command_key is not null)`], { encoding: 'utf8' })
   const mcpReady = mcp.status === 0 && mcp.stdout.trim() === 't'
   console.log(mcpReady ? 'MCP-Freigaben, Eingangsschutz und privater Befehlsschlüssel sind eingerichtet.' : 'MCP-Schutz oder Befehlsschlüssel fehlt (Migration 0027).')
-  process.exit(result.status !== 0 || fehlend.status !== 0 || anzahl > 0 || !protectedWrites || !scheduled || !mcpReady ? 1 : 0)
+  const widget = spawnSync('psql', [...base, '-tAc', `select
+    to_regprocedure('public.widget_commit(text,text)') is not null
+    and to_regprocedure('public.widget_replay(uuid,jsonb)') is not null
+    and not has_table_privilege('authenticated','private.widget_commands','SELECT,INSERT,UPDATE,DELETE')
+    and not has_function_privilege('anon','public.widget_commit(text,text)','EXECUTE')`], { encoding: 'utf8' })
+  const widgetReady = widget.status === 0 && widget.stdout.trim() === 't'
+  console.log(widgetReady ? 'Widget-Aufträge sind atomar geschützt und gegen Wiederholung abgesichert.' : 'Widget-Schreibweg fehlt (Migration 0029).')
+  process.exit(result.status !== 0 || fehlend.status !== 0 || anzahl > 0 || !protectedWrites || !scheduled || !mcpReady || !widgetReady ? 1 : 0)
 }
 
 if (!existsSync(BUNDLE)) {

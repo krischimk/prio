@@ -21,6 +21,7 @@ import { TaskDialogs } from './TaskDialogs'
 import { TaskDragProvider } from './TaskDragProvider'
 import { DownloadIcon, RestoreIcon, UserIcon } from './icons'
 import { isNativeApp } from '../app/platform'
+import { WidgetNavigation } from './WidgetNavigation'
 
 /**
  * Wählt zwischen den beiden Oberflächen.
@@ -46,6 +47,7 @@ export function WorkspaceScreen() {
 function WorkspaceViews({ isDesktop }: { isDesktop: boolean }) {
   const { cloudConflicts, conflictsOpen, setConflictsOpen, accountOpen, setAccountOpen } = useView()
   return <TaskDragProvider>
+    <WidgetNavigation />
     <div>{isDesktop ? <DesktopWorkspace /> : <MobileWorkspace />}</div>
     <OverviewDialogs />
     <TaskDialogs />

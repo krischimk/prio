@@ -1,4 +1,6 @@
 apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
 
 /*
  * Signatur und Versionierung
@@ -34,6 +36,19 @@ def pkgTeile = pkgVersion.tokenize('.').collect { it.isInteger() ? it.toInteger(
 def pkgVersionCode = (pkgTeile[0] ?: 0) * 10000 + (pkgTeile[1] ?: 0) * 100 + (pkgTeile[2] ?: 0)
 
 android {
+    buildFeatures { compose true; buildConfig true }
+    compileOptions {
+        coreLibraryDesugaringEnabled true
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
+    }
+    kotlinOptions { jvmTarget = '21' }
+    testOptions { unitTests.includeAndroidResources = true }
+    sourceSets {
+        main.res.srcDir layout.buildDirectory.dir('generated/widget/res')
+        main.assets.srcDir layout.buildDirectory.dir('generated/widget/assets')
+        main.java.srcDir layout.buildDirectory.dir('generated/widget/kotlin')
+    }
     namespace = "de.krischi.prio"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
@@ -92,6 +107,13 @@ repositories {
 }
 
 dependencies {
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
+    implementation 'androidx.glance:glance-appwidget:1.2.0'
+    implementation 'androidx.work:work-runtime-ktx:2.10.5'
+    testImplementation 'org.robolectric:robolectric:4.16.1'
+    testImplementation 'androidx.test:core:1.7.0'
+    testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2'
+    testImplementation 'androidx.glance:glance-appwidget-testing:1.2.0'
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
@@ -102,6 +124,16 @@ dependencies {
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
 }
+
+// Kein eingefrorener Farb-/Icon-Export: Änderungen an der App sind beim nächsten
+// Android-Bau automatisch im Widget. Der Vertrag wird zusätzlich in Vitest geprüft.
+tasks.register('generateWidgetResources', Exec) {
+    workingDir rootDir.parentFile
+    commandLine 'node', 'scripts/generate-widget-resources.mjs'
+    inputs.files(fileTree('../../src/ui'), fileTree('../../src/widgets'), fileTree('../../src/domain'), file('../../src/index.css'), file('../../scripts/generate-widget-resources.mjs'))
+    outputs.dir layout.buildDirectory.dir('generated/widget')
+}
+tasks.named('preBuild').configure { dependsOn 'generateWidgetResources' }
 
 apply from: 'capacitor.build.gradle'
 

@@ -51,10 +51,11 @@ export function normalizeTime(value: string): string | null {
 }
 
 /** Kurze, gut lesbare Anzeige, z. B. "31.01.2026, 14:30". */
-export function formatDateTime(iso: string): string {
+export function formatDateTime(iso: string, timeZone?: string): string {
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return ''
   return date.toLocaleString('de-DE', {
+    timeZone,
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -113,17 +114,24 @@ export function formatCreatedLabel(createdAt: string): string {
   return `Erstellt: ${formatDateTime(createdAt)}`
 }
 
-export function formatDueLabel(dueAt: string, completed: boolean, now = Date.now()): DueLabel {
-  const zeitpunkt = formatDateTime(dueAt)
+export function formatDueLabel(dueAt: string, completed: boolean, now = Date.now(), timeZone?: string): DueLabel {
+  const zeitpunkt = formatDateTime(dueAt, timeZone)
   const due = new Date(dueAt)
   const absoluteText = `Fällig: ${zeitpunkt}`
   if (!zeitpunkt) return { text: 'Fälligkeit unklar', absoluteText: 'Fälligkeit unklar', overdue: false }
   const past = due.getTime() < now
   const overdue = !completed && past
-  const span = relativeTimeSpan(past ? due : new Date(now), past ? new Date(now) : due)
-  const weekday = span.includesDays && !span.includesWeeks ? ` (${due.toLocaleDateString('de-DE', { weekday: 'short' }).replace(/\.$/, '')})` : ''
+  const span = relativeTimeSpan(past ? due : new Date(now), past ? new Date(now) : due, timeZone)
+  const weekday = span.includesDays && !span.includesWeeks ? ` (${due.toLocaleDateString('de-DE', { weekday: 'short', timeZone }).replace(/\.$/, '')})` : ''
   const text = due.getTime() === now ? 'Jetzt fällig' : (overdue ? `Seit ${span.text} überfällig` : `${past ? 'Vor' : 'In'} ${span.text}`) + weekday
   return { text, absoluteText, overdue }
+}
+
+/** Nahe Termine bleiben auf einer möglicherweise ruhenden Startbildschirmfläche wahr. */
+export function formatWidgetDueLabel(dueAt: string, now: number, timeZone: string): DueLabel {
+  const label = formatDueLabel(dueAt, false, now, timeZone)
+  return Math.abs(Date.parse(dueAt) - now) < 24 * 60 * 60 * 1000
+    ? { ...label, text: `${label.overdue ? 'Überfällig · ' : ''}${formatDateTime(dueAt, timeZone)}` } : label
 }
 
 /**

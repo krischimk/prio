@@ -47,6 +47,11 @@ export function checklistProgress(items: ChecklistItem[]) {
   return { completed: active.filter(item => item.completed).length, total: active.length }
 }
 
+/** Ein Häkchen verändert weder Hauptaufgabe noch andere Checklistenpunkte. */
+export function setChecklistCompleted(items: ChecklistItem[], id: string, completed: boolean): ChecklistItem[] {
+  return items.map(item => item.id === id && item.deleted_at === null ? { ...item, completed } : item)
+}
+
 /** Neue Wiederholung ist eine eigene Checkliste; erledigte Vorgänger bleiben unverändert. */
 export function repeatChecklist(items: ChecklistItem[]): ChecklistItem[] {
   return items.filter(item => item.deleted_at === null).map(item => ({ ...item, completed: false }))

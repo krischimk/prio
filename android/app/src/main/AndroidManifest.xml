@@ -7,6 +7,8 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:theme="@style/AppTheme">
 
         <activity
@@ -23,6 +25,14 @@
             </intent-filter>
 
         </activity>
+
+        <activity android:name=".widget.WidgetConfigurationActivity" android:exported="true" android:label="Prio · Widget">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" /></intent-filter>
+        </activity>
+        <receiver android:name=".widget.PrioWidgetReceiver" android:exported="false" android:label="Prio · Aufgaben">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/prio_widget" />
+        </receiver>
 
         <provider
             android:name="androidx.core.content.FileProvider"

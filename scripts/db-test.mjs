@@ -3,6 +3,7 @@ import { spawn, spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import assert from 'node:assert/strict'
 import { testMcp } from './db-mcp-test.mjs'
+import { testWidgets } from './db-widget-test.mjs'
 
 const connection = process.env.PRIO_DB_TEST_URL
 if (!connection) throw new Error('PRIO_DB_TEST_URL muss auf eine lokale prio_test_* Datenbank zeigen.')
@@ -619,4 +620,5 @@ check('Update ergänzt fehlende Felder und alte Serien einmalig; erneute Migrati
   assert.equal(sql(`select jsonb_agg(to_jsonb(t) order by id) from public.tasks t`),before)
 })
 checks += testMcp(sql)
+checks += await testWidgets(sql, asyncSql)
 console.log(`${checks} PostgreSQL-Prüfungen bestanden.`)

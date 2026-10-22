@@ -1,5 +1,6 @@
 import { registerPlugin, SystemBars, SystemBarsStyle } from '@capacitor/core'
 import { isNativeApp } from './platform'
+import { hasNativeWidgets, widgetBridge } from '../widgets/native'
 
 export type Theme = 'dark' | 'light'
 export type ThemePreference = Theme | 'system'
@@ -30,6 +31,7 @@ export function applyTheme(preference: ThemePreference): void {
     else localStorage.setItem(key, preference)
   } catch { /* Die aktuelle Ansicht funktioniert auch ohne Speicher. */ }
   renderTheme(resolvedTheme(preference))
+  if (hasNativeWidgets()) void widgetBridge.theme({ preference }).catch(() => {})
 }
 
 function renderTheme(theme: Theme): void {

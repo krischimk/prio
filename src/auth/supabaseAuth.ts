@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { AuthError, type AuthPort, type AuthUser, type SignUpResult } from './authPort'
 import { normalizeUsername, validUsername } from '../domain/username'
+import { cachedNativeSession, hasNativeWidgets, nativeAuthLock, nativeAuthStorage } from '../widgets/native'
 
 const AUTH_STORAGE_KEY = 'prio.auth'
 
@@ -11,8 +12,8 @@ const AUTH_STORAGE_KEY = 'prio.auth'
  *  - `detectSessionInUrl: false`, weil Magic-Links/OAuth-Weiterleitungen in
  *    einer Capacitor-App eigene Deep-Link-Behandlung bräuchten. Passwort-Links
  *    öffnen stattdessen den eigenständigen Web-Weg `/konto/passwort`.
- *  - `persistSession: true` speichert die Sitzung in `localStorage`, das auch
- *    im Capacitor-WebView dauerhaft vorhanden ist.
+ *  - `persistSession: true` speichert im Browser in `localStorage`, auf Android
+ *    im verschlüsselten nativen Speicher, den auch das Widget verwendet.
  *  - Es werden keine Browser-APIs benutzt, die im WebView fehlen.
  */
 
@@ -50,6 +51,7 @@ export function createSupabaseClient(config: SupabaseConfig): SupabaseClient {
       autoRefreshToken: true,
       detectSessionInUrl: false,
       storageKey: AUTH_STORAGE_KEY,
+      ...(hasNativeWidgets() ? { storage: nativeAuthStorage, lock: nativeAuthLock } : {}),
     },
   })
 }
@@ -69,7 +71,7 @@ function toAuthUser(user: SupabaseUserLike | null | undefined): AuthUser | null 
 /** Nur die lokale Kontoauswahl. Cloud-Zugriffe prüft weiterhin Supabase/RLS. */
 function storedUser(): AuthUser | null {
   try {
-    const raw = globalThis.localStorage?.getItem(AUTH_STORAGE_KEY)
+    const raw = hasNativeWidgets() ? cachedNativeSession() : globalThis.localStorage?.getItem(AUTH_STORAGE_KEY)
     if (!raw) return null
     const session: unknown = JSON.parse(raw)
     if (!session || typeof session !== 'object' || !('user' in session)

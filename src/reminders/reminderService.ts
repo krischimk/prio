@@ -91,6 +91,7 @@ export function createReminderService(options: {
     ])
 
     const desired = planReminders(tasks, lists, clock.nowMs(), options.viewerId)
+    if (options.port.replacePlan) return describe(permission, await options.port.replacePlan(desired), 'ok')
 
     let counter = Number(await readMeta(options.db, META_REMINDER_ID_COUNTER))
     if (!Number.isFinite(counter) || counter < 0) counter = 0
@@ -147,7 +148,7 @@ export function createReminderService(options: {
       if (permission !== 'granted') {
         return describe(permission, 0, permission === 'denied' ? 'permission-denied' : 'permission-required')
       }
-      const scheduled = await options.db.reminders.count()
+      const scheduled = options.port.scheduledCount ? await options.port.scheduledCount() : await options.db.reminders.count()
       return describe(permission, scheduled, 'ok')
     },
 

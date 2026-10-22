@@ -311,6 +311,16 @@ nicht einmal je Änderung. Drei Stufen:
 
 ## Android
 
+* **Widget und App haben gemeinsame Quellen.** Für Farben, Schriften und Symbole
+  erzeugt `generate-widget-resources.mjs` bei jedem Android-Bau die Ressourcen.
+  Fachliche Darstellung kommt aus `src/widgets/model.ts`, Abschluss und Erinnerungen
+  aus den bestehenden Domänenfunktionen. Änderungen an einer im Widget sichtbaren
+  Information oder Aktion werden in diesen gemeinsamen Quellen umgesetzt; eine
+  geänderte native Anordnung wird zusätzlich im Widget-Host geprüft. Die nativen
+  Tests laufen in CI und vor dem Release automatisch. Einzelheiten: `WIDGET.md`.
+  Auslöser: Das Widget soll spätere App-Anpassungen übernehmen statt eine zweite,
+  allmählich abweichende Fassung der Darstellung und Geschäftsregeln zu werden.
+
 * JDK 17–21 verwenden (das System-JDK ist zu neu für das Android Gradle Plugin).
 * `.safe-top`/`.safe-bottom` **niemals** mit `py-*`/`px-*` auf demselben Element:
   Die Safe-Area-Klassen stehen ungelayert im CSS und überschreiben Tailwind.

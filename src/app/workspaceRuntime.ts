@@ -11,6 +11,7 @@ import {
 import type { NetworkMonitor } from '../sync/network'
 import type { RemoteGateway } from '../sync/remoteGateway'
 import { withChangeTracking } from './trackedRepositories'
+import { createWidgetMirror } from '../widgets/mirror'
 
 /** Wie lange eine lokale Änderung gesammelt wird, bevor abgeglichen wird. */
 const LOKALE_AENDERUNG_ENTPRELLUNG_MS = 400
@@ -105,6 +106,7 @@ export async function createWorkspaceRuntime({
   let entprellung: ReturnType<typeof setTimeout> | null = null
   let syncLauf: Promise<void> | null = null
   let syncVorgemerkt = false
+  let widgets: ReturnType<typeof createWidgetMirror> | null = null
 
   /** Setzt einen Teil der Momentaufnahme und benachrichtigt die Oberfläche. */
   const melde = (teil: Partial<WorkspaceZustand>) => {
@@ -131,6 +133,7 @@ export async function createWorkspaceRuntime({
       void erinnerungenAuffrischen()
     }, LOKALE_AENDERUNG_ENTPRELLUNG_MS)
     void offeneAenderungenZaehlen()
+    void widgets?.publish(false, true)
   }
 
   /**
@@ -168,6 +171,7 @@ export async function createWorkspaceRuntime({
   async function syncEinmal() {
     let changed = false
     try {
+      await widgets?.drain()
       const result = await engine.sync()
       changed = result.changed
       if (geschlossen) return
@@ -190,6 +194,7 @@ export async function createWorkspaceRuntime({
       // Nach einem Pull kann sich lokal etwas geändert haben – die Anzeige muss
       // neu lesen, aber ohne einen weiteren Abgleich auszulösen.
       if (changed) melde({ datenVersion: zustand.datenVersion + 1 })
+      void widgets?.publish(false, changed)
     } finally {
       await offeneAenderungenZaehlen()
       // Nur wenn wirklich neue Daten angekommen sind: Erinnerungen nachziehen.
@@ -224,6 +229,8 @@ export async function createWorkspaceRuntime({
     repositories,
     sync: synchronisieren,
   })
+  widgets = createWidgetMirror(database, repositories, userId)
+  void widgets.publish(true)
 
   // Erster Abgleich nach dem Anmelden, danach regelmäßig und bei „wieder online“.
   void repositories.pruneDiscardedNotes().catch(() => {})
@@ -234,6 +241,7 @@ export async function createWorkspaceRuntime({
   const interval = setInterval(() => {
     // Fristen laufen auch ohne neue Daten und im Offlinezustand weiter.
     melde({ jetztMs: Date.now() })
+    void widgets?.publish()
     void repositories.pruneDiscardedNotes().catch(() => {})
     if (network.isOnline()) void synchronisieren()
   }, REGELMAESSIGER_ABGLEICH_MS)
@@ -256,6 +264,7 @@ export async function createWorkspaceRuntime({
     erinnerungenErlauben,
     schliessen: () => {
       geschlossen = true
+      widgets?.close()
       if (entprellung) clearTimeout(entprellung)
       clearInterval(interval)
       netzAbmelden()
