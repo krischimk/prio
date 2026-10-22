@@ -3,6 +3,8 @@
 Das vergrößerbare Glance-Widget wird mit der APK installiert. Im Widget-Menü
 des Startbildschirms „Prio · Aufgaben“ auswählen. Jedes Exemplar hat seine
 eigene Liste oder Gesamtansicht, Sortierung und Tag-Auswahl (UND-Verknüpfung).
+Die Deckkraft des Hintergrunds lässt sich je Widget von 0 % (durchsichtig) bis
+100 % (deckend) einstellen. Schrift und Bedienelemente bleiben dabei unverändert.
 Der Kopf öffnet die Liste, `+` die Erfassung, eine Zeile die Aufgabe. Das
 Kästchen erledigt direkt. Der Fortschrittsknopf klappt die Checkliste ein oder
 aus; einzelne Punkte lassen sich unabhängig von der Aufgabe abhaken, auch offline.
@@ -68,7 +70,9 @@ Ziehen und freie Texteingabe bleiben dort.
 der Brücke. `npm run db:test` prüft zusätzlich die echte atomare Speicherung,
 Parallelität, Berechtigungen, wiederholte Migration und Retry-Quittungen.
 `cd android && ./gradlew :app:testDebugUnitTest` prüft SQLite-Persistenz,
-Kontentrennung, getrennte Konfigurationen und rendert echte Glance-RemoteViews in
+Kontentrennung, getrennte Konfigurationen, Deckkraft und den Checklistenknopf bei
+fehlendem Netz. Alle exportierten Symbole werden als Android-Vektoren geladen
+und gezeichnet, einschließlich kompakter SVG-Bogenparameter. Die Prüfung rendert echte Glance-RemoteViews in
 einem Android-Widget-Host. Die Bilder stehen unter `test-results/widget-native/`.
 Diese native Prüfung läuft automatisch bei jedem CI- und Release-Bau. Telefon-
 und Querformat sowie beide Themen gehören dazu. Die Bedienung im tatsächlichen

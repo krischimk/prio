@@ -130,7 +130,7 @@ dependencies {
 tasks.register('generateWidgetResources', Exec) {
     workingDir rootDir.parentFile
     commandLine 'node', 'scripts/generate-widget-resources.mjs'
-    inputs.files(fileTree('../../src/ui'), fileTree('../../src/widgets'), fileTree('../../src/domain'), file('../../src/index.css'), file('../../scripts/generate-widget-resources.mjs'))
+    inputs.files(fileTree('../../src/ui'), fileTree('../../src/widgets'), fileTree('../../src/domain'), file('../../src/index.css'), file('../../scripts/generate-widget-resources.mjs'), file('../../scripts/androidSvgPath.mjs'))
     outputs.dir layout.buildDirectory.dir('generated/widget')
 }
 tasks.named('preBuild').configure { dependsOn 'generateWidgetResources' }

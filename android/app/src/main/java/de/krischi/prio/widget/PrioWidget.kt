@@ -45,7 +45,7 @@ class PrioWidget : GlanceAppWidget() {
         val large = size.width >= 340.dp
         val ink = ColorProvider(Color(design.color("ink"))); val muted = ColorProvider(Color(design.color("ink-muted")))
         val settings = actionStartActivity(Intent(context, WidgetConfigurationActivity::class.java).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId).setData(Uri.parse("prio-widget:configure/$widgetId")))
-        Column(GlanceModifier.fillMaxSize().background(Color(design.color("page"))).appWidgetBackground().cornerRadius(24.dp).padding(horizontal = 8.dp)) {
+        Column(GlanceModifier.fillMaxSize().background(Color(design.color("page")).copy(alpha = view.opacity)).appWidgetBackground().cornerRadius(24.dp).padding(horizontal = 8.dp)) {
             Row(GlanceModifier.fillMaxWidth().height(48.dp), verticalAlignment = Alignment.CenterVertically) {
                 Row(GlanceModifier.defaultWeight().fillMaxHeight().clickable(open(context, view, "list")).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     Image(ImageProvider(design.icon(context, view.icon)), null, GlanceModifier.size(20.dp), colorFilter = ColorFilter.tint(muted))
@@ -77,26 +77,6 @@ class PrioWidget : GlanceAppWidget() {
                             Column(GlanceModifier.defaultWeight().clickable(open(context, view, "task", task.getString("id"), task.getString("listId"))).padding(top = 6.dp, bottom = 6.dp, end = 4.dp)) {
                                 Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                     Text(task.getString("title"), GlanceModifier.defaultWeight(), style = TextStyle(color = if (deferred) muted else ink, fontSize = design.font("body").sp), maxLines = if (rich) 2 else 1)
-                                    if (view.listId == null) Image(ImageProvider(design.icon(context, task.text("listIcon"))), task.text("listName"), GlanceModifier.size(16.dp), colorFilter = ColorFilter.tint(muted))
-                                }
-                                if (rich && !task.isNull("priority")) {
-                                    Row(GlanceModifier.fillMaxWidth().padding(top = 3.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        val rankRole = when (task.optInt("rank")) { 1 -> "priority-gold"; 2 -> "priority-silver"; 3 -> "priority-bronze"; else -> "ink-muted" }
-                                        Image(ImageProvider(design.icon(context, "Priority")), "Priorität", GlanceModifier.size(14.dp), colorFilter = ColorFilter.tint(ColorProvider(Color(design.color(rankRole)))))
-                                        Spacer(GlanceModifier.width(4.dp))
-                                        Image(ImageProvider(priorityBitmap(design, task.getDouble("priority").toFloat())), null, GlanceModifier.defaultWeight().height(4.dp), contentScale = ContentScale.FillBounds)
-                                    }
-                                }
-                                if (rich && (task.optBoolean("showDue") || task.optBoolean("hasReminder") || deferred)) {
-                                    Row(GlanceModifier.fillMaxWidth().padding(top = 3.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        if (task.optBoolean("showDue")) {
-                                            Image(ImageProvider(design.icon(context, "Calendar")), null, GlanceModifier.size(14.dp), colorFilter = ColorFilter.tint(muted))
-                                            Spacer(GlanceModifier.width(4.dp))
-                                            Text(task.getString("due"), GlanceModifier.defaultWeight(), TextStyle(color = if (task.optBoolean("overdue")) ColorProvider(Color(design.color("danger"))) else muted, fontSize = design.font("label").sp), maxLines = 1)
-                                        }
-                                        if (task.optBoolean("hasReminder")) Image(ImageProvider(design.icon(context, "Bell")), "Erinnerung", GlanceModifier.size(14.dp), colorFilter = ColorFilter.tint(muted))
-                                    }
-                                    if (deferred) Text("Nächste Wiederholung", style = TextStyle(color = muted, fontSize = design.font("label").sp))
                                 }
                             }
                             if (task.optInt("checklistTotal") > 0) {
@@ -105,7 +85,26 @@ class PrioWidget : GlanceAppWidget() {
                                     Text("${task.getInt("checklistDone")}/${task.getInt("checklistTotal")} ${if (task.optBoolean("expanded")) "▴" else "▾"}", style = TextStyle(color = muted, fontSize = design.font("label").sp))
                                 }
                             }
+                            if (view.listId == null) Box(GlanceModifier.width(24.dp).height(48.dp), contentAlignment = Alignment.Center) {
+                                Image(ImageProvider(design.icon(context, task.text("listIcon"))), task.text("listName"), GlanceModifier.size(16.dp), colorFilter = ColorFilter.tint(muted))
+                            }
                         }
+                        if (rich && !task.isNull("priority")) {
+                            Row(GlanceModifier.fillMaxWidth().padding(start = 48.dp, end = 4.dp, bottom = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                                val rankRole = when (task.optInt("rank")) { 1 -> "priority-gold"; 2 -> "priority-silver"; 3 -> "priority-bronze"; else -> "ink-muted" }
+                                Image(ImageProvider(design.icon(context, "Priority")), "Priorität", GlanceModifier.size(14.dp), colorFilter = ColorFilter.tint(ColorProvider(Color(design.color(rankRole)))))
+                                Spacer(GlanceModifier.width(4.dp))
+                                Image(ImageProvider(priorityBitmap(design, task.getDouble("priority").toFloat())), null, GlanceModifier.defaultWeight().height(4.dp), contentScale = ContentScale.FillBounds)
+                            }
+                        }
+                        if (rich && task.optBoolean("showDue")) {
+                            Row(GlanceModifier.fillMaxWidth().padding(start = 48.dp, end = 4.dp, bottom = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Image(ImageProvider(design.icon(context, "Calendar")), null, GlanceModifier.size(14.dp), colorFilter = ColorFilter.tint(muted))
+                                Spacer(GlanceModifier.width(4.dp))
+                                Text(task.getString("due"), GlanceModifier.defaultWeight(), TextStyle(color = if (task.optBoolean("overdue")) ColorProvider(Color(design.color("danger"))) else muted, fontSize = design.font("label").sp), maxLines = 1)
+                            }
+                        }
+                        if (rich && deferred) Text("Nächste Wiederholung", GlanceModifier.padding(start = 48.dp, bottom = 3.dp), style = TextStyle(color = muted, fontSize = design.font("label").sp))
                         if (task.optBoolean("expanded")) task.array("checklist").objects().forEach { point ->
                             val checked = point.optBoolean("completed")
                             Row(GlanceModifier.fillMaxWidth().padding(start = 32.dp).clickable(actionRunCallback<CompleteWidgetTask>(actionParametersOf(taskKey to task.getString("id"), userKey to view.userId!!, checklistKey to point.getString("id"), completedKey to !checked)))

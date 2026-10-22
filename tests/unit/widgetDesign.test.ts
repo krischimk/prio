@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { LIST_ICONS } from '../../src/ui/listIcons'
+import { androidSvgPath } from '../../scripts/androidSvgPath.mjs'
 
 describe('App und Widget behalten gemeinsame Designquellen', () => {
   it('generates both palettes, typography and every current list symbol at build time', () => {
@@ -22,7 +23,7 @@ describe('App und Widget behalten gemeinsame Designquellen', () => {
       expect(design.fonts.body).toBe(parseFloat(css.match(/--text-body:\s*([\d.]+)rem/)![1]) * 16)
       for (const icon of LIST_ICONS) {
         const vector = readFileSync(join(folder, `res/drawable/${design.icons[icon.id]}.xml`), 'utf8')
-        for (const path of icon.paths) expect(vector).toContain(path)
+        for (const path of icon.paths) expect(vector).toContain(androidSvgPath(path))
       }
       const gradle = readFileSync('android/app/build.gradle', 'utf8')
       expect(gradle).toContain("dependsOn 'generateWidgetResources'")

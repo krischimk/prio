@@ -7,6 +7,7 @@ import { build } from 'esbuild'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { svgAnalysieren } from './svgShapes.mjs'
+import { androidSvgPath } from './androidSvgPath.mjs'
 
 const root = resolve(import.meta.dirname, '..')
 async function source(file) {
@@ -41,7 +42,7 @@ export async function widgetResources() {
   for (let i = 0; i < all.length; i++) {
     const [key, icon] = all[i]; const [, , width, height] = icon.viewBox.split(' ')
     const name = `prio_wi_${i}`; iconNames[key] = name
-    files.set(`res/drawable/${name}.xml`, `<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="${width}" android:viewportHeight="${height}">\n${icon.pfade.map(path => `<path android:pathData="${escape(path)}" android:fillColor="${icon.gefuellt ? '#FFFFFFFF' : '#00000000'}"${icon.gefuellt ? '' : ' android:strokeColor="#FFFFFFFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round"'}/>`).join('\n')}\n</vector>`)
+    files.set(`res/drawable/${name}.xml`, `<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="${width}" android:viewportHeight="${height}">\n${icon.pfade.map(path => `<path android:pathData="${escape(androidSvgPath(path))}" android:fillColor="${icon.gefuellt ? '#FFFFFFFF' : '#00000000'}"${icon.gefuellt ? '' : ' android:strokeColor="#FFFFFFFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round"'}/>`).join('\n')}\n</vector>`)
   }
   files.set('assets/widget-design.json', JSON.stringify({ dark: colors(base), light: colors(light), fonts, icons: iconNames }))
   files.set('kotlin/de/krischi/prio/widget/WidgetContract.kt', `package de.krischi.prio.widget\n// Erzeugt aus src/widgets/model.ts.\ninternal object WidgetContract { const val PROTOCOL = ${WIDGET_PROTOCOL} }\n`)

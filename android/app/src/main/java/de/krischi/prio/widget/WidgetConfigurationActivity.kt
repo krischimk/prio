@@ -71,6 +71,17 @@ class WidgetConfigurationActivity : Activity() {
             button("Prio öffnen", "Overview") { startActivity(Intent(this, de.krischi.prio.MainActivity::class.java)); finish() }
             return
         }
+        val opacity = text("Deckkraft · ${(config.optDouble("opacity", 1.0) * 100).toInt()} %")
+        root.addView(SeekBar(this).apply {
+            max = 100; progress = (config.optDouble("opacity", 1.0) * 100).toInt(); minimumHeight = dp(48)
+            progressTintList = android.content.res.ColorStateList.valueOf(design.color("brand-soft")); thumbTintList = progressTintList
+            contentDescription = "Deckkraft des Widget-Hintergrunds"
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(bar: SeekBar, value: Int, fromUser: Boolean) { config.put("opacity", value / 100.0); opacity.text = "Deckkraft · $value %" }
+                override fun onStartTrackingTouch(bar: SeekBar) = Unit
+                override fun onStopTrackingTouch(bar: SeekBar) = Unit
+            })
+        })
         val lists = snapshot.array("lists").objects()
         val listNames = listOf("Gesamtansicht") + lists.map { it.getString("name") }
         val listIds = listOf<String?>(null) + lists.map { it.getString("id") }

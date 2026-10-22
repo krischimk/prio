@@ -19,7 +19,7 @@ class WidgetDesign(context: Context) {
     }
 }
 
-data class WidgetView(val userId: String?, val title: String, val listId: String?, val icon: String?, val tasks: List<JSONObject>, val pending: Int, val message: String?, val configured: Boolean) {
+data class WidgetView(val userId: String?, val title: String, val listId: String?, val icon: String?, val tasks: List<JSONObject>, val pending: Int, val message: String?, val configured: Boolean, val opacity: Float = 1f) {
     companion object {
         fun read(store: WidgetStore, widgetId: Int, activeUser: String?): WidgetView {
             val snapshot = store.snapshot(); val config = store.config(widgetId)
@@ -59,7 +59,7 @@ data class WidgetView(val userId: String?, val title: String, val listId: String
                 store.read("error") == "offline" -> "Offline · gespeicherter Stand"
                 else -> null
             }
-            return WidgetView(activeUser, list?.getString("name") ?: "Gesamtansicht", listId, list?.text("icon") ?: if (listId == null) "Overview" else "BulletList", ordered, commands.size, message, true)
+            return WidgetView(activeUser, list?.getString("name") ?: "Gesamtansicht", listId, list?.text("icon") ?: if (listId == null) "Overview" else "BulletList", ordered, commands.size, message, true, config.optDouble("opacity", 1.0).toFloat().coerceIn(0f, 1f))
         }
     }
 }
