@@ -31,6 +31,7 @@ import type { Repositories } from '../db/repositories'
 
 /** Schreibende Operationen: lösen Abgleich und Neuladen aus. */
 export const SCHREIBEND = [
+  'advanceRoutines',
   'setListInOverview',
   'setListSortMode',
   'placeList',
@@ -105,7 +106,7 @@ export function withChangeTracking(
     const original = repositories[name] as unknown as BeliebigeMethode
     const ersatz = (async (...args: unknown[]) => {
       const ergebnis = await original(...(args as never[]))
-      if (!['mergeShareContacts', 'pruneDiscardedNotes'].includes(name) || ergebnis !== false) meldung()
+      if (!['mergeShareContacts', 'pruneDiscardedNotes', 'advanceRoutines'].includes(name) || ergebnis !== false) meldung()
       return ergebnis
     }) as unknown as Repositories[typeof name]
     // Die Zuweisung über einen Index lässt TypeScript nicht auf die

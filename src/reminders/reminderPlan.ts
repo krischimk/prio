@@ -1,6 +1,7 @@
 import { normalizeIso } from '../domain/clock'
 import { isMutedFor, reminderTimeOf } from '../domain/reminder'
 import type { LocalList, LocalTask } from '../domain/types'
+import { effectiveRoutine } from '../domain/routine'
 
 /**
  * Ermittelt, für welche Aufgaben eine Erinnerung geplant werden soll.
@@ -60,7 +61,8 @@ export function planReminders(
   const listNames = new Map(lists.map((list) => [list.id, list.name]))
 
   const candidates: ReminderCandidate[] = []
-  for (const task of tasks) {
+  for (const original of tasks) {
+    const task = effectiveRoutine(original, nowMs)
     if (task.deleted_at !== null) continue
     if (task.completed) continue
 

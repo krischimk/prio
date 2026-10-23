@@ -23,6 +23,8 @@ import { SCHREIBEND } from '../../src/app/trackedRepositories'
  * Nutzerweg (sie laufen im Hintergrund oder als Teil eines anderen Eintrags).
  */
 const ABDECKUNG: Record<(typeof SCHREIBEND)[number], string | null> = {
+  // Automatischer Zeitwechsel; Oberfläche und Hintergrund nutzen dieselbe Regel.
+  advanceRoutines: null,
   setListInOverview: 'Liste in die Gesamtansicht aufnehmen',
   setListSortMode: 'Listen manuell oder nach Priorität mit und ohne Bereiche sortieren',
   placeList: 'Listen umsortieren und verstecken',

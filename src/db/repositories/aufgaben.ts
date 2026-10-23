@@ -19,9 +19,22 @@ import type { Kontext } from './context'
 import type { Repositories } from './types'
 import { validateRating } from '../../domain/rating'
 import { completedTaskIdsWithTags } from '../taskReadIndex'
+import { effectiveRoutine, parseRecurrenceRule, routineAvailableAt, routineRestorable } from '../../domain/routine'
 
-export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updateTask' | 'setTaskCompleted' | 'setChecklistItemCompleted' | 'listTaskTags' | 'moveTask' | 'placeTask' | 'reorderTasks' | 'deleteTask' | 'getTask' | 'listTasks' | 'listCompletedTasks' | 'countCompletedTasks' | 'listRestorableTasks' | 'listDeletedTasks' | 'restoreTask'> {
+export function aufgaben(ctx: Kontext): Pick<Repositories, 'advanceRoutines' | 'createTask' | 'updateTask' | 'setTaskCompleted' | 'setChecklistItemCompleted' | 'listTaskTags' | 'moveTask' | 'placeTask' | 'reorderTasks' | 'deleteTask' | 'getTask' | 'listTasks' | 'listCompletedTasks' | 'countCompletedTasks' | 'listRestorableTasks' | 'listDeletedTasks' | 'restoreTask'> {
   return {
+    async advanceRoutines() {
+      return ctx.db.transaction('rw', ctx.db.lists, ctx.db.tasks, async () => {
+        const ids = (await ctx.db.lists.toArray()).filter(list => list.deleted_at === null).map(list => [list.id, 'open'])
+        const rows = (await ctx.db.tasks.where('[list_id+read_state]').anyOf(ids).toArray()).filter(row => row.recurrence_rule)
+        const changes = rows.map(normalisiereAufgabe).flatMap(task => {
+          const advanced = effectiveRoutine(task, ctx.clock.nowMs())
+          return advanced === task ? [] : [{ ...advanced, ...ctx.stamp() }]
+        })
+        if (changes.length) await ctx.db.tasks.bulkPut(changes)
+        return changes.length > 0
+      })
+    },
 
     async createTask(input) {
       return ctx.db.transaction('rw', ctx.db.lists, ctx.db.tasks, ctx.db.user_preferences, async () => {
@@ -74,6 +87,7 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
           reopen_context: null,
           successor_id: null,
           recurrence_series_id: null,
+          recurrence_rule: input.recurrence && input.dueAt ? parseRecurrenceRule(input.recurrenceRule) : null,
           position: kleinste - 1,
           created_at: now,
           updated_at: now,
@@ -81,6 +95,7 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
           dirty: 1,
         }
         if (task.recurrence) task.recurrence_series_id = task.id
+        if (task.recurrence_rule && task.due_at) task.available_from = routineAvailableAt(task.due_at, task.recurrence_rule)
         await ctx.requireUniqueTaskTitle(task)
         await ctx.db.tasks.add(task)
         if (input.rememberOverviewTargetFor) {
@@ -89,6 +104,7 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
           if (preference?.default_list_id !== input.listId || preference.deleted_at !== null) {
             await ctx.db.user_preferences.put({ id: userId, default_list_id: input.listId,
               overview_mode: preference?.overview_mode ?? 'by_list', detailed_ratings: preference?.detailed_ratings ?? false, task_expansions: preference?.task_expansions ?? {}, created_at: preference?.created_at ?? now,
+              calendar_preferences: preference?.calendar_preferences,
               deleted_at: null, ...ctx.stamp() })
           }
         }
@@ -98,11 +114,11 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
 
     async updateTask(taskId, patch, options) {
       return ctx.db.transaction('rw', ctx.db.lists, ctx.db.tasks, async () => {
-        const task = await ctx.requireTask(taskId)
+        const task = effectiveRoutine(await ctx.requireTask(taskId), ctx.clock.nowMs())
         const values = applyTaskEdit(task, patch, ctx.clock.nowMs(), options?.base)
         if (sameData(values, taskEditValues(task))) return task
-        const scheduleChanged = values.due_at !== task.due_at || values.recurrence !== task.recurrence
-        const updated: LocalTask = { ...task, ...values, available_from: scheduleChanged ? null : task.available_from, ...ctx.stamp() }
+        const scheduleChanged = values.due_at !== task.due_at || values.recurrence !== task.recurrence || !sameData(values.recurrence_rule, task.recurrence_rule)
+        const updated: LocalTask = { ...task, ...values, available_from: scheduleChanged ? values.due_at ? routineAvailableAt(values.due_at, values.recurrence_rule) : null : task.available_from, ...ctx.stamp() }
         if (values.recurrence && !updated.recurrence_series_id) updated.recurrence_series_id = taskSeriesId(task, (await ctx.db.tasks.where('list_id').equals(task.list_id).toArray()).map(normalisiereAufgabe))
         if (taskTitleKey(updated.title) !== taskTitleKey(task.title)) await ctx.requireUniqueTaskTitle(updated)
         await ctx.db.tasks.put(updated)
@@ -112,9 +128,13 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
 
     async setChecklistItemCompleted(taskId, itemId, completed, operation) {
       return ctx.db.transaction('rw', ctx.db.tasks, ctx.db.meta, async () => {
-        const task = await ctx.requireTask(taskId)
+        const raw = await ctx.requireTask(taskId)
+        const task = effectiveRoutine(raw, operation ? Date.parse(operation.at) : ctx.clock.nowMs())
         const receipt = operation ? `widget-checklist:${operation.id}` : null
         if (receipt && await ctx.db.meta.get(receipt)) return task
+        if (operation && task.recurrence_rule && task.available_from && Date.parse(task.available_from) > Date.parse(operation.at)) {
+          await ctx.db.meta.put({ key: receipt!, value: operation.at }); return task
+        }
         const item = task.checklist.find(item => item.id === itemId && item.deleted_at === null)
         if (!item) throw new ValidationError('not-found', 'Dieser Checklistenpunkt ist nicht mehr verfügbar.')
         const stamp = operation ? { updated_at: new Date(operation.at).toISOString(), dirty: 1 as const } : ctx.stamp()
@@ -151,6 +171,9 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
         const task = await ctx.requireTask(taskId)
         const receipt = operation ? `widget-completion:${operation.id}` : null
         if (receipt && await ctx.db.meta.get(receipt)) return task
+        if (operation && task.recurrence_rule && task.available_from && Date.parse(task.available_from) > Date.parse(operation.at)) {
+          await ctx.db.meta.put({ key: receipt!, value: operation.at }); return task
+        }
         const list = await ctx.requireList(task.list_id)
         const now = operation ? new Date(operation.at).toISOString() : ctx.clock.now()
         if (!Number.isFinite(Date.parse(now))) throw new ValidationError('invalid', 'Ungültiger Abschlusszeitpunkt.')
@@ -359,7 +382,7 @@ export function aufgaben(ctx: Kontext): Pick<Repositories, 'createTask' | 'updat
     async listRestorableTasks() {
       const lists = new Map((await ctx.db.lists.toArray()).map(list => [list.id, ctx.mitAbschnittsplan(list)]))
       return (await ctx.db.tasks.where('completed_at').above('').toArray()).map(normalisiereAufgabe)
-        .filter(task => task.completed && task.deleted_at === null && !completionExpired(task, ctx.clock.nowMs()) && lists.get(task.list_id)?.deleted_at === null && !lists.get(task.list_id)?.keep_completed)
+        .filter(task => task.completed && task.deleted_at === null && !completionExpired(task, ctx.clock.nowMs()) && routineRestorable(task, ctx.clock.nowMs()) && lists.get(task.list_id)?.deleted_at === null && !lists.get(task.list_id)?.keep_completed)
         // Zuletzt abgehakt zuerst. Die Zeitstempel liegen alle im selben
         // ISO-Format vor, der Vergleich ist deshalb stabil.
         .sort(compareRestorable)

@@ -42,7 +42,7 @@ export function TaskChecklist({ task, currentUserId, trailing }: { task: LocalTa
       </button>
     </Hint>
     {trailing}</div>
-    {open ? <ul aria-label={`Checkliste: ${task.title}`} className="mt-1">{task.checklist.filter(item => item.deleted_at === null).map(item => <li key={item.id}>
+    {open ? <ul aria-label={`Checkliste: ${task.title}`}>{task.checklist.filter(item => item.deleted_at === null).map(item => <li key={item.id}>
       <div className="flex min-h-11 items-center gap-3 rounded-control px-1 text-body">
         <label className={`${checkboxTarget} -mx-3`}>
           <input type="checkbox" className="size-5 cursor-pointer accent-brand" checked={pending[item.id] ?? item.completed} disabled={Object.hasOwn(pending, item.id)}

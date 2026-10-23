@@ -6,6 +6,7 @@ import { optionalText, requireText } from './validation'
 import { mergeChecklist, parseChecklist, validateChecklist, type ChecklistItem } from './checklist'
 import { mergeTags, parseTags } from './tags'
 import { parseRating, validateRating, type TaskRating } from './rating'
+import { parseRecurrenceRule, type RecurrenceRule } from './routine'
 
 /** Fachliche Eingabe; unveränderte Felder werden nicht mitgeschickt. */
 export interface TaskEditInput {
@@ -16,11 +17,12 @@ export interface TaskEditInput {
   rating?: TaskRating | null
   dueAt?: string | null
   recurrence?: string | null
+  recurrenceRule?: RecurrenceRule | null
   reminders?: TaskReminder[]
   sectionId?: string | null
 }
 
-type EditableTask = Pick<LocalTask, 'title' | 'description' | 'checklist' | 'tags' | 'rating' | 'due_at' | 'recurrence' | 'reminders' | 'section_id'>
+type EditableTask = Pick<LocalTask, 'title' | 'description' | 'checklist' | 'tags' | 'rating' | 'due_at' | 'recurrence' | 'recurrence_rule' | 'reminders' | 'section_id'>
 export interface TaskEditBase {
   taskId: string
   listId: string
@@ -48,6 +50,7 @@ export function taskEditValues(task: LocalTask): EditableTask {
     rating: parseRating(task.rating),
     due_at: normalizeIso(task.due_at),
     recurrence: task.recurrence ?? null,
+    recurrence_rule: parseRecurrenceRule(task.recurrence_rule),
     reminders: parseReminders(task.reminders),
     section_id: task.section_id ?? null,
   }
@@ -72,8 +75,8 @@ export function applyTaskEdit(task: LocalTask, patch: TaskEditInput, nowMs: numb
   if (patch.description !== undefined) fields.push('description')
   if (patch.rating !== undefined) fields.push('rating')
   if (patch.sectionId !== undefined) fields.push('section_id')
-  const changesSchedule = patch.dueAt !== undefined || patch.recurrence !== undefined || patch.reminders !== undefined
-  if (changesSchedule) fields.push('due_at', 'recurrence', 'reminders')
+  const changesSchedule = patch.dueAt !== undefined || patch.recurrence !== undefined || patch.reminders !== undefined || patch.recurrenceRule !== undefined
+  if (changesSchedule) fields.push('due_at', 'recurrence', 'reminders', 'recurrence_rule')
 
   if (base) {
     const conflicts: TaskEditConflict['fields'] = fields.filter(field => !sameData(current[field], base.values[field]))
@@ -93,6 +96,7 @@ export function applyTaskEdit(task: LocalTask, patch: TaskEditInput, nowMs: numb
     checklist,
     tags,
     rating: patch.rating === undefined ? current.rating : validateRating(patch.rating),
+    recurrence_rule: patch.recurrence === null || patch.dueAt === null ? null : patch.recurrenceRule === undefined ? current.recurrence_rule : parseRecurrenceRule(patch.recurrenceRule),
     title: patch.title === undefined ? current.title : requireText(patch.title, 'Der Titel'),
     description: patch.description === undefined ? current.description : optionalText(patch.description),
     section_id: patch.sectionId === undefined ? current.section_id : patch.sectionId,

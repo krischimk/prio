@@ -1,5 +1,6 @@
-import { useRef, useState, type Dispatch, type SetStateAction } from 'react'
+import { useContext, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react'
 import { DatePicker, parseDate } from '@ark-ui/react/date-picker'
+import { Temporal } from '@js-temporal/polyfill'
 import { useBackLayer } from '../../app/useBackLayer'
 import { formatCalendarDay, formatGermanDate, localTimeZone, parseGermanDate } from '../datetime'
 import { CalendarIcon, ChevronIcon } from '../icons'
@@ -8,6 +9,10 @@ import { Button } from './Button'
 import { IconButton } from './IconButton'
 import { TimeInput } from './TimeInput'
 import { Select } from './Select'
+import { CalendarContext } from '../calendarContext'
+import { calendarEntries, systemTimeZone } from '../../domain/calendar'
+import { CalendarDayMarks } from './CalendarDay'
+import { calendarCapacityText } from '../calendarLabels'
 
 /** Kalender und 24-Stunden-Uhr; außen bleibt der vorhandene lokale ISO-Wert. */
 export type DateTimePicker = 'calendar' | 'time' | null
@@ -23,7 +28,17 @@ export function DateTimeInput({ id, label, value, onChange, disabled = false, re
   const setOpen = (next: boolean) => setPicker(current => next ? 'calendar' : current === 'calendar' ? null : current)
   const setTimeOpen = (next: boolean) => setPicker(current => next ? 'time' : current === 'time' ? null : current)
   const dateInput = useRef<HTMLInputElement>(null)
+  const data = useContext(CalendarContext)
   const day = value.slice(0, 10)
+  const [month, setMonth] = useState(day.slice(0, 7) || new Date().toISOString().slice(0, 7))
+  const counts = useMemo(() => {
+    const counts = new Map<string, number>()
+    if (!data || !open) return counts
+    const start = Temporal.PlainDate.from(`${month}-01`).subtract({ days: 7 }).toString()
+    const end = Temporal.PlainDate.from(`${month}-01`).add({ months: 1, days: 7 }).toString()
+    for (const entry of calendarEntries(data.tasks, start, end, data.preferences.repeats, data.nowMs, data.preferences.timeZone ?? systemTimeZone())) counts.set(entry.day, (counts.get(entry.day) ?? 0) + (entry.occurrences ?? 1))
+    return counts
+  }, [data, open, month])
   const time = value.slice(11, 16) || '00:00'
   useBackLayer(open, () => setOpen(false), `${id}:kalender`)
   const selectDay = (date: string) => {
@@ -32,6 +47,7 @@ export function DateTimeInput({ id, label, value, onChange, disabled = false, re
   }
   return <div className="flex min-w-0 flex-wrap items-start gap-2">
     <DatePicker.Root locale="de-DE" timeZone={localTimeZone()} startOfWeek={1} fixedWeeks outsideDaySelectable disabled={disabled} required={required}
+      onVisibleRangeChange={details => setMonth(details.visibleRange.start.toString().slice(0, 7))}
       ids={{ input: () => id }} value={day ? [parseDate(day)] : []}
       format={date => formatGermanDate(date.toString())}
       parse={text => { const date = parseGermanDate(text); return date ? parseDate(date) : undefined }}
@@ -77,7 +93,11 @@ export function DateTimeInput({ id, label, value, onChange, disabled = false, re
                   {week.map(date => <DatePicker.TableCell key={date.toString()} value={date}>
                     <DatePicker.TableCellTrigger onClick={() => {
                       if (calendar.getDayTableCellState({ value: date }).selectable) { setOpen(false); setTimeOpen(true) }
-                    }} className={`${focusRing} calendar-day flex min-h-11 w-full items-center justify-center rounded-control text-body text-ink hover:bg-surface data-[outside-range]:text-ink-faint data-[selected]:bg-brand data-[selected]:text-on-brand`}>{date.day}</DatePicker.TableCellTrigger>
+                    }} data-capacity={data?.preferences.days[date.toString()]}
+                      aria-description={`${counts.get(date.toString()) ?? 0} Fälligkeiten. ${calendarCapacityText(data?.preferences.days[date.toString()])}`}
+                      className={`${focusRing} calendar-day relative flex min-h-11 w-full flex-col items-center justify-center rounded-control text-body text-ink hover:bg-surface data-[outside-range]:text-ink-faint data-[selected]:bg-brand data-[selected]:text-on-brand`}>
+                      {date.day}<CalendarDayMarks count={counts.get(date.toString()) ?? 0} />
+                    </DatePicker.TableCellTrigger>
                   </DatePicker.TableCell>)}
                 </DatePicker.TableRow>)}</DatePicker.TableBody>
               </DatePicker.Table>

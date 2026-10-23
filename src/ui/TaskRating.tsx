@@ -49,7 +49,7 @@ export function TaskRatingEditor({ form }: { form: TaskForm }) {
   const detailed = overview.userPreference?.detailed_ratings === true
   const rating = form.werte.rating
   const linked = rating?.effortFromChecklist && form.werte.checklist.some(item => item.deleted_at === null)
-  const values = rating && ratingValues(rating, form.dueIso, nowMs, form.werte.checklist, detailed)
+  const values = rating && ratingValues(rating, form.dueIso, nowMs, form.werte.checklist, detailed, overview.userPreference?.calendar_preferences)
   return <section aria-label="Bewertung" data-no-drawer-swipe data-no-drag className="space-y-2 border-t border-line px-2 pt-3">
     <RatingSlider label={rating ? 'Wichtigkeit' : 'Wichtigkeit einschätzen'} icon={<ImportanceIcon />} value={rating?.importance ?? 5} unassigned={!rating}
         hint={rating ? 'Wie wichtig ist dir das Ergebnis? Links geringer, rechts höher.' : 'Der erste Klick startet die Bewertung. Aufwand und manuelle Dringlichkeit beginnen sichtbar in der Mitte.'}
@@ -70,13 +70,13 @@ export function TaskUrgencyEditor({ form }: { form: TaskForm }) {
   const { overview } = useView()
   const rating = form.werte.rating
   if (!rating) return null
-  const values = ratingValues(rating, form.dueIso, nowMs, form.werte.checklist, overview.userPreference?.detailed_ratings === true)
+  const values = ratingValues(rating, form.dueIso, nowMs, form.werte.checklist, overview.userPreference?.detailed_ratings === true, overview.userPreference?.calendar_preferences)
   return <RatingSlider label="Dringlichkeit" icon={<UrgencyIcon />} value={values.urgency} disabled={values.automatic}
       actions={form.dueIso ? <div role="group" aria-label="Dringlichkeitsmodus" className="flex gap-1">
         <Button size="sm" variant={rating.urgencyMode === 'auto' ? 'secondary' : 'ghost'} aria-pressed={rating.urgencyMode === 'auto'}
-          onClick={() => form.setzen('rating', changeUrgencyMode(rating, 'auto', form.dueIso, nowMs, form.werte.checklist))}>Automatisch</Button>
+          onClick={() => form.setzen('rating', changeUrgencyMode(rating, 'auto', form.dueIso, nowMs, form.werte.checklist, overview.userPreference?.calendar_preferences))}>Automatisch</Button>
         <Button size="sm" variant={rating.urgencyMode === 'manual' ? 'secondary' : 'ghost'} aria-pressed={rating.urgencyMode === 'manual'}
-          onClick={() => form.setzen('rating', changeUrgencyMode(rating, 'manual', form.dueIso, nowMs, form.werte.checklist))}>Manuell</Button>
+          onClick={() => form.setzen('rating', changeUrgencyMode(rating, 'manual', form.dueIso, nowMs, form.werte.checklist, overview.userPreference?.calendar_preferences))}>Manuell</Button>
       </div> : undefined}
         hint={values.automatic ? 'Automatisch aus verbleibender Zeit und Aufwand. Hoher Aufwand zieht den Anstieg und das Maximum vor. Wähle Manuell für einen eigenen Wert.' : 'Wie bald musst du dich darum kümmern? Links kann es warten, rechts ist es dringlicher.'}
         onChange={urgency => form.setzen('rating', { ...rating, urgency, urgencyMode: 'manual' })} />
@@ -95,7 +95,7 @@ export function TaskPriorityBar({ rating, dueAt, checklist, rank }: { rating: Ta
   const { nowMs } = useWorkspace()
   const { overview } = useView()
   return <span className="mt-2 mb-2 block w-80 max-w-full" aria-label={rank ? `Prioritätsplatz ${rank}: ${rankNames[rank]}` : undefined}>
-    <RatingMeter label="Priorität" value={ratingValues(rating, dueAt, nowMs, checklist, overview.userPreference?.detailed_ratings === true).priority}
+    <RatingMeter label="Priorität" value={ratingValues(rating, dueAt, nowMs, checklist, overview.userPreference?.detailed_ratings === true, overview.userPreference?.calendar_preferences).priority}
       hint={`${rank ? `${rank}. Platz in dieser Ansicht (${rankNames[rank]}). ` : ''}Gleichgewichtet aus Wichtigkeit und Dringlichkeit.`}
       icon={<span className={`inline-flex shrink-0 items-center gap-1 ${rank ? rankColors[rank] : 'text-ink-muted'}`}>
         <PriorityIcon className="size-icon-meta" metallic={rank !== undefined} />{rank ? <span aria-hidden="true" className="priority-metal-number text-label font-semibold">{rank}</span> : null}
@@ -107,7 +107,7 @@ export function TaskRatingSummary({ rating, dueAt, checklist, detailed: forceDet
   const { overview } = useView()
   const detailedRatings = overview.userPreference?.detailed_ratings === true
   const detailed = forceDetailed ?? detailedRatings
-  const values = ratingValues(rating, dueAt, nowMs, checklist, detailedRatings)
+  const values = ratingValues(rating, dueAt, nowMs, checklist, detailedRatings, overview.userPreference?.calendar_preferences)
   const linked = rating.effortFromChecklist && checklist.some(item => item.deleted_at === null)
   if (!detailed && !includePriority) return null
   return <span aria-label="Aufgabenbewertung" className={detailed ? 'mt-2 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4' : 'mt-1 block w-80 max-w-full'}>

@@ -12,6 +12,8 @@
 import type { TaskReminder } from './reminder'
 import type { ChecklistItem } from './checklist'
 import type { TaskRating } from './rating'
+import type { RecurrenceRule } from './routine'
+import type { CalendarPreferences } from './calendar'
 
 /** ISO-8601-Zeitstempel in UTC, z. B. `2026-01-31T12:00:00.000Z`. */
 export type IsoDateTime = string
@@ -123,6 +125,7 @@ export interface LocalTask extends SyncableRow, LocalOnly {
    * genauso – eine neue Wiederholungsart soll keine Datenbankänderung brauchen.
    */
   recurrence: string | null
+  recurrence_rule?: RecurrenceRule | null
   /** Stabile Kennung einer Wiederholungsserie, unabhängig von Titel und Termin. */
   recurrence_series_id: string | null
   /**
@@ -208,6 +211,7 @@ export interface LocalUserPreference extends SyncableRow, LocalOnly {
   overview_mode: OverviewMode
   detailed_ratings: boolean
   task_expansions: Record<string, number>
+  calendar_preferences?: CalendarPreferences
   created_at: IsoDateTime
 }
 export type RemoteUserPreference = Omit<LocalUserPreference, 'dirty' | 'detailed_ratings' | 'task_expansions'> & { detailed_ratings?: boolean; task_expansions?: Record<string, number> }

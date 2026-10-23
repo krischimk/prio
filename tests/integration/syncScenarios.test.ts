@@ -38,6 +38,32 @@ describe('Sync-Szenarien', () => {
     await device.dispose()
   })
 
+  it('hält einen verspäteten alten Checklisten-Haken von einem frisch begonnenen Routine-Durchlauf getrennt', async () => {
+    device.clock.set(Date.parse('2026-10-24T08:00:00Z'))
+    const list = await device.repositories.createList('Morgenroutine', userId)
+    const task = await device.repositories.createTask({ listId: list.id, title: 'Lesen', dueAt: '2026-10-24T20:30:00Z', recurrence: 'daily',
+      recurrenceRule: { visibility: { mode: 'clock', time: '05:00' }, resetMissed: true, timeZone: 'Europe/Berlin' },
+      checklist: [{ id: 'p', text: 'Ein Kapitel', completed: false, deleted_at: null }] })
+    await device.engine.sync()
+    const other = await createDevice({ userId, gateway: server.gatewayFor(userId), clock: createFixedClock(Date.parse('2026-10-24T08:00:00Z')) })
+    try {
+      await other.engine.sync()
+      await other.repositories.setChecklistItemCompleted(task.id, 'p', true)
+      await other.engine.sync()
+      device.clock.set(Date.parse('2026-10-25T05:00:00Z'))
+      await device.repositories.advanceRoutines()
+      await device.engine.sync()
+      const [conflict] = await device.repositories.listCloudConflicts()
+      expect(conflict.fields).toContain('checklist')
+      expect((await device.repositories.getTask(task.id))?.checklist[0].completed).toBe(false)
+      await device.repositories.resolveCloudConflict(conflict, 'local')
+      await device.engine.sync(); await other.engine.sync()
+      expect(server.taskById(task.id)?.due_at).toBe('2026-10-25T21:30:00.000Z')
+      expect(server.taskById(task.id)?.checklist?.[0].completed).toBe(false)
+      expect(await countDirty(device.db)).toBe(0)
+    } finally { await other.dispose() }
+  })
+
   it('synchronisiert persönliche Aufklappzustände ohne unabhängige Offline-Änderungen zu verlieren', async () => {
     const list = await device.repositories.createList('Ansicht', userId)
     const a = await device.repositories.createTask({ listId: list.id, title: 'A' })

@@ -1,5 +1,6 @@
 import { ValidationError } from './validation'
 import { checklistRemaining, type ChecklistItem } from './checklist'
+import { availableDuration, type CalendarPreferences } from './calendar'
 
 /** Gemeinsam aktivierte Einschätzung; null bezeichnet eine unbewertete Aufgabe. */
 export interface TaskRating {
@@ -36,8 +37,8 @@ export const startRating = (importance: number): TaskRating => ({ importance, ur
  * Restzeit, keine Abhängigkeit von Erstellung, Alter oder vorheriger Bewertung.
  * Berechnete Werte werden weder gespeichert noch als neue Änderungen versendet.
  */
-export function automaticUrgency(dueAt: string, effort: number, nowMs: number): number | null {
-  const remaining = Date.parse(dueAt) - nowMs
+export function automaticUrgency(dueAt: string, effort: number, nowMs: number, calendar?: CalendarPreferences): number | null {
+  const remaining = availableDuration(nowMs, Date.parse(dueAt), calendar)
   if (!Number.isFinite(remaining) || !validValue(effort)) return null
   const hour = 60 * 60 * 1000
   const factor = 3 ** ((effort - 5) / 5)
@@ -48,15 +49,15 @@ export function automaticUrgency(dueAt: string, effort: number, nowMs: number): 
 
 /** In der einfachen Ansicht bestimmt eine Fälligkeit immer die Dringlichkeit.
  * Der gespeicherte manuelle Wert bleibt für die Detailansicht erhalten. */
-export function ratingValues(rating: TaskRating, dueAt: string | null, nowMs: number, checklist: readonly ChecklistItem[] = [], detailedRatings = true) {
+export function ratingValues(rating: TaskRating, dueAt: string | null, nowMs: number, checklist: readonly ChecklistItem[] = [], detailedRatings = true, calendar?: CalendarPreferences) {
   const automatic = dueAt !== null && (!detailedRatings || rating.urgencyMode === 'auto')
   const effort = rating.effort * (rating.effortFromChecklist ? checklistRemaining(checklist) : 1)
-  const urgency = automatic ? automaticUrgency(dueAt, effort, nowMs) ?? rating.urgency : rating.urgency
+  const urgency = automatic ? automaticUrgency(dueAt, effort, nowMs, calendar) ?? rating.urgency : rating.urgency
   return { importance: rating.importance, urgency, effort, priority: (rating.importance + urgency) / 2, automatic }
 }
 
 /** Ein Wechsel zu Manuell friert den Wert auf der bedienbaren Slider-Präzision ein. */
-export function changeUrgencyMode(rating: TaskRating, mode: TaskRating['urgencyMode'], dueAt: string | null, nowMs: number, checklist: readonly ChecklistItem[] = []): TaskRating {
+export function changeUrgencyMode(rating: TaskRating, mode: TaskRating['urgencyMode'], dueAt: string | null, nowMs: number, checklist: readonly ChecklistItem[] = [], calendar?: CalendarPreferences): TaskRating {
   if (mode === rating.urgencyMode) return rating
-  return { ...rating, urgencyMode: mode, urgency: mode === 'manual' ? Math.round(ratingValues(rating, dueAt, nowMs, checklist).urgency * 10) / 10 : rating.urgency }
+  return { ...rating, urgencyMode: mode, urgency: mode === 'manual' ? Math.round(ratingValues(rating, dueAt, nowMs, checklist, true, calendar).urgency * 10) / 10 : rating.urgency }
 }

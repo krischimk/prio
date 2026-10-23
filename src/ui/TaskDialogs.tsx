@@ -31,6 +31,7 @@ export function TaskDialogs() {
       lists={lists} sections={list.sections} currentUserId={userId} onClose={() => setTaskDetail(null)}
       onRequestMove={task => setMovingId(task.id)} onRequestOrder={task => setOrderingId(task.id)}
       onCreated={taskDetail.onCreated}
+      initialDueAt={taskDetail.initialDueAt}
       onChangeTarget={taskDetail.fromOverview ? () => { setTaskDetail(null); setOverviewCreating(true) } : undefined}
       targetHint={taskDetail.fromOverview && taskDetail.taskId === null && excluded ? `„${list.name}“ ist nicht in der Gesamtansicht. Deine neue Aufgabe wird dort gespeichert und erscheint in dieser Listenansicht.` : undefined} /> : null}
     {unavailable ? <Screen label="Aufgabe" name="aufgabe-laden" onClose={() => setTaskDetail(null)} header={

@@ -4,6 +4,7 @@ import { parseSections } from './sections'
 import { parseChecklist } from './checklist'
 import { parseTags } from './tags'
 import { parseRating } from './rating'
+import { parseRecurrenceRule } from './routine'
 import type {
   LocalList,
   LocalListMember,
@@ -68,6 +69,7 @@ export function toRemoteTask(local: LocalTask): RemoteTask {
     expired_at: normalizeIso(local.expired_at ?? null),
     reopen_context: local.reopen_context ?? null,
     recurrence: local.recurrence,
+    recurrence_rule: parseRecurrenceRule(local.recurrence_rule),
     recurrence_series_id: local.recurrence_series_id ?? null,
     successor_id: local.successor_id,
     reminders: local.reminders,

@@ -4,7 +4,7 @@ import { useIsDesktop } from '../app/useIsDesktop'
 import { useWorkspace } from '../app/useWorkspace'
 import { useListNameDraft } from './useListNameDraft'
 import { ListIcon } from './ListIcon'
-import { IconChoiceIcon, PlusIcon } from './icons'
+import { IconChoiceIcon } from './icons'
 import { ListSettingsSheet } from './ListSettingsSheet'
 import { focusRing, errorMessage } from './styles'
 import { Hint } from './components/Hint'
@@ -43,7 +43,7 @@ export function ListHeading({ list, currentUserId, main = false }: {
   const iconClass = `${main ? 'size-7' : 'size-icon'} shrink-0 text-brand-soft`
   const editableIcon = editable
   const icon = list.icon ? <ListIcon icon={list.icon} className={iconClass} /> : editableIcon ? <span className="relative inline-flex text-ink-faint">
-    <IconChoiceIcon className={main ? 'size-7' : 'size-icon'} /><PlusIcon className="absolute -bottom-1 -right-1 size-icon-meta rounded-full bg-page" />
+    <IconChoiceIcon className={main ? 'size-7' : 'size-icon'} />
   </span> : null
   const title = <span data-testid={main ? 'list-title' : undefined} className="break-words">{list.name}</span>
   const Title = main ? 'h1' : 'h2'

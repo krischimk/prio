@@ -19,6 +19,7 @@ import { customIntervalsParity } from './support/customIntervals'
 import { markdownSourceParity, noteFormattingParity } from './support/notes'
 import { agentConnectionsParity } from './support/agents'
 import { discardedNotesParity } from './support/discardedNotes'
+import { calendarParity, routineParity } from './support/calendar'
 
 /**
  * Oberflächenparität: Jede Funktion muss in beiden Ansichten erreichbar sein.
@@ -64,6 +65,8 @@ async function changeOrder(page: Page) {
 }
 
 const funktionen: Funktion[] = [
+  { name: 'Monatskalender mit persönlicher Tagesverfügbarkeit und Date-Picker-Markierungen', breit: page => calendarParity(page, false), telefon: page => calendarParity(page, true) },
+  { name: 'Flexible Sichtbarkeit und frischer Start wiederkehrender Aufgaben', breit: page => routineParity(page, false), telefon: page => routineParity(page, true) },
   { name: 'Gerätethema als Standard und Theme-Schalter nur im Konto', breit: page => systemThemeParity(page, false), telefon: page => systemThemeParity(page, true) },
   { name: 'Gold Silber Bronze unabhängig von der manuellen Sortierung', breit: page => priorityMedalsParity(page, false), telefon: page => priorityMedalsParity(page, true) },
   { name: 'Eigene Wiederholungsintervalle und Erinnerungsvorläufe', breit: page => customIntervalsParity(page, false), telefon: page => customIntervalsParity(page, true) },

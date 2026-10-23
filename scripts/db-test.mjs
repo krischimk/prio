@@ -619,6 +619,34 @@ check('Update ergänzt fehlende Felder und alte Serien einmalig; erneute Migrati
   assert.equal(sql(`select allow_duplicate_titles from public.lists where id='${listId}'`),'f')
   assert.equal(sql(`select jsonb_agg(to_jsonb(t) order by id) from public.tasks t`),before)
 })
+check('Sichtbarkeitsregeln werden atomar gespeichert und ungültige Vorläufe abgewiesen', () => {
+  const id='90000000-0000-0000-0000-000000000080'
+  const rule={visibility:{mode:'clock',time:'05:00'},resetMissed:true,timeZone:'Europe/Berlin'}
+  const row={...task,id,title:'Kalenderroutine',recurrence:'daily',recurrence_series_id:id,due_at:'2030-01-01T21:30:00Z',recurrence_rule:rule}
+  assert.equal(push(owner,'tasks',row).kind,'written')
+  const saved=JSON.parse(sql(`select to_jsonb(t) from public.tasks t where id='${id}'`))
+  assert.deepEqual(saved.recurrence_rule,rule)
+  const oldDevice={...saved,title:'Altes Gerät bearbeitet Titel'};delete oldDevice.recurrence_rule
+  assert.equal(push(owner,'tasks',oldDevice,saved).kind,'written')
+  assert.deepEqual(JSON.parse(sql(`select recurrence_rule from public.tasks where id='${id}'`)),rule)
+  const current=JSON.parse(sql(`select to_jsonb(t) from public.tasks t where id='${id}'`))
+  assert.equal(push(owner,'tasks',{...current,recurrence_rule:{...rule,visibility:{mode:'lead',minutes:-1}}},current).kind,'rejected')
+  assert.deepEqual(JSON.parse(sql(`select recurrence_rule from public.tasks where id='${id}'`)),rule)
+})
+check('Kalendertage bleiben persönlich und erneutes Einspielen erhält die Auswahl', () => {
+  const current=JSON.parse(sql(`select to_jsonb(p) from public.user_preferences p where id='${owner}'`))
+  const calendar={days:{'2030-01-01':'low','2030-01-02':'none'},repeats:'active',open:true,timeZone:'Europe/Berlin'}
+  assert.equal(push(owner,'userPreferences',{...current,calendar_preferences:calendar},current).kind,'written')
+  assert.equal(sql(actorSql(stranger,`select count(*) from public.user_preferences where id='${owner}'`)),'0')
+  sql(readFileSync(new URL('../supabase/migrations/0030_calendar_routines.sql',import.meta.url),'utf8'))
+  const saved=JSON.parse(sql(`select to_jsonb(p) from public.user_preferences p where id='${owner}'`))
+  assert.deepEqual(saved.calendar_preferences,calendar)
+  const oldDevice={...saved,detailed_ratings:!saved.detailed_ratings};delete oldDevice.calendar_preferences
+  assert.equal(push(owner,'userPreferences',oldDevice,saved).kind,'written')
+  assert.deepEqual(JSON.parse(sql(`select calendar_preferences from public.user_preferences where id='${owner}'`)),calendar)
+  const latest=JSON.parse(sql(`select to_jsonb(p) from public.user_preferences p where id='${owner}'`))
+  assert.equal(push(owner,'userPreferences',{...latest,calendar_preferences:{...calendar,repeats:'without-daily'}},latest).kind,'rejected')
+})
 checks += testMcp(sql)
 checks += await testWidgets(sql, asyncSql)
 console.log(`${checks} PostgreSQL-Prüfungen bestanden.`)

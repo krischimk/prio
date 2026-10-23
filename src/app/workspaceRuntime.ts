@@ -172,6 +172,7 @@ export async function createWorkspaceRuntime({
     let changed = false
     try {
       await widgets?.drain()
+      if (network.isOnline()) await repositories.advanceRoutines()
       const result = await engine.sync()
       changed = result.changed
       if (geschlossen) return
@@ -193,7 +194,7 @@ export async function createWorkspaceRuntime({
 
       // Nach einem Pull kann sich lokal etwas geändert haben – die Anzeige muss
       // neu lesen, aber ohne einen weiteren Abgleich auszulösen.
-      if (changed) melde({ datenVersion: zustand.datenVersion + 1 })
+      if (changed) { await repositories.advanceRoutines(); melde({ datenVersion: zustand.datenVersion + 1 }) }
       void widgets?.publish(false, changed)
     } finally {
       await offeneAenderungenZaehlen()
@@ -241,6 +242,7 @@ export async function createWorkspaceRuntime({
   const interval = setInterval(() => {
     // Fristen laufen auch ohne neue Daten und im Offlinezustand weiter.
     melde({ jetztMs: Date.now() })
+    void repositories.advanceRoutines().then(changed => { if (changed) void erinnerungenAuffrischen() }).catch(() => {})
     void widgets?.publish()
     void repositories.pruneDiscardedNotes().catch(() => {})
     if (network.isOnline()) void synchronisieren()

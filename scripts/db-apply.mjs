@@ -128,6 +128,8 @@ const ERWARTET = [
   ['lists', 'sections', '0013'],
   ['tasks', 'section_id', '0013'],
   ['tasks', 'available_from', '0020'],
+  ['tasks', 'recurrence_rule', '0030'],
+  ['user_preferences', 'calendar_preferences', '0030'],
   ['tasks', 'checklist', '0021'],
   ['tasks', 'tags', '0021'],
   ['tasks', 'rating', '0023'],

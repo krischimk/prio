@@ -6,6 +6,7 @@ import { orderedLists } from '../domain/listNavigation'
 import { completionExpired } from '../domain/taskLifecycle'
 import { restoreCutoff } from '../domain/ordering'
 import type { DiscardedNote } from '../domain/discardedNotes'
+import { effectiveRoutine, isTaskVisible, routineRestorable } from '../domain/routine'
 
 /**
  * Lese-Hooks auf die lokale Datenbank.
@@ -103,7 +104,7 @@ export function useOverviewPreferences(userId: string): OverviewPreferencesQuery
 }
 
 /** Derselbe abgegrenzte Leser für einzelne Listen und die Gesamtansicht. */
-function useScopedTasks(listIds: string[], completed = false): { status: 'loading' | 'ready' | 'error'; tasks: LocalTask[]; retry: () => void } {
+function useScopedTasks(listIds: string[], completed = false, includeScheduled = false): { status: 'loading' | 'ready' | 'error'; tasks: LocalTask[]; retry: () => void } {
   const { repositories, dataVersion, nowMs } = useWorkspace()
   const scope = JSON.stringify([completed, listIds])
   const [attempt, setAttempt] = useState(0)
@@ -120,13 +121,13 @@ function useScopedTasks(listIds: string[], completed = false): { status: 'loadin
   }, [repositories, dataVersion, scope, attempt])
   const retry = () => setAttempt(value => value + 1)
   const tasks = useMemo(() => {
-    const visible = result.tasks.filter(task => !completionExpired(task, nowMs))
-    return visible.length === result.tasks.length ? result.tasks : visible
-  }, [result.tasks, nowMs])
+    return result.tasks.filter(task => !completionExpired(task, nowMs)).map(task => effectiveRoutine(task, nowMs))
+      .filter(task => completed || includeScheduled || isTaskVisible(task, nowMs))
+  }, [result.tasks, nowMs, completed, includeScheduled])
   return result.scope === scope ? { ...result, tasks, retry } : { status: 'loading', tasks: [], retry }
 }
 
-export function useTasksQuery(listIds: string[]) { return useScopedTasks(listIds) }
+export function useTasksQuery(listIds: string[], includeScheduled = false) { return useScopedTasks(listIds, false, includeScheduled) }
 
 export function useCloudConflicts(): CloudConflict[] {
   const { repositories, dataVersion } = useWorkspace()
@@ -221,7 +222,7 @@ export function useTaskQuery(taskId: string | null): {
   if (taskId === null) return { status: 'ready', task: null, retry }
   // Ein schneller ID-Wechsel darf niemals kurz die vorherige Aufgabe liefern.
   if (result.id !== taskId) return { status: 'loading', task: null, retry }
-  return { status: result.status, task: result.task && !completionExpired(result.task, nowMs) ? result.task : null, retry }
+  return { status: result.status, task: result.task && !completionExpired(result.task, nowMs) ? effectiveRoutine(result.task, nowMs) : null, retry }
 }
 
 /**
@@ -239,7 +240,7 @@ export function useRestorableTasks(aktiv = true): LocalTask[] {
     if (!aktiv) return
     return subscribe(() => repositories.listRestorableTasks(), setTasks)
   }, [repositories, dataVersion, aktiv])
-  return tasks.filter(task => !completionExpired(task, nowMs))
+  return tasks.filter(task => !completionExpired(task, nowMs) && routineRestorable(task, nowMs))
 }
 
 /**

@@ -2067,3 +2067,33 @@ Die drei höchstbewerteten offenen Aufgaben der gefilterten Ansicht tragen Gold,
 Silber und Bronze am Prioritätssymbol. Das verändert keine manuelle Reihenfolge;
 in der Gesamtansicht wird über die sichtbaren Listen gemeinsam gerankt. Aufgaben
 in Listen ohne Bewertungen und unbewertete Aufgaben erhalten keinen Platz.
+
+### Monatskalender und flexible Routinen
+
+Der Kalenderknopf in der Gesamtansicht öffnet den kompakten Monatskalender.
+Lila Punkte zeigen Fälligkeiten; mehr als drei werden als Punkt mit Ring
+zusammengefasst. Ein ausgewählter Tag zeigt seine Aufgaben. „Wenig Zeit“ und
+„Keine Zeit“ erhalten unterschiedlich starke Grauflächen, auch in der
+Datumsauswahl. Die persönliche Zeitangabe wird zwischen Geräten synchronisiert.
+Für automatische Dringlichkeit zählt normale Zeit vollständig, wenig Zeit zur
+Hälfte und keine Zeit gar nicht. Manuelle Dringlichkeit bleibt unverändert.
+
+Wiederkehrende Aufgaben lassen sich als „Nur aktive“ (Standard), „Alle“ oder
+„Ausgeblendet“ anzeigen. Künftige Durchläufe sind Kalenderprojektionen; sie
+erzeugen weder Datenbankzeilen noch Erinnerungen. Sehr kurze Intervalle werden
+tageweise zusammengefasst. Die Kalenderansicht verwendet dieselbe Listen- und
+Tagauswahl wie die Gesamtansicht.
+
+Unter Fälligkeit/Wiederholung kann eine Serie erst ab einer Uhrzeit oder mit
+einem frei gewählten Vorlauf sichtbar werden. Beispiel: täglich um 22:30 fällig,
+ab 05:00 sichtbar. Nach dem Abhaken bleibt der folgende Durchlauf bis zu seinem
+Start verborgen. „Beim nächsten Durchlauf neu beginnen“ ersetzt einen verpassten
+Durchlauf ohne Rückstau und setzt die Checkliste zurück. Ausgeschaltet bleibt
+die unerledigte Aufgabe überfällig. Erledigte Routinen können bis zum nächsten
+Start wiederhergestellt werden; Wichtigkeit und Gesamtaufwand werden übernommen.
+Bestehende Serien behalten ihre bisherige sofort sichtbare, gedämpfte Folgeaufgabe,
+bis eine Sichtbarkeitsregel gewählt wird.
+
+`recurrence_rule` und `calendar_preferences` werden durch Migration 0030 ergänzt.
+App, Widget und MCP nutzen dafür dieselben Fachfunktionen; Minuten/Stunden sind
+Zeitabstände, Kalenderschritte behalten ihre lokale Uhrzeit über Zeitumstellungen.

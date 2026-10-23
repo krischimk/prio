@@ -11,6 +11,7 @@ import { projectWidget, WIDGET_PROTOCOL, type WidgetCommand, type WidgetRows } f
 import { signRequest } from './mcp/cloud'
 import { calendarStep } from './mcp/calendar'
 import type { McpConfig } from './mcp/types'
+import { effectiveRoutine } from '../src/domain/routine'
 
 interface Scope { list: RemoteList | null; tasks: RemoteTask[] }
 interface WidgetPlan { changes: { table: 'tasks' | 'lists'; row: RemoteTask | RemoteList; expected: RemoteTask | RemoteList | null }[]; guards: { list_id: string; row: RemoteList; positions: unknown[] }[] }
@@ -80,8 +81,12 @@ export async function completeFromWidget(port: WidgetPort, command: WidgetComman
     }
     const peers = scope.tasks.filter(row => row.id !== task!.id).map(fromRemoteTask)
     peers.push(fromRemoteTask(task))
-    const source = fromRemoteTask(task)
     const at = new Date(command.at).toISOString()
+    const source = effectiveRoutine(fromRemoteTask(task), Date.parse(at))
+    if (source.recurrence_rule && source.available_from && Date.parse(source.available_from) > Date.parse(at)) {
+      if (await port.commit(command, { changes: [], guards: [] }) === 'committed') return
+      continue
+    }
     const checklist = command.checklist
     const plan = checklist
       ? { changes: [{ ...source, checklist: setChecklistCompleted(source.checklist, checklist.id, checklist.completed), updated_at: at, dirty: 1 as const }] }

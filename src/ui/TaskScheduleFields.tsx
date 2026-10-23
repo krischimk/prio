@@ -9,6 +9,7 @@ import { IconButton } from './components/IconButton'
 import { CloseIcon } from './icons'
 import { RecurrenceSelect } from './RecurrenceSelect'
 import type { TaskForm } from './useTaskForm'
+import { RoutineFields } from './RoutineFields'
 
 /** Im Ruhezustand eine Terminzeile; die Eingabefelder öffnen sich bei Bedarf. */
 export function TaskScheduleFields({ form, idPrefix, recurrence }: { form: TaskForm; idPrefix: string; recurrence: boolean }) {
@@ -36,6 +37,7 @@ export function TaskScheduleFields({ form, idPrefix, recurrence }: { form: TaskF
         {form.werte.dueAt ? <IconButton aria-label="Fälligkeit entfernen" onClick={() => change('')}><CloseIcon /></IconButton> : null}
       </div>
       {recurrence && form.werte.dueAt ? <RecurrenceSelect id={`${idPrefix}-recurrence`} value={form.werte.recurrence} disabled={form.busy} onChange={value => form.setzen('recurrence', value)} /> : null}
+      {recurrence && form.werte.dueAt && form.werte.recurrence ? <RoutineFields form={form} idPrefix={idPrefix} /> : null}
     </div> : null}
   </div>
 }

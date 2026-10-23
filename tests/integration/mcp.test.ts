@@ -56,6 +56,17 @@ async function create(f: ReturnType<typeof fixture>, title = 'Vorbereiten', fiel
 }
 
 describe('MCP task semantics and safe writes', () => {
+  it('creates a flexible routine and exposes the same personal availability model', async () => {
+    const f = fixture()
+    const rule = { visibility: { mode: 'lead' as const, minutes: 720 }, resetMissed: true, timeZone: 'Europe/Berlin' }
+    const task = await create(f, 'Alle drei Tage', { due_at: '2030-11-03T21:30:00Z', recurrence: 'every:3:days', recurrence_rule: rule })
+    expect(task.recurrence_rule).toEqual(rule)
+    expect(task.available_from).toBe('2030-11-03T09:30:00.000Z')
+    const preferences = { days: { '2030-11-03': 'none' as const }, repeats: 'active' as const, open: true, timeZone: 'Europe/Berlin' }
+    await executeCommand(f.port, connection, 'update_preferences', { request_id: request_id(), account: { revision: null, set: { calendar_preferences: preferences } } })
+    expect(f.data().userPreferences[0].row.calendar_preferences).toEqual(preferences)
+    expect(commandSchemas.create_tasks.safeParse({ request_id: request_id(), list_id: listId, tasks: [{ title: 'Ungültig', recurrence_rule: { ...rule, visibility: { mode: 'lead', minutes: -1 } } }] }).success).toBe(false)
+  })
   it('uses one stable request id across retries and refuses stale revisions atomically', async () => {
     const f = fixture(); const args = commandSchemas.create_tasks.parse({ request_id: request_id(), list_id: listId, tasks: [{ title: 'Eins' }, { title: 'Zwei' }] })
     const first = await executeCommand(f.port, connection, 'create_tasks', args)

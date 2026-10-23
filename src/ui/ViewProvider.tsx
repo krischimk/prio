@@ -2,6 +2,7 @@ import { useContext, useMemo, useState, useSyncExternalStore, type ReactNode } f
 import { useCloudConflicts, useOverviewPreferences } from '../app/hooks'
 import { ViewContext, type ViewValue } from './viewContext'
 import { NavigationContext } from '../app/navigationContext'
+import { CalendarDataProvider } from './CalendarDataProvider'
 
 /**
  * Der Ansichtszustand, über der Verzweigung zwischen breiter und mobiler
@@ -52,5 +53,5 @@ export function ViewProvider({ children, userId }: { children: ReactNode; userId
     }
   }, [lists, preferred, selectList, restoreOpen, accountOpen, cloudConflicts, conflictsOpen, overview, overviewSettingsOpen, overviewCreating, taskDetail, listSettingsId, drawerMode, tagFilters])
 
-  return <ViewContext.Provider value={value}>{children}</ViewContext.Provider>
+  return <ViewContext.Provider value={value}><CalendarDataProvider lists={lists} preference={overview.userPreference}>{children}</CalendarDataProvider></ViewContext.Provider>
 }

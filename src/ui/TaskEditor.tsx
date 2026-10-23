@@ -36,6 +36,7 @@ export function TaskEditor({
   targetHint,
   onRequestOrder,
   onCreated,
+  initialDueAt,
 }: {
   /** `null` legt eine neue Aufgabe an. */
   task: LocalTask | null
@@ -49,6 +50,7 @@ export function TaskEditor({
   targetHint?: string
   onRequestOrder: (task: LocalTask) => void
   onCreated?: () => void
+  initialDueAt?: string
 }) {
   const { repositories } = useWorkspace()
   const { overview } = useView()
@@ -56,7 +58,7 @@ export function TaskEditor({
 
   // Zustand und Umwandlungen des Formulars kommen aus `useTaskForm` – dieselben
   // wie in der Eingabezeile und der Aufgabenzeile der breiten Ansicht.
-  const form = useTaskForm({ task, listId, detailedRatings: overview.userPreference?.detailed_ratings === true,
+  const form = useTaskForm({ task, listId, initialDueAt, detailedRatings: overview.userPreference?.detailed_ratings === true,
     onSaved: () => { if (isNew) onCreated?.(); onClose() } })
   const deletion = useTaskDelete(task, () => { void form.zuruecksetzen().then(discarded => { if (discarded) onClose() }) })
   /** Rückfrage, wenn über das Kreuz geschlossen wird und etwas geändert ist. */

@@ -1,10 +1,17 @@
 import { z } from 'zod'
+import { validDay, validTimeZone } from '../../src/domain/calendar'
 
 export const id = z.uuid()
 export const timestamp = z.iso.datetime({ offset: true })
 const text = z.string().trim().min(1).max(2000)
 const value = z.number().min(0).max(10)
 export const rating = z.strictObject({ importance: value, urgency: value, effort: value, urgencyMode: z.enum(['auto', 'manual']), effortFromChecklist: z.boolean().default(true) })
+export const recurrenceRule = z.strictObject({ timeZone: z.string().refine(validTimeZone), resetMissed: z.boolean(), visibility: z.discriminatedUnion('mode', [
+  z.strictObject({ mode: z.literal('clock'), time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/) }),
+  z.strictObject({ mode: z.literal('lead'), minutes: z.number().int().min(0).max(5256000) }),
+]) })
+export const calendarPreferences = z.strictObject({ days: z.record(z.string().refine(validDay), z.enum(['low', 'none'])),
+  repeats: z.enum(['active', 'all', 'none']), open: z.boolean(), timeZone: z.string().refine(validTimeZone).nullable() })
 export const reminder = z.union([
   z.strictObject({ form: z.literal('offset'), minutes: z.number().int().min(-2628000).max(2628000) }),
   z.strictObject({ form: z.literal('absolute'), at: timestamp }),
@@ -16,6 +23,7 @@ export const edit = z.strictObject({
   due_at: timestamp.nullable().optional(), recurrence: z.string().regex(/^(daily|weekly|monthly|yearly|every:[1-9]\d{0,2}:(minutes|hours|days|weeks|months|years))$/)
     .describe('daily, weekly, monthly, yearly or every:N:UNIT; N=1..999, UNIT=minutes/hours/days/weeks/months/years.').nullable().optional(),
   reminders: z.array(reminder).max(10).optional(), section_id: id.nullable().optional(),
+  recurrence_rule: recurrenceRule.nullable().optional().describe('Optional visibility window. clock is a local opening time before each deadline, lead is elapsed minutes before due. resetMissed replaces an unfinished occurrence when the next window opens. Null preserves legacy recurrence.'),
 })
 export const expected = z.strictObject({ id, revision: z.string().regex(/^[a-f0-9]{32}$/) })
 export const requestId = { request_id: id.describe('Fresh UUID for this intent. Retry the identical intent with the SAME UUID after timeouts; never reuse it for a different action.') }

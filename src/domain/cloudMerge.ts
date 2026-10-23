@@ -1,4 +1,5 @@
 import { mergeTaskExpansions } from './taskExpansion'
+import { mergeCalendarPreferences } from './calendar'
 import { sameData } from './equality'
 import { fromRemoteList, fromRemoteMember, fromRemoteTask, fromRemotePreference, fromRemoteUserPreference, toRemoteList, toRemoteMember, toRemoteTask, toRemotePreference, toRemoteUserPreference } from './mapping'
 import type { RemoteList, RemoteListMember, RemoteListPreference, RemoteTask, RemoteUserPreference } from './types'
@@ -34,9 +35,9 @@ export function canonicalCloudRow(table: CloudTable, row: CloudRow): CloudRow {
   return { ...task, description: optionalText(task.description) }
 }
 
-function groups(table: CloudTable, row: CloudRow): string[][] {
+function groups(table: CloudTable, row: CloudRow, resetChecklist = false): string[][] {
   const coupled = table === 'tasks' ? [
-    ['due_at', 'recurrence', 'reminders', 'completed', 'completed_at', 'successor_id', 'reopen_context'],
+    ['due_at', 'recurrence', 'recurrence_rule', 'available_from', 'reminders', 'completed', 'completed_at', 'successor_id', 'reopen_context', ...(resetChecklist ? ['checklist'] : [])],
     ['list_id', 'section_id', 'position'],
   ] : []
   const included = new Set(coupled.flat())
@@ -71,9 +72,15 @@ export function mergeCloudRow(table: CloudTable, base: CloudRow | null | undefin
       : { row: preferLocal ? l : local, dirty: true, fields: preferLocal ? [] : ['unknown-base'] }
   }
   const b = canonicalCloudRow(table, base)
+  // Ein neuer Routine-Durchlauf und seine zurückgesetzte Checkliste gehören
+  // zusammen. Ein später alter Haken darf nicht als unabhängiges Feld in die
+  // neue Periode gelangen; gleichzeitige Änderungen brauchen hier eine Wahl.
+  const resetsPeriod = table === 'tasks' && (b as RemoteTask).recurrence_rule?.resetMissed
+    && ((l as RemoteTask).due_at !== (b as RemoteTask).due_at || (r as RemoteTask).due_at !== (b as RemoteTask).due_at)
+  if (resetsPeriod) parts = groups(table, l, true)
   // Löschen und gleichzeitiges Bearbeiten betrifft den ganzen Datensatz.
   if (l.deleted_at !== b.deleted_at || r.deleted_at !== b.deleted_at) {
-    parts = [groups(table, l).flat()]
+    parts = [groups(table, l, resetsPeriod === true).flat()]
   }
   const merged = { ...r } as unknown as Record<string, unknown>
   const conflicts: string[] = []
@@ -81,6 +88,10 @@ export function mergeCloudRow(table: CloudTable, base: CloudRow | null | undefin
     if (sameData(values(l, fields), values(b, fields))) continue
     if (table === 'userPreferences' && fields.length === 1 && fields[0] === 'task_expansions') {
       merged.task_expansions = mergeTaskExpansions((b as RemoteUserPreference).task_expansions, (l as RemoteUserPreference).task_expansions, (r as RemoteUserPreference).task_expansions)
+      continue
+    }
+    if (table === 'userPreferences' && fields.length === 1 && fields[0] === 'calendar_preferences') {
+      merged.calendar_preferences = mergeCalendarPreferences((b as RemoteUserPreference).calendar_preferences, (l as RemoteUserPreference).calendar_preferences, (r as RemoteUserPreference).calendar_preferences)
       continue
     }
     if (table === 'tasks' && fields.length === 1 && fields[0] === 'checklist') {

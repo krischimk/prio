@@ -3,6 +3,7 @@ import type { TaskEditBase } from '../domain/taskEdit'
 import type { TaskReminder } from '../domain/reminder'
 import type { ChecklistItem } from '../domain/checklist'
 import type { TaskRating } from '../domain/rating'
+import type { RecurrenceRule } from '../domain/routine'
 
 export interface TaskFormWerte {
   title: string
@@ -14,6 +15,7 @@ export interface TaskFormWerte {
   rating: TaskRating | null
   dueAt: string
   recurrence: string
+  recurrenceRule: RecurrenceRule | null
   reminders: TaskReminder[]
   sectionId: string | null
 }

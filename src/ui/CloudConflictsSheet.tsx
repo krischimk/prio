@@ -95,7 +95,7 @@ function ConflictVersion({ conflict, row, viewerId }: { conflict: CloudConflict;
 }
 
 const fields: Record<string, string> = {
-  title: 'Titel', description: 'Notiz', name: 'Listenname', due_at: 'Fälligkeit', recurrence: 'Wiederholung', reminders: 'Erinnerungen',
+  title: 'Titel', description: 'Notiz', name: 'Listenname', due_at: 'Fälligkeit', recurrence: 'Wiederholung', recurrence_rule: 'Sichtbarkeit der Wiederholung', available_from: 'Sichtbar ab', reminders: 'Erinnerungen',
   checklist: 'Checkliste', tags: 'Tags', rating: 'Bewertung', ratings_enabled: 'Bewertungen verwenden',
   allow_duplicate_titles: 'Gleiche Aufgabennamen erlauben', recurrence_series_id: 'Wiederholungsserie',
   sort_mode: 'Listensortierung',

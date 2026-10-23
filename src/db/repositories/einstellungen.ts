@@ -8,6 +8,8 @@ import { normalisiereListenauswahl, normalisiereStartansicht } from '../../domai
 import { requireText, ValidationError } from '../validation'
 import { placeNavigationList } from '../../domain/listNavigation'
 import { parseDiscardedNotes } from '../../domain/discardedNotes'
+import { parseCalendarPreferences, validDay, validTimeZone } from '../../domain/calendar'
+import { sameData } from '../../domain/equality'
 
 /**
  * Die selbst gemerkten Vorlaufzeiten für die Schnellauswahl.
@@ -120,8 +122,27 @@ export function einstellungen(ctx: Kontext): Pick<Repositories, 'rememberDiscard
         const default_list_id = patch.defaultListId !== undefined ? patch.defaultListId : existing?.default_list_id ?? null
         const overview_mode = patch.overviewMode ?? existing?.overview_mode ?? 'by_list'
         const detailed_ratings = patch.detailedRatings ?? existing?.detailed_ratings ?? false
-        if ((!existing || existing.deleted_at === null) && default_list_id === (existing?.default_list_id ?? null) && overview_mode === (existing?.overview_mode ?? 'by_list') && detailed_ratings === (existing?.detailed_ratings ?? false)) return
-        await ctx.db.user_preferences.put({ id: userId, default_list_id, overview_mode, detailed_ratings, task_expansions: existing?.task_expansions ?? {}, created_at: existing?.created_at ?? ctx.clock.now(), deleted_at: null, ...ctx.stamp() })
+        const previous = parseCalendarPreferences(existing?.calendar_preferences)
+        const calendar_preferences = { ...previous, days: { ...previous.days } }
+        if (patch.calendar) {
+          const change = patch.calendar
+          if (change.timeZone !== undefined) {
+            if (!validTimeZone(change.timeZone)) throw new ValidationError('invalid', 'Diese Zeitzone ist ungültig.')
+            calendar_preferences.timeZone = change.timeZone
+          }
+          if (change.open !== undefined) calendar_preferences.open = change.open
+          if (change.repeats !== undefined) {
+            if (!['active', 'all', 'none'].includes(change.repeats)) throw new ValidationError('invalid', 'Diese Kalenderansicht ist nicht verfügbar.')
+            calendar_preferences.repeats = change.repeats
+          }
+          if (change.day) {
+            if (!validDay(change.day.date) || !['normal', 'low', 'none'].includes(change.day.capacity)) throw new ValidationError('invalid', 'Bitte einen gültigen Tag und eine Zeitangabe wählen.')
+            if (change.day.capacity === 'normal') delete calendar_preferences.days[change.day.date]
+            else calendar_preferences.days[change.day.date] = change.day.capacity
+          }
+        }
+        if ((!existing || existing.deleted_at === null) && default_list_id === (existing?.default_list_id ?? null) && overview_mode === (existing?.overview_mode ?? 'by_list') && detailed_ratings === (existing?.detailed_ratings ?? false) && sameData(calendar_preferences, previous)) return
+        await ctx.db.user_preferences.put({ id: userId, default_list_id, overview_mode, detailed_ratings, calendar_preferences, task_expansions: existing?.task_expansions ?? {}, created_at: existing?.created_at ?? ctx.clock.now(), deleted_at: null, ...ctx.stamp() })
       })
     },
 

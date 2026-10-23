@@ -197,7 +197,7 @@
 }
 
 .note-editor { white-space: pre-wrap; overflow-wrap: anywhere; }
-.note-editor p + p { margin-top: 0.5rem; }
+.note-editor p + p { margin-top: 0.25rem; }
 .note-editor :is(ul, ol) { padding-inline-start: 1.25rem; }
 .note-editor ul { list-style-type: disc; }
 .note-editor ol { list-style-type: decimal; }
@@ -235,6 +235,33 @@
 .calendar-day[data-today] {
   box-shadow: inset 0 0 0 1px var(--color-brand-line);
 }
+.calendar-overview-day {
+  position: relative;
+  display: flex;
+  min-height: 2.25rem;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.calendar-day[data-outside-range='true'] { color: var(--color-ink-faint); }
+.calendar-day[data-capacity='low'], .calendar-capacity-sample[data-capacity='low'] {
+  background-color: color-mix(in srgb, var(--color-ink-muted) 12%, var(--color-raised));
+}
+.calendar-day[data-capacity='none'], .calendar-capacity-sample[data-capacity='none'] {
+  background-color: color-mix(in srgb, var(--color-ink-muted) 30%, var(--color-raised));
+}
+.calendar-day[data-selected] { color: var(--color-on-brand); background-color: var(--color-brand); }
+.calendar-day[data-selected][data-capacity='low'] { color: var(--color-ink); background-color: color-mix(in srgb, var(--color-ink-muted) 12%, var(--color-raised)); box-shadow: inset 0 0 0 2px var(--color-brand); }
+.calendar-day[data-selected][data-capacity='none'] { color: var(--color-ink); background-color: color-mix(in srgb, var(--color-ink-muted) 30%, var(--color-raised)); box-shadow: inset 0 0 0 2px var(--color-brand); }
+.calendar-day-marks { display: flex; min-height: .4rem; align-items: center; gap: .15rem; color: var(--color-brand-soft); }
+.calendar-day[data-selected] .calendar-day-marks { color: var(--color-on-brand); }
+.calendar-dot { display: inline-block; width: .2rem; height: .2rem; border-radius: 50%; background: currentColor; color: var(--color-brand-soft); }
+.calendar-day[data-selected] .calendar-dot { color: var(--color-on-brand); }
+.calendar-day[data-selected][data-capacity] :is(.calendar-day-marks, .calendar-dot) { color: var(--color-brand-soft); }
+.calendar-many { display: flex; width: .5rem; height: .5rem; align-items: center; justify-content: center; border: 1px solid currentColor; border-radius: 50%; }
+.calendar-capacity-sample { display: inline-block; width: .8rem; height: .8rem; border-radius: var(--radius-control); }
+@media (pointer: coarse) { .calendar-overview-day { min-height: 2.75rem; } }
 
 html,
 body,
@@ -626,6 +653,7 @@ body {
    Tabellen bleiben horizontal im Notizblock scrollbar, Bilder passen in die Zeile. */
 .note-markdown { overflow-wrap: anywhere; }
 .note-markdown > * + *, .note-editor > * + * { margin-top: 0.5rem; }
+.note-markdown > p + p, .note-editor > p + p { margin-top: 0.25rem; }
 .note-markdown :is(ul, ol) { padding-inline-start: 1.25rem; }
 .note-markdown ul { list-style-type: disc; }
 .note-markdown ol { list-style-type: decimal; }

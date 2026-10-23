@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { edit, expected, id, requestId, targets } from './schemas'
+import { calendarPreferences, edit, expected, id, requestId, targets } from './schemas'
 import { Planner, rowKey } from './planner'
 import type { CloudPort, CloudRow, CommandRecord, Connection, Snapshot, Table } from './types'
 import { CommandError } from './types'
@@ -32,7 +32,7 @@ export const commandSchemas = {
   manage_sections: z.strictObject({ ...requestId, list: expected, sections: z.array(z.strictObject({ id: id.optional(), name: z.string().trim().min(1).max(SECTION_NAME_MAX) })).max(SECTIONS_MAX) }),
   update_preferences: z.strictObject({ ...requestId, list: z.strictObject({ id, revision: z.string().regex(/^[a-f0-9]{32}$/).nullable(), set: z.strictObject({
     include_in_overview: z.boolean().optional(), hidden: z.boolean().optional(), position: z.number().finite().nullable().optional(), sort_mode: z.enum(['manual', 'priority', 'priority_flat']).optional(),
-  }) }).optional(), account: z.strictObject({ revision: z.string().regex(/^[a-f0-9]{32}$/).nullable(), set: z.strictObject({ overview_mode: z.enum(['by_list', 'newest', 'priority']).optional(), detailed_ratings: z.boolean().optional(), default_list_id: id.nullable().optional() }) }).optional() }),
+  }) }).optional(), account: z.strictObject({ revision: z.string().regex(/^[a-f0-9]{32}$/).nullable(), set: z.strictObject({ overview_mode: z.enum(['by_list', 'newest', 'priority']).optional(), detailed_ratings: z.boolean().optional(), default_list_id: id.nullable().optional(), calendar_preferences: calendarPreferences.optional() }) }).optional() }),
   manage_sharing: z.strictObject({ ...requestId, list: expected, op: z.enum(['add', 'remove']), username: z.string().trim().regex(/^[a-zA-Z0-9_]{3,30}$/) }),
   undo_change: z.strictObject({ ...requestId, change_request_id: id }),
 }

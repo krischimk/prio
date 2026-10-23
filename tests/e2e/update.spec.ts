@@ -49,6 +49,7 @@ async function feldEntfernen(page: import('@playwright/test').Page) {
             delete zeile.expired_at
             delete zeile.reopen_context
             delete zeile.available_from
+            delete zeile.recurrence_rule
             delete zeile.rating
             delete zeile.recurrence_series_id
             delete zeile.checklist
@@ -72,6 +73,7 @@ async function feldEntfernen(page: import('@playwright/test').Page) {
           for (const zeile of alteStartansicht.result as Record<string, unknown>[]) {
             delete zeile.detailed_ratings
             delete zeile.task_expansions
+            delete zeile.calendar_preferences
             startansicht.put(zeile)
           }
         }

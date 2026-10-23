@@ -13,6 +13,7 @@ import type { Edit, Expected } from './schemas'
 import type { Change, CloudRow, Connection, Guard, Plan, Snapshot, Table, Versioned } from './types'
 import { CommandError } from './types'
 import { calendarStep } from './calendar'
+import { effectiveRoutine, routineAvailableAt } from '../../src/domain/routine'
 
 export const rowKey = (table: Table, row: CloudRow): string => table === 'members' || table === 'preferences'
   ? `${table}:${(row as { list_id: string }).list_id}:${(row as { user_id: string }).user_id}` : `${table}:${(row as { id: string }).id}`
@@ -50,7 +51,7 @@ export class Planner {
     if (!entry || (!allowDeleted && entry.row.deleted_at) || completionExpired(fromRemoteTask(entry?.row ?? {} as RemoteTask), Date.parse(this.now))) throw new CommandError('not_found', 'Task not available or its retention window has expired.', { task_id: ref.id })
     if (entry.revision !== ref.revision) throw new CommandError('conflict', 'Task changed. Read it again before deciding what to update.', { task_id: ref.id, current: entry })
     this.list(entry.row.list_id, false, allowDeleted)
-    return fromRemoteTask(entry.row)
+    return effectiveRoutine(fromRemoteTask(entry.row), Date.parse(this.now))
   }
   expectList(ref: Expected, owner = true, deleted = false) {
     const list = this.list(ref.id, owner, deleted)
@@ -79,8 +80,10 @@ export class Planner {
       ...alignReminders(null, { due_at: fields.due_at ?? null, recurrence: fields.recurrence ?? null, reminders: fields.reminders }, Date.parse(this.now)),
       completed: false, available_from: null, completed_at: null, completed_expires_at: null, expired_at: null, reopen_context: null,
       successor_id: null, recurrence_series_id: null, position: atEnd ? Math.max(-1, ...peers.map(task => task.position)) + 1 : Math.min(1, ...peers.map(task => task.position)) - 1,
+      recurrence_rule: fields.recurrence && fields.due_at ? fields.recurrence_rule ?? null : null,
       created_at: this.now, updated_at: this.now, deleted_at: null, dirty: 1 }
     if (task.recurrence) task.recurrence_series_id = task.id
+    if (task.due_at && task.recurrence_rule) task.available_from = routineAvailableAt(task.due_at, task.recurrence_rule)
     this.unique(task); this.saveTask(task); return task.id
   }
   editChecklist(input: Edit['checklist'], current: LocalTask['checklist']) {
@@ -97,9 +100,10 @@ export class Planner {
     this.section(this.list(task.list_id), fields.section_id === undefined ? task.section_id : fields.section_id)
     if (fields.recurrence && !(fields.due_at === undefined ? task.due_at : fields.due_at)) throw new CommandError('invalid_input', 'A recurrence requires a due date.')
     const values = applyTaskEdit(task, { title: fields.title, description: fields.note, tags: fields.tags, rating: fields.rating,
-      dueAt: fields.due_at, recurrence: fields.recurrence, reminders: fields.reminders, sectionId: fields.section_id,
+      dueAt: fields.due_at, recurrence: fields.recurrence, recurrenceRule: fields.recurrence_rule, reminders: fields.reminders, sectionId: fields.section_id,
       checklist: fields.checklist ? this.editChecklist(fields.checklist, task.checklist) : undefined }, Date.parse(this.now))
-    const changed = { ...task, ...values, available_from: values.due_at !== task.due_at || values.recurrence !== task.recurrence ? null : task.available_from }
+    const changed = { ...task, ...values, available_from: values.due_at !== task.due_at || values.recurrence !== task.recurrence || !sameData(values.recurrence_rule, task.recurrence_rule)
+      ? values.due_at ? routineAvailableAt(values.due_at, values.recurrence_rule) : null : task.available_from }
     if (changed.recurrence && !changed.recurrence_series_id) changed.recurrence_series_id = taskSeriesId(task, this.peers(task.list_id))
     if (taskTitleKey(changed.title) !== taskTitleKey(task.title)) this.unique(changed)
     this.saveTask(changed)

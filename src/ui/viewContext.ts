@@ -37,7 +37,7 @@ export interface ViewValue {
   setOverviewSettingsOpen: (open: boolean) => void
   overviewCreating: boolean
   setOverviewCreating: (open: boolean) => void
-  taskDetail: { taskId: string | null; listId: string; fromOverview?: boolean; onCreated?: () => void } | null
+  taskDetail: { taskId: string | null; listId: string; fromOverview?: boolean; onCreated?: () => void; initialDueAt?: string } | null
   setTaskDetail: (detail: ViewValue['taskDetail']) => void
   listSettingsId: string | null
   setListSettingsId: (listId: string | null) => void

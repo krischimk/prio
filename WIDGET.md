@@ -58,6 +58,13 @@ Die native Oberfläche zeichnet den vorbereiteten Zustand. Sie dupliziert weder
 Prioritätsformel noch Wiederholungs-, Tag- oder Erinnerungsregeln. Neue Felder
 gehen weiterhin durch die Normalisierung am Leserand.
 
+Persönliche Tagesverfügbarkeit fließt über dieselbe Prioritätsfunktion ein wie
+in der App und im MCP-Server. Routinen mit Sichtbarkeitsfenster bleiben bis zum
+Start verborgen. Verpasste Durchläufe mit frischem Start werden in der gemeinsamen
+Projektion ersetzt und ihre Checkliste zurückgesetzt, auch wenn die App geschlossen
+ist. Die Anzeige übernimmt das beim nächsten Widget-Abgleich. Alte, verspätet
+übertragene Klicks dürfen niemals den bereits nächsten Durchlauf erledigen.
+
 Ändert sich eine im Widget sichtbare Information oder Aktion, wird ihre
 gemeinsame Quelle angepasst. Änderungen an der nativen Anordnung werden zusätzlich
 in `PrioWidget.kt` umgesetzt und über den Widget-Host geprüft. Nicht jede App-Ansicht

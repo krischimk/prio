@@ -24,24 +24,25 @@ export interface TaskForm {
 }
 
 /** Formularverhalten und Umwandlungen; Fachprüfung kommt aus taskEdit. */
-export function useTaskForm({ task, listId, onSaved, overviewUserId, detailedRatings = false }: {
+export function useTaskForm({ task, listId, onSaved, overviewUserId, detailedRatings = false, initialDueAt }: {
   task: LocalTask | null
   listId: string
   onSaved: () => void
   /** Eigener Gesamtentwurf; seine Zielliste wird erst beim Speichern gebunden. */
   overviewUserId?: string
   detailedRatings?: boolean
+  initialDueAt?: string
 }): TaskForm {
   const { repositories } = useWorkspace()
   const drafts = useContext(TaskDraftContext)
   if (!drafts) throw new Error('useTaskForm braucht einen TaskDraftProvider.')
-  const key = task ? `task:${task.id}` : overviewUserId !== undefined ? 'new:overview' : `new:${listId}`
+  const key = task ? `task:${task.id}` : overviewUserId !== undefined ? 'new:overview' : initialDueAt ? `new:${listId}:date:${initialDueAt}` : `new:${listId}`
   const activeKey = useRef<string | null>(null)
   useEffect(() => {
     activeKey.current = key
     return () => { activeKey.current = null }
   }, [key])
-  const initial = createTaskDraft(task, listId)
+  const initial = createTaskDraft(task, listId, initialDueAt)
   const draft = drafts.drafts[key] ?? initial
   const { werte, start, busy, error } = draft
 
@@ -84,6 +85,7 @@ export function useTaskForm({ task, listId, onSaved, overviewUserId, detailedRat
         rating: !detailedRatings && werte.dueAt && werte.rating ? { ...werte.rating, urgencyMode: 'auto' as const } : werte.rating,
         dueAt: fromDateTimeLocalValue(werte.dueAt),
         recurrence: werte.recurrence === '' ? null : werte.recurrence,
+        recurrenceRule: werte.recurrence && werte.dueAt ? werte.recurrenceRule : null,
         reminders: werte.reminders,
         sectionId: werte.sectionId,
       }
@@ -98,6 +100,7 @@ export function useTaskForm({ task, listId, onSaved, overviewUserId, detailedRat
         if (!sameData(eingabe.rating, start.rating)) patch.rating = eingabe.rating
         if (werte.dueAt !== start.dueAt) patch.dueAt = eingabe.dueAt
         if (werte.recurrence !== start.recurrence) patch.recurrence = eingabe.recurrence
+        if (!sameData(werte.recurrenceRule, start.recurrenceRule)) patch.recurrenceRule = eingabe.recurrenceRule
         if (!sameData(werte.reminders, start.reminders)) patch.reminders = eingabe.reminders
         if (werte.sectionId !== start.sectionId) patch.sectionId = eingabe.sectionId
         await repositories.updateTask(draft.taskId, patch, { base: draft.base ?? undefined })

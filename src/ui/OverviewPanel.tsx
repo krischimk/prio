@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useWorkspace } from '../app/useWorkspace'
 import { useIsDesktop } from '../app/useIsDesktop'
 import { useTasksQuery } from '../app/hooks'
@@ -13,6 +13,11 @@ import { DelayedLoading } from './components/DelayedLoading'
 import { TaskComposer } from './TaskComposer'
 import { TaskViewOptions, ActiveTagFilters } from './TaskViewOptions'
 import { matchesTags } from '../domain/tags'
+import { parseCalendarPreferences } from '../domain/calendar'
+import { isTaskVisible } from '../domain/routine'
+import { OverviewCalendar } from './OverviewCalendar'
+import { IconButton } from './components/IconButton'
+import { CalendarIcon } from './icons'
 
 export function OverviewPanel({ currentUserId }: { currentUserId: string }) {
   const desktop = useIsDesktop()
@@ -20,7 +25,10 @@ export function OverviewPanel({ currentUserId }: { currentUserId: string }) {
   const { repositories } = useWorkspace()
   const included = new Set(overview.preferences.filter(row => row.include_in_overview).map(row => row.list_id))
   const lists = overview.lists.filter(list => included.has(list.id))
-  const query = useTasksQuery(lists.map(list => list.id))
+  const query = useTasksQuery(lists.map(list => list.id), true)
+  const { nowMs } = useWorkspace()
+  const visibleTasks = useMemo(() => query.tasks.filter(task => isTaskVisible(task, nowMs)), [query.tasks, nowMs])
+  const calendar = parseCalendarPreferences(overview.userPreference?.calendar_preferences)
   const mode = overview.userPreference?.overview_mode ?? 'by_list'
   const [busy, setBusy] = useState(false)
   const writing = useRef(false)
@@ -38,8 +46,12 @@ export function OverviewPanel({ currentUserId }: { currentUserId: string }) {
     <div className="flex min-h-0 flex-1 flex-col">
     <div className={desktop ? undefined : 'px-rand pt-2'}>
       <div className="flex items-center justify-between gap-2">
-        <p className={`text-label text-ink-muted ${numeric}`}>{formatOpenTasks(query.tasks.filter(task => matchesTags(task.tags, tagFilter)).length, tagFilter.length ? query.tasks.length : undefined)} · {lists.length} {lists.length === 1 ? 'Liste' : 'Listen'}</p>
+        <p className={`text-label text-ink-muted ${numeric}`}>{formatOpenTasks(visibleTasks.filter(task => matchesTags(task.tags, tagFilter)).length, tagFilter.length ? visibleTasks.length : undefined)} · {lists.length} {lists.length === 1 ? 'Liste' : 'Listen'}</p>
+        <div className="flex items-center gap-1">
+        <IconButton size="toolbarIcon" aria-label={calendar.open ? 'Kalender schließen' : 'Kalender anzeigen'} variant={calendar.open ? 'iconActive' : 'iconMuted'} aria-pressed={calendar.open}
+          onClick={() => void repositories.updateUserPreferences(currentUserId, { calendar: { open: !calendar.open } }).catch(() => setError('Die Ansicht konnte nicht gespeichert werden.'))}><CalendarIcon className="size-icon-meta" /></IconButton>
         {overview.status === 'ready' ? <TaskViewOptions tags={query.tasks.flatMap(task => task.tags)} mode={mode} busy={busy} onModeChange={mode => void write(mode)} /> : null}
+        </div>
       </div>
       <ActiveTagFilters />
       {error ? <p role="alert" className={errorBox}>{error}</p> : null}
@@ -55,7 +67,8 @@ export function OverviewPanel({ currentUserId }: { currentUserId: string }) {
       : lists.length === 0 ? <div className={`${emptyState} space-y-4`}>
         <p>Noch keine Listen ausgewählt. Öffne die Auswahl über den Titel „Gesamtansicht“.</p>
       </div>
-      : <TaskList key={mode} lists={lists} tasks={query.tasks} currentUserId={currentUserId} overview mode={mode} />}
+      : calendar.open ? <OverviewCalendar tasks={query.tasks.filter(task => matchesTags(task.tags, tagFilter))} lists={lists} currentUserId={currentUserId} />
+      : <TaskList key={mode} lists={lists} tasks={visibleTasks} currentUserId={currentUserId} overview mode={mode} />}
     </div>
   </section>
 }

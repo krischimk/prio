@@ -43,8 +43,9 @@ export function TaskList({ lists, tasks: allTasks, currentUserId, overview = fal
   const { repositories, nowMs } = useWorkspace()
   const { setTaskDetail, selectList, tagFilter, overview: preferences } = useView()
   const detailedRatings = preferences.userPreference?.detailed_ratings === true
+  const calendar = preferences.userPreference?.calendar_preferences
   const tasks = useMemo(() => tagFilter.length ? allTasks.filter(task => matchesTags(task.tags, tagFilter)) : allTasks, [allTasks, tagFilter])
-  const ranks = useMemo(() => priorityRanks(tasks, lists, nowMs, detailedRatings), [tasks, lists, nowMs, detailedRatings])
+  const ranks = useMemo(() => priorityRanks(tasks, lists, nowMs, detailedRatings, calendar), [tasks, lists, nowMs, detailedRatings, calendar])
   const base = useMemo(() => dragGroups(lists, tasks), [lists, tasks])
   const [preview, setPreview] = useState<DragPreview | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -151,7 +152,7 @@ export function TaskList({ lists, tasks: allTasks, currentUserId, overview = fal
     {shown?.saving ? <p role="status" className="sr-only">Position wird gespeichert …</p> : null}
     <div data-testid="task-list" className="flex flex-1 flex-col space-y-abschnitt">
       {mode !== 'by_list' ? <ul aria-label={overview ? 'Aufgaben in der Gesamtansicht' : 'Aufgaben nach Priorität'}>
-        {orderOverviewTasks(visibleTasks, visibleLists, mode, nowMs, detailedRatings).map(task => {
+        {orderOverviewTasks(visibleTasks, visibleLists, mode, nowMs, detailedRatings, calendar).map(task => {
           const list = visibleLists.find(entry => entry.id === task.list_id)!
           const section = list.sections.find(entry => entry.id === task.section_id)
           return <NewestTaskRow key={task.id} task={task} currentUserId={currentUserId} overview={overview}
@@ -188,7 +189,7 @@ function ListBlock({ list, groups, byId, allTasks, currentUserId, overview, acti
   }, [activeId, emptyKey, aufklappen])
   const { nowMs } = useWorkspace()
   const desktop = useIsDesktop()
-  const sections = priority ? orderListTaskGroups([...byId.values()].filter(task => task.list_id === list.id), list, nowMs, preferences.userPreference?.detailed_ratings === true) : groupTasks([], list.sections)
+  const sections = priority ? orderListTaskGroups([...byId.values()].filter(task => task.list_id === list.id), list, nowMs, preferences.userPreference?.detailed_ratings === true, preferences.userPreference?.calendar_preferences) : groupTasks([], list.sections)
   const count = groupTasks([], list.sections).reduce((sum, group) => sum + (groups[taskGroupId(list.id, group.section?.id ?? null)]?.length ?? 0), 0)
   return <section aria-label={overview ? `Aufgaben aus ${list.name}` : `Aufgaben in ${list.name}`} className="flex min-w-0 shrink-0 flex-col last:flex-1">
     {overview ? <OverviewListHeading list={list} count={count} onOpen={() => onSelectList(list.id)} /> : null}

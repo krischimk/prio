@@ -65,9 +65,12 @@ begin
       raise exception 'Nur deine eigene Auswahl für zugängliche Listen darf geändert werden.' using errcode = '42501';
     end if;
   else
+    select to_jsonb(r) into current_row from public.user_preferences r where r.id=(p_row->>'id')::uuid for update;
+    p_row := jsonb_build_object('calendar_preferences',coalesce(current_row->'calendar_preferences','{"days":{},"repeats":"active","open":false,"timeZone":null}'::jsonb)) || p_row;
     up := jsonb_populate_record(null::public.user_preferences,p_row);
+    up.calendar_preferences := coalesce(up.calendar_preferences,'{"days":{},"repeats":"active","open":false,"timeZone":null}'::jsonb);
     wanted := to_jsonb(up);
-    expected := case when p_expected is null or p_expected = 'null'::jsonb then null else to_jsonb(jsonb_populate_record(null::public.user_preferences,jsonb_build_object('detailed_ratings',false,'task_expansions','{}'::jsonb) || p_expected)) end;
+    expected := case when p_expected is null or p_expected = 'null'::jsonb then null else to_jsonb(jsonb_populate_record(null::public.user_preferences,jsonb_build_object('detailed_ratings',false,'task_expansions','{}'::jsonb,'calendar_preferences','{"days":{},"repeats":"active","open":false,"timeZone":null}'::jsonb) || p_expected)) end;
     select to_jsonb(r) into current_row from public.user_preferences r where r.id=up.id for update;
     if up.id is distinct from actor then raise exception 'Nur deine eigenen Einstellungen dürfen geändert werden.' using errcode = '42501'; end if;
     if up.default_list_id is not null and (current_row is null or wanted->'default_list_id' is distinct from current_row->'default_list_id') then
@@ -90,9 +93,9 @@ begin
     on conflict(list_id,user_id) do update set include_in_overview=excluded.include_in_overview,position=excluded.position,hidden=excluded.hidden,sort_mode=excluded.sort_mode,updated_at=excluded.updated_at,deleted_at=excluded.deleted_at
     returning to_jsonb(saved) into current_row;
   else
-    insert into public.user_preferences as saved (id,default_list_id,overview_mode,detailed_ratings,task_expansions,created_at,updated_at,deleted_at)
-    values (up.id,up.default_list_id,up.overview_mode,up.detailed_ratings,up.task_expansions,up.created_at,up.updated_at,up.deleted_at)
-    on conflict(id) do update set default_list_id=excluded.default_list_id,overview_mode=excluded.overview_mode,detailed_ratings=excluded.detailed_ratings,task_expansions=excluded.task_expansions,updated_at=excluded.updated_at,deleted_at=excluded.deleted_at
+    insert into public.user_preferences as saved (id,default_list_id,overview_mode,detailed_ratings,task_expansions,calendar_preferences,created_at,updated_at,deleted_at)
+    values (up.id,up.default_list_id,up.overview_mode,up.detailed_ratings,up.task_expansions,up.calendar_preferences,up.created_at,up.updated_at,up.deleted_at)
+    on conflict(id) do update set default_list_id=excluded.default_list_id,overview_mode=excluded.overview_mode,detailed_ratings=excluded.detailed_ratings,task_expansions=excluded.task_expansions,calendar_preferences=excluded.calendar_preferences,updated_at=excluded.updated_at,deleted_at=excluded.deleted_at
     returning to_jsonb(saved) into current_row;
   end if;
   return jsonb_build_object('table',p_table,'id',row_id,'kind','written','current',current_row);

@@ -12,6 +12,8 @@ import type { TaskPlacement } from '../../domain/taskPlacement'
 import type { ChecklistItem } from '../../domain/checklist'
 import type { TaskRating } from '../../domain/rating'
 import type { DiscardedNote } from '../../domain/discardedNotes'
+import type { DayCapacity, RepeatFilter } from '../../domain/calendar'
+import type { RecurrenceRule } from '../../domain/routine'
 
 export interface CreateTaskInput {
   listId: string
@@ -26,6 +28,7 @@ export interface CreateTaskInput {
   rating?: TaskRating | null
   dueAt?: string | null
   recurrence?: string | null
+  recurrenceRule?: RecurrenceRule | null
   /** Die Erinnerungen der Aufgabe. Fehlt das Feld, bleibt die bisherige Liste. */
   reminders?: TaskReminder[]
 }
@@ -51,7 +54,9 @@ export interface Repositories {
   placeList(listId: string, userId: string, destination: { hidden: boolean; beforeListId: string | null }): Promise<void>
   getUserPreferences(userId: string): Promise<LocalUserPreference | undefined>
   setTaskExpanded(userId: string, taskId: string, part: 'note' | 'checklist', open: boolean): Promise<void>
-  updateUserPreferences(userId: string, patch: { defaultListId?: string | null; overviewMode?: OverviewMode; detailedRatings?: boolean }): Promise<void>
+  updateUserPreferences(userId: string, patch: { defaultListId?: string | null; overviewMode?: OverviewMode; detailedRatings?: boolean;
+    calendar?: { open?: boolean; repeats?: RepeatFilter; timeZone?: string; day?: { date: string; capacity: DayCapacity } } }): Promise<void>
+  advanceRoutines(): Promise<boolean>
   listCloudConflicts(): Promise<CloudConflict[]>
   resolveCloudConflict(conflict: CloudConflict, choice: 'local' | 'remote'): Promise<void>
   // Listen

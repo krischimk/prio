@@ -5,6 +5,8 @@ import { taskSeriesId } from './taskTitles'
 import { sameData } from './equality'
 import { insertionPosition } from './taskPlacement'
 import type { LocalList, LocalTask } from './types'
+import { effectiveRoutine, routineAvailableAt, routineRestorable, stepInZone } from './routine'
+import { ValidationError } from './validation'
 
 export interface CompletionPlan { task: LocalTask; changes: LocalTask[] }
 
@@ -12,6 +14,8 @@ export interface CompletionPlan { task: LocalTask; changes: LocalTask[] }
 export async function planTaskCompletion(task: LocalTask, list: LocalList, tasks: LocalTask[], completed: boolean, now: string,
   calendarStep?: (date: Date, recurrence: Recurrence) => Date): Promise<CompletionPlan> {
   if (task.completed === completed) return { task, changes: [] }
+  if (!completed && !routineRestorable(task, Date.parse(now))) throw new ValidationError('not-found', 'Für diese Routine hat bereits der nächste Durchlauf begonnen.')
+  if (completed) task = effectiveRoutine(task, Date.parse(now))
   const stamp = { updated_at: now, dirty: 1 as const }
   if (!completed) {
     const changes: LocalTask[] = []
@@ -36,7 +40,7 @@ export async function planTaskCompletion(task: LocalTask, list: LocalList, tasks
   const finished: LocalTask = { ...task, completed: true, completed_at: now,
     completed_expires_at: completionDeadline(now, list.keep_completed), reopen_context: captureReopenContext(task, list, tasks), ...stamp }
   if (!isRecurrence(task.recurrence) || !task.due_at) return { task: finished, changes: [finished] }
-  const due = nextOccurrence(task.due_at, task.recurrence, now, calendarStep)
+  const due = nextOccurrence(task.due_at, task.recurrence, now, task.recurrence_rule ? stepInZone(task.recurrence_rule.timeZone) : calendarStep)
   const id = await successorId(task.id, due)
   const existing = tasks.find(row => row.id === id)
   const series = taskSeriesId(task, tasks)
@@ -44,7 +48,7 @@ export async function planTaskCompletion(task: LocalTask, list: LocalList, tasks
   finished.successor_id = id
   if (!existing || (existing.deleted_at !== null && !existing.expired_at)) {
     const successor: LocalTask = { ...task, id, recurrence_series_id: series, checklist: repeatChecklist(task.checklist), due_at: due,
-      available_from: Date.parse(task.due_at) > Date.parse(now) ? task.due_at : null,
+      available_from: task.recurrence_rule ? routineAvailableAt(due, task.recurrence_rule) : Date.parse(task.due_at) > Date.parse(now) ? task.due_at : null,
       completed: false, completed_at: null, completed_expires_at: null, expired_at: null, reopen_context: null, successor_id: null,
       created_at: existing?.created_at ?? now, deleted_at: null, ...stamp }
     finished.reopen_context!.successor = successorSnapshot(successor)

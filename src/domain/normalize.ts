@@ -5,6 +5,9 @@ import { parseSections } from './sections'
 import { parseChecklist } from './checklist'
 import { parseTags } from './tags'
 import { parseRating } from './rating'
+import { parseRecurrenceRule, routineAvailableAt } from './routine'
+import { parseCalendarPreferences } from './calendar'
+import { isRecurrence } from './recurrence'
 import type { LocalList, LocalListMember, LocalListPreference, LocalTask, LocalUserPreference, RemoteList, RemoteListMember, RemoteListPreference, RemoteTask, RemoteUserPreference } from './types'
 
 /**
@@ -56,6 +59,8 @@ export function normalisiereListe(zeile: LocalList | RemoteList): LocalList {
 
 export function normalisiereAufgabe(zeile: LocalTask | RemoteTask): LocalTask {
   const roh = zeile as Vielleicht<LocalTask>
+  const rule = isRecurrence(roh.recurrence) ? parseRecurrenceRule(roh.recurrence_rule) : null
+  const due = normalizeIso(roh.due_at ?? null)
   return {
     id: zeile.id,
     list_id: roh.list_id ?? '',
@@ -65,14 +70,15 @@ export function normalisiereAufgabe(zeile: LocalTask | RemoteTask): LocalTask {
     tags: parseTags(roh.tags),
     rating: parseRating(roh.rating),
     recurrence_series_id: roh.recurrence_series_id ?? null,
-    due_at: normalizeIso(roh.due_at ?? null),
-    available_from: normalizeIso(roh.available_from ?? null),
+    due_at: due,
+    available_from: rule && due ? routineAvailableAt(due, rule) : normalizeIso(roh.available_from ?? null),
     completed: roh.completed ?? false,
     completed_at: normalizeIso(roh.completed_at ?? null),
     completed_expires_at: normalizeIso(roh.completed_expires_at ?? null),
     expired_at: normalizeIso(roh.expired_at ?? null),
     reopen_context: parseReopenContext(roh.reopen_context),
     recurrence: roh.recurrence ?? null,
+    recurrence_rule: rule,
     successor_id: roh.successor_id ?? null,
     // `parseReminders` kommt mit allem zurecht und lässt Unbrauchbares still
     // fallen – eine verbogene Zeile darf die Aufgabe nicht unlesbar machen.
@@ -130,6 +136,7 @@ export function normalisiereStartansicht(row: LocalUserPreference | RemoteUserPr
     id: row.id, default_list_id: row.default_list_id ?? null,
     overview_mode: row.overview_mode === 'newest' || row.overview_mode === 'priority' ? row.overview_mode : 'by_list',
     detailed_ratings: row.detailed_ratings === true,
+    calendar_preferences: parseCalendarPreferences(row.calendar_preferences),
     task_expansions: parseTaskExpansions(row.task_expansions),
     created_at: normalizeIso(row.created_at), updated_at: normalizeIso(row.updated_at),
     deleted_at: normalizeIso(row.deleted_at ?? null), dirty: 'dirty' in row ? row.dirty : 0,
