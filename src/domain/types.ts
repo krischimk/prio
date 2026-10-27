@@ -102,6 +102,7 @@ export interface LocalTask extends SyncableRow, LocalOnly {
   title: string
   description: string | null
   checklist: ChecklistItem[]
+  checklist_hide_completed?: boolean
   tags: string[]
   rating: TaskRating | null
   due_at: IsoDateTime | null

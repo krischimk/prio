@@ -2,6 +2,7 @@ import Dexie, { type Table } from 'dexie'
 import type { TaskReminder } from '../domain/reminder'
 import type { LocalList, LocalListMember, LocalListPreference, LocalMeta, LocalReminder, LocalTask, LocalUserPreference } from '../domain/types'
 import { installTaskReadIndex, taskReadIndex } from './taskReadIndex'
+import { readCloudState, readUserPreference } from './cloudState'
 
 /**
  * Lokale Datenbank (IndexedDB via Dexie).
@@ -195,6 +196,19 @@ export class LocalDatabase extends Dexie {
     }).upgrade(tx => tx.table('tasks').toCollection().modify((task: LocalTask) => {
       Object.assign(task, taskReadIndex(task))
     }))
+    // Alte Schreiber kannten neue Felder nicht. Die bestätigte Basis bewahrt
+    // deren Werte beim Update, statt eine fehlende Angabe als „aus“ zu senden.
+    this.version(10).stores({}).upgrade(async tx => {
+      for (const row of await tx.table<LocalTask>('tasks').toArray()) {
+        if (row.checklist_hide_completed !== undefined) continue
+        const base = (await readCloudState(this, 'tasks', row.id)).base as LocalTask | null | undefined
+        await tx.table('tasks').update(row.id, { checklist_hide_completed: base?.checklist_hide_completed === true })
+      }
+      for (const row of await tx.table<LocalUserPreference>('user_preferences').toArray()) {
+        const complete = await readUserPreference(this, row.id)
+        if (complete?.calendar_preferences) await tx.table('user_preferences').update(row.id, { calendar_preferences: complete.calendar_preferences })
+      }
+    })
     installTaskReadIndex(this)
   }
 }

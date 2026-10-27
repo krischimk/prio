@@ -1,7 +1,11 @@
 import Dexie from 'dexie'
 import { afterEach, describe, expect, it } from 'vitest'
-import { deleteLocalDatabase, localDbName, openLocalDatabase } from '../../src/db/localDb'
+import { deleteLocalDatabase, localDbName, openLocalDatabase, type LocalDatabase } from '../../src/db/localDb'
 import { createTestUserId } from '../support/harness'
+import { localTask, localUserPreference } from '../support/factories'
+import { writeCloudState } from '../../src/db/cloudState'
+import { toRemoteTask, toRemoteUserPreference } from '../../src/domain/mapping'
+import { parseCalendarPreferences } from '../../src/domain/calendar'
 
 /**
  * Upgrade einer bestehenden lokalen Datenbank (Integration).
@@ -59,7 +63,7 @@ describe('Upgrade der lokalen Datenbank', () => {
 
     // Version 8 ergänzt die persönlichen Tabellen, ohne bestehende Listen
     // automatisch in die Gesamtansicht aufzunehmen.
-    expect(db.verno).toBe(9)
+    expect(db.verno).toBe(10)
     expect(await db.list_preferences.count()).toBe(0)
     expect(await db.user_preferences.count()).toBe(0)
     expect(await db.tasks.count()).toBe(1)
@@ -155,7 +159,7 @@ describe('Upgrade der lokalen Datenbank', () => {
 
   it('legt eine frische Datenbank direkt in der neuesten Version an', async () => {
     const db = await openLocalDatabase(createTestUserId('frisch'))
-    expect(db.verno).toBe(9)
+    expect(db.verno).toBe(10)
     expect(await db.list_preferences.count()).toBe(0)
     expect(await db.user_preferences.count()).toBe(0)
     expect(await db.reminders.count()).toBe(0)
@@ -165,6 +169,31 @@ describe('Upgrade der lokalen Datenbank', () => {
     expect(indizes).toContain('completed_at')
     expect(indizes).toContain('deleted_at')
     expect(db.lists.schema.indexes.map((index) => index.name)).toContain('deleted_at')
+    db.close()
+  })
+
+  it('übernimmt unbekannte Felder aus der bestätigten Basis statt Kalendertage zu leeren', async () => {
+    const old = new Dexie(localDbName(userId))
+    old.version(9).stores({
+      lists: 'id, owner_id, updated_at, dirty, deleted_at',
+      list_members: '[list_id+user_id], list_id, user_id, updated_at, dirty',
+      tasks: 'id, list_id, updated_at, dirty, completed_at, deleted_at, [list_id+read_state], [list_id+read_state+read_until], *read_tag_keys',
+      list_preferences: '[list_id+user_id], list_id, user_id, dirty, updated_at', user_preferences: 'id, dirty, updated_at',
+      meta: 'key', reminders: '[taskId+at], taskId, notificationId, at',
+    })
+    await old.open()
+    const preference = localUserPreference({ id: userId })
+    const task = localTask()
+    const calendar = parseCalendarPreferences({ days: { '2026-10-29': 'low' }, notes: { '2026-10-29': 'Unterwegs' } })
+    await old.table('user_preferences').put(preference)
+    await old.table('tasks').put(task)
+    await writeCloudState(old as LocalDatabase, 'userPreferences', userId, { base: toRemoteUserPreference({ ...preference, calendar_preferences: calendar }) })
+    await writeCloudState(old as LocalDatabase, 'tasks', task.id, { base: toRemoteTask({ ...task, checklist_hide_completed: true }) })
+    old.close()
+    const db = await openLocalDatabase(userId)
+    expect((await db.user_preferences.get(userId))?.calendar_preferences).toEqual(calendar)
+    expect((await db.tasks.get(task.id))?.checklist_hide_completed).toBe(true)
+    expect((await db.tasks.get(task.id))?.dirty).toBe(0)
     db.close()
   })
 

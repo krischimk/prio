@@ -2075,6 +2075,8 @@ Lila Punkte zeigen Fälligkeiten; mehr als drei werden als Punkt mit Ring
 zusammengefasst. Ein ausgewählter Tag zeigt seine Aufgaben. „Wenig Zeit“ und
 „Keine Zeit“ erhalten unterschiedlich starke Grauflächen, auch in der
 Datumsauswahl. Die persönliche Zeitangabe wird zwischen Geräten synchronisiert.
+Eine persönliche Tagesnotiz erklärt die Planung und erscheint als Hinweis beim
+Überfahren des Tages, auch in der Datumsauswahl. Sie speichert sich automatisch.
 Für automatische Dringlichkeit zählt normale Zeit vollständig, wenig Zeit zur
 Hälfte und keine Zeit gar nicht. Manuelle Dringlichkeit bleibt unverändert.
 
@@ -2097,3 +2099,8 @@ bis eine Sichtbarkeitsregel gewählt wird.
 `recurrence_rule` und `calendar_preferences` werden durch Migration 0030 ergänzt.
 App, Widget und MCP nutzen dafür dieselben Fachfunktionen; Minuten/Stunden sind
 Zeitabstände, Kalenderschritte behalten ihre lokale Uhrzeit über Zeitumstellungen.
+
+In den Checklisten-Einstellungen einer Aufgabe kann „Erledigte Checklistenpunkte
+ausblenden“ aktiviert werden. Der Fortschritt zählt weiterhin alle Punkte.
+„Erledigte anzeigen“ blendet sie wieder ein und erlaubt das Wiederöffnen; das
+Ausblenden löscht keinen Punkt. Das Widget übernimmt dieselbe Anzeigeregel.

@@ -81,6 +81,7 @@ export function useTaskForm({ task, listId, onSaved, overviewUserId, detailedRat
         title: werte.title,
         description: werte.description,
         checklist: werte.checklistText.trim() ? appendChecklistItem(werte.checklist, createChecklistItem(werte.checklistText)) : werte.checklist,
+        checklistHideCompleted: werte.checklistHideCompleted,
         tags: parseTags([...werte.tags, werte.tagText]),
         rating: !detailedRatings && werte.dueAt && werte.rating ? { ...werte.rating, urgencyMode: 'auto' as const } : werte.rating,
         dueAt: fromDateTimeLocalValue(werte.dueAt),
@@ -96,6 +97,7 @@ export function useTaskForm({ task, listId, onSaved, overviewUserId, detailedRat
         if (werte.title !== start.title) patch.title = eingabe.title
         if (werte.description !== start.description) patch.description = eingabe.description
         if (!sameData(werte.checklist, start.checklist) || werte.checklistText.trim()) patch.checklist = eingabe.checklist
+        if (werte.checklistHideCompleted !== start.checklistHideCompleted) patch.checklistHideCompleted = eingabe.checklistHideCompleted
         if (!sameData(werte.tags, start.tags) || werte.tagText.trim()) patch.tags = eingabe.tags
         if (!sameData(eingabe.rating, start.rating)) patch.rating = eingabe.rating
         if (werte.dueAt !== start.dueAt) patch.dueAt = eingabe.dueAt

@@ -131,6 +131,7 @@ const ERWARTET = [
   ['tasks', 'recurrence_rule', '0030'],
   ['user_preferences', 'calendar_preferences', '0030'],
   ['tasks', 'checklist', '0021'],
+  ['tasks', 'checklist_hide_completed', '0031'],
   ['tasks', 'tags', '0021'],
   ['tasks', 'rating', '0023'],
   ['tasks', 'recurrence_series_id', '0024'],

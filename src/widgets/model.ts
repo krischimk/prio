@@ -1,4 +1,4 @@
-import { checklistProgress } from '../domain/checklist'
+import { checklistProgress, visibleChecklistItems } from '../domain/checklist'
 import { fromRemoteList, fromRemotePreference, fromRemoteTask, fromRemoteUserPreference } from '../domain/mapping'
 import { compareTasks } from '../domain/ordering'
 import { orderOverviewTasks } from '../domain/overviewOrdering'
@@ -63,7 +63,7 @@ export function projectWidget(rows: WidgetRows, userId: string, nowMs: number, t
         priority: task.rating && listById.get(task.list_id)?.ratings_enabled ? ratingValues(task.rating, task.due_at, nowMs, task.checklist, detailed, calendar).priority : null,
         dueAt: task.due_at, due: due?.text ?? null,
         overdue: due?.overdue ?? false, checklistDone: progress.completed, checklistTotal: progress.total,
-        checklist: task.checklist.filter(item => item.deleted_at === null).map(({ id, text, completed }) => ({ id, text, completed })),
+        checklist: visibleChecklistItems(task.checklist, task.checklist_hide_completed).map(({ id, text, completed }) => ({ id, text, completed })),
         deferred: task.available_from !== null && Date.parse(task.available_from) > nowMs, hasReminder: task.reminders.length > 0 }
     }),
     reminders: planReminders(tasks, lists, nowMs, userId), local: {},

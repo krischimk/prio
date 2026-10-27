@@ -36,6 +36,19 @@ function fixture() {
 }
 
 describe('Android-Widget: gemeinsame Fachregeln und sichere Aufträge', () => {
+  it('hides completed points without losing counts or the ability to reopen them', async () => {
+    const f = fixture()
+    Object.assign(f.rows.tasks[0], { checklist_hide_completed: true, checklist: [
+      { id: 'a', text: 'Einpacken', completed: true, deleted_at: null },
+      { id: 'b', text: 'Losgehen', completed: false, deleted_at: null },
+    ] })
+    const snapshot = projectWidget(f.rows, userId, Date.parse(now), 'Europe/Berlin')
+    expect(snapshot.tasks[0]).toMatchObject({ checklistDone: 1, checklistTotal: 2, checklist: [{ id: 'b' }] })
+    expect(snapshot.tasks[0].checklist).toHaveLength(1)
+    await completeFromWidget(f.port, { ...command(), checklist: { id: 'a', completed: false } }, 'Europe/Berlin')
+    expect(projectWidget(f.rows, userId, Date.parse(now), 'Europe/Berlin').tasks[0].checklist).toHaveLength(2)
+    expect(f.rows.tasks[0].completed).toBe(false)
+  })
   it('checks individual items without completing the task or altering other items, also on retry', async () => {
     const f = fixture()
     Object.assign(f.rows.tasks[0], { recurrence: 'daily', due_at: now, checklist: [

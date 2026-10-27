@@ -7,6 +7,7 @@ import { Select } from './Select'
 import { CalendarDayMarks } from './CalendarDay'
 import { calendarCapacityText } from '../calendarLabels'
 import type { CalendarPreferences } from '../../domain/calendar'
+import { Hint } from './Hint'
 
 export function CalendarMonth({ month, selected, today, counts, preferences, onMonth, onSelect }: {
   month: string; selected: string; today: string; counts: ReadonlyMap<string, number>; preferences: CalendarPreferences
@@ -29,10 +30,13 @@ export function CalendarMonth({ month, selected, today, counts, preferences, onM
     <div className="grid grid-cols-7 gap-0.5" aria-label="Kalendertage">{Array.from({ length: total }, (_, index) => {
       const date = start.add({ days: index }), day = date.toString(), count = counts.get(day) ?? 0
       const capacity = preferences.days[day]
-      return <button key={day} type="button" className={`${focusRing} calendar-day calendar-overview-day ${numeric} rounded-control text-body text-ink hover:bg-surface`}
-        aria-label={formatCalendarDay(day)} aria-description={`${count} Fälligkeiten. ${calendarCapacityText(capacity)}`} aria-pressed={selected === day}
+      const note = preferences.notes?.[day]
+      const description = `${count} Fälligkeiten. ${calendarCapacityText(capacity)}${note ? `. ${note}` : ''}`
+      const button = <button key={day} type="button" className={`${focusRing} calendar-day calendar-overview-day ${numeric} rounded-control text-body text-ink hover:bg-surface`}
+        aria-label={formatCalendarDay(day)} aria-description={description} aria-pressed={selected === day}
         data-selected={selected === day || undefined} data-today={today === day || undefined} data-outside-range={date.month !== first.month || undefined}
         data-capacity={capacity} onClick={() => onSelect(day)}><span>{date.day}</span><CalendarDayMarks count={count} /></button>
+      return note ? <Hint key={day} text={`${formatCalendarDay(day)} · ${calendarCapacityText(capacity)}\n${note}`}>{button}</Hint> : button
     })}</div>
   </div>
 }

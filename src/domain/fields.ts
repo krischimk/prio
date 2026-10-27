@@ -50,6 +50,7 @@ export const AUFGABEN_FELDER = [
   'title',
   'description',
   'checklist',
+  'checklist_hide_completed',
   'tags',
   'rating',
   'due_at',

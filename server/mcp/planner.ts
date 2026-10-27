@@ -77,6 +77,7 @@ export class Planner {
     const peers = this.peers(listId).filter(task => task.deleted_at === null)
     const task: LocalTask = { id: crypto.randomUUID(), list_id: listId, section_id: fields.section_id ?? null,
       title: fields.title.trim(), description: fields.note?.trim() || null, checklist: this.editChecklist(fields.checklist, []), tags: fields.tags ?? [], rating: fields.rating ?? null,
+      checklist_hide_completed: fields.checklist_hide_completed === true,
       ...alignReminders(null, { due_at: fields.due_at ?? null, recurrence: fields.recurrence ?? null, reminders: fields.reminders }, Date.parse(this.now)),
       completed: false, available_from: null, completed_at: null, completed_expires_at: null, expired_at: null, reopen_context: null,
       successor_id: null, recurrence_series_id: null, position: atEnd ? Math.max(-1, ...peers.map(task => task.position)) + 1 : Math.min(1, ...peers.map(task => task.position)) - 1,
@@ -100,7 +101,7 @@ export class Planner {
     this.section(this.list(task.list_id), fields.section_id === undefined ? task.section_id : fields.section_id)
     if (fields.recurrence && !(fields.due_at === undefined ? task.due_at : fields.due_at)) throw new CommandError('invalid_input', 'A recurrence requires a due date.')
     const values = applyTaskEdit(task, { title: fields.title, description: fields.note, tags: fields.tags, rating: fields.rating,
-      dueAt: fields.due_at, recurrence: fields.recurrence, recurrenceRule: fields.recurrence_rule, reminders: fields.reminders, sectionId: fields.section_id,
+      dueAt: fields.due_at, recurrence: fields.recurrence, recurrenceRule: fields.recurrence_rule, reminders: fields.reminders, sectionId: fields.section_id, checklistHideCompleted: fields.checklist_hide_completed,
       checklist: fields.checklist ? this.editChecklist(fields.checklist, task.checklist) : undefined }, Date.parse(this.now))
     const changed = { ...task, ...values, available_from: values.due_at !== task.due_at || values.recurrence !== task.recurrence || !sameData(values.recurrence_rule, task.recurrence_rule)
       ? values.due_at ? routineAvailableAt(values.due_at, values.recurrence_rule) : null : task.available_from }

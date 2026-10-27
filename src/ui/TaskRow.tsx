@@ -34,7 +34,7 @@ export function TaskRow({ task, currentUserId, onOpen, origin, originList, overv
     </span>
   </Hint> : null
   const content = <div data-testid="task-row"
-        className={`col-span-3 col-start-1 row-start-1 w-full min-w-0 rounded-control pl-14 ${desktop ? 'pr-14' : 'pr-3'} ${checklist ? 'min-h-11 pt-3 pb-0' : 'min-h-14 pt-4 pb-3'} text-left`}>
+        className={`col-span-3 col-start-1 row-start-1 w-full min-w-0 rounded-control pl-14 ${desktop ? 'pr-14' : 'pr-3'} ${checklist || task.description ? 'min-h-11 pt-3 pb-0' : 'min-h-14 pt-4 pb-3'} text-left`}>
         <div className="flex min-w-0 items-end gap-3"><div className="min-w-0 flex-1">
         <TaskFacts task={task} currentUserId={currentUserId} titleTrailing={originList ? <Hint text={`${originList.name}${origin ? ` · ${origin}` : ''}`}>
           <span role="img" aria-label={`Liste: ${originList.name}${origin ? ` · ${origin}` : ''}`} className="mt-1 inline-flex shrink-0 text-ink-muted">
@@ -42,9 +42,8 @@ export function TaskRow({ task, currentUserId, onOpen, origin, originList, overv
           </span>
         </Hint> : null} afterTitle={ratingsEnabled && task.rating ? <TaskPriorityBar rating={task.rating} dueAt={task.due_at} checklist={task.checklist} rank={rank} /> : null} />
           {origin && !originList ? <span className="mt-1 block break-words text-meta text-ink-muted">{origin}</span> : null}
-        {task.description ? <TaskDescription text={task.description} className="mt-1" open={note.open} busy={note.busy} onToggle={() => void note.toggle()} /> : null}
         {ratingsEnabled && task.rating ? <TaskRatingSummary rating={task.rating} dueAt={task.due_at} checklist={task.checklist} includePriority={false} /> : null}
-        </div>{!checklist ? tags : null}</div>
+        </div>{!checklist && !task.description ? tags : null}</div>
       </div>
   return <li ref={elementRef} data-task-row="true" data-id={task.id}
     data-completed={task.completed ? 'true' : undefined} data-dragging={dragging ? 'true' : undefined}
@@ -62,7 +61,11 @@ export function TaskRow({ task, currentUserId, onOpen, origin, originList, overv
     {task.completed_at ? <Hint text={formatCompletedLabel(task.completed_at)}>{content}</Hint> : content}
     <div className="pointer-events-none col-start-1 row-start-1 flex items-center"><TaskCheckbox task={task} /></div>
     {desktop ? <div className="pointer-events-none col-start-3 row-start-1 flex items-center"><TaskDeleteButton task={task} disabled={dragging} /></div> : null}
-    {checklist ? <div className={`col-span-3 col-start-1 row-start-2 -mt-1 min-w-0 pl-14 ${desktop ? 'pr-14' : 'pr-3'} pb-2`}><TaskChecklist task={task} currentUserId={currentUserId} trailing={tags} /></div> : null}
+    {task.description ? <div className={`col-span-3 col-start-1 row-start-2 mt-1 flex min-w-0 items-end gap-3 pl-14 ${desktop ? 'pr-14' : 'pr-3'} ${checklist ? '' : 'pb-3'}`}>
+      <TaskDescription text={task.description} className="min-w-0 flex-1" open={note.open} busy={note.busy} onToggle={() => void note.toggle()} />
+      {!checklist ? tags : null}
+    </div> : null}
+    {checklist ? <div className={`col-span-3 col-start-1 row-start-3 -mt-1 min-w-0 pl-14 ${desktop ? 'pr-14' : 'pr-3'} pb-2`}><TaskChecklist task={task} currentUserId={currentUserId} trailing={tags} /></div> : null}
     </div>
   </li>
 }

@@ -4,7 +4,7 @@ import { readMeta, writeMeta } from '../db/metaStore'
 import type { PushTabelle } from './remoteGateway'
 import { sameData } from '../domain/equality'
 import { toRemoteList, toRemoteMember, toRemoteTask, toRemotePreference, toRemoteUserPreference } from '../domain/mapping'
-import { readCloudConflicts, readLocalCloudRow, writeCloudState } from '../db/cloudState'
+import { readCloudConflicts, readLocalCloudRow, readUserPreference, writeCloudState } from '../db/cloudState'
 import { canonicalCloudRow, type CloudRow } from '../domain/cloudMerge'
 
 /**
@@ -168,7 +168,7 @@ export async function collectDirty(db: LocalDatabase): Promise<DirtyRows> {
     db.list_members.where('dirty').equals(1).toArray(),
     db.tasks.where('dirty').equals(1).toArray(),
     db.list_preferences.where('dirty').equals(1).toArray(),
-    db.user_preferences.where('dirty').equals(1).toArray(),
+    db.user_preferences.where('dirty').equals(1).toArray().then(rows => Promise.all(rows.map(row => readUserPreference(db, row.id)))).then(rows => rows.filter((row): row is LocalUserPreference => row !== undefined)),
     abgelehnteStaende(db),
     readCloudConflicts(db),
   ])
@@ -238,7 +238,7 @@ export async function markPushed(db: LocalDatabase, payload: PushPayload): Promi
     }
     for (const row of payload.userPreferences ?? []) {
       await writeCloudState(db, 'userPreferences', row.id, { base: row })
-      const local = await db.user_preferences.get(row.id)
+      const local = await readUserPreference(db, row.id)
       if (local && sameData(canonicalCloudRow('userPreferences', toRemoteUserPreference(local)), canonicalCloudRow('userPreferences', row))) {
         await db.user_preferences.update(row.id, { dirty: 0 })
       }

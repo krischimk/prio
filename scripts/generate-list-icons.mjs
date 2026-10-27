@@ -110,6 +110,8 @@ const GRUPPEN = [
     ['std:translate', 'Sprache', 'mdi', 'translate'],
   ]],
   ['Hobbies', [
+    ['std:playing-cards', 'Kartenspiele', 'lucide', 'playing-cards-fan'],
+    ['std:dices', 'Würfelspiele', 'lucide', 'dices'],
     ['std:sport', 'Sport', 'mdi', 'dumbbell'],
     ['std:climb', 'Klettern', 'mdi', 'carabiner'],
     ['std:sailing', 'Segeln', 'mdi', 'sail-boat'],

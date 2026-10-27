@@ -3,7 +3,7 @@ import { readMeta, writeMeta } from '../metaStore'
 import { normalizeShareEmail, parseShareContacts, withCoMemberContacts, withShareContact } from '../../domain/shareContacts'
 import type { Kontext } from './context'
 import type { Repositories } from './types'
-import { readCloudConflicts, resolveCloudConflict } from '../cloudState'
+import { readCloudConflicts, readUserPreference, resolveCloudConflict } from '../cloudState'
 import { normalisiereListenauswahl, normalisiereStartansicht } from '../../domain/normalize'
 import { requireText, ValidationError } from '../validation'
 import { placeNavigationList } from '../../domain/listNavigation'
@@ -90,15 +90,15 @@ export function einstellungen(ctx: Kontext): Pick<Repositories, 'rememberDiscard
       })
     },
     async getUserPreferences(userId) {
-      const row = await ctx.db.user_preferences.get(userId)
+      const row = await readUserPreference(ctx.db, userId)
       return row && row.deleted_at === null ? normalisiereStartansicht(row) : undefined
     },
 
     async setTaskExpanded(userId, taskId, part, open) {
       requireText(userId, 'Die Benutzerkennung')
-      await ctx.db.transaction('rw', ctx.db.tasks, ctx.db.user_preferences, async () => {
+      await ctx.db.transaction('rw', ctx.db.tasks, ctx.db.user_preferences, ctx.db.meta, async () => {
         await ctx.requireTask(taskId)
-        const existing = await ctx.db.user_preferences.get(userId)
+        const existing = await readUserPreference(ctx.db, userId)
         const expansions = { ...(existing ? normalisiereStartansicht(existing).task_expansions : {}) }
         const bit = part === 'note' ? 1 : 2
         const previous = expansions[taskId] ?? 0
@@ -116,14 +116,14 @@ export function einstellungen(ctx: Kontext): Pick<Repositories, 'rememberDiscard
     async updateUserPreferences(userId, patch) {
       requireText(userId, 'Die Benutzerkennung')
       if (patch.overviewMode !== undefined && !['by_list', 'newest', 'priority'].includes(patch.overviewMode)) throw new ValidationError('invalid', 'Diese Ansicht ist nicht verfügbar.')
-      await ctx.db.transaction('rw', ctx.db.lists, ctx.db.user_preferences, async () => {
+      await ctx.db.transaction('rw', ctx.db.lists, ctx.db.user_preferences, ctx.db.meta, async () => {
         if (patch.defaultListId) await ctx.requireList(patch.defaultListId)
-        const existing = await ctx.db.user_preferences.get(userId)
+        const existing = await readUserPreference(ctx.db, userId)
         const default_list_id = patch.defaultListId !== undefined ? patch.defaultListId : existing?.default_list_id ?? null
         const overview_mode = patch.overviewMode ?? existing?.overview_mode ?? 'by_list'
         const detailed_ratings = patch.detailedRatings ?? existing?.detailed_ratings ?? false
         const previous = parseCalendarPreferences(existing?.calendar_preferences)
-        const calendar_preferences = { ...previous, days: { ...previous.days } }
+        const calendar_preferences = { ...previous, days: { ...previous.days }, notes: { ...previous.notes } }
         if (patch.calendar) {
           const change = patch.calendar
           if (change.timeZone !== undefined) {
@@ -139,6 +139,12 @@ export function einstellungen(ctx: Kontext): Pick<Repositories, 'rememberDiscard
             if (!validDay(change.day.date) || !['normal', 'low', 'none'].includes(change.day.capacity)) throw new ValidationError('invalid', 'Bitte einen gültigen Tag und eine Zeitangabe wählen.')
             if (change.day.capacity === 'normal') delete calendar_preferences.days[change.day.date]
             else calendar_preferences.days[change.day.date] = change.day.capacity
+          }
+          if (change.note) {
+            if (!validDay(change.note.date) || change.note.text.length > 2000) throw new ValidationError('invalid', 'Bitte einen gültigen Tag und eine Notiz mit höchstens 2000 Zeichen wählen.')
+            const text = change.note.text.trim()
+            if (text) calendar_preferences.notes[change.note.date] = text
+            else delete calendar_preferences.notes[change.note.date]
           }
         }
         if ((!existing || existing.deleted_at === null) && default_list_id === (existing?.default_list_id ?? null) && overview_mode === (existing?.overview_mode ?? 'by_list') && detailed_ratings === (existing?.detailed_ratings ?? false) && sameData(calendar_preferences, previous)) return

@@ -13,6 +13,7 @@ export interface TaskEditInput {
   title?: string
   description?: string | null
   checklist?: ChecklistItem[]
+  checklistHideCompleted?: boolean
   tags?: string[]
   rating?: TaskRating | null
   dueAt?: string | null
@@ -22,7 +23,7 @@ export interface TaskEditInput {
   sectionId?: string | null
 }
 
-type EditableTask = Pick<LocalTask, 'title' | 'description' | 'checklist' | 'tags' | 'rating' | 'due_at' | 'recurrence' | 'recurrence_rule' | 'reminders' | 'section_id'>
+type EditableTask = Pick<LocalTask, 'title' | 'description' | 'checklist' | 'checklist_hide_completed' | 'tags' | 'rating' | 'due_at' | 'recurrence' | 'recurrence_rule' | 'reminders' | 'section_id'>
 export interface TaskEditBase {
   taskId: string
   listId: string
@@ -46,6 +47,7 @@ export function taskEditValues(task: LocalTask): EditableTask {
     title: task.title,
     description: optionalText(task.description),
     checklist: parseChecklist(task.checklist),
+    checklist_hide_completed: task.checklist_hide_completed === true,
     tags: parseTags(task.tags),
     rating: parseRating(task.rating),
     due_at: normalizeIso(task.due_at),
@@ -74,6 +76,7 @@ export function applyTaskEdit(task: LocalTask, patch: TaskEditInput, nowMs: numb
   if (patch.title !== undefined) fields.push('title')
   if (patch.description !== undefined) fields.push('description')
   if (patch.rating !== undefined) fields.push('rating')
+  if (patch.checklistHideCompleted !== undefined) fields.push('checklist_hide_completed')
   if (patch.sectionId !== undefined) fields.push('section_id')
   const changesSchedule = patch.dueAt !== undefined || patch.recurrence !== undefined || patch.reminders !== undefined || patch.recurrenceRule !== undefined
   if (changesSchedule) fields.push('due_at', 'recurrence', 'reminders', 'recurrence_rule')
@@ -94,6 +97,7 @@ export function applyTaskEdit(task: LocalTask, patch: TaskEditInput, nowMs: numb
   return {
     ...current,
     checklist,
+    checklist_hide_completed: patch.checklistHideCompleted ?? current.checklist_hide_completed,
     tags,
     rating: patch.rating === undefined ? current.rating : validateRating(patch.rating),
     recurrence_rule: patch.recurrence === null || patch.dueAt === null ? null : patch.recurrenceRule === undefined ? current.recurrence_rule : parseRecurrenceRule(patch.recurrenceRule),

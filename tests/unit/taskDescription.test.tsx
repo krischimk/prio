@@ -51,6 +51,13 @@ describe('Beschreibung in der Übersicht', () => {
     expect(screen.getByTestId('task-description')).not.toHaveTextContent('Zweiter Absatz.')
   })
 
+  it('lässt sich auch am Anfang der geöffneten Notiz einklappen', async () => {
+    render(<Description text={TEXT} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Notiz aufklappen' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Notiz oben einklappen' }))
+    expect(screen.getByRole('button', { name: 'Notiz aufklappen' })).toBeVisible()
+  })
+
   it('beendet auch bei Windows-Zeilenumbrüchen die Vorschau am ersten Absatz', () => {
     render(<Description text={'Erste Zeile.\r\nZweite Zeile.'} />)
     expect(screen.getByTestId('task-description').textContent).toBe('Erste Zeile.…')

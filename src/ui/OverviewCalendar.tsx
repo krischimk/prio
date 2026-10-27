@@ -7,7 +7,8 @@ import { useView } from './useView'
 import { CalendarMonth } from './components/CalendarMonth'
 import { Select } from './components/Select'
 import { Button } from './components/Button'
-import { PlusIcon, RepeatIcon } from './icons'
+import { CalendarIcon, PlusIcon, RepeatIcon } from './icons'
+import { CalendarDayNote } from './CalendarDayNote'
 import { TaskRow } from './TaskRow'
 import { errorBox, focusRing } from './styles'
 import { formatCalendarDay } from './datetime'
@@ -55,12 +56,19 @@ export function OverviewCalendar({ tasks, lists, currentUserId }: { tasks: Local
         </div>
       </div>
       <section aria-label="Aufgaben am ausgewählten Tag" className="min-w-60 flex-1">
+        <div className="px-rand">
         <h2 className="text-list-heading font-medium text-ink">{formatCalendarDay(selected)}</h2>
         <div className="my-2 flex flex-wrap items-center gap-2" role="group" aria-label="Deine Zeit an diesem Tag"><span className="mr-1 text-meta text-ink-muted">Deine Zeit</span>
           {(['normal', 'low', 'none'] as const).map((capacity, index) => <Button key={capacity} size="sm" variant={(preferences.days[selected] ?? 'normal') === capacity ? 'secondary' : 'ghost'}
             aria-pressed={(preferences.days[selected] ?? 'normal') === capacity} disabled={busy} onClick={() => void write({ day: { date: selected, capacity } })}>{['Normal', 'Wenig Zeit', 'Keine Zeit'][index]}</Button>)}
         </div>
+        <CalendarDayNote key={selected} userId={currentUserId} day={selected} saved={preferences.notes?.[selected] ?? ''} />
         {error ? <p role="alert" className={errorBox}>{error}</p> : null}
+        </div>
+        <div className="my-3 flex flex-wrap items-center gap-2 px-rand">
+        <Button size="sm" variant="secondary" onClick={() => { setSelected(today); setMonth(today.slice(0, 7)) }}><CalendarIcon className="size-icon-meta" />Heute</Button>
+        {target ? <Button size="sm" variant="secondary" onClick={() => setTaskDetail({ taskId: null, listId: target.id, fromOverview: true, initialDueAt: `${selected}T18:00` })}><PlusIcon className="size-icon-meta" />Aufgabe für diesen Tag</Button> : null}
+        </div>
         <PriorityRanksContext value={ranks}><ul>{dayEntries.map(entry => {
           const list = lists.find(list => list.id === entry.task.list_id)!
           return entry.planned ? <li key={`${entry.task.id}:${entry.task.due_at}`} className="border-b border-line-soft px-rand py-2 text-body text-ink-faint">
@@ -68,9 +76,7 @@ export function OverviewCalendar({ tasks, lists, currentUserId }: { tasks: Local
           </li> : <TaskRow key={entry.task.id} task={entry.task} currentUserId={currentUserId} ratingsEnabled={list.ratings_enabled} originList={list} overview
             onOpen={task => setTaskDetail({ taskId: task.id, listId: task.list_id, fromOverview: true })} />
         })}</ul></PriorityRanksContext>
-        {dayEntries.length === 0 ? <p className="py-3 text-body text-ink-muted">Keine Fälligkeiten an diesem Tag.</p> : null}
-        <Button size="sm" variant="ghost" onClick={() => setSelected(today)} layout="mt-2">Heute</Button>
-        {target ? <Button size="sm" variant="ghost" layout="mt-2" onClick={() => setTaskDetail({ taskId: null, listId: target.id, fromOverview: true, initialDueAt: `${selected}T18:00` })}><PlusIcon />Aufgabe für diesen Tag</Button> : null}
+        {dayEntries.length === 0 ? <p className="px-rand py-3 text-body text-ink-muted">Keine Fälligkeiten an diesem Tag.</p> : null}
       </section>
     </div>
   </section>

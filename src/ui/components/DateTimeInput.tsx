@@ -13,6 +13,7 @@ import { CalendarContext } from '../calendarContext'
 import { calendarEntries, systemTimeZone } from '../../domain/calendar'
 import { CalendarDayMarks } from './CalendarDay'
 import { calendarCapacityText } from '../calendarLabels'
+import { Hint } from './Hint'
 
 /** Kalender und 24-Stunden-Uhr; außen bleibt der vorhandene lokale ISO-Wert. */
 export type DateTimePicker = 'calendar' | 'time' | null
@@ -90,15 +91,19 @@ export function DateTimeInput({ id, label, value, onChange, disabled = false, re
                   {calendar.weekDays.map((weekday, index) => <DatePicker.TableHeader key={index} className="pb-2 text-center text-meta text-ink-muted">{weekday.short}</DatePicker.TableHeader>)}
                 </DatePicker.TableRow></DatePicker.TableHead>
                 <DatePicker.TableBody>{calendar.weeks.map((week, index) => <DatePicker.TableRow key={index}>
-                  {week.map(date => <DatePicker.TableCell key={date.toString()} value={date}>
-                    <DatePicker.TableCellTrigger onClick={() => {
+                  {week.map(date => {
+                    const note = data?.preferences.notes?.[date.toString()]
+                    const trigger = <DatePicker.TableCellTrigger onClick={() => {
                       if (calendar.getDayTableCellState({ value: date }).selectable) { setOpen(false); setTimeOpen(true) }
                     }} data-capacity={data?.preferences.days[date.toString()]}
-                      aria-description={`${counts.get(date.toString()) ?? 0} Fälligkeiten. ${calendarCapacityText(data?.preferences.days[date.toString()])}`}
+                      aria-description={`${counts.get(date.toString()) ?? 0} Fälligkeiten. ${calendarCapacityText(data?.preferences.days[date.toString()])}${note ? `. ${note}` : ''}`}
                       className={`${focusRing} calendar-day relative flex min-h-11 w-full flex-col items-center justify-center rounded-control text-body text-ink hover:bg-surface data-[outside-range]:text-ink-faint data-[selected]:bg-brand data-[selected]:text-on-brand`}>
                       {date.day}<CalendarDayMarks count={counts.get(date.toString()) ?? 0} />
                     </DatePicker.TableCellTrigger>
-                  </DatePicker.TableCell>)}
+                    return <DatePicker.TableCell key={date.toString()} value={date}>
+                      {note ? <Hint text={note}>{trigger}</Hint> : trigger}
+                    </DatePicker.TableCell>
+                  })}
                 </DatePicker.TableRow>)}</DatePicker.TableBody>
               </DatePicker.Table>
               <Button variant="ghost" size="sm" layout="mt-2 w-full" onClick={() => { calendar.selectToday(); setOpen(false); setTimeOpen(true) }}>Heute</Button>

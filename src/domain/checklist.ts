@@ -47,6 +47,11 @@ export function checklistProgress(items: ChecklistItem[]) {
   return { completed: active.filter(item => item.completed).length, total: active.length }
 }
 
+/** Ausblenden betrifft die Vorschau, nicht Inhalt, Gewichtung oder Fortschritt. */
+export function visibleChecklistItems(items: ChecklistItem[], hideCompleted = false) {
+  return items.filter(item => item.deleted_at === null && (!hideCompleted || !item.completed))
+}
+
 /** Ein Häkchen verändert weder Hauptaufgabe noch andere Checklistenpunkte. */
 export function setChecklistCompleted(items: ChecklistItem[], id: string, completed: boolean): ChecklistItem[] {
   return items.map(item => item.id === id && item.deleted_at === null ? { ...item, completed } : item)

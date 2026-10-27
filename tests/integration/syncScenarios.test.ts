@@ -38,6 +38,20 @@ describe('Sync-Szenarien', () => {
     await device.dispose()
   })
 
+  it('ergänzt unbekannte Kalenderfelder vor einem alten Offline-Upload aus der bestätigten Basis', async () => {
+    await device.repositories.updateUserPreferences(userId, { calendar: { day: { date: '2026-10-29', capacity: 'none' } } })
+    await device.engine.sync()
+    const old = (await device.db.user_preferences.get(userId))!
+    delete old.calendar_preferences
+    await device.db.user_preferences.put({ ...old, detailed_ratings: true, dirty: 1 })
+    online = false
+    await device.engine.sync()
+    online = true
+    await device.engine.sync()
+    expect(server.userPreferences.get(userId)?.calendar_preferences?.days).toEqual({ '2026-10-29': 'none' })
+    expect(await countDirty(device.db)).toBe(0)
+  })
+
   it('hält einen verspäteten alten Checklisten-Haken von einem frisch begonnenen Routine-Durchlauf getrennt', async () => {
     device.clock.set(Date.parse('2026-10-24T08:00:00Z'))
     const list = await device.repositories.createList('Morgenroutine', userId)

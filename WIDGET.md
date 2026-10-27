@@ -65,6 +65,10 @@ Projektion ersetzt und ihre Checkliste zurückgesetzt, auch wenn die App geschlo
 ist. Die Anzeige übernimmt das beim nächsten Widget-Abgleich. Alte, verspätet
 übertragene Klicks dürfen niemals den bereits nächsten Durchlauf erledigen.
 
+`checklist_hide_completed` blendet erledigte Punkte in der Vorschau aus; der
+Fortschrittszähler berücksichtigt weiterhin alle. Die Punkte bleiben gespeichert
+und lassen sich in der App über „Erledigte anzeigen“ erneut öffnen.
+
 Ändert sich eine im Widget sichtbare Information oder Aktion, wird ihre
 gemeinsame Quelle angepasst. Änderungen an der nativen Anordnung werden zusätzlich
 in `PrioWidget.kt` umgesetzt und über den Widget-Host geprüft. Nicht jede App-Ansicht

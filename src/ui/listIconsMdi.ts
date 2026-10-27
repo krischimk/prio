@@ -581,6 +581,31 @@ export const LIST_ICONS_MDI: ListIconDefinition[] = [
     ],
   },
   {
+    id: 'std:playing-cards',
+    label: 'Kartenspiele',
+    source: 'lucide/playing-cards-fan',
+    group: 'Hobbies',
+    paths: [
+      'M12.65 7.65a2 2 0 012.629-1.046l5.51 2.374a2 2 0 011.046 2.628l-3.957 9.184a2 2 0 01-2.628 1.046l-5.51-2.374a2 2 0 01-1.046-2.628z',
+      'M18 7.777V4a2 2 0 00-2-2h-6a2 2 0 00-2 2v10a2 2 0 001.137 1.805',
+      'm8 4.389-4.364.809a2 2 0 00-1.602 2.33l1.822 9.833a2 2 0 002.331 1.602l2.542-.47',
+    ],
+  },
+  {
+    id: 'std:dices',
+    label: 'Würfelspiele',
+    source: 'lucide/dices',
+    group: 'Hobbies',
+    paths: [
+      'M 4 10 H 12 A 2 2 0 0 1 14 12 V 20 A 2 2 0 0 1 12 22 H 4 A 2 2 0 0 1 2 20 V 12 A 2 2 0 0 1 4 10 Z',
+      'm17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6',
+      'M6 18h.01',
+      'M10 14h.01',
+      'M15 6h.01',
+      'M18 9h.01',
+    ],
+  },
+  {
     id: 'std:sport',
     label: 'Sport',
     source: 'mdi/dumbbell',

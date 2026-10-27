@@ -24,6 +24,7 @@ export interface CreateTaskInput {
   title: string
   description?: string | null
   checklist?: ChecklistItem[]
+  checklistHideCompleted?: boolean
   tags?: string[]
   rating?: TaskRating | null
   dueAt?: string | null
@@ -55,7 +56,7 @@ export interface Repositories {
   getUserPreferences(userId: string): Promise<LocalUserPreference | undefined>
   setTaskExpanded(userId: string, taskId: string, part: 'note' | 'checklist', open: boolean): Promise<void>
   updateUserPreferences(userId: string, patch: { defaultListId?: string | null; overviewMode?: OverviewMode; detailedRatings?: boolean;
-    calendar?: { open?: boolean; repeats?: RepeatFilter; timeZone?: string; day?: { date: string; capacity: DayCapacity } } }): Promise<void>
+    calendar?: { open?: boolean; repeats?: RepeatFilter; timeZone?: string; day?: { date: string; capacity: DayCapacity }; note?: { date: string; text: string } } }): Promise<void>
   advanceRoutines(): Promise<boolean>
   listCloudConflicts(): Promise<CloudConflict[]>
   resolveCloudConflict(conflict: CloudConflict, choice: 'local' | 'remote'): Promise<void>

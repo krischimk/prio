@@ -9,6 +9,40 @@ import { toRemoteList, toRemoteTask } from '../../src/domain/mapping'
 const devices: DeviceHarness[] = []
 afterEach(async () => { await Promise.all(devices.splice(0).map(device => device.dispose())) })
 describe('Kalender und Routinen auf mehreren Geräten', () => {
+  it('erhält bestätigte Kalendertage, wenn ein älterer lokaler Datensatz das Feld nicht kennt', async () => {
+    const server = createFakeServer()
+    const device = await createDevice({ userId: 'owner', gateway: server.gatewayFor('owner') }); devices.push(device)
+    await device.repositories.updateUserPreferences('owner', { calendar: { day: { date: '2026-10-29', capacity: 'low' }, timeZone: 'Europe/Berlin' } })
+    await device.engine.sync()
+    const previous = (await device.db.user_preferences.get('owner'))!
+    delete previous.calendar_preferences
+    await device.db.user_preferences.put({ ...previous, overview_mode: 'priority', dirty: 1 })
+    expect((await device.repositories.getUserPreferences('owner'))?.calendar_preferences?.days).toEqual({ '2026-10-29': 'low' })
+    await device.engine.sync()
+    expect(server.userPreferences.get('owner')?.calendar_preferences?.days).toEqual({ '2026-10-29': 'low' })
+    expect((await device.db.user_preferences.get('owner'))?.dirty).toBe(0)
+    expect(server.userPreferences.get('owner')?.overview_mode).toBe('priority')
+  })
+  it('bewahrt Tagesnotizen beim Aufklappen, Zielwechsel und Änderungen eines anderen Geräts', async () => {
+    const server = createFakeServer()
+    const a = await createDevice({ userId: 'owner', gateway: server.gatewayFor('owner') })
+    const b = await createDevice({ userId: 'owner', gateway: server.gatewayFor('owner') }); devices.push(a, b)
+    const list = await a.repositories.createList('Planung', 'owner')
+    const task = await a.repositories.createTask({ listId: list.id, title: 'Termin' })
+    await a.repositories.updateUserPreferences('owner', { calendar: { note: { date: '2026-10-29', text: 'Unterwegs' }, day: { date: '2026-10-29', capacity: 'low' } } })
+    await a.engine.sync(); await b.engine.sync()
+    const previous = (await a.db.user_preferences.get('owner'))!
+    delete previous.calendar_preferences!.notes
+    await a.db.user_preferences.put(previous)
+    await a.repositories.setTaskExpanded('owner', task.id, 'note', true)
+    await a.repositories.createTask({ listId: list.id, title: 'Nächster Termin', rememberOverviewTargetFor: 'owner' })
+    await b.repositories.updateUserPreferences('owner', { calendar: { note: { date: '2026-10-30', text: 'Besuch' } } })
+    await a.engine.sync(); await b.engine.sync(); await a.engine.sync()
+    expect(server.userPreferences.get('owner')?.calendar_preferences).toMatchObject({ days: { '2026-10-29': 'low' }, notes: { '2026-10-29': 'Unterwegs', '2026-10-30': 'Besuch' } })
+    await a.repositories.updateUserPreferences('owner', { calendar: { day: { date: '2026-10-29', capacity: 'normal' }, note: { date: '2026-10-29', text: '' } } })
+    await a.engine.sync(); await b.engine.sync()
+    expect((await b.repositories.getUserPreferences('owner'))?.calendar_preferences).toMatchObject({ days: {}, notes: { '2026-10-30': 'Besuch' } })
+  })
   it('behält verschiedene Tage und Ansichtsoptionen bei konkurrierenden Änderungen', async () => {
     const server = createFakeServer()
     const a = await createDevice({ userId: 'owner', gateway: server.gatewayFor('owner') })

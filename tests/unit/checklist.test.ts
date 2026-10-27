@@ -1,10 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { checklistProgress, mergeChecklist, parseChecklist, repeatChecklist, validateChecklist, type ChecklistItem } from '../../src/domain/checklist'
+import { checklistProgress, mergeChecklist, parseChecklist, repeatChecklist, validateChecklist, visibleChecklistItems, type ChecklistItem } from '../../src/domain/checklist'
 import { matchesTags, mergeTags, parseTags } from '../../src/domain/tags'
 
 const item = (id: string, overrides: Partial<ChecklistItem> = {}): ChecklistItem => ({ id, text: id, completed: false, deleted_at: null, ...overrides })
 
 describe('Checklisten', () => {
+  it('blendet Erledigtes nur zur Anzeige aus und erhält Fortschritt und wiederherstellbare Punkte', () => {
+    const items = [item('A', { completed: true }), item('B')]
+    expect(visibleChecklistItems(items, true)).toEqual([items[1]])
+    expect(checklistProgress(items)).toEqual({ completed: 1, total: 2 })
+    expect(visibleChecklistItems(items, false)).toEqual(items)
+    expect(items[0]).toMatchObject({ completed: true, deleted_at: null })
+  })
   it('liest alten oder fehlerhaften Bestand und zählt nur vorhandene Punkte', () => {
     expect(parseChecklist(undefined)).toEqual([])
     expect(parseChecklist([null, { id: 'kaputt' }, item('A'), item('A')])).toEqual([item('A')])

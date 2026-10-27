@@ -26,6 +26,12 @@ returns boolean language sql immutable set search_path='' as $$
     and (value->'timeZone'='null'::jsonb or jsonb_typeof(value->'timeZone')='string' and length(value->>'timeZone') between 1 and 100)
     and (select count(*)<=3660 from jsonb_object_keys(value->'days'))
     and not exists(select 1 from jsonb_each_text(value->'days') d where d.key !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' or d.value not in ('low','none'))
+    and case when not (value ? 'notes') then true
+      when jsonb_typeof(value->'notes')='object' then
+        (select count(*)<=3660 from jsonb_object_keys(value->'notes'))
+        and not exists(select 1 from jsonb_each(value->'notes') n where n.key !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+          or jsonb_typeof(n.value)<>'string' or length(n.value#>>'{}')>2000)
+      else false end
     else false end;
 $$;
 revoke all on function private.valid_recurrence_rule(jsonb) from public,anon,authenticated;

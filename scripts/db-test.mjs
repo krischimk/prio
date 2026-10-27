@@ -635,7 +635,7 @@ check('Sichtbarkeitsregeln werden atomar gespeichert und ungültige Vorläufe ab
 })
 check('Kalendertage bleiben persönlich und erneutes Einspielen erhält die Auswahl', () => {
   const current=JSON.parse(sql(`select to_jsonb(p) from public.user_preferences p where id='${owner}'`))
-  const calendar={days:{'2030-01-01':'low','2030-01-02':'none'},repeats:'active',open:true,timeZone:'Europe/Berlin'}
+  const calendar={days:{'2030-01-01':'low','2030-01-02':'none'},notes:{'2030-01-02':'Unterwegs'},repeats:'active',open:true,timeZone:'Europe/Berlin'}
   assert.equal(push(owner,'userPreferences',{...current,calendar_preferences:calendar},current).kind,'written')
   assert.equal(sql(actorSql(stranger,`select count(*) from public.user_preferences where id='${owner}'`)),'0')
   sql(readFileSync(new URL('../supabase/migrations/0030_calendar_routines.sql',import.meta.url),'utf8'))
@@ -646,7 +646,20 @@ check('Kalendertage bleiben persönlich und erneutes Einspielen erhält die Ausw
   assert.deepEqual(JSON.parse(sql(`select calendar_preferences from public.user_preferences where id='${owner}'`)),calendar)
   const latest=JSON.parse(sql(`select to_jsonb(p) from public.user_preferences p where id='${owner}'`))
   assert.equal(push(owner,'userPreferences',{...latest,calendar_preferences:{...calendar,repeats:'without-daily'}},latest).kind,'rejected')
+  const oldCalendar={...calendar};delete oldCalendar.notes
+  assert.equal(push(owner,'userPreferences',{...latest,detailed_ratings:!latest.detailed_ratings,calendar_preferences:oldCalendar},latest).kind,'written')
+  assert.deepEqual(JSON.parse(sql(`select calendar_preferences->'notes' from public.user_preferences where id='${owner}'`)),calendar.notes)
 })
 checks += testMcp(sql)
+check('Ausblenden von Checklistenpunkten bleibt auch bei einem älteren Schreiber erhalten', () => {
+  const id='90000000-0000-0000-0000-000000000081'
+  assert.equal(push(owner,'tasks',{...task,id,title:'Checkliste ausblenden',checklist_hide_completed:true}).kind,'written')
+  const saved=JSON.parse(sql(`select to_jsonb(t) from public.tasks t where id='${id}'`))
+  const old={...saved,title:'Titel vom älteren Gerät'};delete old.checklist_hide_completed
+  assert.equal(push(owner,'tasks',old,saved).kind,'written')
+  assert.equal(sql(`select checklist_hide_completed from public.tasks where id='${id}'`),'t')
+  const current=JSON.parse(sql(`select to_jsonb(t) from public.tasks t where id='${id}'`))
+  assert.equal(push(owner,'tasks',{...current,checklist_hide_completed:null},current).kind,'rejected')
+})
 checks += await testWidgets(sql, asyncSql)
 console.log(`${checks} PostgreSQL-Prüfungen bestanden.`)

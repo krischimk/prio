@@ -30,6 +30,17 @@ export async function writeCloudState(db: LocalDatabase, table: CloudTable, id: 
   return true
 }
 
+/** Ein älterer Schreiber kann neue Felder nicht bewusst geleert haben. */
+export async function readUserPreference(db: LocalDatabase, userId: string) {
+  const local = await db.user_preferences.get(userId)
+  if (!local || local.calendar_preferences?.notes !== undefined) return local
+  const base = (await readCloudState(db, 'userPreferences', userId)).base as RemoteUserPreference | null | undefined
+  const calendar = local.calendar_preferences ?? base?.calendar_preferences
+  return { ...local, calendar_preferences: calendar ? {
+    ...calendar, notes: calendar.notes ?? base?.calendar_preferences?.notes,
+  } : undefined }
+}
+
 export async function readCloudConflicts(db: LocalDatabase): Promise<CloudConflict[]> {
   const rows = await db.meta.where('key').startsWith(PREFIX).toArray()
   const conflicts = rows.flatMap(row => {
@@ -54,7 +65,7 @@ export async function readLocalCloudRow(db: LocalDatabase, table: CloudTable, id
     return row && { row: toRemoteTask(row), dirty: row.dirty }
   }
   if (table === 'userPreferences') {
-    const row = await db.user_preferences.get(id)
+    const row = await readUserPreference(db, id)
     return row && { row: toRemoteUserPreference(row), dirty: row.dirty }
   }
   const [listId, userId] = id.split(':')

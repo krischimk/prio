@@ -67,6 +67,7 @@ export function normalisiereAufgabe(zeile: LocalTask | RemoteTask): LocalTask {
     title: zeile.title,
     description: roh.description ?? '',
     checklist: parseChecklist(roh.checklist),
+    checklist_hide_completed: roh.checklist_hide_completed === true,
     tags: parseTags(roh.tags),
     rating: parseRating(roh.rating),
     recurrence_series_id: roh.recurrence_series_id ?? null,

@@ -53,6 +53,7 @@ async function feldEntfernen(page: import('@playwright/test').Page) {
             delete zeile.rating
             delete zeile.recurrence_series_id
             delete zeile.checklist
+            delete zeile.checklist_hide_completed
             delete zeile.tags
             aufgaben.put(zeile)
           }

@@ -11,6 +11,7 @@ export const recurrenceRule = z.strictObject({ timeZone: z.string().refine(valid
   z.strictObject({ mode: z.literal('lead'), minutes: z.number().int().min(0).max(5256000) }),
 ]) })
 export const calendarPreferences = z.strictObject({ days: z.record(z.string().refine(validDay), z.enum(['low', 'none'])),
+  notes: z.record(z.string().refine(validDay), z.string().max(2000)).optional(),
   repeats: z.enum(['active', 'all', 'none']), open: z.boolean(), timeZone: z.string().refine(validTimeZone).nullable() })
 export const reminder = z.union([
   z.strictObject({ form: z.literal('offset'), minutes: z.number().int().min(-2628000).max(2628000) }),
@@ -20,6 +21,7 @@ export const checklist = z.array(z.strictObject({ id: id.optional(), text, compl
 export const edit = z.strictObject({
   title: text.optional(), note: z.string().max(100000).nullable().optional(), checklist: checklist.optional(),
   tags: z.array(z.string().trim().min(1).max(100)).max(100).optional(), rating: rating.nullable().optional(),
+  checklist_hide_completed: z.boolean().optional().describe('Hide completed points in the preview; points remain available and can be shown and reopened.'),
   due_at: timestamp.nullable().optional(), recurrence: z.string().regex(/^(daily|weekly|monthly|yearly|every:[1-9]\d{0,2}:(minutes|hours|days|weeks|months|years))$/)
     .describe('daily, weekly, monthly, yearly or every:N:UNIT; N=1..999, UNIT=minutes/hours/days/weeks/months/years.').nullable().optional(),
   reminders: z.array(reminder).max(10).optional(), section_id: id.nullable().optional(),

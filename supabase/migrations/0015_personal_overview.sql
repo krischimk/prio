@@ -67,6 +67,10 @@ begin
   else
     select to_jsonb(r) into current_row from public.user_preferences r where r.id=(p_row->>'id')::uuid for update;
     p_row := jsonb_build_object('calendar_preferences',coalesce(current_row->'calendar_preferences','{"days":{},"repeats":"active","open":false,"timeZone":null}'::jsonb)) || p_row;
+    if jsonb_typeof(p_row->'calendar_preferences')='object' and not (p_row->'calendar_preferences' ? 'notes')
+      and current_row#>'{calendar_preferences,notes}' is not null then
+      p_row := jsonb_set(p_row,'{calendar_preferences,notes}',current_row#>'{calendar_preferences,notes}');
+    end if;
     up := jsonb_populate_record(null::public.user_preferences,p_row);
     up.calendar_preferences := coalesce(up.calendar_preferences,'{"days":{},"repeats":"active","open":false,"timeZone":null}'::jsonb);
     wanted := to_jsonb(up);

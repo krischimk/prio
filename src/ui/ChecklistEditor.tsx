@@ -68,6 +68,11 @@ export function ChecklistEditor({ form, ratingsEnabled = false }: { form: TaskFo
           onChange={event => form.setzen('rating', { ...form.werte.rating!, effortFromChecklist: event.target.checked })} />
         <span>Checkliste reduziert den Restaufwand</span>
       </label> : null}
+      {items.length > 0 ? <label className="flex min-h-11 items-center gap-3 pl-2 text-meta text-ink-muted">
+        <input type="checkbox" className="size-5 shrink-0 accent-brand" checked={form.werte.checklistHideCompleted}
+          onChange={event => form.setzen('checklistHideCompleted', event.target.checked)} />
+        <span>Erledigte Checklistenpunkte ausblenden</span>
+      </label> : null}
       {linked && items.length > 0 ? <label className="flex min-h-11 items-center gap-3 pl-2 text-meta text-ink-muted">
         <input type="checkbox" className="size-5 shrink-0 accent-brand" checked={weighted}
           onChange={event => form.setzen('checklist', event.target.checked ? withChecklistWeights(form.werte.checklist) : withoutChecklistWeights(form.werte.checklist))} />

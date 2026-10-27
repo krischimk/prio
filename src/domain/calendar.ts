@@ -7,6 +7,7 @@ export type DayCapacity = 'normal' | 'low' | 'none'
 export type RepeatFilter = 'active' | 'all' | 'none'
 export interface CalendarPreferences {
   days: Record<string, Exclude<DayCapacity, 'normal'>>
+  notes?: Record<string, string>
   repeats: RepeatFilter
   open: boolean
   timeZone: string | null
@@ -23,7 +24,10 @@ export function parseCalendarPreferences(value: unknown): CalendarPreferences {
   const row = value && typeof value === 'object' ? value as Partial<CalendarPreferences> : {}
   const days = row.days && typeof row.days === 'object' ? Object.fromEntries(Object.entries(row.days)
     .filter(([day, level]) => validDay(day) && (level === 'low' || level === 'none')).slice(0, 3660)) : {}
-  return { days, repeats: row.repeats === 'all' || row.repeats === 'none' ? row.repeats : 'active',
+  const notes = row.notes && typeof row.notes === 'object' ? Object.fromEntries(Object.entries(row.notes)
+    .filter(([day, note]) => validDay(day) && typeof note === 'string' && note.trim()).slice(0, 3660)
+    .map(([day, note]) => [day, note.trim().slice(0, 2000)])) : {}
+  return { days, notes, repeats: row.repeats === 'all' || row.repeats === 'none' ? row.repeats : 'active',
     open: row.open === true, timeZone: validTimeZone(row.timeZone) ? row.timeZone : null }
 }
 export function dayInZone(at: string | number, timeZone = systemTimeZone()): string {
@@ -47,7 +51,12 @@ export function mergeCalendarPreferences(base: unknown, local: unknown, remote: 
     if (b.days[day] === l.days[day]) continue
     if (l.days[day]) days[day] = l.days[day]; else delete days[day]
   }
-  return { days, repeats: l.repeats === b.repeats ? r.repeats : l.repeats,
+  const notes = { ...r.notes }
+  for (const day of new Set([...Object.keys(b.notes ?? {}), ...Object.keys(l.notes ?? {})])) {
+    if (b.notes?.[day] === l.notes?.[day]) continue
+    if (l.notes?.[day]) notes[day] = l.notes[day]; else delete notes[day]
+  }
+  return { days, notes, repeats: l.repeats === b.repeats ? r.repeats : l.repeats,
     open: l.open === b.open ? r.open : l.open, timeZone: l.timeZone === b.timeZone ? r.timeZone : l.timeZone }
 }
 export interface CalendarEntry { task: LocalTask; day: string; planned: boolean; occurrences?: number }

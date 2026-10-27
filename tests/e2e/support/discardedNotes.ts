@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import * as desktop from './helpers'
 import * as phone from './mobile'
+import { outerTask } from './checklists'
 
 export async function discardedNotesParity(page: Page, mobile: boolean) {
   await (mobile ? phone.register : desktop.register)(page, desktop.uniqueEmail('discarded-note'))
@@ -15,7 +16,7 @@ export async function discardedNotesParity(page: Page, mobile: boolean) {
   await editor.getByRole('button', { name: 'Schließen', exact: true }).click()
   await page.getByRole('alertdialog', { name: 'Änderungen verwerfen', exact: true }).getByRole('button', { name: 'Verwerfen', exact: true }).click()
   await expect(editor).toBeHidden()
-  await expect(page.getByTestId('task-row').filter({ hasText: 'Sicherer Entwurf' })).toContainText('Ursprüngliche Notiz')
+  await expect(outerTask(page, 'Sicherer Entwurf').getByTestId('task-description')).toContainText('Ursprüngliche Notiz')
   await page.reload()
   if (mobile) await phone.openMenu(page)
   await page.getByRole('button', { name: mobile ? 'Aufgaben wiederherstellen' : 'Wiederherstellen', exact: true }).click()

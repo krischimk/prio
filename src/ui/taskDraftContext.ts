@@ -10,6 +10,7 @@ export interface TaskFormWerte {
   description: string
   checklist: ChecklistItem[]
   checklistText: string
+  checklistHideCompleted: boolean
   tags: string[]
   tagText: string
   rating: TaskRating | null

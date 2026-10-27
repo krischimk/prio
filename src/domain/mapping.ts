@@ -59,6 +59,7 @@ export function toRemoteTask(local: LocalTask): RemoteTask {
     title: local.title,
     description: local.description,
     checklist: parseChecklist(local.checklist),
+    checklist_hide_completed: local.checklist_hide_completed === true,
     tags: parseTags(local.tags),
     rating: parseRating(local.rating),
     due_at: normalizeIso(local.due_at),

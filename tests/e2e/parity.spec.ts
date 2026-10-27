@@ -20,6 +20,7 @@ import { markdownSourceParity, noteFormattingParity } from './support/notes'
 import { agentConnectionsParity } from './support/agents'
 import { discardedNotesParity } from './support/discardedNotes'
 import { calendarParity, routineParity } from './support/calendar'
+import { noteControlsParity, recoverChecklistParity } from './support/taskControls'
 
 /**
  * Oberflächenparität: Jede Funktion muss in beiden Ansichten erreichbar sein.
@@ -65,6 +66,8 @@ async function changeOrder(page: Page) {
 }
 
 const funktionen: Funktion[] = [
+  { name: 'Erledigte Checklistenpunkte ausblenden und zurückholen', breit: page => recoverChecklistParity(page, false), telefon: page => recoverChecklistParity(page, true) },
+  { name: 'Lange Notizen oben einklappen und den Aufgabenkopf erreichbar halten', breit: page => noteControlsParity(page, false), telefon: page => noteControlsParity(page, true) },
   { name: 'Monatskalender mit persönlicher Tagesverfügbarkeit und Date-Picker-Markierungen', breit: page => calendarParity(page, false), telefon: page => calendarParity(page, true) },
   { name: 'Flexible Sichtbarkeit und frischer Start wiederkehrender Aufgaben', breit: page => routineParity(page, false), telefon: page => routineParity(page, true) },
   { name: 'Gerätethema als Standard und Theme-Schalter nur im Konto', breit: page => systemThemeParity(page, false), telefon: page => systemThemeParity(page, true) },

@@ -26,12 +26,12 @@ export function TaskDescription({ text, className = '', open, onToggle, busy = f
     event.stopPropagation()
     if (!busy && !event.defaultPrevented) onToggle()
   }
-  const collapse = <button type="button" aria-label="Notiz einklappen" aria-expanded={true} disabled={busy}
-    data-testid="beschreibung-mehr" onClick={toggle}
-    className={`${focusRing} relative ml-1 inline-flex h-6 w-11 shrink-0 items-center justify-center rounded-control align-bottom before:absolute before:inset-x-0 before:-inset-y-2.5 hover:bg-raised active:bg-raised ${mutedText}`}>
+  const collapseButton = (top = false) => <button type="button" aria-label={top ? 'Notiz oben einklappen' : 'Notiz einklappen'} aria-expanded={true} disabled={busy}
+    data-testid={top ? 'beschreibung-oben' : 'beschreibung-mehr'} onClick={toggle}
+    className={`${focusRing} ml-1 inline-flex h-6 w-8 shrink-0 items-center justify-center rounded-control align-bottom hover:bg-raised active:bg-raised ${mutedText} ${top ? 'float-right' : ''}`}>
     <ChevronIcon offen={false} className="size-icon-meta -rotate-90" />
   </button>
-  return <div className={`${className} ${open ? '' : `flex w-full min-w-0 items-center ${expand ? `${focusRing} relative cursor-pointer rounded-control before:absolute before:inset-x-0 before:-inset-y-3 hover:bg-raised active:bg-raised` : ''}`}`}
+  return <div className={`${className} ${open ? '' : `flex w-full min-w-0 items-center ${expand ? `${focusRing} cursor-pointer rounded-control hover:bg-raised active:bg-raised` : ''}`}`}
     role={expand ? 'button' : undefined} tabIndex={expand ? 0 : undefined}
     aria-label={expand ? 'Notiz aufklappen' : undefined} aria-expanded={expand ? false : undefined}
     aria-disabled={expand ? busy : undefined} data-task-control={expand ? true : undefined}
@@ -40,7 +40,7 @@ export function TaskDescription({ text, className = '', open, onToggle, busy = f
     onKeyDown={expand ? event => {
       if (event.key === 'Enter' || event.key === ' ') { toggle(event); event.preventDefault() }
     } : undefined}>
-    {open ? <div data-testid="task-description" className={`break-words ${mutedText}`}><Markdown text={text} preserveLineBreaks trailing={collapse} /></div>
+    {open ? <div data-testid="task-description" className={`flow-root break-words ${mutedText}`}>{collapseButton(true)}<Markdown text={text} preserveLineBreaks trailing={collapseButton()} /></div>
       : <span ref={textRef} data-testid="task-description" className={`min-w-0 max-w-full truncate text-meta ${mutedText}`}>
         <InlineMarkdown text={previewLine} links={false} />{multiline ? '…' : null}
       </span>}
