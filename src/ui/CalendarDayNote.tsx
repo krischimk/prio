@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
-import { useWorkspace } from '../app/useWorkspace'
+import { useRepositories } from '../app/useWorkspace'
 import { input } from './styles'
 
 /** Kleiner Eingabeentwurf; der bestätigte Inhalt bleibt in den Konto-Einstellungen. */
 export function CalendarDayNote({ userId, day, saved }: { userId: string; day: string; saved: string }) {
-  const { repositories } = useWorkspace()
+  const repositories = useRepositories()
   const id = useId()
   const [text, setText] = useState(saved)
   const [error, setError] = useState(false)

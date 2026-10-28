@@ -7,6 +7,7 @@ import './index.css'
 import { startThemeTracking } from './app/theme'
 import { PasswordRecoveryScreen } from './ui/PasswordRecoveryScreen'
 import { prepareNativeWidgets } from './widgets/native'
+import { HintProvider } from './ui/components/Hint'
 
 const stopThemeTracking = startThemeTracking()
 if (import.meta.hot) import.meta.hot.dispose(stopThemeTracking)
@@ -39,7 +40,7 @@ if (kueche) {
   void import('./ui/dev/Kitchen').then(({ Kitchen }) => {
     root.render(
       <StrictMode>
-        <Kitchen />
+        <HintProvider><Kitchen /></HintProvider>
       </StrictMode>,
     )
   })
@@ -50,8 +51,8 @@ if (kueche) {
 
   root.render(
     <StrictMode>
-      {services && window.location.pathname === '/konto/passwort'
-        ? <PasswordRecoveryScreen port={services.auth} /> : <App services={services} />}
+      <HintProvider>{services && window.location.pathname === '/konto/passwort'
+        ? <PasswordRecoveryScreen port={services.auth} /> : <App services={services} />}</HintProvider>
     </StrictMode>,
   )
 

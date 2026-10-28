@@ -1,5 +1,5 @@
 import { useDeletedLists, useDeletedTasks, useDiscardedNotes, useLists, useRestorableTasks } from '../app/hooks'
-import { useWorkspace } from '../app/useWorkspace'
+import { useRepositories } from '../app/useWorkspace'
 import { RESTORE_WINDOW_DAYS } from '../domain/ordering'
 import { formatCompletedLabel, formatDiscardedNoteLabel } from './datetime'
 
@@ -29,7 +29,7 @@ import { Markdown } from './Markdown'
  * der in `AGENTS.md` erlaubten Unterschiede.
  */
 export function RestoreTasksPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { repositories } = useWorkspace()
+  const repositories = useRepositories()
   const tasks = useRestorableTasks(open)
   const deletedTasks = useDeletedTasks(open)
   const deletedLists = useDeletedLists(open)

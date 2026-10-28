@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { useWorkspace } from '../app/useWorkspace'
+import { useRepositories } from '../app/useWorkspace'
 import type { LocalList } from '../domain/types'
 
 export function ListCompletionChoice({ list, currentUserId }: { list: LocalList; currentUserId: string }) {
-  const { repositories } = useWorkspace()
+  const repositories = useRepositories()
   const [pending, setPending] = useState<boolean | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)

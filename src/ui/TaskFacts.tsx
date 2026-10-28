@@ -7,6 +7,7 @@ import { describeRecurrence } from './recurrence'
 import { describeReminders } from './reminder'
 import { attentionText, dangerText, mutedText, numeric } from './styles'
 import { isUpcomingRepeat } from '../domain/recurrence'
+import { useNowMs } from '../app/useWorkspace'
 
 export interface TaskFactsProps {
   task: LocalTask
@@ -25,7 +26,8 @@ export interface TaskFactsProps {
  * der Inhalt einmal; TaskRow setzt die gemeinsame klickbare Aufgabenfläche.
  */
 export function TaskFacts({ task, currentUserId, afterTitle, titleTrailing }: TaskFactsProps) {
-  const due = task.due_at === null ? null : formatDueLabel(task.due_at, task.completed)
+  const nowMs = useNowMs()
+  const due = task.due_at === null ? null : formatDueLabel(task.due_at, task.completed, nowMs)
   const wiederholung = describeRecurrence(task.recurrence)
   const upcoming = isUpcomingRepeat(task)
   const erinnerungen = describeReminders(task, currentUserId)

@@ -1,12 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { LocalList, LocalListMember, LocalListPreference, LocalUserPreference, LocalTask, ShareContact } from '../domain/types'
-import { useWorkspace } from './useWorkspace'
+import { useWorkspaceData } from './useWorkspace'
 import type { CloudConflict } from '../domain/cloudMerge'
 import { orderedLists } from '../domain/listNavigation'
 import { completionExpired } from '../domain/taskLifecycle'
 import { restoreCutoff } from '../domain/ordering'
 import type { DiscardedNote } from '../domain/discardedNotes'
 import { effectiveRoutine, isTaskVisible, routineRestorable } from '../domain/routine'
+import { shareQueryData } from './shareQueryData'
+
+/** Ansichtseinstellungen lösen keine erneuten Inhaltsabfragen aus. */
+function useContentWorkspace() {
+  const workspace = useWorkspaceData()
+  return { ...workspace, dataVersion: workspace.contentVersion ?? workspace.dataVersion }
+}
 
 /**
  * Lese-Hooks auf die lokale Datenbank.
@@ -34,7 +41,7 @@ function subscribe<T>(load: () => Promise<T>, onValue: (value: T) => void): () =
 }
 
 export function useDiscardedNotes(active: boolean): DiscardedNote[] {
-  const { repositories, dataVersion, nowMs } = useWorkspace()
+  const { repositories, dataVersion, nowMs } = useWorkspaceData()
   const [notes, setNotes] = useState<DiscardedNote[]>([])
   useEffect(() => active ? subscribe(() => repositories.listDiscardedNotes(), setNotes) : undefined,
     [repositories, dataVersion, nowMs, active])
@@ -49,7 +56,7 @@ export function useDiscardedNotes(active: boolean): DiscardedNote[] {
  * synchronisiert und füllt sich nur aus dem, was der Benutzer selbst einträgt.
  */
 export function useShareContacts(): ShareContact[] {
-  const { repositories, dataVersion } = useWorkspace()
+  const { repositories, dataVersion } = useWorkspaceData()
   const [contacts, setContacts] = useState<ShareContact[]>([])
   useEffect(
     () => subscribe(() => repositories.listShareContacts(), setContacts),
@@ -59,15 +66,16 @@ export function useShareContacts(): ShareContact[] {
 }
 
 export function useLists(): LocalList[] {
-  const { repositories, dataVersion } = useWorkspace()
-  const [lists, setLists] = useState<LocalList[]>([])
+  const { repositories, dataVersion } = useContentWorkspace()
+  const [lists, updateLists] = useState<LocalList[]>([])
+  const setLists = (lists: LocalList[]) => updateLists(previous => shareQueryData(previous, lists))
   useEffect(() => subscribe(() => repositories.listLists(), setLists), [repositories, dataVersion])
   return lists
 }
 
 /** Vorschläge stammen nur aus den aktuell zugänglichen, noch vorhandenen Aufgaben. */
 export function useTaskTags(): string[] {
-  const { repositories, dataVersion } = useWorkspace()
+  const { repositories, dataVersion } = useContentWorkspace()
   const [tags, setTags] = useState<string[]>([])
   useEffect(() => subscribe(() => repositories.listTaskTags(), setTags), [repositories, dataVersion])
   return tags
@@ -83,7 +91,7 @@ export interface OverviewPreferencesQuery {
 
 /** Listen und persönliche Regeln laden zusammen; ein Fehler ist kein leerer Bestand. */
 export function useOverviewPreferences(userId: string): OverviewPreferencesQuery {
-  const { repositories, dataVersion } = useWorkspace()
+  const { repositories, dataVersion } = useWorkspaceData()
   const [attempt, setAttempt] = useState(0)
   const [result, setResult] = useState<Omit<OverviewPreferencesQuery, 'retry'> & { userId: string }>({
     userId: '', status: 'loading', lists: [], preferences: [], userPreference: null,
@@ -92,20 +100,21 @@ export function useOverviewPreferences(userId: string): OverviewPreferencesQuery
     let active = true
     Promise.all([repositories.listLists(), repositories.listListPreferences(userId), repositories.getUserPreferences(userId)])
       .then(([lists, preferences, userPreference]) => {
-        if (active) setResult({ userId, status: 'ready', lists: orderedLists(lists, preferences), preferences, userPreference: userPreference ?? null })
+        if (active) setResult(previous => shareQueryData(previous, { userId, status: 'ready', lists: orderedLists(lists, preferences), preferences, userPreference: userPreference ?? null }))
       }).catch(() => {
         if (active) setResult(previous => previous.userId === userId ? { ...previous, status: 'error' } : { userId, status: 'error', lists: [], preferences: [], userPreference: null })
       })
     return () => { active = false }
   }, [repositories, dataVersion, userId, attempt])
-  const retry = () => setAttempt(value => value + 1)
-  if (result.userId !== userId) return { status: 'loading', lists: [], preferences: [], userPreference: null, retry }
-  return { ...result, retry }
+  const retry = useCallback(() => setAttempt(value => value + 1), [])
+  return useMemo(() => result.userId !== userId
+    ? { status: 'loading', lists: [], preferences: [], userPreference: null, retry }
+    : { ...result, retry }, [result, userId, retry])
 }
 
 /** Derselbe abgegrenzte Leser für einzelne Listen und die Gesamtansicht. */
 function useScopedTasks(listIds: string[], completed = false, includeScheduled = false): { status: 'loading' | 'ready' | 'error'; tasks: LocalTask[]; retry: () => void } {
-  const { repositories, dataVersion, nowMs } = useWorkspace()
+  const { repositories, dataVersion, nowMs } = useContentWorkspace()
   const scope = JSON.stringify([completed, listIds])
   const [attempt, setAttempt] = useState(0)
   const [result, setResult] = useState<{ scope: string; status: 'ready' | 'error'; tasks: LocalTask[] }>({ scope: '[]', status: 'ready', tasks: [] })
@@ -113,7 +122,7 @@ function useScopedTasks(listIds: string[], completed = false, includeScheduled =
     let active = true
     const [done, ids]: [boolean, string[]] = JSON.parse(scope)
     Promise.all(ids.map(id => done ? repositories.listCompletedTasks(id) : repositories.listTasks(id))).then(groups => {
-      if (active) setResult({ scope, status: 'ready', tasks: groups.flat().filter(task => task.completed === done) })
+      if (active) setResult(previous => shareQueryData(previous, { scope, status: 'ready', tasks: groups.flat().filter(task => task.completed === done) }))
     }).catch(() => {
       if (active) setResult(previous => ({ scope, status: 'error', tasks: previous.scope === scope ? previous.tasks : [] }))
     })
@@ -130,7 +139,7 @@ function useScopedTasks(listIds: string[], completed = false, includeScheduled =
 export function useTasksQuery(listIds: string[], includeScheduled = false) { return useScopedTasks(listIds, false, includeScheduled) }
 
 export function useCloudConflicts(): CloudConflict[] {
-  const { repositories, dataVersion } = useWorkspace()
+  const { repositories, dataVersion } = useWorkspaceData()
   const [conflicts, setConflicts] = useState<CloudConflict[]>([])
   useEffect(() => subscribe(() => repositories.listCloudConflicts(), setConflicts), [repositories, dataVersion])
   return conflicts
@@ -144,7 +153,7 @@ export function useCompletedTasks(listId: string | string[]) { return useScopedT
 
 /** Eingeklappt nur zählen; Beschreibungen und Checklisten bleiben in IndexedDB. */
 export function useCompletedTaskCount(listIds: string[], tags: string[]) {
-  const { repositories, dataVersion } = useWorkspace()
+  const { repositories, dataVersion } = useContentWorkspace()
   const scope = JSON.stringify([listIds, tags])
   const [attempt, setAttempt] = useState(0)
   const [result, setResult] = useState<{ scope: string; count: number; status: 'ready' | 'error' }>({ scope: '', count: 0, status: 'ready' })
@@ -167,7 +176,7 @@ export function useCompletedTaskCount(listIds: string[], tags: string[]) {
  * Lesevorgang für ein unsichtbares Fenster ist verschwendet.
  */
 export function useDeletedTasks(aktiv = true): LocalTask[] {
-  const { repositories, dataVersion, nowMs } = useWorkspace()
+  const { repositories, dataVersion, nowMs } = useContentWorkspace()
   const [tasks, setTasks] = useState<LocalTask[]>([])
   useEffect(() => {
     if (!aktiv) return
@@ -178,7 +187,7 @@ export function useDeletedTasks(aktiv = true): LocalTask[] {
 
 /** Gelöschte Listen der letzten Tage – zuletzt gelöschte zuerst. */
 export function useDeletedLists(aktiv = true): LocalList[] {
-  const { repositories, dataVersion, nowMs } = useWorkspace()
+  const { repositories, dataVersion, nowMs } = useContentWorkspace()
   const [lists, setLists] = useState<LocalList[]>([])
   useEffect(() => {
     if (!aktiv) return
@@ -204,14 +213,14 @@ export function useTaskQuery(taskId: string | null): {
   task: LocalTask | null
   retry: () => void
 } {
-  const { repositories, dataVersion, nowMs } = useWorkspace()
+  const { repositories, dataVersion, nowMs } = useContentWorkspace()
   const [attempt, setAttempt] = useState(0)
   const [result, setResult] = useState<{ id: string | null; status: 'ready' | 'error'; task: LocalTask | null }>({ id: null, status: 'ready', task: null })
   useEffect(() => {
     let active = true
     if (taskId !== null) {
       repositories.getTask(taskId).then(task => {
-        if (active) setResult({ id: taskId, status: 'ready', task: task ?? null })
+        if (active) setResult(previous => shareQueryData(previous, { id: taskId, status: 'ready', task: task ?? null }))
       }).catch(() => {
         if (active) setResult(previous => ({ id: taskId, status: 'error', task: previous.id === taskId ? previous.task : null }))
       })
@@ -234,7 +243,7 @@ export function useTaskQuery(taskId: string | null): {
  * abgehakten Aufgaben für ein unsichtbares Fenster.
  */
 export function useRestorableTasks(aktiv = true): LocalTask[] {
-  const { repositories, dataVersion, nowMs } = useWorkspace()
+  const { repositories, dataVersion, nowMs } = useContentWorkspace()
   const [tasks, setTasks] = useState<LocalTask[]>([])
   useEffect(() => {
     if (!aktiv) return
@@ -250,7 +259,7 @@ export function useRestorableTasks(aktiv = true): LocalTask[] {
  * `meta` und wird nicht synchronisiert.
  */
 export function useReminderPresets(): number[] {
-  const { repositories, dataVersion } = useWorkspace()
+  const { repositories, dataVersion } = useWorkspaceData()
   const [presets, setPresets] = useState<number[]>([])
   useEffect(
     () => subscribe(() => repositories.listReminderPresets(), setPresets),
@@ -259,7 +268,7 @@ export function useReminderPresets(): number[] {
   return presets
 }
 
-export function useMembers(listId: string | null): LocalListMember[] {  const { repositories, dataVersion } = useWorkspace()
+export function useMembers(listId: string | null): LocalListMember[] {  const { repositories, dataVersion } = useContentWorkspace()
   const [members, setMembers] = useState<LocalListMember[]>([])
   useEffect(
     () => subscribe(() => (listId === null ? Promise.resolve([]) : repositories.listMembers(listId)), setMembers),

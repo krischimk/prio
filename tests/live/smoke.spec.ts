@@ -103,7 +103,10 @@ test('die veröffentlichte Fassung startet, meldet sich an und gleicht ab', asyn
   // Abgleich: Der Status steht im Menü. Hier schlägt PGRST204 oder eine
   // verletzte Regel sichtbar fehl.
   await page.getByRole('button', { name: /Menü/ }).click()
-  await expect(page.getByText('Alles synchronisiert.')).toBeVisible({ timeout: 30_000 })
+  const syncStatus = page.getByTestId('drawer-sync')
+  await expect(syncStatus).toBeVisible()
+  // Bei einem Fehler auch den tatsächlich angezeigten Zustand ausgeben.
+  await expect(syncStatus).toHaveText('Alles synchronisiert.', { timeout: 30_000 })
 
   const inhalt = (await page.locator('body').innerText()).toLowerCase()
   for (const verdacht of ['pgrst', 'could not find', 'permission denied', 'jwt', 'fehlgeschlagen']) {

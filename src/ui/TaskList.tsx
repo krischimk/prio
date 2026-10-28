@@ -1,15 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useDraggable, useDroppable } from '@dnd-kit/react'
 import { useSortable } from '@dnd-kit/react/sortable'
 import { CollisionPriority } from '@dnd-kit/abstract'
 import { move } from '@dnd-kit/helpers'
 import { pointerIntersection } from '@dnd-kit/collision'
-import { useWorkspace } from '../app/useWorkspace'
+import { useNowMs, useRepositories } from '../app/useWorkspace'
 import { useIsDesktop } from '../app/useIsDesktop'
 import type { LocalList, LocalTask, OverviewMode, ListSortMode } from '../domain/types'
 import { taskLocation } from '../domain/taskPlacement'
 import { groupTasks } from '../domain/sections'
-import { useView } from './useView'
+import { useTaskView } from './useView'
 import { useCollapsedSections } from './collapsedSections'
 import { dragGroups, groupOfTask, projectTaskPointer, sidebarDropListId, taskGroupId, taskGroupLocation, taskEndId, isTaskEnd, type DragGroups } from './taskDrag'
 import { SectionHeader } from './SectionHeader'
@@ -37,11 +37,12 @@ interface DragPreview {
 }
 
 /** Ein Listenbaustein für Einzel- und Gesamtansicht, auf Telefon und Desktop. */
-export function TaskList({ lists, tasks: allTasks, currentUserId, overview = false, mode = 'by_list', listMode = 'manual' }: {
+export const TaskList = memo(function TaskList({ lists, tasks: allTasks, currentUserId, overview = false, mode = 'by_list', listMode = 'manual' }: {
   lists: LocalList[]; tasks: LocalTask[]; currentUserId: string; overview?: boolean; mode?: OverviewMode; listMode?: ListSortMode
 }) {
-  const { repositories, nowMs } = useWorkspace()
-  const { setTaskDetail, selectList, tagFilter, overview: preferences } = useView()
+  const repositories = useRepositories()
+  const nowMs = useNowMs()
+  const { setTaskDetail, selectList, tagFilter, overview: preferences } = useTaskView()
   const detailedRatings = preferences.userPreference?.detailed_ratings === true
   const calendar = preferences.userPreference?.calendar_preferences
   const tasks = useMemo(() => tagFilter.length ? allTasks.filter(task => matchesTags(task.tags, tagFilter)) : allTasks, [allTasks, tagFilter])
@@ -63,9 +64,9 @@ export function TaskList({ lists, tasks: allTasks, currentUserId, overview = fal
   const visibleLists = shown?.lists ?? lists
   const groups = shown?.groups ?? base
   const byId = new Map(visibleTasks.map(task => [task.id, task]))
-  const open = (task: LocalTask) => {
+  const open = useCallback((task: LocalTask) => {
     if (!current.current) setTaskDetail({ taskId: task.id, listId: task.list_id, fromOverview: overview })
-  }
+  }, [setTaskDetail, overview])
   const updatePreview = (value: DragPreview | null) => { current.current = value; setPreview(value) }
   const projectPointer = (sourceId: string | number | undefined, targetId: string | number | undefined, y: number, centerY: number | undefined) => {
     const state = current.current
@@ -165,7 +166,7 @@ export function TaskList({ lists, tasks: allTasks, currentUserId, overview = fal
     </div>
     {mode !== 'by_list' && lists.some(list => list.keep_completed) ? <CompletedTasksSection lists={lists.filter(list => list.keep_completed)} currentUserId={currentUserId} showOrigin={overview} overview={overview} /> : null}
   </PriorityRanksContext>
-}
+})
 
 /** Berechnete Ansicht: Ziehen wechselt nur die Liste, nicht die Sortierung. */
 function NewestTaskRow(props: { task: LocalTask; currentUserId: string; overview: boolean; origin?: string; originList?: LocalList; ratingsEnabled: boolean; onOpen: (task: LocalTask) => void }) {
@@ -179,7 +180,7 @@ function ListBlock({ list, groups, byId, allTasks, currentUserId, overview, acti
   priority?: boolean
 }) {
   const { zugeklappt, umschalten, aufklappen } = useCollapsedSections(list.id)
-  const { setListSettingsId, overview: preferences } = useView()
+  const { setListSettingsId, overview: preferences } = useTaskView()
   const [sectionsOpen, setSectionsOpen] = useState(false)
   const emptySectionIds = list.sections.filter(section => !allTasks.some(task => task.list_id === list.id && task.section_id === section.id)).map(section => section.id)
   const emptyKey = JSON.stringify(emptySectionIds)
@@ -187,7 +188,7 @@ function ListBlock({ list, groups, byId, allTasks, currentUserId, overview, acti
     if (activeId !== null) return
     for (const id of JSON.parse(emptyKey) as string[]) aufklappen(id)
   }, [activeId, emptyKey, aufklappen])
-  const { nowMs } = useWorkspace()
+  const nowMs = useNowMs()
   const desktop = useIsDesktop()
   const sections = priority ? orderListTaskGroups([...byId.values()].filter(task => task.list_id === list.id), list, nowMs, preferences.userPreference?.detailed_ratings === true, preferences.userPreference?.calendar_preferences) : groupTasks([], list.sections)
   const count = groupTasks([], list.sections).reduce((sum, group) => sum + (groups[taskGroupId(list.id, group.section?.id ?? null)]?.length ?? 0), 0)
@@ -231,8 +232,8 @@ function TaskGroup({ id, ids, name, sectionId, open, onToggle, byId, currentUser
       gruppe={id} hervorgehoben={activeId !== null && isDropTarget} /> : null}
     {open ? <ul>{ids.map((taskId, index) => {
       const task = byId.get(taskId)
-      return task ? computed ? <NewestTaskRow key={task.id} task={task} currentUserId={currentUserId} overview={overview} onOpen={onOpen} ratingsEnabled={ratingsEnabled} />
-        : <SortableTaskRow key={task.id} task={task} index={index} group={id} currentUserId={currentUserId} overview={overview} onOpen={onOpen} ratingsEnabled={ratingsEnabled} /> : null
+      return task ? <SortableTaskRow key={task.id} task={task} index={index} group={id} currentUserId={currentUserId} overview={overview}
+        onOpen={onOpen} ratingsEnabled={ratingsEnabled} computed={computed} /> : null
     })}</ul> : null}
     {!computed && activeId !== null && (ids.length === 0 || !open) ? <div className="min-h-11 rounded-control border border-dashed border-line-strong" data-testid="gruppe-leer" aria-hidden="true" /> : null}
   </div>
@@ -247,11 +248,17 @@ function ListEndDrop({ listId, active }: { listId: string; active: boolean }) {
     className={active ? `min-h-24 flex-1 rounded-control ${isDropTarget ? 'bg-brand-tint/40' : ''}` : 'h-0'} />
 }
 
-function SortableTaskRow({ task, index, group, currentUserId, overview, onOpen, ratingsEnabled }: {
+const computedDropDisabled = { droppable: true }
+
+function SortableTaskRow({ task, index, group, currentUserId, overview, onOpen, ratingsEnabled, computed }: {
   task: LocalTask; index: number; group: string; currentUserId: string; overview: boolean; onOpen: (task: LocalTask) => void
   ratingsEnabled: boolean
+  computed: boolean
 }) {
-  const { ref, handleRef, isDragging } = useSortable({ id: task.id, index, group, type: 'task', accept: 'task', data: { listId: task.list_id }, collisionDetector: pointerIntersection })
+  // useSortable kann Ziehen und Ablegen unabhängig schalten. Derselbe Baustein
+  // erhält DOM, Notiz und Fokus beim Sortierwechsel; berechnete Zeilen sind keine Ablageziele.
+  const { ref, handleRef, isDragging } = useSortable({ id: task.id, index, group, type: 'task', accept: 'task',
+    disabled: computed ? computedDropDisabled : false, data: { listId: task.list_id }, collisionDetector: pointerIntersection })
   return <TaskRow task={task} currentUserId={currentUserId} overview={overview} onOpen={onOpen}
     ratingsEnabled={ratingsEnabled}
     elementRef={ref} activatorRef={handleRef} dragging={isDragging} />

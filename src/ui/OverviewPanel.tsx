@@ -1,9 +1,9 @@
-import { useMemo, useRef, useState } from 'react'
-import { useWorkspace } from '../app/useWorkspace'
+import { Activity, memo, useMemo, useRef, useState } from 'react'
+import { useNowMs, useRepositories } from '../app/useWorkspace'
 import { useIsDesktop } from '../app/useIsDesktop'
 import { useTasksQuery } from '../app/hooks'
 import type { OverviewMode } from '../domain/types'
-import { useView } from './useView'
+import { useTaskView } from './useView'
 import { Button } from './components/Button'
 import { errorBox, emptyState, numeric } from './styles'
 import { formatOpenTasks } from './taskCount'
@@ -19,14 +19,16 @@ import { OverviewCalendar } from './OverviewCalendar'
 import { IconButton } from './components/IconButton'
 import { CalendarIcon } from './icons'
 
-export function OverviewPanel({ currentUserId }: { currentUserId: string }) {
+export const OverviewPanel = memo(function OverviewPanel({ currentUserId }: { currentUserId: string }) {
   const desktop = useIsDesktop()
-  const { overview, tagFilter } = useView()
-  const { repositories } = useWorkspace()
-  const included = new Set(overview.preferences.filter(row => row.include_in_overview).map(row => row.list_id))
-  const lists = overview.lists.filter(list => included.has(list.id))
+  const { overview, tagFilter } = useTaskView()
+  const repositories = useRepositories()
+  const lists = useMemo(() => {
+    const included = new Set(overview.preferences.filter(row => row.include_in_overview).map(row => row.list_id))
+    return overview.lists.filter(list => included.has(list.id))
+  }, [overview.lists, overview.preferences])
   const query = useTasksQuery(lists.map(list => list.id), true)
-  const { nowMs } = useWorkspace()
+  const nowMs = useNowMs()
   const visibleTasks = useMemo(() => query.tasks.filter(task => isTaskVisible(task, nowMs)), [query.tasks, nowMs])
   const calendar = parseCalendarPreferences(overview.userPreference?.calendar_preferences)
   const mode = overview.userPreference?.overview_mode ?? 'by_list'
@@ -67,8 +69,13 @@ export function OverviewPanel({ currentUserId }: { currentUserId: string }) {
       : lists.length === 0 ? <div className={`${emptyState} space-y-4`}>
         <p>Noch keine Listen ausgewählt. Öffne die Auswahl über den Titel „Gesamtansicht“.</p>
       </div>
-      : calendar.open ? <OverviewCalendar tasks={query.tasks.filter(task => matchesTags(task.tags, tagFilter))} lists={lists} currentUserId={currentUserId} />
-      : <TaskList key={mode} lists={lists} tasks={visibleTasks} currentUserId={currentUserId} overview mode={mode} />}
+      : <>
+        {/* Activity erhält die Listen-DOM; verborgen werden Effekte und Zieh-Handler abgemeldet. */}
+        <Activity mode={calendar.open ? 'hidden' : 'visible'}>
+          <TaskList lists={lists} tasks={visibleTasks} currentUserId={currentUserId} overview mode={mode} />
+        </Activity>
+        {calendar.open ? <OverviewCalendar tasks={query.tasks.filter(task => matchesTags(task.tags, tagFilter))} lists={lists} currentUserId={currentUserId} /> : null}
+      </>}
     </div>
   </section>
-}
+})

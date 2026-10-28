@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useWorkspace } from '../app/useWorkspace'
+import { useRepositories } from '../app/useWorkspace'
 import { parseSections, SECTIONS_MAX, SECTION_NAME_MAX } from '../domain/sections'
 import type { LocalList } from '../domain/types'
 import { errorMessage, input, mutedText } from './styles'
@@ -16,7 +16,7 @@ import { CloseIcon, EditIcon, PlusIcon, SaveIcon, TrashIcon } from './icons'
  * Aufgabe selbst ein (Formular) oder zieht sie auf dem Telefon hinein.
  */
 export function SectionsPanel({ list }: { list: LocalList }) {
-  const { repositories } = useWorkspace()
+  const repositories = useRepositories()
   const sections = parseSections(list.sections)
   const [name, setName] = useState('')
   const [umbenennen, setUmbenennen] = useState<string | null>(null)

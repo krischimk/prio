@@ -2,26 +2,27 @@ import { ListHeading } from './ListHeading'
 import { useTasksQuery } from '../app/hooks'
 import { useIsDesktop } from '../app/useIsDesktop'
 import type { LocalList, ListSortMode } from '../domain/types'
-import { useState } from 'react'
-import { useWorkspace } from '../app/useWorkspace'
+import { memo, useMemo, useState } from 'react'
+import { useRepositories } from '../app/useWorkspace'
 import { TaskComposer } from './TaskComposer'
 import { TaskList } from './TaskList'
 import { DelayedLoading } from './components/DelayedLoading'
 import { errorBox, numeric } from './styles'
 import { formatOpenTasks } from './taskCount'
 import { Button } from './components/Button'
-import { useView } from './useView'
+import { useTaskView } from './useView'
 import { SectionsIcon, SettingsIcon } from './icons'
 import { IconButton } from './components/IconButton'
 import { ListSettingsSheet } from './ListSettingsSheet'
 import { TaskViewOptions, ActiveTagFilters } from './TaskViewOptions'
 import { matchesTags } from '../domain/tags'
 
-export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUserId: string }) {
+export const TaskPanel = memo(function TaskPanel({ list, currentUserId }: { list: LocalList; currentUserId: string }) {
+  const lists = useMemo(() => [list], [list])
   const query = useTasksQuery([list.id])
   const desktop = useIsDesktop()
-  const { setListSettingsId, tagFilter, overview } = useView()
-  const { repositories } = useWorkspace()
+  const { setListSettingsId, tagFilter, overview } = useTaskView()
+  const repositories = useRepositories()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sectionsOpen, setSectionsOpen] = useState(false)
@@ -59,8 +60,8 @@ export function TaskPanel({ list, currentUserId }: { list: LocalList; currentUse
     {query.status === 'loading' ? <DelayedLoading>Aufgaben werden geladen …</DelayedLoading>
       : query.status === 'error' ? <div className="space-y-3"><p role="alert" className={errorBox}>Die Aufgaben konnten nicht geladen werden.</p>
         <Button variant="secondary" onClick={query.retry}>Erneut versuchen</Button></div>
-      : <TaskList key={`${list.id}:${mode}`} lists={[list]} tasks={query.tasks} currentUserId={currentUserId} listMode={mode} mode={mode === 'priority_flat' ? 'priority' : 'by_list'} />}
+      : <TaskList key={list.id} lists={lists} tasks={query.tasks} currentUserId={currentUserId} listMode={mode} mode={mode === 'priority_flat' ? 'priority' : 'by_list'} />}
     </div>
     {sectionsOpen ? <ListSettingsSheet list={list} currentUserId={currentUserId} initialMode="bereiche" onClose={() => setSectionsOpen(false)} /> : null}
   </section>
-}
+})

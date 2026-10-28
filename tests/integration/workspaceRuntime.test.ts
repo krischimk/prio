@@ -62,6 +62,23 @@ describe('Arbeitsbereich-Laufzeit', () => {
     expect(laufzeit.zustand().datenVersion).toBe(vorher + 1)
   })
 
+  it('aktualisiert persönliche Ansichten ohne Inhaltsabfragen; echte Änderungen und Abgleich bleiben wirksam', async () => {
+    const { laufzeit } = await starte()
+    const list = await laufzeit.repositories.createList('Ansicht', 'user-laufzeit')
+    const task = await laufzeit.repositories.createTask({ listId: list.id, title: 'Aufgabe' })
+    await laufzeit.synchronisieren()
+    const before = laufzeit.zustand()
+    await laufzeit.repositories.setTaskExpanded('user-laufzeit', task.id, 'note', true)
+    expect(laufzeit.zustand().datenVersion).toBe(before.datenVersion + 1)
+    expect(laufzeit.zustand().inhaltVersion).toBe(before.inhaltVersion)
+    await laufzeit.repositories.setListSortMode(list.id, 'user-laufzeit', 'priority')
+    expect(laufzeit.zustand().inhaltVersion).toBe(before.inhaltVersion)
+    await laufzeit.repositories.updateTask(task.id, { title: 'Bearbeitet' })
+    expect(laufzeit.zustand().inhaltVersion).toBe(before.inhaltVersion + 1)
+    await laufzeit.synchronisieren()
+    expect(laufzeit.zustand().pendingCount).toBe(0)
+  })
+
   it('gleicht nach einer lokalen Änderung entprellt ab', async () => {
     const { server, laufzeit } = await starte()
     const liste = await laufzeit.repositories.createList('Haushalt', 'user-laufzeit')

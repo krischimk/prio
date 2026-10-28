@@ -1,11 +1,11 @@
 import { useRef, useState } from 'react'
-import { useWorkspace } from '../app/useWorkspace'
+import { useRepositories } from '../app/useWorkspace'
 import type { LocalTask } from '../domain/types'
 import { useUndo } from './useUndo'
 
 /** Löschen in Zeile und Editor mit demselben Weg zurück. */
 export function useTaskDelete(task: LocalTask | null, onDeleted?: () => void) {
-  const { repositories } = useWorkspace()
+  const repositories = useRepositories()
   const { offer } = useUndo()
   const writing = useRef(false)
   const [busy, setBusy] = useState(false)

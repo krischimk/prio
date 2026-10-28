@@ -6,7 +6,7 @@ import { CollisionPriority } from '@dnd-kit/abstract'
 import { isKeyboardEvent } from '@dnd-kit/dom/utilities'
 import { move } from '@dnd-kit/helpers'
 import type { LocalList } from '../domain/types'
-import { useWorkspace } from '../app/useWorkspace'
+import { useRepositories } from '../app/useWorkspace'
 import { useView } from './useView'
 import { useTaskDragHandlers } from './useTaskDragHandlers'
 import { groupOfTask, projectTaskPointer, sidebarDropId, sidebarDropListId, type DragGroups } from './taskDrag'
@@ -27,7 +27,7 @@ export function ListNavigation({ lists, selectedListId, onSelect, currentUserId 
 }) {
   const { overview } = useView()
   const desktop = useIsDesktop()
-  const { repositories } = useWorkspace()
+  const repositories = useRepositories()
   const { source: dragSource, target: dragTarget } = useDragOperation()
   const [expanded, setExpanded] = useState(false)
   const [preview, setPreview] = useState<Preview | null>(null)

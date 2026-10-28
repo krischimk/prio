@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { useWorkspace } from '../app/useWorkspace'
+import { useRepositories } from '../app/useWorkspace'
 import { useView } from './useView'
 import { Button } from './components/Button'
 import { errorMessage } from './styles'
@@ -7,7 +7,7 @@ import { errorMessage } from './styles'
 /** Persönliche Auswahl: gleicher Weg für Besitzer und Mitglieder. */
 export function ListOverviewChoice({ listId, currentUserId, label = 'In Gesamtansicht aufnehmen' }: { listId: string; currentUserId: string; label?: string }) {
   const { overview } = useView()
-  const { repositories } = useWorkspace()
+  const repositories = useRepositories()
   const included = overview.preferences.some(row => row.list_id === listId && row.include_in_overview)
   const [busy, setBusy] = useState(false)
   const writing = useRef(false)

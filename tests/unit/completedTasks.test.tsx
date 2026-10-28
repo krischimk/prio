@@ -4,7 +4,7 @@ import { CompletedTasksSection } from '../../src/ui/CompletedTasksSection'
 import { localList, localTask } from '../support/factories'
 
 const workspace=vi.hoisted(()=>({repositories:{countCompletedTasks:vi.fn(),listCompletedTasks:vi.fn()},dataVersion:0,nowMs:Date.parse('2026-01-01T10:00:00Z')}))
-vi.mock('../../src/app/useWorkspace',()=>({useWorkspace:()=>workspace}))
+vi.mock('../../src/app/useWorkspace',()=>({useWorkspace:()=>workspace,useWorkspaceData:()=>workspace}))
 vi.mock('../../src/ui/useView',()=>({useView:()=>({tagFilter:[],setTaskDetail:vi.fn()})}))
 vi.mock('../../src/ui/TaskRow',()=>({TaskRow:({task}:{task:{title:string}})=><li>{task.title}</li>}))
 beforeEach(()=>{

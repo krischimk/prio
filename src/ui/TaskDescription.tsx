@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type MouseEvent } from 'react'
+import { memo, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type MouseEvent } from 'react'
 import { focusRing, mutedText } from './styles'
 import { ChevronIcon } from './icons'
 import { InlineMarkdown, Markdown } from './Markdown'
 import { IconButton } from './components/IconButton'
 
 /** Einzeilige Vorschau bis zum ersten Absatz; aufgeklappt vollständig lesbar. */
-export function TaskDescription({ text, className = '', open, onToggle, busy = false }: {
+export const TaskDescription = memo(function TaskDescription({ text, className = '', open, onToggle, busy = false }: {
   text: string; className?: string; open: boolean; onToggle: () => void; busy?: boolean
 }) {
   const toggleId = useId()
@@ -46,4 +46,4 @@ export function TaskDescription({ text, className = '', open, onToggle, busy = f
         </IconButton>
       </div> : <div className="flex w-fit max-w-full min-w-0 items-center">{preview}</div>}
   </div>
-}
+})

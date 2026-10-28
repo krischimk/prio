@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useWorkspace } from '../app/useWorkspace'
+import { useRepositories } from '../app/useWorkspace'
 import { useUndo } from './useUndo'
 import { useListNameDraft } from './useListNameDraft'
 import { ListOverviewChoice } from './ListOverviewChoice'
@@ -43,7 +43,7 @@ export function ListSettingsSheet({
   onClose: () => void
   initialMode?: Modus
 }) {
-  const { repositories } = useWorkspace()
+  const repositories = useRepositories()
   const { offer } = useUndo()
   const [modus, setModus] = useState<Modus>(initialMode)
   const { name, setName, discard: discardName } = useListNameDraft(list)

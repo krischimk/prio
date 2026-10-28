@@ -1,4 +1,4 @@
-import { useContext, type Ref } from 'react'
+import { memo, useContext, type Ref } from 'react'
 import { useIsDesktop } from '../app/useIsDesktop'
 import type { LocalList, LocalTask } from '../domain/types'
 import { TaskCheckbox } from './TaskCheckbox'
@@ -6,7 +6,7 @@ import { TaskFacts } from './TaskFacts'
 import { TaskDescription } from './TaskDescription'
 import { appBackground, focusRing } from './styles'
 import { formatCompletedLabel } from './datetime'
-import { Hint } from './components/Hint'
+import { Hint, HintProvider } from './components/Hint'
 import { TaskDeleteButton } from './TaskDeleteButton'
 import { TaskChecklist } from './TaskChecklist'
 import { useTaskExpansion } from './useTaskExpansion'
@@ -28,6 +28,16 @@ export function TaskRow({ task, currentUserId, onOpen, origin, originList, overv
   const desktop = useIsDesktop()
   const rank = useContext(PriorityRanksContext).get(task.id)
   const note = useTaskExpansion(currentUserId, task.id, 'note')
+  return <TaskRowContent task={task} currentUserId={currentUserId} onOpen={onOpen} origin={origin} originList={originList} overview={overview}
+    elementRef={elementRef} activatorRef={activatorRef} dragging={dragging} ratingsEnabled={ratingsEnabled} desktop={desktop} rank={rank}
+    noteOpen={note.open} noteBusy={note.busy} noteError={note.error} toggleNote={note.toggle} />
+}
+
+/** Kontextänderungen betreffen den Leser oben; unveränderte Zeilen bleiben stehen. */
+const TaskRowContent = memo(function TaskRowContent({ task, currentUserId, onOpen, origin, originList, overview, elementRef, activatorRef, dragging = false, ratingsEnabled, desktop, rank,
+  noteOpen, noteBusy, noteError, toggleNote }: Parameters<typeof TaskRow>[0] & {
+    desktop: boolean; rank?: 1 | 2 | 3; noteOpen: boolean; noteBusy: boolean; noteError: string | null; toggleNote: () => Promise<void>
+  }) {
   const checklist = visibleChecklistItems(task.checklist, task.checklist_hide_completed).length > 0
   const tags = task.tags.length ? <Hint text={`Tags: ${task.tags.join(', ')}`}>
     <span aria-label={`Tags: ${task.tags.join(', ')}`} className="ml-auto inline-flex max-w-[40%] min-w-0 shrink-0 items-center gap-1 text-meta text-ink-muted">
@@ -46,7 +56,7 @@ export function TaskRow({ task, currentUserId, onOpen, origin, originList, overv
         {ratingsEnabled && task.rating ? <TaskRatingSummary rating={task.rating} dueAt={task.due_at} checklist={task.checklist} includePriority={false} /> : null}
         </div>{!checklist && !task.description ? tags : null}</div>
       </div>
-  return <li ref={elementRef} data-task-row="true" data-id={task.id}
+  return <HintProvider><li ref={elementRef} data-task-row="true" data-id={task.id}
     data-completed={task.completed ? 'true' : undefined} data-dragging={dragging ? 'true' : undefined}
     data-testid={overview ? 'overview-task' : undefined}
     className={`task-card group/row min-w-0 border-b border-line-soft ${appBackground} transition-colors last:border-b-0 ${dragging ? 'ring-1 ring-brand-soft shadow-lg shadow-page/50' : ''}`}>
@@ -58,15 +68,15 @@ export function TaskRow({ task, currentUserId, onOpen, origin, originList, overv
         if (event.key === 'Enter' || (!activatorRef && event.key === ' ')) { event.preventDefault(); onOpen(task) }
       }}
       onClick={event => { if (!event.defaultPrevented && !dragging && !(event.target as HTMLElement).closest('button,input,select,textarea,label,a,[data-no-drag]')) onOpen(task) }}>
-    {note.error ? <p role="alert" className="text-meta text-danger">{note.error}</p> : null}
+    {noteError ? <p role="alert" className="text-meta text-danger">{noteError}</p> : null}
     {task.completed_at ? <Hint text={formatCompletedLabel(task.completed_at)}>{content}</Hint> : content}
     <div className="pointer-events-none col-start-1 row-start-1 flex items-center"><TaskCheckbox task={task} /></div>
     {desktop ? <div className="pointer-events-none col-start-3 row-start-1 flex items-center"><TaskDeleteButton task={task} disabled={dragging} /></div> : null}
     {task.description ? <div className={`col-span-3 col-start-1 row-start-2 mt-1 flex min-w-0 items-end gap-3 pl-14 ${desktop ? 'pr-14' : 'pr-3'} ${checklist ? '' : 'pb-3'}`}>
-      <TaskDescription text={task.description} className="min-w-0 flex-1" open={note.open} busy={note.busy} onToggle={() => void note.toggle()} />
+      <TaskDescription text={task.description} className="min-w-0 flex-1" open={noteOpen} busy={noteBusy} onToggle={toggleNote} />
       {!checklist ? tags : null}
     </div> : null}
     {checklist ? <div className={`col-span-3 col-start-1 row-start-3 -mt-1 min-w-0 pl-14 ${desktop ? 'pr-14' : 'pr-3'} pb-2`}><TaskChecklist task={task} currentUserId={currentUserId} trailing={tags} /></div> : null}
     </div>
-  </li>
-}
+  </li></HintProvider>
+})

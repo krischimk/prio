@@ -1,5 +1,5 @@
 import { useContext } from 'react'
-import { ViewContext, type ViewValue } from './viewContext'
+import { TaskViewContext, ViewContext, type ViewValue } from './viewContext'
 
 /** Der Ansichtszustand – siehe `ViewProvider`. */
 export function useView(): ViewValue {
@@ -7,5 +7,11 @@ export function useView(): ViewValue {
   if (!value) {
     throw new Error('useView braucht einen ViewProvider über der Ansicht.')
   }
+  return value
+}
+
+export function useTaskView() {
+  const value = useContext(TaskViewContext)
+  if (!value) throw new Error('useTaskView braucht einen ViewProvider über der Ansicht.')
   return value
 }

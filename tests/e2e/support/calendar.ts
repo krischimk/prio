@@ -74,8 +74,22 @@ export async function calendarParity(page: Page, mobile: boolean) {
   await selectedDay.click()
   await expect(selectedDay).toBeHidden()
   await expect(fresh.getByLabel('Fällig am', { exact: true })).toHaveValue('30.10.2026')
+  const clock = page.getByRole('dialog', { name: 'Uhrzeit wählen', exact: true })
+  await expect(clock).toBeVisible()
   await page.keyboard.press('Escape')
-  await page.keyboard.press('Escape')
+  await expect(clock).toBeHidden()
+  await fresh.getByRole('button', { name: 'Schließen', exact: true }).click()
+  await expect(fresh).toBeHidden()
+  // Der verborgene Listenbestand muss Änderungen aus dem Kalender übernehmen.
+  await calendar.getByText('Abgabe', { exact: true }).click()
+  const edit = page.getByRole('dialog', { name: 'Aufgabe', exact: true })
+  await edit.getByLabel('Titel', { exact: true }).fill('Abgabe aktualisiert')
+  await edit.getByRole('button', { name: 'Speichern', exact: true }).click()
+  await expect(edit).toBeHidden()
+  await expect(calendar.getByText('Abgabe aktualisiert', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Kalender schließen', exact: true }).click()
+  await expect(calendar).toBeHidden()
+  await expect(page.getByTestId('overview-task').filter({ hasText: 'Abgabe aktualisiert' })).toBeVisible()
 }
 
 export async function routineParity(page: Page, mobile: boolean) {

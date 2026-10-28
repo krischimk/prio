@@ -213,6 +213,11 @@ test('auch die chronologische Gesamtansicht kann Aufgaben in die Seitenleiste zi
   await setOverviewMode(page, 'newest')
   await expect(page.getByTestId('overview-task')).toHaveText([/Neuere Aufgabe/, /Ältere Aufgabe/])
   await expect(page.getByTestId('overview-task').first().getByRole('img', { name: 'Liste: Einkaufen', exact: true })).toBeVisible()
+  // Auch nach dem Verbergen/Wiederherstellen sind die Zieh-Handler aktiv.
+  await page.getByRole('button', { name: 'Kalender anzeigen', exact: true }).click()
+  await expect(page.getByRole('region', { name: 'Aufgabenkalender', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Kalender schließen', exact: true }).click()
+  await expect(page.getByRole('region', { name: 'Aufgabenkalender', exact: true })).toBeHidden()
   const source = page.getByTestId('overview-task').filter({ hasText: 'Neuere Aufgabe' })
   const box = (await source.getByRole('button', { name: 'Bearbeiten', exact: true }).boundingBox())!
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
@@ -230,6 +235,45 @@ test('auch die chronologische Gesamtansicht kann Aufgaben in die Seitenleiste zi
   await expect.poll(async () => (await desktop.serverState(request)).tasks.filter(task => task.section_id !== null)).toHaveLength(0)
   await desktop.selectList(page, 'Arbeit')
   await expect(desktop.taskItems(page)).toHaveText(['Ältere Aufgabe', 'Neuere Aufgabe'])
+})
+
+test('Prioritätssortierung erhält die manuelle Reihenfolge und erlaubt weiterhin Ziehen in andere Listen', async ({ page }) => {
+  await desktop.register(page, desktop.uniqueEmail('priority-sidebar'))
+  await desktop.createList(page, 'Arbeit')
+  await desktop.createTask(page, 'Verschieben')
+  await desktop.createTask(page, 'Bleibt')
+  await desktop.createList(page, 'Ziel')
+  await desktop.selectList(page, 'Arbeit')
+  const manual = await desktop.taskItems(page).allTextContents()
+  await page.getByRole('button', { name: 'Sortierung ändern', exact: true }).click()
+  await page.getByRole('radio', { name: 'Höchste Priorität zuerst', exact: true }).click()
+  const source = desktop.taskItem(page, 'Verschieben')
+  const lift = async () => {
+    const box = (await source.getByRole('button', { name: 'Bearbeiten', exact: true }).boundingBox())!
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 10, { steps: 3 })
+    await expect(page.locator('[data-dnd-dragging]')).toBeVisible()
+  }
+  await lift()
+  const peer = (await desktop.taskItem(page, 'Bleibt').boundingBox())!
+  await page.mouse.move(peer.x + peer.width / 2, peer.y + peer.height / 2, { steps: 10 })
+  await page.mouse.up()
+  await expect(page.getByRole('dialog', { name: 'Aufgabe', exact: true })).toBeHidden()
+  await page.getByRole('button', { name: 'Sortierung ändern', exact: true }).click()
+  await page.getByRole('radio', { name: 'Manuelle Reihenfolge', exact: true }).click()
+  await expect(desktop.taskItems(page)).toHaveText(manual)
+  await page.getByRole('button', { name: 'Sortierung ändern', exact: true }).click()
+  await page.getByRole('radio', { name: 'Höchste Priorität zuerst', exact: true }).click()
+  await lift()
+  const target = page.getByRole('complementary', { name: 'Listen' }).getByRole('button', { name: 'Ziel', exact: true })
+  const destination = (await target.boundingBox())!
+  await page.mouse.move(destination.x + destination.width / 2, destination.y + destination.height / 2, { steps: 15 })
+  await expect(target).toHaveAttribute('data-drop-target', 'true')
+  await page.mouse.up()
+  await expect(source).toHaveCount(0)
+  await desktop.selectList(page, 'Ziel')
+  await expect(desktop.taskItems(page)).toHaveText(['Verschieben'])
 })
 
 test('Ziehung auf die Seitenleiste wechselt die Liste und Löschen lässt sich rückgängig machen', async ({ page, request }, info) => {

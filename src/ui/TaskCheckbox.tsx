@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useWorkspace } from '../app/useWorkspace'
+import { useRepositories } from '../app/useWorkspace'
 import type { LocalTask } from '../domain/types'
 import { useUndo } from './useUndo'
 import { checkboxTarget } from './styles'
@@ -7,7 +7,7 @@ import { Hint } from './components/Hint'
 
 /** Abhaken mit großer Trefferfläche; Rückgängig erst nach erfolgreichem Schreiben. */
 export function TaskCheckbox({ task }: { task: LocalTask }) {
-  const { repositories } = useWorkspace()
+  const repositories = useRepositories()
   const { offerUndo } = useUndo()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)

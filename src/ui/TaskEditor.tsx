@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useWorkspace } from '../app/useWorkspace'
+import { useRepositories } from '../app/useWorkspace'
 import type { ListSection, LocalList, LocalTask } from '../domain/types'
 import { CloseIcon, MoveIcon, SaveIcon, TrashIcon } from './icons'
 import { Button } from './components/Button'
@@ -52,7 +52,7 @@ export function TaskEditor({
   onCreated?: () => void
   initialDueAt?: string
 }) {
-  const { repositories } = useWorkspace()
+  const repositories = useRepositories()
   const { overview } = useView()
   const isNew = task === null
 

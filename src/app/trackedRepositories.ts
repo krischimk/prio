@@ -95,9 +95,14 @@ export const LESEND = [
 
 type BeliebigeMethode = (...args: never[]) => Promise<unknown>
 
+/** Diese persönlichen Änderungen verändern weder Aufgaben noch Listeninhalte. */
+export const ANSICHTS_AENDERUNGEN: ReadonlySet<keyof Repositories> = new Set([
+  'setTaskExpanded', 'setListSortMode', 'setListInOverview', 'placeList', 'updateUserPreferences',
+])
+
 export function withChangeTracking(
   repositories: Repositories,
-  onChange: () => void,
+  onChange: (method: keyof Repositories) => void,
   onLocalOnlyChange: () => void,
 ): Repositories {
   const umhuellt: Repositories = { ...repositories }
@@ -115,7 +120,7 @@ export function withChangeTracking(
     ;(umhuellt as unknown as Record<string, unknown>)[name] = ersatz
   }
 
-  for (const name of SCHREIBEND) melden(name, onChange)
+  for (const name of SCHREIBEND) melden(name, () => onChange(name))
   for (const name of NUR_LOKAL) melden(name, onLocalOnlyChange)
 
   return umhuellt

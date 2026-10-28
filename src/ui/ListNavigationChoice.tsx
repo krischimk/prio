@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { useWorkspace } from '../app/useWorkspace'
+import { useRepositories } from '../app/useWorkspace'
 import { useView } from './useView'
 import { ChevronIcon, EyeIcon, EyeOffIcon } from './icons'
 import { IconButton } from './components/IconButton'
@@ -8,7 +8,7 @@ import { errorMessage } from './styles'
 /** Dieselben persönlichen Änderungen sind auch ohne Ziehen bedienbar. */
 export function ListNavigationChoice({ listId, currentUserId }: { listId: string; currentUserId: string }) {
   const { lists, overview } = useView()
-  const { repositories } = useWorkspace()
+  const repositories = useRepositories()
   const hidden = overview.preferences.some(row => row.list_id === listId && row.hidden)
   const hiddenIds = new Set(overview.preferences.filter(row => row.hidden).map(row => row.list_id))
   const peers = lists.filter(row => hiddenIds.has(row.id) === hidden)

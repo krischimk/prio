@@ -1,13 +1,13 @@
-import { useId, type CSSProperties, type ReactNode } from 'react'
+import { useId, useMemo, type CSSProperties, type ReactNode } from 'react'
 import { changeUrgencyMode, ratingValues, startRating } from '../domain/rating'
 import type { TaskRating } from '../domain/rating'
 import type { ChecklistItem } from '../domain/checklist'
-import { useWorkspace } from '../app/useWorkspace'
+import { useNowMs } from '../app/useWorkspace'
 import type { TaskForm } from './useTaskForm'
 import { Hint } from './components/Hint'
 import { Button } from './components/Button'
 import { ImportanceIcon, EffortIcon, UrgencyIcon, PriorityIcon, EraserIcon } from './icons'
-import { useView } from './useView'
+import { useTaskView } from './useView'
 import type { PriorityRank } from '../domain/overviewOrdering'
 
 const rankNames = { 1: 'Gold', 2: 'Silber', 3: 'Bronze' } as const
@@ -44,8 +44,8 @@ export function RatingSlider({ label, value, onChange, disabled = false, unassig
 }
 
 export function TaskRatingEditor({ form }: { form: TaskForm }) {
-  const { nowMs } = useWorkspace()
-  const { overview } = useView()
+  const nowMs = useNowMs()
+  const { overview } = useTaskView()
   const detailed = overview.userPreference?.detailed_ratings === true
   const rating = form.werte.rating
   const linked = rating?.effortFromChecklist && form.werte.checklist.some(item => item.deleted_at === null)
@@ -66,8 +66,8 @@ export function TaskRatingEditor({ form }: { form: TaskForm }) {
 }
 
 export function TaskUrgencyEditor({ form }: { form: TaskForm }) {
-  const { nowMs } = useWorkspace()
-  const { overview } = useView()
+  const nowMs = useNowMs()
+  const { overview } = useTaskView()
   const rating = form.werte.rating
   if (!rating) return null
   const values = ratingValues(rating, form.dueIso, nowMs, form.werte.checklist, overview.userPreference?.detailed_ratings === true, overview.userPreference?.calendar_preferences)
@@ -92,24 +92,27 @@ function RatingMeter({ label, value, hint, prominent = false, icon, inset = fals
 }
 
 export function TaskPriorityBar({ rating, dueAt, checklist, rank }: { rating: TaskRating; dueAt: string | null; checklist: ChecklistItem[]; rank?: PriorityRank }) {
-  const { nowMs } = useWorkspace()
-  const { overview } = useView()
-  return <span className="mt-2 mb-2 block w-80 max-w-full" aria-label={rank ? `Prioritätsplatz ${rank}: ${rankNames[rank]}` : undefined}>
-    <RatingMeter label="Priorität" value={ratingValues(rating, dueAt, nowMs, checklist, overview.userPreference?.detailed_ratings === true, overview.userPreference?.calendar_preferences).priority}
+  const nowMs = useNowMs()
+  const { overview } = useTaskView()
+  const detailed = overview.userPreference?.detailed_ratings === true
+  const calendar = overview.userPreference?.calendar_preferences
+  const priority = useMemo(() => ratingValues(rating, dueAt, nowMs, checklist, detailed, calendar).priority, [rating, dueAt, nowMs, checklist, detailed, calendar])
+  return useMemo(() => <span className="mt-2 mb-2 block w-80 max-w-full" aria-label={rank ? `Prioritätsplatz ${rank}: ${rankNames[rank]}` : undefined}>
+    <RatingMeter label="Priorität" value={priority}
       hint={`${rank ? `${rank}. Platz in dieser Ansicht (${rankNames[rank]}). ` : ''}Gleichgewichtet aus Wichtigkeit und Dringlichkeit.`}
       icon={<span className={`inline-flex shrink-0 items-center gap-1 ${rank ? rankColors[rank] : 'text-ink-muted'}`}>
         <PriorityIcon className="size-icon-meta" metallic={rank !== undefined} />{rank ? <span aria-hidden="true" className="priority-metal-number text-label font-semibold">{rank}</span> : null}
-      </span>} prominent barOnly /></span>
+  </span>} prominent barOnly /></span>, [priority, rank])
 }
 
 export function TaskRatingSummary({ rating, dueAt, checklist, detailed: forceDetailed, includePriority = true }: { rating: TaskRating; dueAt: string | null; checklist: ChecklistItem[]; detailed?: boolean; includePriority?: boolean }) {
-  const { nowMs } = useWorkspace()
-  const { overview } = useView()
+  const nowMs = useNowMs()
+  const { overview } = useTaskView()
   const detailedRatings = overview.userPreference?.detailed_ratings === true
   const detailed = forceDetailed ?? detailedRatings
+  if (!detailed && !includePriority) return null
   const values = ratingValues(rating, dueAt, nowMs, checklist, detailedRatings, overview.userPreference?.calendar_preferences)
   const linked = rating.effortFromChecklist && checklist.some(item => item.deleted_at === null)
-  if (!detailed && !includePriority) return null
   return <span aria-label="Aufgabenbewertung" className={detailed ? 'mt-2 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4' : 'mt-1 block w-80 max-w-full'}>
     {detailed ? <>
     <RatingMeter label="Wichtigkeit" icon={<ImportanceIcon className="size-icon-meta" />} value={values.importance} hint="Deine Einschätzung der Bedeutung." />

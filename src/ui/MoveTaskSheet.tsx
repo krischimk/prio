@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useWorkspace } from '../app/useWorkspace'
+import { useRepositories } from '../app/useWorkspace'
 import { parseSections } from '../domain/sections'
 import type { LocalList, LocalTask } from '../domain/types'
 import { errorMessage, focusRing, mutedText } from './styles'
@@ -35,7 +35,7 @@ export function MoveTaskSheet({
   onClose: () => void
   onMoved?: () => void
 }) {
-  const { repositories } = useWorkspace()
+  const repositories = useRepositories()
   const [zielListeId, setZielListeId] = useState(task.list_id)
   const [zielAbschnitt, setZielAbschnitt] = useState<string | null>(task.section_id)
   const [busy, setBusy] = useState(false)

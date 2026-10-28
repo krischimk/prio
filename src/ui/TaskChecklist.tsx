@@ -1,16 +1,16 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { LocalTask } from '../domain/types'
 import { checklistProgress, visibleChecklistItems } from '../domain/checklist'
-import { useWorkspace } from '../app/useWorkspace'
+import { useRepositories } from '../app/useWorkspace'
 import { ChecklistIcon, ChevronIcon } from './icons'
 import { checkboxTarget, errorBox, focusRing, numeric } from './styles'
 import { Hint } from './components/Hint'
 import { useTaskExpansion } from './useTaskExpansion'
 
 export function TaskChecklist({ task, currentUserId, trailing }: { task: LocalTask; currentUserId: string; trailing?: ReactNode }) {
-  const { repositories } = useWorkspace()
+  const repositories = useRepositories()
   const expansion = useTaskExpansion(currentUserId, task.id, 'checklist')
-  const { open } = expansion
+  const { open, busy: expansionBusy, toggle: toggleExpansion, error: expansionError } = expansion
   // Nur die unbestätigte Klickabsicht: sie endet, sobald der DB-Hook sie zeigt.
   const [pending, setPending] = useState<Record<string, boolean>>({})
   const writing = useRef(new Set<string>())
@@ -22,10 +22,9 @@ export function TaskChecklist({ task, currentUserId, trailing }: { task: LocalTa
       return remaining.length === Object.keys(previous).length ? previous : Object.fromEntries(remaining)
     })
   }, [task.checklist, pending])
-  const progress = checklistProgress(task.checklist)
-  const items = visibleChecklistItems(task.checklist, task.checklist_hide_completed)
-  if (!items.length) return null
-  const change = async (id: string, completed: boolean) => {
+  const { completed, total } = checklistProgress(task.checklist)
+  const items = useMemo(() => visibleChecklistItems(task.checklist, task.checklist_hide_completed), [task.checklist, task.checklist_hide_completed])
+  const change = useCallback(async (id: string, completed: boolean) => {
     if (writing.current.has(id)) return
     writing.current.add(id); setPending(previous => ({ ...previous, [id]: completed })); setError(null)
     try { await repositories.setChecklistItemCompleted(task.id, id, completed) }
@@ -33,13 +32,13 @@ export function TaskChecklist({ task, currentUserId, trailing }: { task: LocalTa
       setError(cause instanceof Error ? cause.message : 'Der Checklistenpunkt konnte nicht geändert werden.')
       setPending(previous => Object.fromEntries(Object.entries(previous).filter(([key]) => key !== id)))
     } finally { writing.current.delete(id); setPending(previous => ({ ...previous })) }
-  }
-  return <div className="min-w-0">
+  }, [repositories, task.id])
+  return useMemo(() => items.length ? <div className="min-w-0">
     <div className="flex min-w-0 items-center justify-between gap-3">
-    <Hint text={`Checkliste ${open ? 'einklappen' : 'aufklappen'}: ${progress.completed} von ${progress.total} Punkten erledigt. Die Hauptaufgabe bleibt unabhängig.`}>
-      <button type="button" data-checklist-toggle aria-label={`Checkliste: ${task.title}`} aria-expanded={open} disabled={expansion.busy} onClick={() => void expansion.toggle()}
+    <Hint text={`Checkliste ${open ? 'einklappen' : 'aufklappen'}: ${completed} von ${total} Punkten erledigt. Die Hauptaufgabe bleibt unabhängig.`}>
+      <button type="button" data-checklist-toggle aria-label={`Checkliste: ${task.title}`} aria-expanded={open} disabled={expansionBusy} onClick={() => void toggleExpansion()}
         className={`${focusRing} inline-flex min-h-8 items-center gap-1 rounded-control px-1 text-meta text-ink-muted hover:bg-raised hover:text-ink`}>
-        <ChecklistIcon className="size-icon-meta" /><span className={numeric}>{progress.completed}/{progress.total}</span><ChevronIcon offen={open} className="size-icon-meta" />
+        <ChecklistIcon className="size-icon-meta" /><span className={numeric}>{completed}/{total}</span><ChevronIcon offen={open} className="size-icon-meta" />
       </button>
     </Hint>
     {trailing}</div>
@@ -52,7 +51,7 @@ export function TaskChecklist({ task, currentUserId, trailing }: { task: LocalTa
         <span className={`break-words ${item.completed ? 'text-ink-faint line-through' : 'text-ink-soft'}`}>{item.text}</span>
       </div>
     </li>)}</ul> : null}
-    {expansion.error ? <p role="alert" className={errorBox}>{expansion.error}</p> : null}
+    {expansionError ? <p role="alert" className={errorBox}>{expansionError}</p> : null}
     {error ? <p role="alert" className={errorBox}>{error}</p> : null}
-  </div>
+  </div> : null, [items, open, completed, total, task.title, expansionBusy, toggleExpansion, expansionError, trailing, pending, error, change])
 }

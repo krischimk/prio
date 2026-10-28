@@ -10,7 +10,7 @@ import {
 } from '../reminders/reminderService'
 import type { NetworkMonitor } from '../sync/network'
 import type { RemoteGateway } from '../sync/remoteGateway'
-import { withChangeTracking } from './trackedRepositories'
+import { ANSICHTS_AENDERUNGEN, withChangeTracking } from './trackedRepositories'
 import { createWidgetMirror } from '../widgets/mirror'
 
 /** Wie lange eine lokale Änderung gesammelt wird, bevor abgeglichen wird. */
@@ -27,6 +27,8 @@ const REGELMAESSIGER_ABGLEICH_MS = 30_000
 export interface WorkspaceZustand {
   /** Zähler für die Lese-Hooks: erhöht sich bei jeder Änderung der lokalen DB. */
   datenVersion: number
+  /** Aufgaben-/Listeninhalte; persönliche Ansichten verändern diesen Zähler nicht. */
+  inhaltVersion: number
   /** Zeitabhängige Texte auffrischen, ohne Daten erneut zu lesen. */
   jetztMs: number
   syncStatus: SyncResult | null
@@ -95,6 +97,7 @@ export async function createWorkspaceRuntime({
 
   let zustand: WorkspaceZustand = {
     datenVersion: 0,
+    inhaltVersion: 0,
     jetztMs: Date.now(),
     syncStatus: null,
     syncing: false,
@@ -106,6 +109,9 @@ export async function createWorkspaceRuntime({
   let entprellung: ReturnType<typeof setTimeout> | null = null
   let syncLauf: Promise<void> | null = null
   let syncVorgemerkt = false
+  let erinnerungenVorgemerkt = false
+  let widgetVersion = 0
+  let widgetSyncedVersion = 0
   let widgets: ReturnType<typeof createWidgetMirror> | null = null
 
   /** Setzt einen Teil der Momentaufnahme und benachrichtigt die Oberfläche. */
@@ -122,18 +128,30 @@ export async function createWorkspaceRuntime({
    * Benutzeränderungen. Liefe der Pull ebenfalls in den Abgleich, entstünde eine
    * Endlosschleife (Pull → Zähler → Abgleich → Pull → …).
    */
-  function lokaleAenderung() {
+  function lokaleAenderung(method: keyof Repositories) {
     if (geschlossen) return
-    melde({ datenVersion: zustand.datenVersion + 1, jetztMs: Date.now() })
+    const inhaltGeaendert = !ANSICHTS_AENDERUNGEN.has(method)
+    erinnerungenVorgemerkt ||= inhaltGeaendert
+    // Die Uhr tickt unabhängig von Eingaben. Ein Klappzustand darf nicht alle
+    // zeitabhängigen Angaben und Prioritäten erneut berechnen lassen.
+    melde({ datenVersion: zustand.datenVersion + 1, inhaltVersion: zustand.inhaltVersion + (inhaltGeaendert ? 1 : 0) })
     if (entprellung) clearTimeout(entprellung)
     entprellung = setTimeout(() => {
       entprellung = null
       void synchronisieren()
       // Lokale Änderungen wirken sofort auf die Erinnerungen – auch offline.
-      void erinnerungenAuffrischen()
+      if (erinnerungenVorgemerkt) {
+        erinnerungenVorgemerkt = false
+        void erinnerungenAuffrischen()
+      }
     }, LOKALE_AENDERUNG_ENTPRELLUNG_MS)
     void offeneAenderungenZaehlen()
-    void widgets?.publish(false, true)
+    // Die Widget-Checkliste hat ihren eigenen Klappzustand. Änderungen der
+    // App-Ansicht brauchen weder eine neue Ableitung noch einen Brückenaufruf.
+    if (method !== 'setTaskExpanded') {
+      widgetVersion += 1
+      void widgets?.publish(false, true)
+    }
   }
 
   /**
@@ -173,6 +191,7 @@ export async function createWorkspaceRuntime({
     try {
       await widgets?.drain()
       if (network.isOnline()) await repositories.advanceRoutines()
+      const widgetAbgleichVersion = widgetVersion
       const result = await engine.sync()
       changed = result.changed
       if (geschlossen) return
@@ -194,8 +213,14 @@ export async function createWorkspaceRuntime({
 
       // Nach einem Pull kann sich lokal etwas geändert haben – die Anzeige muss
       // neu lesen, aber ohne einen weiteren Abgleich auszulösen.
-      if (changed) { await repositories.advanceRoutines(); melde({ datenVersion: zustand.datenVersion + 1 }) }
-      void widgets?.publish(false, changed)
+      if (changed) { await repositories.advanceRoutines(); melde({ datenVersion: zustand.datenVersion + 1, inhaltVersion: zustand.inhaltVersion + 1 }) }
+      // Nach bestätigten Uploads auch die Basis/dirty-Markierung im Widget
+      // erneuern. Eine während des Abgleichs entstandene Änderung bleibt für
+      // den nächsten Durchlauf vorgemerkt; offline wird nichts quittiert.
+      if (changed || (widgetAbgleichVersion > widgetSyncedVersion && (result.pushed > 0 || result.kind === 'ok'))) {
+        if (result.kind === 'ok') widgetSyncedVersion = widgetAbgleichVersion
+        void widgets?.publish(false, true)
+      }
     } finally {
       await offeneAenderungenZaehlen()
       // Nur wenn wirklich neue Daten angekommen sind: Erinnerungen nachziehen.

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { LocalList } from '../domain/types'
 import { useIsDesktop } from '../app/useIsDesktop'
-import { useWorkspace } from '../app/useWorkspace'
+import { useRepositories } from '../app/useWorkspace'
 import { useListNameDraft } from './useListNameDraft'
 import { ListIcon } from './ListIcon'
 import { IconChoiceIcon } from './icons'
@@ -14,7 +14,7 @@ export function ListHeading({ list, currentUserId, main = false }: {
   list: LocalList; currentUserId: string; main?: boolean
 }) {
   const desktop = useIsDesktop()
-  const { repositories } = useWorkspace()
+  const repositories = useRepositories()
   const { name, setName, discard } = useListNameDraft(list)
   const editable = desktop && list.owner_id === currentUserId
   const [editing, setEditing] = useState<'symbol' | 'umbenennen' | null>(null)

@@ -33,13 +33,27 @@ export function parseCalendarPreferences(value: unknown): CalendarPreferences {
 export function dayInZone(at: string | number, timeZone = systemTimeZone()): string {
   return Temporal.Instant.from(typeof at === 'number' ? new Date(at).toISOString() : at).toZonedDateTimeISO(timeZone).toPlainDate().toString()
 }
+// Tagesgrenzen hängen nur von Datum und Zeitzone ab. Wiederholte Bewertungen
+// derselben Tage brauchen keine erneute Temporal-/Sommerzeitberechnung.
+const dayRanges = new Map<string, readonly [number, number]>()
+function dayRange(day: string, zone: string): readonly [number, number] {
+  const key = `${zone}:${day}`
+  const cached = dayRanges.get(key)
+  if (cached) return cached
+  const start = Temporal.PlainDate.from(day).toZonedDateTime(zone)
+  const range = [Number(start.epochMilliseconds), Number(start.add({ days: 1 }).epochMilliseconds)] as const
+  if (dayRanges.size >= 512) dayRanges.delete(dayRanges.keys().next().value!)
+  dayRanges.set(key, range)
+  return range
+}
 /** Nur überschneidende Tagesanteile; auch 23-/25-Stunden-Tage bleiben korrekt. */
 export function availableDuration(from: number, until: number, preferences?: CalendarPreferences): number {
   if (!preferences || until <= from) return until - from
   let duration = until - from
+  const zone = preferences.timeZone ?? systemTimeZone()
   for (const [day, capacity] of Object.entries(preferences.days)) {
-    const start = Temporal.PlainDate.from(day).toZonedDateTime(preferences.timeZone ?? systemTimeZone())
-    const overlap = Math.max(0, Math.min(until, Number(start.add({ days: 1 }).epochMilliseconds)) - Math.max(from, Number(start.epochMilliseconds)))
+    const [start, end] = dayRange(day, zone)
+    const overlap = Math.max(0, Math.min(until, end) - Math.max(from, start))
     duration -= overlap * (capacity === 'none' ? 1 : .5)
   }
   return duration

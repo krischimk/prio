@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useIsDesktop } from '../app/useIsDesktop'
 import { useTask } from '../app/hooks'
-import { useWorkspace } from '../app/useWorkspace'
+import { useRepositories } from '../app/useWorkspace'
 import type { LocalTask } from '../domain/types'
 
 import { UndoContext, UNDO_VISIBLE_MS, type UndoAngebot, type UndoContextValue } from './undoContext'
@@ -29,7 +29,7 @@ import { layer } from './styles'
  * bleibt die Leiste stehen und sagt es.
  */
 export function UndoProvider({ children }: { children: ReactNode }) {
-  const { repositories } = useWorkspace()
+  const repositories = useRepositories()
   const [angebot, setAngebot] = useState<UndoAngebot | null>(null)
   const [fehler, setFehler] = useState<string | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)

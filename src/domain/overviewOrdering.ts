@@ -14,8 +14,8 @@ export function priorityRanks(tasks: LocalTask[], lists: LocalList[], nowMs: num
 /** Berechnete Sortierung verändert keine Positionen in den Ursprungslisten. */
 export function orderOverviewTasks(tasks: LocalTask[], lists: LocalList[], mode: Exclude<OverviewMode, 'by_list'>, nowMs: number, detailedRatings = true, calendar?: CalendarPreferences): LocalTask[] {
   const ratedLists = new Set(lists.filter(list => list.ratings_enabled).map(list => list.id))
-  const scores = new Map(tasks.map(task => [task.id, task.rating && ratedLists.has(task.list_id)
-    ? ratingValues(task.rating, task.due_at, nowMs, task.checklist, detailedRatings, calendar).priority : null]))
+  const scores = new Map(mode === 'priority' ? tasks.map(task => [task.id, task.rating && ratedLists.has(task.list_id)
+    ? ratingValues(task.rating, task.due_at, nowMs, task.checklist, detailedRatings, calendar).priority : null]) : [])
   return [...tasks].sort((a, b) => {
     if (mode === 'priority') {
       const left = scores.get(a.id) ?? null, right = scores.get(b.id) ?? null

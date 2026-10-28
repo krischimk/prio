@@ -44,3 +44,6 @@ export interface ViewValue {
 }
 
 export const ViewContext = createContext<ViewValue | null>(null)
+/** Aufgabeninhalte brauchen keine Meldungen über Schublade und andere Dialoge. */
+export type TaskViewValue = Pick<ViewValue, 'overview' | 'tagFilter' | 'setTaskDetail' | 'setListSettingsId' | 'selectList'>
+export const TaskViewContext = createContext<TaskViewValue | null>(null)

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTasks } from '../app/hooks'
-import { useWorkspace } from '../app/useWorkspace'
+import { useRepositories } from '../app/useWorkspace'
 import type { LocalTask } from '../domain/types'
 import { taskLocation } from '../domain/taskPlacement'
 import { groupTasks } from '../domain/sections'
@@ -14,7 +14,7 @@ import { SortIcon } from './icons'
 /** Die bestehende Reihenfolge ändern, ohne eine Ziehgeste zu benötigen. */
 export function TaskOrderSheet({ task, onClose }: { task: LocalTask; onClose: () => void }) {
   const tasks = useTasks(task.list_id)
-  const { repositories } = useWorkspace()
+  const repositories = useRepositories()
   const { lists } = useView()
   const sections = lists.find(list => list.id === task.list_id)?.sections ?? []
   const group = groupTasks(tasks, sections).find(group => group.tasks.some(row => row.id === task.id))

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { LocalList } from '../domain/types'
-import { useWorkspace } from '../app/useWorkspace'
+import { useRepositories } from '../app/useWorkspace'
 
 export function ListDuplicateField({ allowed, disabled, onChange }: { allowed: boolean; disabled?: boolean; onChange: (allowed: boolean) => void }) {
   return <label className="flex min-h-11 items-center gap-3 text-body text-ink">
@@ -10,7 +10,7 @@ export function ListDuplicateField({ allowed, disabled, onChange }: { allowed: b
 }
 
 export function ListDuplicateChoice({ list, currentUserId }: { list: LocalList; currentUserId: string }) {
-  const { repositories } = useWorkspace()
+  const repositories = useRepositories()
   const [pending, setPending] = useState<boolean | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)

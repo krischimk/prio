@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react'
 import { Temporal } from '@js-temporal/polyfill'
 import { calendarEntries, dayInZone, parseCalendarPreferences, systemTimeZone, type DayCapacity, type RepeatFilter } from '../domain/calendar'
 import type { LocalList, LocalTask } from '../domain/types'
-import { useWorkspace } from '../app/useWorkspace'
-import { useView } from './useView'
+import { useNowMs, useRepositories } from '../app/useWorkspace'
+import { useTaskView } from './useView'
 import { CalendarMonth } from './components/CalendarMonth'
 import { Select } from './components/Select'
 import { Button } from './components/Button'
@@ -16,8 +16,9 @@ import { PriorityRanksContext } from './priorityRanksContext'
 import { priorityRanks } from '../domain/overviewOrdering'
 
 export function OverviewCalendar({ tasks, lists, currentUserId }: { tasks: LocalTask[]; lists: LocalList[]; currentUserId: string }) {
-  const { repositories, nowMs } = useWorkspace()
-  const { overview, setTaskDetail } = useView()
+  const repositories = useRepositories()
+  const nowMs = useNowMs()
+  const { overview, setTaskDetail } = useTaskView()
   const preferences = parseCalendarPreferences(overview.userPreference?.calendar_preferences)
   const zone = preferences.timeZone ?? systemTimeZone()
   const today = dayInZone(nowMs, zone)

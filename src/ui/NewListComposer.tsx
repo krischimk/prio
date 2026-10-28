@@ -1,5 +1,5 @@
 import { useContext, useId, useState, type FormEvent } from 'react'
-import { useWorkspace } from '../app/useWorkspace'
+import { useRepositories } from '../app/useWorkspace'
 import { TaskDraftContext } from './taskDraftContext'
 import { useExpandableForm } from './useExpandableForm'
 import { ListIcon } from './ListIcon'
@@ -16,7 +16,7 @@ import { errorMessage, input } from './styles'
 
 /** Ein Listenentwurf für Menü und Seitenleiste; Speichern ist eine Transaktion. */
 export function NewListComposer({ currentUserId, onCreated }: { currentUserId: string; onCreated: (id: string) => void }) {
-  const { repositories } = useWorkspace()
+  const repositories = useRepositories()
   const drafts = useContext(TaskDraftContext)!
   const draft = drafts.newList
   const id = useId()

@@ -16,6 +16,7 @@ export interface WorkspaceValue {
    * neuen Daten) erhöht. Hooks lesen daraufhin neu aus IndexedDB.
    */
   dataVersion: number
+  contentVersion?: number
   /** Löst nur ein Neuzeichnen zeitabhängiger Angaben aus. */
   nowMs: number
   /** Status des letzten Sync-Durchlaufs. */
@@ -37,3 +38,7 @@ export interface WorkspaceValue {
 }
 
 export const WorkspaceContext = createContext<WorkspaceValue | null>(null)
+/** Datenleser und Aktionen abonnieren keine Synchronisationsmeldungen. */
+export const WorkspaceDataContext = createContext<Pick<WorkspaceValue, 'repositories' | 'dataVersion' | 'contentVersion' | 'nowMs'> | null>(null)
+export const RepositoriesContext = createContext<Repositories | null>(null)
+export const WorkspaceClockContext = createContext<number | null>(null)

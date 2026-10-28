@@ -8,7 +8,7 @@ import { errorBox, focusRing } from './styles'
 import { LogoutIcon, SaveIcon } from './icons'
 import { ThemeSelect } from './ThemeSelect'
 import { useView } from './useView'
-import { useWorkspace } from '../app/useWorkspace'
+import { useRepositories } from '../app/useWorkspace'
 import { AgentConnections } from './AgentConnections'
 
 export function AccountSheet({ onClose }: { onClose: () => void }) {
@@ -18,7 +18,7 @@ export function AccountSheet({ onClose }: { onClose: () => void }) {
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState(false)
   const { overview } = useView()
-  const { repositories } = useWorkspace()
+  const repositories = useRepositories()
   const [ratingBusy, setRatingBusy] = useState(false)
   const [ratingError, setRatingError] = useState<string | null>(null)
   const [ratingPending, setRatingPending] = useState<boolean | null>(null)

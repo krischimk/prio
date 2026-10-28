@@ -1,7 +1,7 @@
 {
   "name": "prio",
   "private": true,
-  "version": "0.35.1",
+  "version": "0.35.2",
   "type": "module",
   "description": "Offline-first To-do-App (Prototyp 0.1): React + TypeScript + Vite, Dexie/IndexedDB lokal, Supabase für Auth und Cloud-Sync.",
   "engines": {
@@ -19,6 +19,7 @@
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
+    "test:perf": "node tests/performance/interactions.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "ci": "npm run typecheck && npm run lint && npm run scripts:check && npm run test && npm run build",
     "db:sql": "node scripts/bundle-migrations.mjs",

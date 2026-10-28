@@ -514,6 +514,10 @@ npm run test:watch       # Vitest im Watch-Modus
 npx playwright install chromium
 ```
 
+Reproduzierbare Messungen der Bedienzeiten im Produktionsbuild stehen in
+[PERFORMANCE.md](PERFORMANCE.md); `npm run test:perf -- …` führt sie gegen
+synthetische Daten aus.
+
 **Vor jedem Commit** läuft der Git-Haken `.githooks/pre-commit` (eingerichtet
 über `git config core.hooksPath .githooks`): Typecheck, Lint und Vitest, unter
 einer Minute, ohne Browser. Scheitert eine der drei Prüfungen, entsteht kein

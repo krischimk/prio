@@ -1,4 +1,4 @@
-import { useWorkspace } from '../app/useWorkspace'
+import { useRepositories } from '../app/useWorkspace'
 import type { LocalList } from '../domain/types'
 import { groupListIcons } from './listIcons'
 import { ListIcon } from './ListIcon'
@@ -28,7 +28,7 @@ export function ListIconPicker({
    */
   onPicked?: () => void
 }) {
-  const { repositories } = useWorkspace()
+  const repositories = useRepositories()
 
   const setzen = (icon: string | null) => {
     void repositories.setListIcon(list.id, icon).then(() => onPicked?.())

@@ -1,8 +1,10 @@
 import { useContext, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { useCloudConflicts, useOverviewPreferences } from '../app/hooks'
-import { ViewContext, type ViewValue } from './viewContext'
+import { TaskViewContext, ViewContext, type TaskViewValue, type ViewValue } from './viewContext'
 import { NavigationContext } from '../app/navigationContext'
 import { CalendarDataProvider } from './CalendarDataProvider'
+
+const noTagFilters: string[] = []
 
 /**
  * Der Ansichtszustand, über der Verzweigung zwischen breiter und mobiler
@@ -41,7 +43,7 @@ export function ViewProvider({ children, userId }: { children: ReactNode; userId
       selected: lists.find((list) => list.id === selectedListId) ?? null,
       selectedListId,
       selectList,
-      tagFilter: tagFilters[selectedListId ?? 'overview'] ?? [],
+      tagFilter: tagFilters[selectedListId ?? 'overview'] ?? noTagFilters,
       setTagFilter: tags => setTagFilters(previous => ({ ...previous, [selectedListId ?? 'overview']: tags })),
       restoreOpen,
       accountOpen, setAccountOpen,
@@ -53,5 +55,9 @@ export function ViewProvider({ children, userId }: { children: ReactNode; userId
     }
   }, [lists, preferred, selectList, restoreOpen, accountOpen, cloudConflicts, conflictsOpen, overview, overviewSettingsOpen, overviewCreating, taskDetail, listSettingsId, drawerMode, tagFilters])
 
-  return <ViewContext.Provider value={value}><CalendarDataProvider lists={lists} preference={overview.userPreference}>{children}</CalendarDataProvider></ViewContext.Provider>
+  const taskView = useMemo<TaskViewValue>(() => ({ overview, tagFilter: value.tagFilter, setTaskDetail, setListSettingsId, selectList }),
+    [overview, value.tagFilter, selectList])
+  return <ViewContext.Provider value={value}><TaskViewContext value={taskView}>
+    <CalendarDataProvider lists={lists} preference={overview.userPreference}>{children}</CalendarDataProvider>
+  </TaskViewContext></ViewContext.Provider>
 }

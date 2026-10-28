@@ -3,7 +3,7 @@ import type { NetworkMonitor } from '../sync/network'
 import type { RemoteGateway } from '../sync/remoteGateway'
 import { WorkspaceError } from '../ui/WorkspaceError'
 import { WorkspaceLoading } from '../ui/WorkspaceLoading'
-import { WorkspaceContext, type WorkspaceValue } from './workspaceContext'
+import { WorkspaceContext, WorkspaceDataContext, RepositoriesContext, WorkspaceClockContext, type WorkspaceValue } from './workspaceContext'
 import { createWorkspaceRuntime, type WorkspaceRuntime } from './workspaceRuntime'
 
 /**
@@ -96,5 +96,9 @@ function Bereit({ runtime, children }: { runtime: WorkspaceRuntime; children: Re
     [runtime, zustand],
   )
 
-  return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>
+  const data = useMemo(() => ({ repositories: runtime.repositories, dataVersion: zustand.datenVersion, contentVersion: zustand.inhaltVersion, nowMs: zustand.jetztMs }),
+    [runtime, zustand.datenVersion, zustand.inhaltVersion, zustand.jetztMs])
+  return <WorkspaceContext.Provider value={value}><WorkspaceDataContext value={data}>
+    <RepositoriesContext value={runtime.repositories}><WorkspaceClockContext value={zustand.jetztMs}>{children}</WorkspaceClockContext></RepositoriesContext>
+  </WorkspaceDataContext></WorkspaceContext.Provider>
 }
