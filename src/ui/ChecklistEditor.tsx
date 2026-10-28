@@ -3,7 +3,7 @@ import { DragDropProvider } from '@dnd-kit/react'
 import { isSortable, useSortable } from '@dnd-kit/react/sortable'
 import { KeyboardSensor, PointerSensor, PointerActivationConstraints } from '@dnd-kit/dom'
 import { RestrictToWindow } from '@dnd-kit/dom/modifiers'
-import { appendChecklistItem, checklistProgress, checklistWeights, createChecklistItem, deleteChecklistItem, setChecklistWeight, withChecklistWeights, withoutChecklistWeights, type ChecklistItem } from '../domain/checklist'
+import { appendChecklistItem, checklistProgress, checklistWeights, createChecklistItem, deleteChecklistItem, reorderChecklist, setChecklistWeight, visibleChecklistItems, withChecklistWeights, withoutChecklistWeights, type ChecklistItem } from '../domain/checklist'
 import type { TaskForm } from './useTaskForm'
 import { ChecklistIcon, ChevronIcon, GripIcon, PlusIcon, TrashIcon } from './icons'
 import { checkboxTarget, checklistInput, focusRing, numeric } from './styles'
@@ -22,6 +22,7 @@ export function ChecklistEditor({ form, ratingsEnabled = false }: { form: TaskFo
   const [open, setOpen] = useState(true)
   const addInput = useRef<HTMLInputElement>(null)
   const items = form.werte.checklist.filter(item => item.deleted_at === null)
+  const visible = visibleChecklistItems(items, form.werte.checklistHideCompleted)
   const progress = checklistProgress(items)
   const linked = ratingsEnabled && form.werte.rating?.effortFromChecklist === true
   const weighted = items.some(item => item.weight !== undefined)
@@ -47,12 +48,9 @@ export function ChecklistEditor({ form, ratingsEnabled = false }: { form: TaskFo
         onDragEnd={event => {
           const source = event.operation.source
           if (event.canceled || !event.operation.target || !isSortable(source) || source.initialIndex === source.index) return
-          const ordered = [...items]
-          const [moved] = ordered.splice(source.initialIndex, 1)
-          ordered.splice(source.index, 0, moved)
-          form.setzen('checklist', [...ordered, ...form.werte.checklist.filter(item => item.deleted_at !== null)])
+          form.setzen('checklist', reorderChecklist(form.werte.checklist, source.initialIndex, source.index, form.werte.checklistHideCompleted))
         }}>
-        <ul aria-label="Checklistenpunkte bearbeiten">{items.map((item, index) => <ChecklistEditRow key={item.id} item={item} index={index} group={group} busy={form.busy}
+        <ul aria-label="Checklistenpunkte bearbeiten">{visible.map((item, index) => <ChecklistEditRow key={item.id} item={item} index={index} group={group} busy={form.busy}
           weight={linked && weighted ? weights.get(item.id) : undefined}
           onWeight={value => form.setzen('checklist', setChecklistWeight(form.werte.checklist, item.id, value))}
           onChange={patch => change(item.id, patch)} onDelete={() => form.setzen('checklist', deleteChecklistItem(form.werte.checklist, item.id, new Date().toISOString()))} />)}</ul>

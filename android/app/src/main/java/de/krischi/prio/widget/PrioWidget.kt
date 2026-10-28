@@ -79,7 +79,7 @@ class PrioWidget : GlanceAppWidget() {
                                     Text(task.getString("title"), GlanceModifier.defaultWeight(), style = TextStyle(color = if (deferred) muted else ink, fontSize = design.font("body").sp), maxLines = if (rich) 2 else 1)
                                 }
                             }
-                            if (task.optInt("checklistTotal") > 0) {
+                            if (task.array("checklist").length() > 0) {
                                 Box(GlanceModifier.size(48.dp).clickable(actionRunCallback<ToggleWidgetChecklist>(actionParametersOf(taskKey to task.getString("id"), userKey to view.userId!!)))
                                     .semantics { contentDescription = "Checkliste ${if (task.optBoolean("expanded")) "einklappen" else "ausklappen"}" }, contentAlignment = Alignment.Center) {
                                     Text("${task.getInt("checklistDone")}/${task.getInt("checklistTotal")} ${if (task.optBoolean("expanded")) "▴" else "▾"}", style = TextStyle(color = muted, fontSize = design.font("label").sp))

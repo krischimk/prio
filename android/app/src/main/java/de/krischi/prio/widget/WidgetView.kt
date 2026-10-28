@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Color
 import org.json.JSONObject
+import org.json.JSONArray
 
 class WidgetDesign(context: Context) {
     private val source = JSONObject(context.assets.open("widget-design.json").bufferedReader().use { it.readText() })
@@ -36,11 +37,17 @@ data class WidgetView(val userId: String?, val title: String, val listId: String
                 task.array("tagKeys").let { values -> (0 until values.length()).map { values.getString(it) }.toSet().containsAll(tags) } }
             tasks.forEach { task ->
                 val points = task.array("checklist").objects()
+                var done = task.optInt("checklistDone", points.count { it.optBoolean("completed") })
                 commands.filter { it.getString("taskId") == task.getString("id") && it.has("checklist") }.forEach { command ->
                     val change = command.getJSONObject("checklist")
-                    points.firstOrNull { it.getString("id") == change.getString("id") }?.put("completed", change.getBoolean("completed"))
+                    points.firstOrNull { it.getString("id") == change.getString("id") }?.let { point ->
+                        val checked = change.getBoolean("completed")
+                        if (point.optBoolean("completed") != checked) done += if (checked) 1 else -1
+                        point.put("completed", checked)
+                    }
                 }
-                task.put("checklistDone", points.count { it.optBoolean("completed") }).put("checklistTotal", points.size)
+                task.put("checklistDone", done).put("checklistTotal", task.optInt("checklistTotal", points.size))
+                task.put("checklist", JSONArray(points.filter { !task.optBoolean("checklistHideCompleted") || !it.optBoolean("completed") }))
                 task.put("expanded", task.getString("id") in expanded)
                 task.put("showDue", task.isNull("priority") && task.text("due") != null)
             }

@@ -52,6 +52,17 @@ export function visibleChecklistItems(items: ChecklistItem[], hideCompleted = fa
   return items.filter(item => item.deleted_at === null && (!hideCompleted || !item.completed))
 }
 
+/** Verschiebt sichtbare Punkte; ausgeblendete und gelöschte behalten ihren Platz. */
+export function reorderChecklist(items: ChecklistItem[], from: number, to: number, hideCompleted = false): ChecklistItem[] {
+  const visible = visibleChecklistItems(items, hideCompleted)
+  if (!Number.isInteger(from) || !Number.isInteger(to) || from < 0 || to < 0 || from >= visible.length || to >= visible.length || from === to) return items
+  const ids = new Set(visible.map(item => item.id))
+  const [moved] = visible.splice(from, 1)
+  visible.splice(to, 0, moved)
+  let index = 0
+  return items.map(item => ids.has(item.id) ? visible[index++] : item)
+}
+
 /** Ein Häkchen verändert weder Hauptaufgabe noch andere Checklistenpunkte. */
 export function setChecklistCompleted(items: ChecklistItem[], id: string, completed: boolean): ChecklistItem[] {
   return items.map(item => item.id === id && item.deleted_at === null ? { ...item, completed } : item)

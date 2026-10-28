@@ -4,7 +4,6 @@ import { checklistProgress, visibleChecklistItems } from '../domain/checklist'
 import { useWorkspace } from '../app/useWorkspace'
 import { ChecklistIcon, ChevronIcon } from './icons'
 import { checkboxTarget, errorBox, focusRing, numeric } from './styles'
-import { Button } from './components/Button'
 import { Hint } from './components/Hint'
 import { useTaskExpansion } from './useTaskExpansion'
 
@@ -16,7 +15,6 @@ export function TaskChecklist({ task, currentUserId, trailing }: { task: LocalTa
   const [pending, setPending] = useState<Record<string, boolean>>({})
   const writing = useRef(new Set<string>())
   const [error, setError] = useState<string | null>(null)
-  const [showCompleted, setShowCompleted] = useState(false)
   useEffect(() => {
     setPending(previous => {
       const remaining = Object.entries(previous).filter(([id, value]) => writing.current.has(id)
@@ -25,7 +23,8 @@ export function TaskChecklist({ task, currentUserId, trailing }: { task: LocalTa
     })
   }, [task.checklist, pending])
   const progress = checklistProgress(task.checklist)
-  if (!progress.total) return null
+  const items = visibleChecklistItems(task.checklist, task.checklist_hide_completed)
+  if (!items.length) return null
   const change = async (id: string, completed: boolean) => {
     if (writing.current.has(id)) return
     writing.current.add(id); setPending(previous => ({ ...previous, [id]: completed })); setError(null)
@@ -44,7 +43,7 @@ export function TaskChecklist({ task, currentUserId, trailing }: { task: LocalTa
       </button>
     </Hint>
     {trailing}</div>
-    {open ? <ul aria-label={`Checkliste: ${task.title}`}>{visibleChecklistItems(task.checklist, task.checklist_hide_completed && !showCompleted).map(item => <li key={item.id}>
+    {open ? <ul aria-label={`Checkliste: ${task.title}`}>{items.map(item => <li key={item.id}>
       <div className="flex min-h-11 items-center gap-3 rounded-control px-1 text-body">
         <label className={`${checkboxTarget} -mx-3`}>
           <input type="checkbox" className="size-5 cursor-pointer accent-brand" checked={pending[item.id] ?? item.completed} disabled={Object.hasOwn(pending, item.id)}
@@ -53,10 +52,6 @@ export function TaskChecklist({ task, currentUserId, trailing }: { task: LocalTa
         <span className={`break-words ${item.completed ? 'text-ink-faint line-through' : 'text-ink-soft'}`}>{item.text}</span>
       </div>
     </li>)}</ul> : null}
-    {open && task.checklist_hide_completed && progress.completed > 0 ? <Button variant="ghost" size="sm"
-      aria-pressed={showCompleted} onClick={() => setShowCompleted(value => !value)}>
-      {showCompleted ? 'Erledigte ausblenden' : `Erledigte anzeigen (${progress.completed})`}
-    </Button> : null}
     {expansion.error ? <p role="alert" className={errorBox}>{expansion.error}</p> : null}
     {error ? <p role="alert" className={errorBox}>{error}</p> : null}
   </div>

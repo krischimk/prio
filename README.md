@@ -2102,5 +2102,7 @@ Zeitabstände, Kalenderschritte behalten ihre lokale Uhrzeit über Zeitumstellun
 
 In den Checklisten-Einstellungen einer Aufgabe kann „Erledigte Checklistenpunkte
 ausblenden“ aktiviert werden. Der Fortschritt zählt weiterhin alle Punkte.
-„Erledigte anzeigen“ blendet sie wieder ein und erlaubt das Wiederöffnen; das
-Ausblenden löscht keinen Punkt. Das Widget übernimmt dieselbe Anzeigeregel.
+Die Einstellung gilt auch in der Bearbeitung; Ausschalten zeigt die Punkte
+zum Wiederöffnen wieder an. Sind alle Punkte ausgeblendet, entfällt der
+Checklistenbereich in der Liste. Das Ausblenden löscht keinen Punkt. Das
+Widget übernimmt dieselbe Anzeigeregel.

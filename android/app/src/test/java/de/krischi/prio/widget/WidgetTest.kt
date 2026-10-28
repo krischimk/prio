@@ -50,7 +50,7 @@ class WidgetTest {
         .put("listName", "Alltag").put("listIcon", "std:flash")
         .put("manualOrder", order).put("priorityOrder", if (order == 1) 2 else if (order == 2) 1 else 0).put("newestOrder", 2 - order)
         .put("due", "In 3 Tagen (Sa)").put("dueAt", "2026-10-24T10:00:00Z").put("overdue", false)
-        .put("tagKeys", JSONArray(tags)).put("tags", JSONArray(tags)).put("checklistDone", 2).put("checklistTotal", 5).put("deferred", order == 2)
+        .put("tagKeys", JSONArray(tags)).put("tags", JSONArray(tags)).put("checklistDone", 1).put("checklistTotal", 2).put("deferred", order == 2)
         .put("checklist", JSONArray().put(JSONObject().put("id", "a").put("text", "Unterlagen sammeln").put("completed", false))
             .put(JSONObject().put("id", "b").put("text", "Folien vorbereiten").put("completed", true)))
     private fun config(listId: String? = list, tags: List<String> = emptyList(), sort: String = "manual") = JSONObject().put("userId", user).put("listId", listId ?: JSONObject.NULL).put("tags", JSONArray(tags)).put("sort", sort)
@@ -98,6 +98,37 @@ class WidgetTest {
         assertEquals(2, store.commands(user).size)
         store.enqueue(user, task)
         assertEquals(2, WidgetView.read(store, 1, user).tasks.size)
+    }
+    @OptIn(ExperimentalGlanceRemoteViewsApi::class)
+    @Test fun hiddenChecklistKeepsItsFullCountAndDisappearsAfterTheLastOfflineCheck() = runBlocking {
+        val source = snapshot().put("tasks", JSONArray().put(row(task, "Präsentation vorbereiten", 8.4, 0, emptyList())
+            .put("checklistHideCompleted", true).put("checklistDone", 1).put("checklistTotal", 2)
+            .put("checklist", JSONArray().put(JSONObject().put("id", "a").put("text", "Unterlagen sammeln").put("completed", false)))))
+        store.publish(source)
+        assertEquals(1, WidgetView.read(store, 1, user).tasks[0].getInt("checklistDone"))
+        assertEquals(2, WidgetView.read(store, 1, user).tasks[0].getInt("checklistTotal"))
+        store.enqueue(user, task, checklist = JSONObject().put("id", "a").put("completed", true))
+        val completed = WidgetView.read(store, 1, user)
+        assertEquals(1, completed.tasks.size)
+        assertEquals(2, completed.tasks[0].getInt("checklistDone"))
+        assertEquals(2, completed.tasks[0].getInt("checklistTotal"))
+        assertEquals(0, completed.tasks[0].array("checklist").length())
+        for (width in listOf(220, 340)) {
+            val composition = GlanceRemoteViews().compose(context, DpSize(width.dp, 300.dp)) { PrioWidget().Content(context, 1, completed) }
+            val activity = org.robolectric.Robolectric.buildActivity(android.app.Activity::class.java).setup().get()
+            val parent = android.appwidget.AppWidgetHostView(activity)
+            parent.addView(composition.remoteViews.apply(activity, parent)); activity.setContentView(parent)
+            shadowOf(Looper.getMainLooper()).idle()
+            parent.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(300, View.MeasureSpec.EXACTLY)); parent.layout(0, 0, width, 300)
+            assertFalse(descendants(parent).any { it.contentDescription?.toString()?.startsWith("Checkliste ") == true })
+            assertTrue(descendants(parent).filterIsInstance<TextView>().any { it.text.toString() == "Präsentation vorbereiten" })
+            val bitmap = Bitmap.createBitmap(width, 300, Bitmap.Config.ARGB_8888); parent.draw(Canvas(bitmap))
+            File("../../test-results/widget-native/hidden-checklist-$width.png").apply { parentFile.mkdirs() }.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        }
+        store.enqueue(user, task, checklist = JSONObject().put("id", "a").put("completed", false))
+        val reopened = WidgetView.read(store, 1, user).tasks[0]
+        assertEquals(1, reopened.getInt("checklistDone")); assertEquals(2, reopened.getInt("checklistTotal"))
+        assertEquals(1, reopened.array("checklist").length())
     }
     @Test fun checklistCallbackExpandsAndCollapsesOfflineWithoutOpeningTheApp() = runBlocking {
         Security.addProvider(TestKeyStore())

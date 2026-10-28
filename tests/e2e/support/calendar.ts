@@ -38,7 +38,7 @@ export async function calendarParity(page: Page, mobile: boolean) {
   await expect(day).toHaveAttribute('aria-description', /Unterwegs, deshalb keine Zeit/)
   if (!mobile) {
     await day.hover()
-    await expect(page.getByRole('tooltip')).toContainText('Unterwegs, deshalb keine Zeit.')
+    await expect(page.getByRole('tooltip')).toHaveText('Unterwegs, deshalb keine Zeit.')
   }
   await calendar.getByRole('button', { name: 'Wenig Zeit', exact: true }).click()
   await expect(calendar.getByRole('button', { name: formatCalendarDay('2026-10-29'), exact: true })).toHaveAttribute('data-capacity', 'low')

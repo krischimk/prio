@@ -51,6 +51,14 @@ describe('Beschreibung in der Übersicht', () => {
     expect(screen.getByTestId('task-description')).not.toHaveTextContent('Zweiter Absatz.')
   })
 
+  it('erreicht den Pfeilknopf per Tastatur und klappt mit Leertaste auf', async () => {
+    render(<Description text={TEXT} />)
+    await userEvent.tab()
+    expect(screen.getByRole('button', { name: 'Notiz aufklappen' })).toHaveFocus()
+    await userEvent.keyboard(' ')
+    expect(screen.getByRole('button', { name: 'Notiz oben einklappen' })).toBeVisible()
+  })
+
   it('lässt sich auch am Anfang der geöffneten Notiz einklappen', async () => {
     render(<Description text={TEXT} />)
     await userEvent.click(screen.getByRole('button', { name: 'Notiz aufklappen' }))

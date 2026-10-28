@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { checklistProgress, mergeChecklist, parseChecklist, repeatChecklist, validateChecklist, visibleChecklistItems, type ChecklistItem } from '../../src/domain/checklist'
+import { checklistProgress, mergeChecklist, parseChecklist, reorderChecklist, repeatChecklist, validateChecklist, visibleChecklistItems, type ChecklistItem } from '../../src/domain/checklist'
 import { matchesTags, mergeTags, parseTags } from '../../src/domain/tags'
 
 const item = (id: string, overrides: Partial<ChecklistItem> = {}): ChecklistItem => ({ id, text: id, completed: false, deleted_at: null, ...overrides })
@@ -17,6 +17,17 @@ describe('Checklisten', () => {
     expect(parseChecklist([null, { id: 'kaputt' }, item('A'), item('A')])).toEqual([item('A')])
     expect(checklistProgress([item('A', { completed: true }), item('B'), item('C', { deleted_at: '2026-10-16T10:00:00.000Z' })])).toEqual({ completed: 1, total: 2 })
     expect(() => validateChecklist([item('A', { text: ' ' })])).toThrow('darf nicht leer sein')
+  })
+  it('sortiert sichtbare Punkte und erhält ausgeblendete, gelöschte und ihre Gewichte', () => {
+    const items = [item('A', { weight: 0.2 }), item('B', { completed: true, weight: 0.5 }), item('C', { weight: 0.3 }), item('D', { deleted_at: '2026-10-16T10:00:00.000Z' })]
+    expect(reorderChecklist(items, 1, 0, true)).toEqual([items[2], items[1], items[0], items[3]])
+    expect(reorderChecklist(items, 0, 2)).toEqual([items[1], items[2], items[0], items[3]])
+    expect(items.map(row => row.id)).toEqual(['A', 'B', 'C', 'D'])
+    expect(reorderChecklist(items, 1, 1, true)).toBe(items)
+    expect(reorderChecklist(items, 2, 0, true)).toBe(items)
+    expect(reorderChecklist(items, -1, 0, true)).toBe(items)
+    const hidden = [item('A', { completed: true })]
+    expect(reorderChecklist(hidden, 0, 1, true)).toBe(hidden)
   })
   it('begrenzt die Anzahl nicht und beginnt die nächste Wiederholung offen', () => {
     const list = Array.from({ length: 350 }, (_, i) => item(String(i), { completed: true }))

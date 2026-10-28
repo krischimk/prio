@@ -28,7 +28,7 @@ export interface WidgetSnapshot {
     id: string; listId: string; listName: string; listIcon: string | null; title: string; tags: string[]; tagKeys: string[]
     manualOrder: number; priorityOrder: number; newestOrder: number
     priority: number | null; dueAt: string | null; due: string | null; overdue: boolean
-    checklistDone: number; checklistTotal: number; deferred: boolean; hasReminder: boolean
+    checklistDone: number; checklistTotal: number; checklistHideCompleted?: boolean; deferred: boolean; hasReminder: boolean
     checklist: { id: string; text: string; completed: boolean }[]
   }[]
   reminders: ReminderCandidate[]
@@ -63,6 +63,7 @@ export function projectWidget(rows: WidgetRows, userId: string, nowMs: number, t
         priority: task.rating && listById.get(task.list_id)?.ratings_enabled ? ratingValues(task.rating, task.due_at, nowMs, task.checklist, detailed, calendar).priority : null,
         dueAt: task.due_at, due: due?.text ?? null,
         overdue: due?.overdue ?? false, checklistDone: progress.completed, checklistTotal: progress.total,
+        checklistHideCompleted: task.checklist_hide_completed === true,
         checklist: visibleChecklistItems(task.checklist, task.checklist_hide_completed).map(({ id, text, completed }) => ({ id, text, completed })),
         deferred: task.available_from !== null && Date.parse(task.available_from) > nowMs, hasReminder: task.reminders.length > 0 }
     }),

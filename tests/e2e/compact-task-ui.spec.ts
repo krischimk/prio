@@ -30,6 +30,7 @@ test('die Notiz gehört zur klickbaren und ziehbaren Aufgabenfläche', async ({ 
   try { await expect(page.locator('[data-dnd-dragging]')).toBeVisible({ timeout: 2000 }) }
   finally { await page.keyboard.press('Escape'); await page.mouse.up() }
   await expect(editor).toBeHidden()
+  await expect(item.getByRole('button', { name: 'Notiz aufklappen', exact: true })).toBeVisible()
 })
 
 for (const mobile of [false, true]) test.describe(mobile ? 'Kompakter Editor Telefon' : 'Kompakter Editor breit', () => {

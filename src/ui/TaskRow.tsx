@@ -14,6 +14,7 @@ import { BulletListIcon, TagIcon } from './icons'
 import { ListIcon } from './ListIcon'
 import { TaskPriorityBar, TaskRatingSummary } from './TaskRating'
 import { PriorityRanksContext } from './priorityRanksContext'
+import { visibleChecklistItems } from '../domain/checklist'
 
 /** Die Aufgabenzeile ist in Einzel- und Gesamtansicht dieselbe. */
 export function TaskRow({ task, currentUserId, onOpen, origin, originList, overview = false, elementRef, activatorRef, dragging = false, ratingsEnabled = false }: {
@@ -27,7 +28,7 @@ export function TaskRow({ task, currentUserId, onOpen, origin, originList, overv
   const desktop = useIsDesktop()
   const rank = useContext(PriorityRanksContext).get(task.id)
   const note = useTaskExpansion(currentUserId, task.id, 'note')
-  const checklist = task.checklist.some(item => item.deleted_at === null)
+  const checklist = visibleChecklistItems(task.checklist, task.checklist_hide_completed).length > 0
   const tags = task.tags.length ? <Hint text={`Tags: ${task.tags.join(', ')}`}>
     <span aria-label={`Tags: ${task.tags.join(', ')}`} className="ml-auto inline-flex max-w-[40%] min-w-0 shrink-0 items-center gap-1 text-meta text-ink-muted">
       <TagIcon className="size-icon-meta shrink-0" /><span className="truncate">{task.tags.join(' · ')}</span>

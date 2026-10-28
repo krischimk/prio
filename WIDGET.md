@@ -67,7 +67,8 @@ ist. Die Anzeige übernimmt das beim nächsten Widget-Abgleich. Alte, verspätet
 
 `checklist_hide_completed` blendet erledigte Punkte in der Vorschau aus; der
 Fortschrittszähler berücksichtigt weiterhin alle. Die Punkte bleiben gespeichert
-und lassen sich in der App über „Erledigte anzeigen“ erneut öffnen.
+und lassen sich in der App durch Ausschalten der Option in der
+Checklisten-Bearbeitung erneut öffnen.
 
 Ändert sich eine im Widget sichtbare Information oder Aktion, wird ihre
 gemeinsame Quelle angepasst. Änderungen an der nativen Anordnung werden zusätzlich

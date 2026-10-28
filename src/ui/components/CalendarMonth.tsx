@@ -36,7 +36,7 @@ export function CalendarMonth({ month, selected, today, counts, preferences, onM
         aria-label={formatCalendarDay(day)} aria-description={description} aria-pressed={selected === day}
         data-selected={selected === day || undefined} data-today={today === day || undefined} data-outside-range={date.month !== first.month || undefined}
         data-capacity={capacity} onClick={() => onSelect(day)}><span>{date.day}</span><CalendarDayMarks count={count} /></button>
-      return note ? <Hint key={day} text={`${formatCalendarDay(day)} · ${calendarCapacityText(capacity)}\n${note}`}>{button}</Hint> : button
+      return note ? <Hint key={day} text={note}>{button}</Hint> : button
     })}</div>
   </div>
 }

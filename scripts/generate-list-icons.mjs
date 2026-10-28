@@ -93,6 +93,7 @@ const GRUPPEN = [
     ['std:deadlines', 'Fristen', 'mdi', 'clipboard-clock-outline'],
     ['std:computer', 'Computer', 'mdi', 'monitor'],
     ['std:code', 'Programmieren', 'lucide', 'code-xml'],
+    ['std:bot-message-square', 'KI-Assistent', 'lucide', 'bot-message-square'],
     ['std:terminal', 'Konsole', 'mdi', 'console'],
     ['std:server', 'Server', 'mdi', 'server-outline'],
     ['std:cloud', 'Cloud', 'mdi', 'cloud-outline'],

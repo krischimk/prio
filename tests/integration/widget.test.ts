@@ -43,7 +43,7 @@ describe('Android-Widget: gemeinsame Fachregeln und sichere Aufträge', () => {
       { id: 'b', text: 'Losgehen', completed: false, deleted_at: null },
     ] })
     const snapshot = projectWidget(f.rows, userId, Date.parse(now), 'Europe/Berlin')
-    expect(snapshot.tasks[0]).toMatchObject({ checklistDone: 1, checklistTotal: 2, checklist: [{ id: 'b' }] })
+    expect(snapshot.tasks[0]).toMatchObject({ checklistDone: 1, checklistTotal: 2, checklistHideCompleted: true, checklist: [{ id: 'b' }] })
     expect(snapshot.tasks[0].checklist).toHaveLength(1)
     await completeFromWidget(f.port, { ...command(), checklist: { id: 'a', completed: false } }, 'Europe/Berlin')
     expect(projectWidget(f.rows, userId, Date.parse(now), 'Europe/Berlin').tasks[0].checklist).toHaveLength(2)

@@ -14,9 +14,9 @@ const pointer = PointerSensor.configure({
   activationConstraints: event => event.pointerType === 'touch'
     ? [new PointerActivationConstraints.Delay({ value: 400, tolerance: 6 })]
     : [new PointerActivationConstraints.Distance({ value: 6 })],
-  // Der Griff umfasst die Aufgabe, aber kein darin enthaltenes Bedienelement.
+  // Die Notizvorschau bleibt Ziehfläche; Kästchen und andere Bedienelemente sind geschützt.
   preventActivation: (event, source) => {
-    const control = (event.target as HTMLElement).closest('button, input, select, textarea, label, a, [data-no-drag]')
+    const control = (event.target as HTMLElement).closest('button, input, select, textarea, label:not([data-task-drag-surface]), a, [data-no-drag]')
     return control !== null && control !== source.handle
   },
 })

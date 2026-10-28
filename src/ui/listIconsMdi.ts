@@ -443,6 +443,20 @@ export const LIST_ICONS_MDI: ListIconDefinition[] = [
     ],
   },
   {
+    id: 'std:bot-message-square',
+    label: 'KI-Assistent',
+    source: 'lucide/bot-message-square',
+    group: 'Arbeit und Lernen',
+    paths: [
+      'M12 6V2H8',
+      'M15 11v2',
+      'M2 12h2',
+      'M20 12h2',
+      'M20 16a2 2 0 0 1-2 2H8.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 4 20.286V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z',
+      'M9 11v2',
+    ],
+  },
+  {
     id: 'std:terminal',
     label: 'Konsole',
     source: 'mdi/console',
